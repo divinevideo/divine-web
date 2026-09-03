@@ -628,6 +628,7 @@
     "toastErrorTitle": "오류",
     "toastErrorEnterValue": "음소거할 값을 입력하세요",
     "toastErrorInvalidNpub": "잘못된 npub 형식",
+    "toastErrorMuteYourself": "자기 자신을 음소거할 수 없습니다.",
     "toastMutedTitle": "음소거됨",
     "toastMutedDescription": "음소거 리스트에 추가됐어요",
     "toastMuteFailed": "음소거 실패. 다시 시도해 주세요.",

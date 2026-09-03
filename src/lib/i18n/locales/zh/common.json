@@ -628,6 +628,7 @@
     "toastErrorTitle": "出错",
     "toastErrorEnterValue": "请输入要屏蔽的内容",
     "toastErrorInvalidNpub": "npub 格式无效",
+    "toastErrorMuteYourself": "你不能屏蔽自己。",
     "toastMutedTitle": "已屏蔽",
     "toastMutedDescription": "已成功加入屏蔽列表",
     "toastMuteFailed": "屏蔽失败，请再试一次。",

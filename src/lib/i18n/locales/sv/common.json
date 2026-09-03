@@ -628,6 +628,7 @@
     "toastErrorTitle": "Fel",
     "toastErrorEnterValue": "Ange ett värde att tysta",
     "toastErrorInvalidNpub": "Ogiltigt npub-format",
+    "toastErrorMuteYourself": "Du kan inte tysta dig själv.",
     "toastMutedTitle": "Tystad",
     "toastMutedDescription": "Tillagd i tystningslistan",
     "toastMuteFailed": "Kunde inte tysta. Försök igen.",

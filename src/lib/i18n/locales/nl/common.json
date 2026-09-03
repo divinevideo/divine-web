@@ -628,6 +628,7 @@
     "toastErrorTitle": "Fout",
     "toastErrorEnterValue": "Voer een waarde in om te dempen",
     "toastErrorInvalidNpub": "Ongeldig npub-formaat",
+    "toastErrorMuteYourself": "Je kunt jezelf niet dempen.",
     "toastMutedTitle": "Gedempt",
     "toastMutedDescription": "Met succes toegevoegd aan mutelist",
     "toastMuteFailed": "Dempen mislukt. Probeer het opnieuw.",

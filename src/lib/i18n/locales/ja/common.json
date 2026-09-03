@@ -628,6 +628,7 @@
     "toastErrorTitle": "エラー",
     "toastErrorEnterValue": "ミュートする値を入力してください",
     "toastErrorInvalidNpub": "npubの形式が無効です",
+    "toastErrorMuteYourself": "自分自身をミュートすることはできません。",
     "toastMutedTitle": "ミュートしました",
     "toastMutedDescription": "ミュートリストに追加しました",
     "toastMuteFailed": "ミュートに失敗しました。もう一度試してください。",

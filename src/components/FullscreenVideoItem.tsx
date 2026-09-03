@@ -20,8 +20,8 @@ import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideoReactions } from '@/hooks/useVideoReactions';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { useMuteItem } from '@/hooks/useModeration';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useDeleteVideo, useCanDeleteVideo } from '@/hooks/useDeleteVideo';
+import { useDeleteVideo } from '@/hooks/useDeleteVideo';
+import { useIsOwnVideo } from '@/hooks/useIsOwnVideo';
 import { useToast } from '@/hooks/useToast';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
@@ -117,12 +117,7 @@ export function FullscreenVideoItem({
   const { toast } = useToast();
   const muteUser = useMuteItem();
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
-  const canDelete = useCanDeleteVideo(video);
-  const { user: currentUser } = useCurrentUser();
-  // Reporting and muting are meaningless against yourself, and divine-web is a
-  // trusted report client, so hide those affordances on your own content. The
-  // useReportContent/useMuteItem hooks reject self-targets regardless.
-  const isOwnVideo = !!currentUser && currentUser.pubkey === video.pubkey;
+  const isOwnVideo = useIsOwnVideo(video);
   const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
   const { data: lists } = useVideosInLists(video.vineId ?? undefined, video.id);
   const playbackCountLabel = video.isVineMigrated
@@ -515,7 +510,7 @@ export function FullscreenVideoItem({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-black/90 border-white/20 text-white">
-                  {canDelete && (
+                  {isOwnVideo && (
                     <>
                       <DropdownMenuItem
                         onClick={() => setShowDeleteDialog(true)}

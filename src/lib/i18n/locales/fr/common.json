@@ -628,6 +628,7 @@
     "toastErrorTitle": "Erreur",
     "toastErrorEnterValue": "Saisis une valeur à couper",
     "toastErrorInvalidNpub": "Format de npub invalide",
+    "toastErrorMuteYourself": "Tu ne peux pas te mettre toi-même en sourdine.",
     "toastMutedTitle": "Coupé",
     "toastMutedDescription": "Ajouté à la liste de mute",
     "toastMuteFailed": "Échec du mute. Réessaie.",

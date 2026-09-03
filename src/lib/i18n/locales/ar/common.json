@@ -672,6 +672,7 @@
     "toastErrorTitle": "خطأ",
     "toastErrorEnterValue": "يرجى إدخال قيمة لكتمها",
     "toastErrorInvalidNpub": "صيغة npub غير صالحة",
+    "toastErrorMuteYourself": "لا يمكنك كتم نفسك.",
     "toastMutedTitle": "تم الكتم",
     "toastMutedDescription": "تمت الإضافة إلى قائمة الكتم بنجاح",
     "toastMuteFailed": "فشل الكتم. يرجى المحاولة مجدداً.",

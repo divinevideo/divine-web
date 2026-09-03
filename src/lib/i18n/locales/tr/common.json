@@ -628,6 +628,7 @@
     "toastErrorTitle": "Hata",
     "toastErrorEnterValue": "Lütfen susturmak için bir değer gir",
     "toastErrorInvalidNpub": "Geçersiz npub formatı",
+    "toastErrorMuteYourself": "Kendini susturamazsın.",
     "toastMutedTitle": "Susturuldu",
     "toastMutedDescription": "Susturma listesine eklendi",
     "toastMuteFailed": "Susturma başarısız. Lütfen tekrar dene.",

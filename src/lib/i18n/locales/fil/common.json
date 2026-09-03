@@ -628,6 +628,7 @@
     "toastErrorTitle": "May Problema",
     "toastErrorEnterValue": "Maglagay ng value na imu-mute",
     "toastErrorInvalidNpub": "Mali ang format ng npub",
+    "toastErrorMuteYourself": "Hindi mo puwedeng i-mute ang sarili mo.",
     "toastMutedTitle": "Na-mute",
     "toastMutedDescription": "Naidagdag sa mute list",
     "toastMuteFailed": "Hindi na-mute. Subukan ulit?",

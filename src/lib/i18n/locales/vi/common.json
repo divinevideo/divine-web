@@ -628,6 +628,7 @@
     "toastErrorTitle": "Lỗi",
     "toastErrorEnterValue": "Vui lòng nhập giá trị để tắt tiếng",
     "toastErrorInvalidNpub": "Định dạng npub không hợp lệ",
+    "toastErrorMuteYourself": "Bạn không thể tự tắt tiếng mình.",
     "toastMutedTitle": "Đã tắt tiếng",
     "toastMutedDescription": "Đã thêm vào danh sách tắt tiếng",
     "toastMuteFailed": "Không tắt tiếng được. Vui lòng thử lại.",

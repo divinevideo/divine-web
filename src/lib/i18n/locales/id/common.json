@@ -628,6 +628,7 @@
     "toastErrorTitle": "Error",
     "toastErrorEnterValue": "Silakan masukkan nilai untuk dibisukan",
     "toastErrorInvalidNpub": "Format npub tidak valid",
+    "toastErrorMuteYourself": "Kamu tidak dapat membisukan diri sendiri.",
     "toastMutedTitle": "Dibisukan",
     "toastMutedDescription": "Berhasil ditambahkan ke mute list",
     "toastMuteFailed": "Gagal membisukan. Coba lagi.",

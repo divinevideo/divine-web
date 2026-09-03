@@ -628,6 +628,7 @@
     "toastErrorTitle": "Errore",
     "toastErrorEnterValue": "Inserisci un valore da silenziare",
     "toastErrorInvalidNpub": "Formato npub non valido",
+    "toastErrorMuteYourself": "Non puoi silenziare te stesso.",
     "toastMutedTitle": "Silenziato",
     "toastMutedDescription": "Aggiunto correttamente alla lista silenziati",
     "toastMuteFailed": "Silenziamento non riuscito. Riprova.",

@@ -628,6 +628,7 @@
     "toastErrorTitle": "Error",
     "toastErrorEnterValue": "Please enter a value to mute",
     "toastErrorInvalidNpub": "Invalid npub format",
+    "toastErrorMuteYourself": "You can’t mute yourself.",
     "toastMutedTitle": "Muted",
     "toastMutedDescription": "Successfully added to mute list",
     "toastMuteFailed": "Failed to mute. Please try again.",

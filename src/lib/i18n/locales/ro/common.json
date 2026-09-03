@@ -628,6 +628,7 @@
     "toastErrorTitle": "Eroare",
     "toastErrorEnterValue": "Te rugăm introdu o valoare pentru mute",
     "toastErrorInvalidNpub": "Format npub invalid",
+    "toastErrorMuteYourself": "Nu te poți dezactiva pe tine.",
     "toastMutedTitle": "Mut",
     "toastMutedDescription": "Adăugat cu succes pe lista de mute",
     "toastMuteFailed": "Mute-ul a eșuat. Mai încearcă.",

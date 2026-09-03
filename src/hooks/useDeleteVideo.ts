@@ -87,15 +87,3 @@ export function useDeleteVideo() {
     },
   });
 }
-
-/**
- * Hook for checking if user can delete a video
- */
-export function useCanDeleteVideo(video?: ParsedVideoData): boolean {
-  const { user } = useCurrentUser();
-
-  if (!user?.pubkey || !video) return false;
-
-  // User can only delete their own videos
-  return user.pubkey === video.pubkey;
-}

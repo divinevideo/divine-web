@@ -628,6 +628,7 @@
     "toastErrorTitle": "Ralat",
     "toastErrorEnterValue": "Sila masukkan nilai untuk disenyapkan",
     "toastErrorInvalidNpub": "Format npub tidak sah",
+    "toastErrorMuteYourself": "Anda tidak boleh menyenyapkan diri sendiri.",
     "toastMutedTitle": "Disenyapkan",
     "toastMutedDescription": "Berjaya ditambah ke senarai senyap",
     "toastMuteFailed": "Gagal menyenyapkan. Sila cuba lagi.",

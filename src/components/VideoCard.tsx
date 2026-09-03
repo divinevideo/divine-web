@@ -23,7 +23,8 @@ import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRo
 import { useAuthor } from '@/hooks/useAuthor';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useMuteItem } from '@/hooks/useModeration';
-import { useDeleteVideo, useCanDeleteVideo } from '@/hooks/useDeleteVideo';
+import { useDeleteVideo } from '@/hooks/useDeleteVideo';
+import { useIsOwnVideo } from '@/hooks/useIsOwnVideo';
 import { useIsVideoPinned, usePinVideo, useUnpinVideo } from '@/hooks/usePinnedVideos';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
@@ -259,12 +260,8 @@ export function VideoCard({
   const showSubtitles = subtitlesVisible && hasSubtitles;
 
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
-  const canDelete = useCanDeleteVideo(video);
+  const isOwnVideo = useIsOwnVideo(video);
   const { user: currentUser } = useCurrentUser();
-  // Reporting and muting are meaningless against yourself, and divine-web is a
-  // trusted report client, so hide those affordances on your own content. The
-  // useReportContent/useMuteItem hooks reject self-targets regardless.
-  const isOwnVideo = !!currentUser && currentUser.pubkey === video.pubkey;
   const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
   const isPinned = useIsVideoPinned(coordinate);
   const { mutateAsync: pinVideo } = usePinVideo();
@@ -1021,7 +1018,7 @@ export function VideoCard({
                   <DropdownMenuSeparator />
                 </>
               )}
-              {canDelete && (
+              {isOwnVideo && (
                 <>
                   <DropdownMenuItem
                     onClick={() => setShowDeleteDialog(true)}

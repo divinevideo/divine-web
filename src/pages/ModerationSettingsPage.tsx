@@ -266,6 +266,15 @@ export default function ModerationSettingsPage() {
           });
           return;
         }
+
+        if (value === user?.pubkey) {
+          toast({
+            title: t('moderationSettings.toastErrorTitle'),
+            description: t('moderationSettings.toastErrorMuteYourself'),
+            variant: 'destructive',
+          });
+          return;
+        }
       }
 
       await muteItem.mutateAsync({

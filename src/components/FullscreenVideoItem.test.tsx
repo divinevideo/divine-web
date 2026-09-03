@@ -42,7 +42,10 @@ vi.mock('@/hooks/useVideoLists', () => ({ useVideosInLists: () => ({ data: undef
 vi.mock('@/hooks/useModeration', () => ({ useMuteItem: () => ({ mutateAsync: vi.fn() }) }));
 vi.mock('@/hooks/useDeleteVideo', () => ({
   useDeleteVideo: () => ({ mutate: vi.fn(), isPending: false }),
-  useCanDeleteVideo: () => false,
+}));
+vi.mock('@/hooks/useIsOwnVideo', () => ({
+  useIsOwnVideo: (video?: ParsedVideoData) =>
+    authMocks.useCurrentUser().user?.pubkey === video?.pubkey,
 }));
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: vi.fn() }) }));
 vi.mock('@/hooks/useBadges', () => ({ useBadges: () => ({ data: undefined }) }));
@@ -139,11 +142,11 @@ function setPaused(el: HTMLMediaElement, paused: boolean) {
   Object.defineProperty(el, 'paused', { value: paused, configurable: true });
 }
 
-describe('FullscreenVideoItem self-moderation affordances', () => {
-  beforeEach(() => {
-    authMocks.useCurrentUser.mockReturnValue({ user: null });
-  });
+beforeEach(() => {
+  authMocks.useCurrentUser.mockReturnValue({ user: null });
+});
 
+describe('FullscreenVideoItem self-moderation affordances', () => {
   it('hides report and mute actions on the viewer\'s own video', () => {
     authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: 'f'.repeat(64) } });
     renderItem();

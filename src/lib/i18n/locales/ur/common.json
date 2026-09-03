@@ -628,6 +628,7 @@
     "toastErrorTitle": "خرابی",
     "toastErrorEnterValue": "میوٹ کرنے کے لیے کوئی قیمت درج کریں",
     "toastErrorInvalidNpub": "npub فارمیٹ غلط ہے",
+    "toastErrorMuteYourself": "آپ خود کو میوٹ نہیں کر سکتے۔",
     "toastMutedTitle": "میوٹ کر دیا گیا",
     "toastMutedDescription": "میوٹ فہرست میں کامیابی سے شامل کر دیا گیا",
     "toastMuteFailed": "میوٹ ناکام۔ دوبارہ کوشش کریں۔",

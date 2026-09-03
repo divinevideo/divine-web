@@ -219,7 +219,11 @@ vi.mock('@/hooks/useDeleteVideo', () => ({
     mutate: playbackMocks.deleteVideo,
     isPending: false,
   }),
-  useCanDeleteVideo: () => false,
+}));
+
+vi.mock('@/hooks/useIsOwnVideo', () => ({
+  useIsOwnVideo: (video?: ParsedVideoData) =>
+    authMocks.useCurrentUser()?.user?.pubkey === video?.pubkey,
 }));
 
 vi.mock('@/hooks/usePinnedVideos', () => ({

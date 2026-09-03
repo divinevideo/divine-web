@@ -628,6 +628,7 @@
     "toastErrorTitle": "Błąd",
     "toastErrorEnterValue": "Wpisz wartość do wyciszenia",
     "toastErrorInvalidNpub": "Nieprawidłowy format npub",
+    "toastErrorMuteYourself": "Nie możesz wyciszyć siebie.",
     "toastMutedTitle": "Wyciszone",
     "toastMutedDescription": "Dodano do listy wyciszeń",
     "toastMuteFailed": "Wyciszenie się nie udało. Spróbuj jeszcze raz.",

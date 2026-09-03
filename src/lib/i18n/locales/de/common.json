@@ -628,6 +628,7 @@
     "toastErrorTitle": "Fehler",
     "toastErrorEnterValue": "Bitte gib einen Wert zum Stummschalten ein",
     "toastErrorInvalidNpub": "Ungültiges npub-Format",
+    "toastErrorMuteYourself": "Du kannst dich nicht selbst stummschalten.",
     "toastMutedTitle": "Stummgeschaltet",
     "toastMutedDescription": "Erfolgreich zur Mute-Liste hinzugefügt",
     "toastMuteFailed": "Stummschalten fehlgeschlagen. Bitte nochmal versuchen.",
