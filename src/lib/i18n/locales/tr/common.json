@@ -693,7 +693,7 @@
       "mastodon": "Aşağıdaki metni içeren bir toot paylaş, sonra URL'deki Post ID'sini yapıştır.",
       "telegram": "Herkese açık bir kanal/grupta aşağıdaki metni içeren bir mesaj gönder, sonra mesaj yolunu yapıştır (örn. kanaladi/123).",
       "bluesky": "Bluesky'da aşağıdaki metni içeren bir paylaşım yap, sonra gönderi URL'sinden record key'i (rkey) yapıştır.",
-      "discord": "Sunucu adı ya da açıklamasında npub'ın geçen bir Discord sunucusu oluştur, sonra kalıcı bir davet linki oluştur ve davet kodunu yapıştır."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "Hata",
     "toastEnterProof": "Lütfen kanıt URL'sini ya da ID'sini gir",

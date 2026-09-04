@@ -693,7 +693,7 @@
       "mastodon": "نیچے دیا گیا متن شامل toot پوسٹ کریں، پھر URL سے Post ID پیسٹ کریں۔",
       "telegram": "نیچے دیا گیا متن کسی عوامی چینل/گروپ میں بھیجیں، پھر پیغام کا پاتھ پیسٹ کریں (مثلاً channelname/123)۔",
       "bluesky": "نیچے دیا گیا متن Bluesky پر پوسٹ کریں، پھر پوسٹ URL سے record key (rkey) پیسٹ کریں۔",
-      "discord": "اپنا npub سرور کے نام یا تفصیل میں شامل کرتے ہوئے ایک Discord سرور بنائیں، پھر مستقل انوائٹ لنک بنائیں اور انوائٹ کوڈ پیسٹ کریں۔"
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "خرابی",
     "toastEnterProof": "ثبوت کا URL یا ID درج کریں",

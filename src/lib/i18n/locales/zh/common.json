@@ -693,7 +693,7 @@
       "mastodon": "发一条包含以下文字的嘟文，然后从 URL 中粘贴帖子 ID。",
       "telegram": "在公开频道/群组发一条包含以下文字的消息，然后粘贴消息路径（例如 channelname/123）。",
       "bluesky": "在 Bluesky 上发一条包含以下文字的帖子，然后从帖子 URL 中粘贴记录键（rkey）。",
-      "discord": "创建一个 Discord 服务器，在服务器名称或简介里放上你的 npub，然后创建一个永久邀请链接并粘贴邀请码。"
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "出错",
     "toastEnterProof": "请输入证明 URL 或 ID",

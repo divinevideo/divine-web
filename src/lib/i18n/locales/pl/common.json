@@ -707,7 +707,7 @@
       "mastodon": "Opublikuj toota z poniższym tekstem, potem wklej ID posta z URL.",
       "telegram": "Wyślij wiadomość na publicznym kanale/grupie z poniższym tekstem, potem wklej ścieżkę wiadomości (np. nazwakanalu/123).",
       "bluesky": "Opublikuj post na Bluesky z poniższym tekstem, potem wklej record key (rkey) z URL posta.",
-      "discord": "Stwórz serwer Discord z npub w nazwie lub opisie, potem stwórz stałe zaproszenie i wklej kod zaproszenia."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "Błąd",
     "toastEnterProof": "Wpisz URL lub ID dowodu",

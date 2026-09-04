@@ -693,7 +693,7 @@
       "mastodon": "아래 텍스트가 포함된 toot을 게시한 다음 URL에서 게시물 ID를 붙여넣으세요.",
       "telegram": "아래 텍스트가 포함된 메시지를 공개 채널/그룹에 보낸 다음 메시지 경로(예: channelname/123)를 붙여넣으세요.",
       "bluesky": "아래 텍스트가 포함된 게시물을 Bluesky에 올린 다음 게시물 URL에서 record key(rkey)를 붙여넣으세요.",
-      "discord": "서버 이름이나 설명에 npub이 포함된 Discord 서버를 만든 다음 영구 초대 링크를 만들고 초대 코드를 붙여넣으세요."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "오류",
     "toastEnterProof": "증명 URL이나 ID를 입력하세요",

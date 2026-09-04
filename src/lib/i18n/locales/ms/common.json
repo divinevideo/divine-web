@@ -693,7 +693,7 @@
       "mastodon": "Poskan toot yang mengandungi teks di bawah, kemudian tampal ID Pos daripada URL.",
       "telegram": "Hantar mesej dalam saluran/kumpulan awam yang mengandungi teks di bawah, kemudian tampal laluan mesej (cth. namasaluran/123).",
       "bluesky": "Pos di Bluesky yang mengandungi teks di bawah, kemudian tampal kunci rekod (rkey) daripada URL pos.",
-      "discord": "Cipta pelayan Discord dengan npub anda dalam nama atau penerangan pelayan, kemudian cipta pautan jemputan kekal dan tampal kod jemputan."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "Ralat",
     "toastEnterProof": "Sila masukkan URL atau ID bukti",

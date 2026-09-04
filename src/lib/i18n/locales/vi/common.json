@@ -693,7 +693,7 @@
       "mastodon": "Đăng một toot chứa đoạn văn bản bên dưới, rồi dán Post ID từ URL.",
       "telegram": "Gửi một tin nhắn trong kênh/nhóm công khai chứa đoạn văn bản bên dưới, rồi dán đường dẫn tin nhắn (ví dụ: channelname/123).",
       "bluesky": "Đăng trên Bluesky một bài chứa đoạn văn bản bên dưới, rồi dán record key (rkey) từ URL bài đăng.",
-      "discord": "Tạo một máy chủ Discord có npub của bạn trong tên hoặc mô tả máy chủ, rồi tạo liên kết mời vĩnh viễn và dán mã mời."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "Lỗi",
     "toastEnterProof": "Vui lòng nhập URL hoặc ID chứng minh",

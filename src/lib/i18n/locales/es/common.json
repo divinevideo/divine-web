@@ -700,7 +700,7 @@
       "mastodon": "Publica un toot con el texto de abajo y luego pega el ID de la publicación de la URL.",
       "telegram": "Envía un mensaje en un canal o grupo público con el texto de abajo y luego pega la ruta del mensaje (ej. nombrecanal/123).",
       "bluesky": "Publica en Bluesky con el texto de abajo y luego pega la clave de registro (rkey) de la URL de la publicación.",
-      "discord": "Crea un servidor de Discord con tu npub en el nombre o descripción del servidor, luego crea un enlace de invitación permanente y pega el código de invitación."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "Error",
     "toastEnterProof": "Introduce la URL o el ID de la prueba",

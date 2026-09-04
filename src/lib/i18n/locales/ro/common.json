@@ -700,7 +700,7 @@
       "mastodon": "Postează un toot care să conțină textul de mai jos, apoi lipește ID-ul postării din URL.",
       "telegram": "Trimite un mesaj într-un canal/grup public care să conțină textul de mai jos, apoi lipește calea mesajului (ex. nume_canal/123).",
       "bluesky": "Postează pe Bluesky un mesaj care să conțină textul de mai jos, apoi lipește cheia înregistrării (rkey) din URL-ul postării.",
-      "discord": "Creează un server Discord cu npub-ul tău în numele sau descrierea serverului, apoi creează un link de invitație permanent și lipește codul invitației."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "Eroare",
     "toastEnterProof": "Te rugăm introdu URL-ul sau ID-ul dovezii",

@@ -693,7 +693,7 @@
       "mastodon": "Poste einen Toot mit dem Text unten und füge dann die Post-ID aus der URL ein.",
       "telegram": "Sende eine Nachricht in einem öffentlichen Kanal/einer Gruppe mit dem Text unten und füge dann den Nachrichtenpfad ein (z. B. kanalname/123).",
       "bluesky": "Poste auf Bluesky mit dem Text unten und füge dann den Record Key (rkey) aus der Post-URL ein.",
-      "discord": "Erstelle einen Discord-Server mit deinem npub im Servernamen oder in der Beschreibung, erstelle dann einen permanenten Einladungslink und füge den Einladungscode ein."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "Fehler",
     "toastEnterProof": "Bitte gib die Nachweis-URL oder -ID ein",

@@ -693,7 +693,7 @@
       "mastodon": "Posta en toot som innehåller texten nedan, och klistra sedan in Post-ID:t från URL:en.",
       "telegram": "Skicka ett meddelande i en publik kanal/grupp som innehåller texten nedan, och klistra sedan in meddelandesökvägen (t.ex. channelname/123).",
       "bluesky": "Posta på Bluesky med texten nedan, och klistra sedan in record key (rkey) från inläggets URL.",
-      "discord": "Skapa en Discord-server med din npub i servernamnet eller beskrivningen, skapa en permanent inbjudningslänk och klistra in inbjudningskoden."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "Fel",
     "toastEnterProof": "Ange bevis-URL eller -ID",

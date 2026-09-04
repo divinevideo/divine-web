@@ -693,7 +693,7 @@
       "mastodon": "Post toot berisi teks di bawah, lalu tempel ID Post dari URL.",
       "telegram": "Kirim pesan di channel/grup publik berisi teks di bawah, lalu tempel path pesan (mis. namachannel/123).",
       "bluesky": "Post di Bluesky berisi teks di bawah, lalu tempel record key (rkey) dari URL post.",
-      "discord": "Buat server Discord dengan npub kamu di nama atau deskripsi server, lalu buat link invite permanen dan tempel kode invite-nya."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "Error",
     "toastEnterProof": "Silakan masukkan URL atau ID bukti",

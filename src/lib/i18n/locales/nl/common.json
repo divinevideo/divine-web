@@ -693,7 +693,7 @@
       "mastodon": "Plaats een toot met de onderstaande tekst en plak vervolgens de Post-ID uit de URL.",
       "telegram": "Stuur een bericht in een openbaar kanaal/groep met de onderstaande tekst en plak vervolgens het berichtpad (bijv. channelname/123).",
       "bluesky": "Post op Bluesky met de onderstaande tekst en plak vervolgens de record key (rkey) uit de post-URL.",
-      "discord": "Maak een Discord-server met je npub in de servernaam of beschrijving, maak vervolgens een permanente uitnodigingslink en plak de invite-code."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "Fout",
     "toastEnterProof": "Voer de bewijs-URL of -ID in",

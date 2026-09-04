@@ -745,7 +745,7 @@
       "mastodon": "انشر toot يحتوي على النص أدناه، ثم الصق معرّف المنشور من الرابط.",
       "telegram": "أرسل رسالة في قناة/مجموعة عامة تحتوي على النص أدناه، ثم الصق مسار الرسالة (مثلاً channelname/123).",
       "bluesky": "انشر على Bluesky منشوراً يحتوي على النص أدناه، ثم الصق مفتاح السجل (rkey) من رابط المنشور.",
-      "discord": "أنشئ خادم Discord مع npub في اسم الخادم أو وصفه، ثم أنشئ رابط دعوة دائمة والصق رمز الدعوة."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "خطأ",
     "toastEnterProof": "يرجى إدخال رابط أو معرّف الإثبات",

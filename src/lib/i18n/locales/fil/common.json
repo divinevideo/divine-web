@@ -693,7 +693,7 @@
       "mastodon": "Mag-post ng toot na may laman ng teksto sa baba, tapos i-paste ang Post ID mula sa URL.",
       "telegram": "Magpadala ng mensahe sa public channel/group na may laman ng teksto sa baba, tapos i-paste ang path ng mensahe (hal. channelname/123).",
       "bluesky": "Mag-post sa Bluesky na may laman ng teksto sa baba, tapos i-paste ang record key (rkey) mula sa URL ng post.",
-      "discord": "Gumawa ng Discord server na may iyong npub sa pangalan o description ng server, tapos gumawa ng permanenteng invite link at i-paste ang invite code."
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "May Problema",
     "toastEnterProof": "Ilagay ang URL o ID ng patunay",

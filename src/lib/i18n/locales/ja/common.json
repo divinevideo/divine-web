@@ -693,7 +693,7 @@
       "mastodon": "下のテキストを含むtootを投稿し、URLから投稿IDを貼り付けてください。",
       "telegram": "下のテキストを含むメッセージを公開チャンネル/グループに送信し、メッセージパス（例：channelname/123）を貼り付けてください。",
       "bluesky": "下のテキストを含む投稿をBlueskyに行い、投稿URLからレコードキー（rkey）を貼り付けてください。",
-      "discord": "サーバー名または説明にあなたのnpubを含むDiscordサーバーを作成し、永久招待リンクを作成して招待コードを貼り付けてください。"
+      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
     },
     "toastErrorTitle": "エラー",
     "toastEnterProof": "証明URLまたはIDを入力してください",
