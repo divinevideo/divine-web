@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { LinkSimple as Link2, Plus, Trash as Trash2, PencilSimple as Pencil, CheckCircle as CheckCircle2, Warning as AlertTriangle, CircleNotch as Loader2, ArrowSquareOut as ExternalLink, GithubLogo as Github, ChatCircle as MessageCircle, At as AtSign, Shield, Copy, Check, X, ArrowLeft } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
-import { discordProofFromInput } from '@/lib/discordProof';
+import { discordProofFromInput, isDiscordMessageLink } from '@/lib/discordProof';
 
 // X/Twitter icon (simple)
 function XIcon({ className }: { className?: string }) {
@@ -84,6 +84,11 @@ const PROOF_PLACEHOLDERS: Record<string, string> = {
   youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
   tiktok: 'https://www.tiktok.com/@you/video/123456789',
 };
+
+// Platforms whose identity cannot be derived from the proof URL, so the user
+// has to type it. A Discord message link names a guild, a channel and a
+// message, never the author, so there is nothing to auto-detect.
+const MANUAL_IDENTITY_PLATFORMS = new Set(['discord']);
 
 /** Extract identity and proof from a URL, or return input as proof only */
 function extractFromUrl(platform: string, input: string): { identity?: string; proof: string } {
@@ -405,8 +410,26 @@ export default function LinkedAccountsSettingsPage() {
     try {
       const extracted = extractFromUrl(platform, proof);
       const cleanProof = extracted.proof;
-      // Use extracted identity, or state identity, or fall back to proof itself for Telegram/Discord
-      const cleanIdentity = extracted.identity || identity.trim() || cleanProof;
+
+      // Refuse anything that is not a message link — an invite, a DM link, a
+      // channel link, a look-alike host — rather than publishing it as a proof
+      // that can never verify.
+      if (MANUAL_IDENTITY_PLATFORMS.has(platform) && !isDiscordMessageLink(cleanProof)) {
+        toast({
+          title: t('linkedAccountsSettings.toastErrorTitle'),
+          description: t('linkedAccountsSettings.toastInvalidDiscordLink'),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Use extracted identity, or the typed one, or fall back to the proof
+      // itself for platforms whose proof doubles as the handle. Never fall back
+      // where the handle has to be typed: the whole message URL would land in
+      // the identity slot and the verifier could never match it.
+      const cleanIdentity = extracted.identity
+        || identity.trim()
+        || (MANUAL_IDENTITY_PLATFORMS.has(platform) ? '' : cleanProof);
       if (!cleanIdentity) {
         toast({ title: t('linkedAccountsSettings.toastErrorTitle'), description: t('linkedAccountsSettings.toastCannotDetermineUsername'), variant: 'destructive' });
         return;
@@ -612,6 +635,20 @@ export default function LinkedAccountsSettingsPage() {
             </CardContent>
           </Card>
 
+          {/* The handle, where the proof link cannot carry it */}
+          {MANUAL_IDENTITY_PLATFORMS.has(platform) && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                {t('linkedAccountsSettings.discordUsernameLabel')}
+              </Label>
+              <Input
+                placeholder={t('linkedAccountsSettings.discordUsernamePlaceholder')}
+                value={identity}
+                onChange={(e) => setIdentity(e.target.value)}
+              />
+            </div>
+          )}
+
           {/* Step 2: Paste proof link */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">{t('linkedAccountsSettings.step2Title')}</Label>
@@ -628,7 +665,7 @@ export default function LinkedAccountsSettingsPage() {
                 }
               }}
             />
-            {identity && (
+            {identity && !MANUAL_IDENTITY_PLATFORMS.has(platform) && (
               <p className="text-xs text-green-600">
                 {t('linkedAccountsSettings.detectedLabel')} <span className="font-medium">{identity}</span>
               </p>
@@ -644,7 +681,11 @@ export default function LinkedAccountsSettingsPage() {
             )}
             <Button
               onClick={handleAdd}
-              disabled={!proof.trim() || addIdentity.isPending}
+              disabled={
+                !proof.trim()
+                || (MANUAL_IDENTITY_PLATFORMS.has(platform) && !identity.trim())
+                || addIdentity.isPending
+              }
               className="w-full"
             >
               {addIdentity.isPending ? (
