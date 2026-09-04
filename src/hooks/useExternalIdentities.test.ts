@@ -140,15 +140,16 @@ describe('parseIdentityTag', () => {
   });
 
   it('parses a Discord identity tag', () => {
-    const tag = ['i', 'discord:alice', 'AbCdEf'];
+    // The proof is the message link itself; invites stopped being accepted.
+    const tag = ['i', 'discord:alice', 'https://discord.com/channels/1234567890123456789/9876543210987654321/1111222233334444555'];
     const result = parseIdentityTag(tag);
 
     expect(result).toEqual({
       platform: 'discord',
       identity: 'alice',
-      proof: 'AbCdEf',
+      proof: 'https://discord.com/channels/1234567890123456789/9876543210987654321/1111222233334444555',
       profileUrl: 'https://discord.com/users/alice',
-      proofUrl: 'https://discord.gg/AbCdEf',
+      proofUrl: 'https://discord.com/channels/1234567890123456789/9876543210987654321/1111222233334444555',
     });
   });
 
@@ -307,8 +308,10 @@ describe('SUPPORTED_PLATFORMS', () => {
     const config = SUPPORTED_PLATFORMS.discord;
     expect(config.profileUrl('alice'))
       .toBe('https://discord.com/users/alice');
-    expect(config.proofUrl('alice', 'AbCdEf'))
-      .toBe('https://discord.gg/AbCdEf');
+    // The proof is already the message link, so it is returned unchanged
+    // rather than rebuilt as the discord.gg invite the verifier refuses.
+    expect(config.proofUrl('alice', 'https://discord.com/channels/1234567890123456789/9876543210987654321/1111222233334444555'))
+      .toBe('https://discord.com/channels/1234567890123456789/9876543210987654321/1111222233334444555');
   });
 
   it('Discord verification text includes npub', () => {
@@ -338,8 +341,10 @@ describe('SUPPORTED_PLATFORMS', () => {
     const config = SUPPORTED_PLATFORMS.discord;
     expect(config.profileUrl('alice'))
       .toBe('https://discord.com/users/alice');
-    expect(config.proofUrl('alice', 'AbCdEf'))
-      .toBe('https://discord.gg/AbCdEf');
+    // The proof is already the message link, so it is returned unchanged
+    // rather than rebuilt as the discord.gg invite the verifier refuses.
+    expect(config.proofUrl('alice', 'https://discord.com/channels/1234567890123456789/9876543210987654321/1111222233334444555'))
+      .toBe('https://discord.com/channels/1234567890123456789/9876543210987654321/1111222233334444555');
   });
 
   it('Discord verification text has quotes per NIP-39', () => {
