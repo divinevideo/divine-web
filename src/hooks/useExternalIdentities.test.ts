@@ -153,6 +153,19 @@ describe('parseIdentityTag', () => {
     });
   });
 
+  it('does not link legacy Discord invite proofs', () => {
+    const result = parseIdentityTag(['i', 'discord:alice', 'AbCdEf']);
+
+    expect(result?.proof).toBe('AbCdEf');
+    expect(result?.proofUrl).toBe('');
+  });
+
+  it('does not link arbitrary Discord proof schemes', () => {
+    const result = parseIdentityTag(['i', 'discord:alice', 'javascript:alert(1)']);
+
+    expect(result?.proofUrl).toBe('');
+  });
+
   it('handles unknown platforms with empty URLs', () => {
     const tag = ['i', 'linkedin:someone', 'someproof'];
     const result = parseIdentityTag(tag);

@@ -31,21 +31,3 @@ export function isDiscordMessageLink(value: string): boolean {
   // A DM link spells the guild `@me`, and no bot is in that conversation.
   return segments.slice(1).every((segment) => /^\d+$/.test(segment));
 }
-
-/**
- * Turns what the user pasted into the identity/proof pair the verifier expects.
- *
- * The proof passes through whole: the verifier parses the message URL itself,
- * and a Discord message id is meaningless without the channel it lives in.
- *
- * The identity is deliberately absent. A message URL names a guild, a channel
- * and a message — never the author — so the username has to be typed. Deriving
- * one from the URL made it a snowflake, which the verifier's author check can
- * never match.
- */
-export function discordProofFromInput(input: string): {
-  identity?: string;
-  proof: string;
-} {
-  return { proof: input.trim() };
-}

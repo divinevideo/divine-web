@@ -114,6 +114,6 @@ describe('LinkedAccountsSettingsPage Discord flow', () => {
     );
     await user.click(screen.getByRole('button', { name: /linkedAccountsSettings.linkAccountButton/i }));
 
-    await waitFor(() => expect(mockAdd).not.toHaveBeenCalled());
+    expect(mockAdd).not.toHaveBeenCalled();
   });
 });
