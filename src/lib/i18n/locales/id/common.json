@@ -420,8 +420,6 @@
     "subtitleSignIn": "Masuk di login.divine.video dengan akun yang sudah ada.",
     "tabRegister": "Daftar",
     "tabSignIn": "Masuk",
-    "checkingInvite": "Mengecek status invite...",
-    "inviteUnavailable": "Pendaftaran via invite tidak tersedia saat ini. Kamu masih bisa masuk di tab berikutnya.",
     "tabExtension": "Ekstensi",
     "tabExtensionShort": "Ext",
     "tabKey": "Key",
@@ -453,8 +451,6 @@
     "errorFileEmpty": "Tidak bisa membaca isi file.",
     "errorFileNoValidKey": "File tidak berisi kunci rahasia yang valid.",
     "errorFileReadFailed": "Gagal membaca file.",
-    "errorInviteValidationFailed": "Tidak bisa memvalidasi kode invite",
-    "errorInviteCodeUsed": "Kode invite ini sudah digunakan",
     "errorSignInStartFailed": "Tidak bisa memulai sign-in",
     "subtitleCreate": "Siapkan akun Divine kamu.",
     "createAccountButton": "Buat akun",
@@ -1462,22 +1458,6 @@
     "cancel": "Batal",
     "confirm": "Hapus Komentar",
     "deleting": "Menghapus..."
-  },
-  "inviteCodeForm": {
-    "label": "Kode undangan",
-    "placeholder": "Tempel kode undangan kamu",
-    "checking": "Mengecek...",
-    "continue": "Lanjut"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "Gabung Divine dengan kode invite {{code}}",
-    "seoTitleDefault": "Gabung Divine",
-    "seoDescription": "Kamu diundang! Gunakan kode {{code}} untuk bergabung ke Divine.",
-    "seoDescriptionDefault": "Gunakan kode invite kamu untuk bergabung ke Divine dan mulai berbagi video.",
-    "heading": "Kamu Diundang!",
-    "subheading": "Masukkan kode invite kamu untuk bergabung ke Divine",
-    "alreadyHaveAccount": "Sudah punya akun?",
-    "signIn": "Masuk"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

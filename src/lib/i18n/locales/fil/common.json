@@ -420,8 +420,6 @@
     "subtitleSignIn": "Mag-sign in sa login.divine.video gamit ang account mo.",
     "tabRegister": "Mag-register",
     "tabSignIn": "Mag-sign in",
-    "checkingInvite": "Tinitignan ang invite...",
-    "inviteUnavailable": "Hindi available ang invite sign-up ngayon. Pwede ka pa ring mag-sign in sa kabilang tab.",
     "tabExtension": "Extension",
     "tabExtensionShort": "Ext",
     "tabKey": "Key",
@@ -453,8 +451,6 @@
     "errorFileEmpty": "Hindi mabasa ang laman ng file.",
     "errorFileNoValidKey": "Walang valid na secret key sa file.",
     "errorFileReadFailed": "Hindi mabasa ang file.",
-    "errorInviteValidationFailed": "Hindi ma-validate ang invite code",
-    "errorInviteCodeUsed": "Nagamit na ang invite code na ito",
     "errorSignInStartFailed": "Hindi masimulan ang sign-in",
     "subtitleCreate": "I-set up ang Divine account mo.",
     "createAccountButton": "Gumawa ng account",
@@ -1462,22 +1458,6 @@
     "cancel": "Kanselahin",
     "confirm": "I-delete ang komento",
     "deleting": "Dine-delete..."
-  },
-  "inviteCodeForm": {
-    "label": "Invite code",
-    "placeholder": "I-paste ang invite code mo",
-    "checking": "Sinusuri...",
-    "continue": "Magpatuloy"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "Sumali sa Divine gamit ang invite code {{code}}",
-    "seoTitleDefault": "Sumali sa Divine",
-    "seoDescription": "Inimbitahan ka! Gamitin ang code {{code}} para sumali sa Divine.",
-    "seoDescriptionDefault": "Gamitin ang invite code mo para sumali sa Divine at magsimulang mag-share ng video.",
-    "heading": "Imbitado Ka!",
-    "subheading": "Ilagay ang invite code mo para sumali sa Divine",
-    "alreadyHaveAccount": "May account ka na?",
-    "signIn": "Mag-sign in"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited at ang Laban Kontra AI Slop",

@@ -420,8 +420,6 @@
     "subtitleSignIn": "기존 계정으로 login.divine.video에서 로그인하세요.",
     "tabRegister": "회원가입",
     "tabSignIn": "로그인",
-    "checkingInvite": "초대 상태 확인 중...",
-    "inviteUnavailable": "지금 초대 가입은 사용할 수 없어요. 다음 탭에서 로그인은 가능해요.",
     "tabExtension": "확장",
     "tabExtensionShort": "확장",
     "tabKey": "키",
@@ -453,8 +451,6 @@
     "errorFileEmpty": "파일 내용을 읽을 수 없어요.",
     "errorFileNoValidKey": "파일에 유효한 비밀키가 없어요.",
     "errorFileReadFailed": "파일을 읽을 수 없어요.",
-    "errorInviteValidationFailed": "초대 코드를 확인할 수 없음",
-    "errorInviteCodeUsed": "이 초대 코드는 이미 사용되었습니다",
     "errorSignInStartFailed": "로그인을 시작할 수 없음",
     "subtitleCreate": "Divine 계정을 설정하세요.",
     "createAccountButton": "계정 만들기",
@@ -1462,22 +1458,6 @@
     "cancel": "취소",
     "confirm": "댓글 삭제",
     "deleting": "삭제 중..."
-  },
-  "inviteCodeForm": {
-    "label": "초대 코드",
-    "placeholder": "초대 코드를 붙여넣으세요",
-    "checking": "확인 중...",
-    "continue": "계속"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "초대 코드 {{code}}로 Divine에 가입",
-    "seoTitleDefault": "Divine에 가입",
-    "seoDescription": "초대받았어요! 코드 {{code}}를 사용해 Divine에 가입하세요.",
-    "seoDescriptionDefault": "초대 코드를 사용해 Divine에 가입하고 동영상 공유를 시작하세요.",
-    "heading": "초대받았어요!",
-    "subheading": "Divine에 가입하려면 초대 코드를 입력하세요",
-    "alreadyHaveAccount": "이미 계정이 있나요?",
-    "signIn": "로그인"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

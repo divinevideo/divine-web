@@ -52,7 +52,7 @@ async function verifyWellKnown() {
     throw new Error('apple-app-site-association is missing applinks.details[].appIDs');
   }
 
-  const requiredPaths = new Set(['/video/*', '/profile/*', '/invite/*', '/list/*']);
+  const requiredPaths = new Set(['/video/*', '/profile/*', '/list/*']);
   const declaredComponentGroups = aasa?.applinks?.details?.map((detail) => detail.components ?? []) ?? [];
   const declaredComponents = declaredComponentGroups.flat();
   const declaredPaths = new Set(

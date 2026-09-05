@@ -10,6 +10,7 @@ const captureProductAnalyticsUtm = vi.fn().mockReturnValue({
   utm_source: 'newsletter',
   utm_medium: 'email',
 });
+const trackPageView = vi.fn();
 
 vi.mock('@/lib/analyticsClient', () => ({
   captureProductAnalyticsUtm: (...args: unknown[]) => captureProductAnalyticsUtm(...args),
@@ -17,7 +18,7 @@ vi.mock('@/lib/analyticsClient', () => ({
   trackProductEvent: (...args: unknown[]) => trackProductEvent(...args),
 }));
 
-vi.mock('@/lib/analytics', () => ({ trackPageView: vi.fn() }));
+vi.mock('@/lib/analytics', () => ({ trackPageView: (...args: unknown[]) => trackPageView(...args) }));
 
 describe('AnalyticsPageTracker', () => {
   beforeEach(() => {
@@ -85,6 +86,18 @@ describe('AnalyticsPageTracker', () => {
       to_surface: 'discovery',
       action: 'open',
     });
+  });
+
+  it('does not record retired invite URLs before they redirect', () => {
+    render(
+      <MemoryRouter initialEntries={['/invite/ABCD-1234?utm_source=old-invite']}>
+        <AnalyticsPageTracker />
+      </MemoryRouter>,
+    );
+
+    expect(captureProductAnalyticsUtm).not.toHaveBeenCalled();
+    expect(trackProductEvent).not.toHaveBeenCalled();
+    expect(trackPageView).not.toHaveBeenCalled();
   });
 
   it('uses the real home route for the feed and does not label invented routes', () => {

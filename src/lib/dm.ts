@@ -587,9 +587,8 @@ export async function unwrapDmGiftWrap(
     return { ok: false, reason: 'malformed' };
   }
   // TODO(#321): split attestation/hash mismatch into its own
-  // `DmUnwrapResult.code` discriminator (mirroring `InviteApiError.code`
-  // in `src/lib/inviteApi.ts:21-31`). Forgery-adjacent signals deserve to
-  // be distinguishable from bare decode failures for telemetry.
+  // `DmUnwrapResult.code` discriminator. Forgery-adjacent signals deserve
+  // to be distinguishable from bare decode failures for telemetry.
   if (seal.pubkey !== rumor.pubkey) {
     return { ok: false, reason: 'malformed' };
   }

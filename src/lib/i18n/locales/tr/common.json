@@ -420,8 +420,6 @@
     "subtitleSignIn": "Mevcut hesabınla login.divine.video adresinden giriş yap.",
     "tabRegister": "Kayıt ol",
     "tabSignIn": "Giriş yap",
-    "checkingInvite": "Davet durumu kontrol ediliyor...",
-    "inviteUnavailable": "Davetle kayıt şu anda kullanılamıyor. Yine de bir sonraki sekmeden giriş yapabilirsin.",
     "tabExtension": "Eklenti",
     "tabExtensionShort": "Ekl",
     "tabKey": "Anahtar",
@@ -453,8 +451,6 @@
     "errorFileEmpty": "Dosya içeriği okunamadı.",
     "errorFileNoValidKey": "Dosya geçerli bir gizli anahtar içermiyor.",
     "errorFileReadFailed": "Dosya okunamadı.",
-    "errorInviteValidationFailed": "Davet kodu doğrulanamadı",
-    "errorInviteCodeUsed": "Bu davet kodu zaten kullanılmış",
     "errorSignInStartFailed": "Giriş başlatılamadı",
     "subtitleCreate": "Divine hesabını oluştur.",
     "createAccountButton": "Hesap oluştur",
@@ -1462,22 +1458,6 @@
     "cancel": "İptal",
     "confirm": "Yorumu sil",
     "deleting": "Siliniyor..."
-  },
-  "inviteCodeForm": {
-    "label": "Davet kodu",
-    "placeholder": "Davet kodunu yapıştır",
-    "checking": "Kontrol ediliyor...",
-    "continue": "Devam et"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "{{code}} davet koduyla Divine'a katıl",
-    "seoTitleDefault": "Divine'a katıl",
-    "seoDescription": "Davet edildin! Divine'a katılmak için {{code}} kodunu kullan.",
-    "seoDescriptionDefault": "Divine'a katılıp video paylaşmaya başlamak için davet kodunu kullan.",
-    "heading": "Davetlisin!",
-    "subheading": "Divine'a katılmak için davet kodunu gir",
-    "alreadyHaveAccount": "Zaten hesabın var mı?",
-    "signIn": "Giriş yap"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

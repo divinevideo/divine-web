@@ -8,7 +8,7 @@ import { LoginArea } from './LoginArea';
 const mockCloseLoginDialog = vi.fn();
 const mockLoginDialog = vi.fn(
   ({ isOpen }: { isOpen: boolean; initialTab?: 'register' | 'signin' }) =>
-    isOpen ? <div>Invite Login Dialog</div> : null,
+    isOpen ? <div>Login Dialog</div> : null,
 );
 
 vi.mock('@/hooks/useLoggedInAccounts', () => ({
@@ -49,7 +49,7 @@ describe('LoginArea', () => {
     sessionStorage.clear();
   });
 
-  it('opens only the invite-first login dialog from the public entry point', async () => {
+  it('opens the sign-in dialog from the public entry point', async () => {
     const user = userEvent.setup();
 
     render(<LoginArea />);
@@ -59,7 +59,7 @@ describe('LoginArea', () => {
 
     await user.click(screen.getByRole('button', { name: /Log in/i }));
 
-    expect(screen.getByText('Invite Login Dialog')).toBeInTheDocument();
+    expect(screen.getByText('Login Dialog')).toBeInTheDocument();
     expect(mockLoginDialog).toHaveBeenLastCalledWith(
       expect.objectContaining({ initialTab: 'signin', isOpen: true }),
     );
@@ -70,7 +70,7 @@ describe('LoginArea', () => {
 
     render(<LoginArea />);
 
-    expect(await screen.findByText('Invite Login Dialog')).toBeInTheDocument();
+    expect(await screen.findByText('Login Dialog')).toBeInTheDocument();
     expect(mockLoginDialog).toHaveBeenLastCalledWith(
       expect.objectContaining({ initialTab: 'register', isOpen: true }),
     );

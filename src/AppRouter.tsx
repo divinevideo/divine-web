@@ -63,7 +63,7 @@ import { TermsPage } from "./pages/TermsPage";
 import GetEmbedPage from "./pages/GetEmbedPage";
 import AppCallbackPage from "./pages/AppCallbackPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
-import InvitesLandingPage from "./pages/InvitesLandingPage";
+import { LegacyInviteRedirectPage } from "./pages/LegacyInviteRedirectPage";
 import { AppLayout } from "@/components/AppLayout";
 import { DebugVideoPage } from "./pages/DebugVideoPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
@@ -189,7 +189,7 @@ export function AppRouter() {
         <Route path="/get-embed" element={<GetEmbedPage />} />
         <Route path="/app/callback" element={<AppCallbackPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route path="/invite/:code" element={<InvitesLandingPage />} />
+        <Route path="/invite/:code" element={<LegacyInviteRedirectPage isLoggedIn={isLoggedIn} />} />
 
         {/* Dev-only brand primitives preview — tree-shaken in production */}
         {import.meta.env.DEV && BrandPreview && (

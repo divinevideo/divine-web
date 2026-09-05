@@ -420,8 +420,6 @@
     "subtitleSignIn": "用你已有的账号在 login.divine.video 登录。",
     "tabRegister": "注册",
     "tabSignIn": "登录",
-    "checkingInvite": "正在检查邀请状态…",
-    "inviteUnavailable": "现在没法用邀请码注册，但你还是可以在下一个标签页登录。",
     "tabExtension": "扩展",
     "tabExtensionShort": "扩展",
     "tabKey": "密钥",
@@ -453,8 +451,6 @@
     "errorFileEmpty": "读不到文件内容。",
     "errorFileNoValidKey": "文件里没有有效的私钥。",
     "errorFileReadFailed": "读取文件失败。",
-    "errorInviteValidationFailed": "无法验证邀请码",
-    "errorInviteCodeUsed": "这个邀请码已经被用过了",
     "errorSignInStartFailed": "无法开始登录",
     "subtitleCreate": "设置你的 Divine 账号。",
     "createAccountButton": "创建账号",
@@ -1462,22 +1458,6 @@
     "cancel": "取消",
     "confirm": "删除评论",
     "deleting": "删除中…"
-  },
-  "inviteCodeForm": {
-    "label": "邀请码",
-    "placeholder": "粘贴你的邀请码",
-    "checking": "检查中…",
-    "continue": "继续"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "使用邀请码 {{code}} 加入 Divine",
-    "seoTitleDefault": "加入 Divine",
-    "seoDescription": "你被邀请了！用邀请码 {{code}} 加入 Divine。",
-    "seoDescriptionDefault": "用你的邀请码加入 Divine，开始分享视频。",
-    "heading": "你被邀请了！",
-    "subheading": "输入你的邀请码加入 Divine",
-    "alreadyHaveAccount": "已经有账号了？",
-    "signIn": "登录"
   },
   "applePodcastEmbed": {
     "defaultTitle": "重返 Vine，与 AI 垃圾开战",

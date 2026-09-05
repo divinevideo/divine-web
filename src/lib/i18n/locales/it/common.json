@@ -420,8 +420,6 @@
     "subtitleSignIn": "Accedi su login.divine.video con il tuo account esistente.",
     "tabRegister": "Registrati",
     "tabSignIn": "Accedi",
-    "checkingInvite": "Verifica dell'invito...",
-    "inviteUnavailable": "Le iscrizioni tramite invito non sono disponibili al momento. Puoi comunque accedere dalla scheda successiva.",
     "tabExtension": "Estensione",
     "tabExtensionShort": "Est",
     "tabKey": "Chiave",
@@ -453,8 +451,6 @@
     "errorFileEmpty": "Impossibile leggere il contenuto del file.",
     "errorFileNoValidKey": "Il file non contiene una chiave segreta valida.",
     "errorFileReadFailed": "Lettura del file non riuscita.",
-    "errorInviteValidationFailed": "Impossibile validare il codice invito",
-    "errorInviteCodeUsed": "Questo codice invito è già stato usato",
     "errorSignInStartFailed": "Impossibile avviare l'accesso",
     "subtitleCreate": "Configura il tuo account Divine.",
     "createAccountButton": "Crea account",
@@ -1470,22 +1466,6 @@
     "cancel": "Annulla",
     "confirm": "Elimina commento",
     "deleting": "Eliminazione..."
-  },
-  "inviteCodeForm": {
-    "label": "Codice invito",
-    "placeholder": "Incolla il tuo codice invito",
-    "checking": "Verifica in corso...",
-    "continue": "Continua"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "Unisciti a Divine con il codice invito {{code}}",
-    "seoTitleDefault": "Unisciti a Divine",
-    "seoDescription": "Hai ricevuto un invito! Usa il codice {{code}} per unirti a Divine.",
-    "seoDescriptionDefault": "Usa il tuo codice invito per unirti a Divine e iniziare a condividere video.",
-    "heading": "Sei invitato!",
-    "subheading": "Inserisci il tuo codice invito per unirti a Divine",
-    "alreadyHaveAccount": "Hai già un account?",
-    "signIn": "Accedi"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

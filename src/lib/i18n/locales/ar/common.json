@@ -440,8 +440,6 @@
     "subtitleSignIn": "سجّل الدخول من login.divine.video بحسابك الحالي.",
     "tabRegister": "تسجيل",
     "tabSignIn": "تسجيل الدخول",
-    "checkingInvite": "جارٍ التحقق من حالة الدعوة...",
-    "inviteUnavailable": "التسجيل بدعوة غير متاح حالياً. لا يزال بإمكانك تسجيل الدخول من علامة التبويب التالية.",
     "tabExtension": "إضافة",
     "tabExtensionShort": "إضافة",
     "tabKey": "مفتاح",
@@ -473,8 +471,6 @@
     "errorFileEmpty": "تعذّر قراءة محتوى الملف.",
     "errorFileNoValidKey": "الملف لا يحتوي على مفتاح سري صالح.",
     "errorFileReadFailed": "تعذّرت قراءة الملف.",
-    "errorInviteValidationFailed": "تعذّر التحقق من رمز الدعوة",
-    "errorInviteCodeUsed": "تم استخدام رمز الدعوة هذا من قبل",
     "errorSignInStartFailed": "تعذّر بدء تسجيل الدخول",
     "subtitleCreate": "أعِدّ حسابك على Divine.",
     "createAccountButton": "إنشاء حساب",
@@ -1558,22 +1554,6 @@
     "cancel": "إلغاء",
     "confirm": "حذف التعليق",
     "deleting": "جارٍ الحذف..."
-  },
-  "inviteCodeForm": {
-    "label": "رمز الدعوة",
-    "placeholder": "الصق رمز الدعوة الخاص بك",
-    "checking": "جارٍ التحقق...",
-    "continue": "متابعة"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "انضم إلى Divine برمز الدعوة {{code}}",
-    "seoTitleDefault": "انضم إلى Divine",
-    "seoDescription": "لقد تلقيت دعوة! استخدم الرمز {{code}} للانضمام إلى Divine.",
-    "seoDescriptionDefault": "استخدم رمز الدعوة للانضمام إلى Divine وبدء مشاركة الفيديو.",
-    "heading": "أنت مدعو!",
-    "subheading": "أدخل رمز الدعوة للانضمام إلى Divine",
-    "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
-    "signIn": "تسجيل الدخول"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

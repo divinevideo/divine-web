@@ -51,6 +51,18 @@ vi.mock('./pages/ExitStartPage', () => ({
   ExitStartPage: () => <div data-testid="exit-start-page" />,
 }));
 
+vi.mock('./pages/Index', () => ({
+  default: () => <div data-testid="index-page" />,
+}));
+
+vi.mock('./pages/HomePage', () => ({
+  default: () => <div data-testid="home-page" />,
+}));
+
+vi.mock('./pages/CollabsPage', () => ({
+  default: () => <div data-testid="collabs-page" />,
+}));
+
 vi.mock('@/components/MarketingLayout', () => ({
   MarketingLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
@@ -71,6 +83,7 @@ describe('AppRouter', () => {
       user: undefined,
       isResolvingJwt: true,
     });
+    sessionStorage.clear();
     window.history.pushState({}, '', '/');
   });
 
@@ -92,6 +105,43 @@ describe('AppRouter', () => {
       expect(window.location.pathname).toBe('/discovery/hot');
     });
     expect(screen.getByTestId('discovery-page')).toBeInTheDocument();
+  });
+
+  it('redirects retired invite URLs to ordinary signup without retaining the code', async () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: undefined,
+      isResolvingJwt: false,
+    });
+    window.history.pushState({}, '', '/invite/ABCD-1234?utm_source=old-invite');
+
+    renderRouter();
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/');
+    });
+    expect(window.location.search).toBe('');
+    expect(sessionStorage.getItem('openSignup')).toBe('1');
+    expect(screen.getByTestId('index-page')).toBeInTheDocument();
+  });
+
+  it('redirects retired invite URLs away from signup while a session is active', async () => {
+    window.history.pushState({}, '', '/invite/ABCD-1234');
+
+    renderRouter();
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/home');
+    });
+    expect(sessionStorage.getItem('openSignup')).toBeNull();
+    expect(screen.getByTestId('home-page')).toBeInTheDocument();
+  });
+
+  it('keeps collaborator invitations routed separately', () => {
+    window.history.pushState({}, '', '/collabs/invite');
+
+    renderRouter();
+
+    expect(screen.getByTestId('collabs-page')).toBeInTheDocument();
   });
 
   it('routes the account portability entry point at /exit', () => {
