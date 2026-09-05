@@ -693,13 +693,13 @@
       "mastodon": "Poskan toot yang mengandungi teks di bawah, kemudian tampal ID Pos daripada URL.",
       "telegram": "Hantar mesej dalam saluran/kumpulan awam yang mengandungi teks di bawah, kemudian tampal laluan mesej (cth. namasaluran/123).",
       "bluesky": "Pos di Bluesky yang mengandungi teks di bawah, kemudian tampal kunci rekod (rkey) daripada URL pos.",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "Poskan mesej yang mengandungi teks di bawah, kemudian klik kanan mesej itu dan pilih “Copy Message Link” (salin pautan mesej). Jemputan pelayan tidak dapat membuktikan siapa pemilik sesuatu akaun. Masukkan nama pengguna Discord anda — yang ada pada profil anda, bukan nama paparan anda (Display Name)."
     },
     "toastErrorTitle": "Ralat",
     "toastEnterProof": "Sila masukkan URL atau ID bukti",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
-    "discordUsernamePlaceholder": "yourusername",
+    "toastInvalidDiscordLink": "Tampal pautan mesej Discord: klik kanan mesej anda dan pilih “Copy Message Link” (salin pautan mesej).",
+    "discordUsernameLabel": "Nama pengguna Discord anda",
+    "discordUsernamePlaceholder": "namapenggunaanda",
     "toastCannotDetermineUsername": "Tidak dapat menentukan nama pengguna daripada URL",
     "toastVerifiedTitle": "Disahkan!",
     "toastLinkedTitle": "Terpaut",

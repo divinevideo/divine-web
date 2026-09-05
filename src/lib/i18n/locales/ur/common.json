@@ -693,12 +693,12 @@
       "mastodon": "نیچے دیا گیا متن شامل toot پوسٹ کریں، پھر URL سے Post ID پیسٹ کریں۔",
       "telegram": "نیچے دیا گیا متن کسی عوامی چینل/گروپ میں بھیجیں، پھر پیغام کا پاتھ پیسٹ کریں (مثلاً channelname/123)۔",
       "bluesky": "نیچے دیا گیا متن Bluesky پر پوسٹ کریں، پھر پوسٹ URL سے record key (rkey) پیسٹ کریں۔",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "نیچے دیا گیا متن شامل پیغام پوسٹ کریں، پھر اس پر دایاں کلک کریں اور «Copy Message Link» (پیغام کا لنک کاپی کریں) منتخب کریں۔ سرور کا دعوت نامہ یہ ثابت نہیں کر سکتا کہ اکاؤنٹ کس کا ہے۔ اپنا Discord صارف نام درج کریں — وہ جو آپ کے پروفائل پر ہے، آپ کا ڈسپلے نام نہیں۔"
     },
     "toastErrorTitle": "خرابی",
     "toastEnterProof": "ثبوت کا URL یا ID درج کریں",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
+    "toastInvalidDiscordLink": "Discord پیغام کا لنک پیسٹ کریں: اپنے پیغام پر دایاں کلک کریں اور «Copy Message Link» (پیغام کا لنک کاپی کریں) منتخب کریں۔",
+    "discordUsernameLabel": "آپ کا Discord صارف نام",
     "discordUsernamePlaceholder": "yourusername",
     "toastCannotDetermineUsername": "URL سے صارف نام معلوم نہیں ہو سکا",
     "toastVerifiedTitle": "تصدیق ہو گئی!",

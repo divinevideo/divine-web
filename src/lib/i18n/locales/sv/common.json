@@ -693,13 +693,13 @@
       "mastodon": "Posta en toot som innehåller texten nedan, och klistra sedan in Post-ID:t från URL:en.",
       "telegram": "Skicka ett meddelande i en publik kanal/grupp som innehåller texten nedan, och klistra sedan in meddelandesökvägen (t.ex. channelname/123).",
       "bluesky": "Posta på Bluesky med texten nedan, och klistra sedan in record key (rkey) från inläggets URL.",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "Posta ett meddelande som innehåller texten nedan, högerklicka sedan på det och välj ”Kopiera meddelandelänk”. En serverinbjudan kan inte bevisa vem som äger ett konto. Ange ditt Discord-användarnamn — det som står på din profil, inte ditt visningsnamn."
     },
     "toastErrorTitle": "Fel",
     "toastEnterProof": "Ange bevis-URL eller -ID",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
-    "discordUsernamePlaceholder": "yourusername",
+    "toastInvalidDiscordLink": "Klistra in en länk till ett Discord-meddelande: högerklicka på ditt meddelande och välj ”Kopiera meddelandelänk”.",
+    "discordUsernameLabel": "Ditt Discord-användarnamn",
+    "discordUsernamePlaceholder": "dittanvandarnamn",
     "toastCannotDetermineUsername": "Kunde inte fastställa användarnamn från URL:en",
     "toastVerifiedTitle": "Verifierad!",
     "toastLinkedTitle": "Länkad",

@@ -693,13 +693,13 @@
       "mastodon": "Đăng một toot chứa đoạn văn bản bên dưới, rồi dán Post ID từ URL.",
       "telegram": "Gửi một tin nhắn trong kênh/nhóm công khai chứa đoạn văn bản bên dưới, rồi dán đường dẫn tin nhắn (ví dụ: channelname/123).",
       "bluesky": "Đăng trên Bluesky một bài chứa đoạn văn bản bên dưới, rồi dán record key (rkey) từ URL bài đăng.",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "Đăng một tin nhắn chứa đoạn văn bản bên dưới, rồi nhấp chuột phải vào tin nhắn đó và chọn “Sao Chép Đường Dẫn Tin Nhắn”. Lời mời vào máy chủ không thể chứng minh ai là chủ tài khoản. Nhập tên người dùng Discord của bạn — mục “Tên đăng nhập” trên hồ sơ của bạn, không phải tên hiển thị."
     },
     "toastErrorTitle": "Lỗi",
     "toastEnterProof": "Vui lòng nhập URL hoặc ID chứng minh",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
-    "discordUsernamePlaceholder": "yourusername",
+    "toastInvalidDiscordLink": "Dán liên kết tin nhắn Discord: nhấp chuột phải vào tin nhắn của bạn và chọn “Sao Chép Đường Dẫn Tin Nhắn”.",
+    "discordUsernameLabel": "Tên người dùng Discord của bạn",
+    "discordUsernamePlaceholder": "tennguoidung",
     "toastCannotDetermineUsername": "Không xác định được tên người dùng từ URL",
     "toastVerifiedTitle": "Đã xác minh!",
     "toastLinkedTitle": "Đã liên kết",

@@ -693,12 +693,12 @@
       "mastodon": "发一条包含以下文字的嘟文，然后从 URL 中粘贴帖子 ID。",
       "telegram": "在公开频道/群组发一条包含以下文字的消息，然后粘贴消息路径（例如 channelname/123）。",
       "bluesky": "在 Bluesky 上发一条包含以下文字的帖子，然后从帖子 URL 中粘贴记录键（rkey）。",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "发一条包含以下文字的消息，然后右键点击该消息并选择“复制消息链接”。服务器邀请链接无法证明账号归谁所有。请输入你的 Discord 用户名（个人资料上的用户名，不是昵称）。"
     },
     "toastErrorTitle": "出错",
     "toastEnterProof": "请输入证明 URL 或 ID",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
+    "toastInvalidDiscordLink": "请粘贴 Discord 消息链接：右键点击你的消息，然后选择“复制消息链接”。",
+    "discordUsernameLabel": "你的 Discord 用户名",
     "discordUsernamePlaceholder": "yourusername",
     "toastCannotDetermineUsername": "无法从 URL 判断用户名",
     "toastVerifiedTitle": "验证成功！",
