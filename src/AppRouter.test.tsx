@@ -4,8 +4,13 @@ import { createHead, UnheadProvider } from '@unhead/react/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppRouter from './AppRouter';
 
+interface CurrentUserMock {
+  user: { pubkey: string } | undefined;
+  isResolvingJwt: boolean;
+}
+
 const { mockUseCurrentUser } = vi.hoisted(() => ({
-  mockUseCurrentUser: vi.fn(() => ({
+  mockUseCurrentUser: vi.fn<() => CurrentUserMock>(() => ({
     user: undefined,
     isResolvingJwt: true,
   })),
@@ -125,6 +130,10 @@ describe('AppRouter', () => {
   });
 
   it('redirects retired invite URLs away from signup while a session is active', async () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: { pubkey: 'a'.repeat(64) },
+      isResolvingJwt: false,
+    });
     window.history.pushState({}, '', '/invite/ABCD-1234');
 
     renderRouter();
@@ -134,6 +143,15 @@ describe('AppRouter', () => {
     });
     expect(sessionStorage.getItem('openSignup')).toBeNull();
     expect(screen.getByTestId('home-page')).toBeInTheDocument();
+  });
+
+  it('waits for session restoration before choosing the invite redirect target', () => {
+    window.history.pushState({}, '', '/invite/ABCD-1234');
+
+    renderRouter();
+
+    expect(window.location.pathname).toBe('/invite/ABCD-1234');
+    expect(sessionStorage.getItem('openSignup')).toBeNull();
   });
 
   it('keeps collaborator invitations routed separately', () => {

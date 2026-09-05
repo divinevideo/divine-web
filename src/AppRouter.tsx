@@ -189,7 +189,15 @@ export function AppRouter() {
         <Route path="/get-embed" element={<GetEmbedPage />} />
         <Route path="/app/callback" element={<AppCallbackPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route path="/invite/:code" element={<LegacyInviteRedirectPage isLoggedIn={isLoggedIn} />} />
+        <Route
+          path="/invite/:code"
+          element={
+            <LegacyInviteRedirectPage
+              isLoggedIn={Boolean(user)}
+              isSessionResolving={isResolvingJwt}
+            />
+          }
+        />
 
         {/* Dev-only brand primitives preview — tree-shaken in production */}
         {import.meta.env.DEV && BrandPreview && (
