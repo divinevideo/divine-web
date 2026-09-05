@@ -155,7 +155,7 @@ describe('AppRouter', () => {
 
     expect(window.location.pathname).toBe('/invite/ABCD-1234');
     expect(sessionStorage.getItem('openSignup')).toBeNull();
-    expect(screen.getByRole('status', { name: 'Finishing sign-in' })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Verifying...' })).toBeInTheDocument();
 
     mockUseCurrentUser.mockReturnValue({
       user: undefined,

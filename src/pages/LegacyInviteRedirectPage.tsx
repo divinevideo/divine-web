@@ -33,7 +33,7 @@ export function LegacyInviteRedirectPage({
 
   return (
     <div
-      aria-label={t('authCallbackPage.finishingSignIn')}
+      aria-label={t('loginDialog.verifying')}
       className="flex min-h-screen items-center justify-center bg-background"
       role="status"
     >
