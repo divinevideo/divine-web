@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { LinkSimple as Link2, Plus, Trash as Trash2, PencilSimple as Pencil, CheckCircle as CheckCircle2, Warning as AlertTriangle, CircleNotch as Loader2, ArrowSquareOut as ExternalLink, GithubLogo as Github, ChatCircle as MessageCircle, At as AtSign, Shield, Copy, Check, X, ArrowLeft } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
-import { discordProofFromInput, isDiscordMessageLink } from '@/lib/discordProof';
+import { isDiscordMessageLink } from '@/lib/discordProof';
 
 // X/Twitter icon (simple)
 function XIcon({ className }: { className?: string }) {
@@ -85,11 +85,6 @@ const PROOF_PLACEHOLDERS: Record<string, string> = {
   tiktok: 'https://www.tiktok.com/@you/video/123456789',
 };
 
-// Platforms whose identity cannot be derived from the proof URL, so the user
-// has to type it. A Discord message link names a guild, a channel and a
-// message, never the author, so there is nothing to auto-detect.
-const MANUAL_IDENTITY_PLATFORMS = new Set(['discord']);
-
 /** Extract identity and proof from a URL, or return input as proof only */
 function extractFromUrl(platform: string, input: string): { identity?: string; proof: string } {
   const trimmed = input.trim();
@@ -134,7 +129,7 @@ function extractFromUrl(platform: string, input: string): { identity?: string; p
         // The proof is the message link, whole. Popping the last segment made
         // identity and proof both the message id, so the username became a
         // snowflake the verifier's author check could never match.
-        return discordProofFromInput(trimmed);
+        return { proof: trimmed };
       case 'youtube': {
         // https://www.youtube.com/@channel or /channel/UC... + proof from watch/shorts URLs
         const watchId = url.searchParams.get('v');
@@ -414,7 +409,7 @@ export default function LinkedAccountsSettingsPage() {
       // Refuse anything that is not a message link — an invite, a DM link, a
       // channel link, a look-alike host — rather than publishing it as a proof
       // that can never verify.
-      if (MANUAL_IDENTITY_PLATFORMS.has(platform) && !isDiscordMessageLink(cleanProof)) {
+      if (platform === 'discord' && !isDiscordMessageLink(cleanProof)) {
         toast({
           title: t('linkedAccountsSettings.toastErrorTitle'),
           description: t('linkedAccountsSettings.toastInvalidDiscordLink'),
@@ -429,7 +424,7 @@ export default function LinkedAccountsSettingsPage() {
       // the identity slot and the verifier could never match it.
       const cleanIdentity = extracted.identity
         || identity.trim()
-        || (MANUAL_IDENTITY_PLATFORMS.has(platform) ? '' : cleanProof);
+        || (platform === 'discord' ? '' : cleanProof);
       if (!cleanIdentity) {
         toast({ title: t('linkedAccountsSettings.toastErrorTitle'), description: t('linkedAccountsSettings.toastCannotDetermineUsername'), variant: 'destructive' });
         return;
@@ -636,7 +631,7 @@ export default function LinkedAccountsSettingsPage() {
           </Card>
 
           {/* The handle, where the proof link cannot carry it */}
-          {MANUAL_IDENTITY_PLATFORMS.has(platform) && (
+          {platform === 'discord' && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">
                 {t('linkedAccountsSettings.discordUsernameLabel')}
@@ -665,7 +660,7 @@ export default function LinkedAccountsSettingsPage() {
                 }
               }}
             />
-            {identity && !MANUAL_IDENTITY_PLATFORMS.has(platform) && (
+            {identity && platform !== 'discord' && (
               <p className="text-xs text-green-600">
                 {t('linkedAccountsSettings.detectedLabel')} <span className="font-medium">{identity}</span>
               </p>
@@ -683,7 +678,7 @@ export default function LinkedAccountsSettingsPage() {
               onClick={handleAdd}
               disabled={
                 !proof.trim()
-                || (MANUAL_IDENTITY_PLATFORMS.has(platform) && !identity.trim())
+                || (platform === 'discord' && !identity.trim())
                 || addIdentity.isPending
               }
               className="w-full"

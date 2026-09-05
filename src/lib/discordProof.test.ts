@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { discordProofFromInput, isDiscordMessageLink } from './discordProof';
+import { isDiscordMessageLink } from './discordProof';
 
 const GUILD = '1234567890123456789';
 const CHANNEL = '9876543210987654321';
@@ -33,29 +33,6 @@ describe('discordProof', () => {
 
     it('rejects a host that merely contains discord.com', () => {
       expect(isDiscordMessageLink(`https://discord.com.evil.example/channels/${GUILD}/${CHANNEL}/${MESSAGE}`)).toBe(false);
-    });
-  });
-
-  describe('discordProofFromInput', () => {
-    it('keeps the whole message link as the proof', () => {
-      // The verifier parses the URL itself, and a Discord message id is
-      // meaningless without the channel it lives in.
-      expect(discordProofFromInput(LINK).proof).toBe(LINK);
-    });
-
-    it('does not invent an identity from the message id', () => {
-      // A message URL names a guild, a channel and a message — never the
-      // author. Deriving one made the username a snowflake, which the
-      // verifier's author check can never match.
-      expect(discordProofFromInput(LINK).identity).toBeUndefined();
-    });
-
-    it('trims what a paste picked up', () => {
-      expect(discordProofFromInput(`  ${LINK}  `).proof).toBe(LINK);
-    });
-
-    it('passes a bare message id through unchanged', () => {
-      expect(discordProofFromInput(MESSAGE).proof).toBe(MESSAGE);
     });
   });
 });
