@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CircleNotch } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 interface LegacyInviteRedirectPageProps {
   hasUser: boolean;
@@ -12,6 +13,7 @@ export function LegacyInviteRedirectPage({
   isSessionResolving,
 }: LegacyInviteRedirectPageProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (isSessionResolving) {
@@ -31,7 +33,7 @@ export function LegacyInviteRedirectPage({
 
   return (
     <div
-      aria-label="Checking your session"
+      aria-label={t('authCallbackPage.finishingSignIn')}
       className="flex min-h-screen items-center justify-center bg-background"
       role="status"
     >

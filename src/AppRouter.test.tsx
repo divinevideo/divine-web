@@ -2,6 +2,8 @@ import { Outlet } from 'react-router-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import { createHead, UnheadProvider } from '@unhead/react/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { initializeI18n } from '@/lib/i18n';
 import AppRouter from './AppRouter';
 
 interface CurrentUserMock {
@@ -82,7 +84,7 @@ function renderRouter() {
 }
 
 describe('AppRouter', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockUseCurrentUser.mockReset();
     mockUseCurrentUser.mockReturnValue({
       user: undefined,
@@ -90,6 +92,7 @@ describe('AppRouter', () => {
     });
     sessionStorage.clear();
     window.history.pushState({}, '', '/');
+    await initializeI18n({ force: true, languages: ['en-US'] });
   });
 
   it('keeps analytics routed while a saved session is restoring', () => {
@@ -152,7 +155,7 @@ describe('AppRouter', () => {
 
     expect(window.location.pathname).toBe('/invite/ABCD-1234');
     expect(sessionStorage.getItem('openSignup')).toBeNull();
-    expect(screen.getByRole('status', { name: 'Checking your session' })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Finishing sign-in' })).toBeInTheDocument();
 
     mockUseCurrentUser.mockReturnValue({
       user: undefined,
