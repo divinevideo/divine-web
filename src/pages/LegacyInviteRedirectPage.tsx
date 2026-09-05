@@ -1,13 +1,14 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CircleNotch } from '@phosphor-icons/react';
 
 interface LegacyInviteRedirectPageProps {
-  isLoggedIn: boolean;
+  hasUser: boolean;
   isSessionResolving: boolean;
 }
 
 export function LegacyInviteRedirectPage({
-  isLoggedIn,
+  hasUser,
   isSessionResolving,
 }: LegacyInviteRedirectPageProps) {
   const navigate = useNavigate();
@@ -17,12 +18,24 @@ export function LegacyInviteRedirectPage({
       return;
     }
 
-    if (!isLoggedIn) {
+    if (!hasUser) {
       sessionStorage.setItem('openSignup', '1');
     }
 
-    navigate(isLoggedIn ? '/home' : '/', { replace: true });
-  }, [isLoggedIn, isSessionResolving, navigate]);
+    navigate(hasUser ? '/home' : '/', { replace: true });
+  }, [hasUser, isSessionResolving, navigate]);
 
-  return null;
+  if (!isSessionResolving) {
+    return null;
+  }
+
+  return (
+    <div
+      aria-label="Checking your session"
+      className="flex min-h-screen items-center justify-center bg-background"
+      role="status"
+    >
+      <CircleNotch aria-hidden="true" className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
 }

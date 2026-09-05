@@ -145,13 +145,29 @@ describe('AppRouter', () => {
     expect(screen.getByTestId('home-page')).toBeInTheDocument();
   });
 
-  it('waits for session restoration before choosing the invite redirect target', () => {
+  it('waits for session restoration before redirecting a stale session to signup', async () => {
     window.history.pushState({}, '', '/invite/ABCD-1234');
 
-    renderRouter();
+    const view = renderRouter();
 
     expect(window.location.pathname).toBe('/invite/ABCD-1234');
     expect(sessionStorage.getItem('openSignup')).toBeNull();
+    expect(screen.getByRole('status', { name: 'Checking your session' })).toBeInTheDocument();
+
+    mockUseCurrentUser.mockReturnValue({
+      user: undefined,
+      isResolvingJwt: false,
+    });
+    view.rerender(
+      <UnheadProvider head={createHead()}>
+        <AppRouter />
+      </UnheadProvider>,
+    );
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/');
+    });
+    expect(sessionStorage.getItem('openSignup')).toBe('1');
   });
 
   it('keeps collaborator invitations routed separately', () => {

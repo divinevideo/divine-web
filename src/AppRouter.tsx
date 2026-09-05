@@ -193,7 +193,7 @@ export function AppRouter() {
           path="/invite/:code"
           element={
             <LegacyInviteRedirectPage
-              isLoggedIn={Boolean(user)}
+              hasUser={Boolean(user)}
               isSessionResolving={isResolvingJwt}
             />
           }
