@@ -693,13 +693,13 @@
       "mastodon": "Plaats een toot met de onderstaande tekst en plak vervolgens de Post-ID uit de URL.",
       "telegram": "Stuur een bericht in een openbaar kanaal/groep met de onderstaande tekst en plak vervolgens het berichtpad (bijv. channelname/123).",
       "bluesky": "Post op Bluesky met de onderstaande tekst en plak vervolgens de record key (rkey) uit de post-URL.",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "Plaats een bericht met de onderstaande tekst, klik er dan met de rechtermuisknop op en kies ‘Kopieer berichtenlink’. Een serveruitnodiging kan niet bewijzen van wie een account is. Vul je Discord-gebruikersnaam in — die op je profiel, niet je weergavenaam."
     },
     "toastErrorTitle": "Fout",
     "toastEnterProof": "Voer de bewijs-URL of -ID in",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
-    "discordUsernamePlaceholder": "yourusername",
+    "toastInvalidDiscordLink": "Plak een link naar een Discord-bericht: klik met de rechtermuisknop op je bericht en kies ‘Kopieer berichtenlink’.",
+    "discordUsernameLabel": "Je Discord-gebruikersnaam",
+    "discordUsernamePlaceholder": "jegebruikersnaam",
     "toastCannotDetermineUsername": "Kon de gebruikersnaam niet uit de URL bepalen",
     "toastVerifiedTitle": "Geverifieerd!",
     "toastLinkedTitle": "Gekoppeld",

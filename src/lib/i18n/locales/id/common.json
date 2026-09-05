@@ -693,13 +693,13 @@
       "mastodon": "Post toot berisi teks di bawah, lalu tempel ID Post dari URL.",
       "telegram": "Kirim pesan di channel/grup publik berisi teks di bawah, lalu tempel path pesan (mis. namachannel/123).",
       "bluesky": "Post di Bluesky berisi teks di bawah, lalu tempel record key (rkey) dari URL post.",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "Post pesan berisi teks di bawah, lalu klik kanan pesan itu dan pilih “Copy Message Link” (salin tautan pesan). Undangan server tidak bisa membuktikan siapa pemilik sebuah akun. Masukkan username Discord kamu — yang ada di profilmu, bukan nama tampilanmu (Display Name)."
     },
     "toastErrorTitle": "Error",
     "toastEnterProof": "Silakan masukkan URL atau ID bukti",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
-    "discordUsernamePlaceholder": "yourusername",
+    "toastInvalidDiscordLink": "Tempel tautan pesan Discord: klik kanan pesanmu dan pilih “Copy Message Link” (salin tautan pesan).",
+    "discordUsernameLabel": "Username Discord kamu",
+    "discordUsernamePlaceholder": "namapenggunamu",
     "toastCannotDetermineUsername": "Tidak bisa menentukan username dari URL",
     "toastVerifiedTitle": "Terverifikasi!",
     "toastLinkedTitle": "Tertaut",

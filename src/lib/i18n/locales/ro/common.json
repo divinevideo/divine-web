@@ -700,13 +700,13 @@
       "mastodon": "Postează un toot care să conțină textul de mai jos, apoi lipește ID-ul postării din URL.",
       "telegram": "Trimite un mesaj într-un canal/grup public care să conțină textul de mai jos, apoi lipește calea mesajului (ex. nume_canal/123).",
       "bluesky": "Postează pe Bluesky un mesaj care să conțină textul de mai jos, apoi lipește cheia înregistrării (rkey) din URL-ul postării.",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "Postează un mesaj care să conțină textul de mai jos, apoi dă clic dreapta pe el și alege „Copiază link-ul mesajului”. O invitație pe un server nu poate dovedi cine deține un cont. Introdu numele tău de utilizator Discord — cel de pe profilul tău, nu numele afișat."
     },
     "toastErrorTitle": "Eroare",
     "toastEnterProof": "Te rugăm introdu URL-ul sau ID-ul dovezii",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
-    "discordUsernamePlaceholder": "yourusername",
+    "toastInvalidDiscordLink": "Lipește link-ul unui mesaj Discord: dă clic dreapta pe mesajul tău și alege „Copiază link-ul mesajului”.",
+    "discordUsernameLabel": "Numele tău de utilizator Discord",
+    "discordUsernamePlaceholder": "numedeutilizator",
     "toastCannotDetermineUsername": "Nu am putut determina numele de utilizator din URL",
     "toastVerifiedTitle": "Verificat!",
     "toastLinkedTitle": "Conectat",

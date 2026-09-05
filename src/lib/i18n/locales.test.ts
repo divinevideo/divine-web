@@ -178,6 +178,17 @@ const MUST_BE_TRANSLATED_PREFIXES = [
   'moderationSettings.noBlockedUsers',
   'moderationSettings.toastUnblockedDescription',
   'moderationSettings.toastUnblockFailed',
+  // Discord account-linking copy. #712 swapped the server-invite instruction
+  // for the message-link one and added the username label and the bad-link
+  // toast, all in English for every locale. The instruction and the toast
+  // quote a menu item in Discord's own client and the label separates the
+  // handle from the display name, so an English fallback is a wrong
+  // instruction, not merely an untranslated one. discordUsernamePlaceholder
+  // is deliberately absent: it is a sample handle, and locales that do not
+  // use a Latin script keep the English one.
+  'linkedAccountsSettings.proofInstructions.discord',
+  'linkedAccountsSettings.discordUsernameLabel',
+  'linkedAccountsSettings.toastInvalidDiscordLink',
 ];
 
 describe('i18n locale resources', () => {

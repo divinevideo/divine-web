@@ -707,13 +707,13 @@
       "mastodon": "Opublikuj toota z poniższym tekstem, potem wklej ID posta z URL.",
       "telegram": "Wyślij wiadomość na publicznym kanale/grupie z poniższym tekstem, potem wklej ścieżkę wiadomości (np. nazwakanalu/123).",
       "bluesky": "Opublikuj post na Bluesky z poniższym tekstem, potem wklej record key (rkey) z URL posta.",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "Opublikuj wiadomość z poniższym tekstem, potem kliknij ją prawym przyciskiem myszy i wybierz „Kopiuj link z wiadomością”. Zaproszenie na serwer nie dowodzi, kto jest właścicielem konta. Wpisz swoją nazwę użytkownika Discord — tę z profilu, nie wyświetlaną nazwę."
     },
     "toastErrorTitle": "Błąd",
     "toastEnterProof": "Wpisz URL lub ID dowodu",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
-    "discordUsernamePlaceholder": "yourusername",
+    "toastInvalidDiscordLink": "Wklej link do wiadomości na Discordzie: kliknij swoją wiadomość prawym przyciskiem myszy i wybierz „Kopiuj link z wiadomością”.",
+    "discordUsernameLabel": "Twoja nazwa użytkownika Discord",
+    "discordUsernamePlaceholder": "nazwauzytkownika",
     "toastCannotDetermineUsername": "Nie udało się ustalić nazwy użytkownika z URL",
     "toastVerifiedTitle": "Zweryfikowane!",
     "toastLinkedTitle": "Podłączone",

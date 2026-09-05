@@ -693,13 +693,13 @@
       "mastodon": "Aşağıdaki metni içeren bir toot paylaş, sonra URL'deki Post ID'sini yapıştır.",
       "telegram": "Herkese açık bir kanal/grupta aşağıdaki metni içeren bir mesaj gönder, sonra mesaj yolunu yapıştır (örn. kanaladi/123).",
       "bluesky": "Bluesky'da aşağıdaki metni içeren bir paylaşım yap, sonra gönderi URL'sinden record key'i (rkey) yapıştır.",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "Aşağıdaki metni içeren bir mesaj gönder, sonra mesaja sağ tıklayıp “Mesaj Bağlantısını Kopyala” seçeneğini seç. Bir sunucu daveti, bir hesabın kime ait olduğunu kanıtlayamaz. Discord kullanıcı adını gir — profilindeki kullanıcı adını, görünen adını değil."
     },
     "toastErrorTitle": "Hata",
     "toastEnterProof": "Lütfen kanıt URL'sini ya da ID'sini gir",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
-    "discordUsernamePlaceholder": "yourusername",
+    "toastInvalidDiscordLink": "Bir Discord mesaj bağlantısı yapıştır: mesajına sağ tıklayıp “Mesaj Bağlantısını Kopyala” seçeneğini seç.",
+    "discordUsernameLabel": "Discord kullanıcı adın",
+    "discordUsernamePlaceholder": "kullaniciadin",
     "toastCannotDetermineUsername": "URL'den kullanıcı adı belirlenemedi",
     "toastVerifiedTitle": "Doğrulandı!",
     "toastLinkedTitle": "Bağlandı",

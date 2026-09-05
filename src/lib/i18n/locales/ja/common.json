@@ -693,12 +693,12 @@
       "mastodon": "下のテキストを含むtootを投稿し、URLから投稿IDを貼り付けてください。",
       "telegram": "下のテキストを含むメッセージを公開チャンネル/グループに送信し、メッセージパス（例：channelname/123）を貼り付けてください。",
       "bluesky": "下のテキストを含む投稿をBlueskyに行い、投稿URLからレコードキー（rkey）を貼り付けてください。",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "下のテキストを含むメッセージを投稿し、そのメッセージを右クリックして「メッセージリンクをコピー」を選択してください。サーバーの招待リンクでは、アカウントの所有者を証明できません。Discordのユーザー名を入力してください。表示名ではなく、プロフィールに表示されるユーザー名です。"
     },
     "toastErrorTitle": "エラー",
     "toastEnterProof": "証明URLまたはIDを入力してください",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
+    "toastInvalidDiscordLink": "Discordのメッセージリンクを貼り付けてください。自分のメッセージを右クリックして「メッセージリンクをコピー」を選択します。",
+    "discordUsernameLabel": "あなたのDiscordユーザー名",
     "discordUsernamePlaceholder": "yourusername",
     "toastCannotDetermineUsername": "URLからユーザー名を特定できませんでした",
     "toastVerifiedTitle": "検証されました！",

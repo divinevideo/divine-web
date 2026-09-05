@@ -693,12 +693,12 @@
       "mastodon": "Mag-post ng toot na may laman ng teksto sa baba, tapos i-paste ang Post ID mula sa URL.",
       "telegram": "Magpadala ng mensahe sa public channel/group na may laman ng teksto sa baba, tapos i-paste ang path ng mensahe (hal. channelname/123).",
       "bluesky": "Mag-post sa Bluesky na may laman ng teksto sa baba, tapos i-paste ang record key (rkey) mula sa URL ng post.",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "Mag-post ng mensahe na may laman ng teksto sa baba, tapos i-right-click ito at piliin ang “Copy Message Link”. Hindi mapapatunayan ng server invite kung sino ang may-ari ng account. Ilagay ang iyong Discord username — ang nasa profile mo, hindi ang display name mo."
     },
     "toastErrorTitle": "May Problema",
     "toastEnterProof": "Ilagay ang URL o ID ng patunay",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
+    "toastInvalidDiscordLink": "Mag-paste ng link ng Discord message: i-right-click ang mensahe mo at piliin ang “Copy Message Link”.",
+    "discordUsernameLabel": "Ang iyong Discord username",
     "discordUsernamePlaceholder": "yourusername",
     "toastCannotDetermineUsername": "Hindi matukoy ang username mula sa URL",
     "toastVerifiedTitle": "Na-verify!",

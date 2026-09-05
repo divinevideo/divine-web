@@ -693,13 +693,13 @@
       "mastodon": "Poste einen Toot mit dem Text unten und füge dann die Post-ID aus der URL ein.",
       "telegram": "Sende eine Nachricht in einem öffentlichen Kanal/einer Gruppe mit dem Text unten und füge dann den Nachrichtenpfad ein (z. B. kanalname/123).",
       "bluesky": "Poste auf Bluesky mit dem Text unten und füge dann den Record Key (rkey) aus der Post-URL ein.",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "Poste eine Nachricht mit dem Text unten, klicke sie dann mit der rechten Maustaste an und wähle „Nachrichtenlink kopieren“. Eine Servereinladung kann nicht beweisen, wem ein Konto gehört. Gib deinen Discord-Benutzernamen ein — den in deinem Profil, nicht deinen Anzeigenamen."
     },
     "toastErrorTitle": "Fehler",
     "toastEnterProof": "Bitte gib die Nachweis-URL oder -ID ein",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
-    "discordUsernamePlaceholder": "yourusername",
+    "toastInvalidDiscordLink": "Füge einen Discord-Nachrichtenlink ein: Klicke deine Nachricht mit der rechten Maustaste an und wähle „Nachrichtenlink kopieren“.",
+    "discordUsernameLabel": "Dein Discord-Benutzername",
+    "discordUsernamePlaceholder": "deinbenutzername",
     "toastCannotDetermineUsername": "Nutzername konnte nicht aus der URL ermittelt werden",
     "toastVerifiedTitle": "Verifiziert!",
     "toastLinkedTitle": "Verknüpft",

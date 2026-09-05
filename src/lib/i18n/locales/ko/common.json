@@ -693,12 +693,12 @@
       "mastodon": "아래 텍스트가 포함된 toot을 게시한 다음 URL에서 게시물 ID를 붙여넣으세요.",
       "telegram": "아래 텍스트가 포함된 메시지를 공개 채널/그룹에 보낸 다음 메시지 경로(예: channelname/123)를 붙여넣으세요.",
       "bluesky": "아래 텍스트가 포함된 게시물을 Bluesky에 올린 다음 게시물 URL에서 record key(rkey)를 붙여넣으세요.",
-      "discord": "Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name."
+      "discord": "아래 텍스트가 포함된 메시지를 게시한 다음, 그 메시지를 마우스 오른쪽 버튼으로 클릭하고 ‘메시지 링크 복사’를 선택하세요. 서버 초대 링크로는 계정 소유자를 증명할 수 없어요. Discord 사용자명을 입력하세요. 별명이 아니라 프로필에 있는 사용자명이에요."
     },
     "toastErrorTitle": "오류",
     "toastEnterProof": "증명 URL이나 ID를 입력하세요",
-    "toastInvalidDiscordLink": "Paste a Discord message link: right-click your message and choose Copy Message Link.",
-    "discordUsernameLabel": "Your Discord username",
+    "toastInvalidDiscordLink": "Discord 메시지 링크를 붙여넣으세요. 메시지를 마우스 오른쪽 버튼으로 클릭하고 ‘메시지 링크 복사’를 선택하면 돼요.",
+    "discordUsernameLabel": "내 Discord 사용자명",
     "discordUsernamePlaceholder": "yourusername",
     "toastCannotDetermineUsername": "URL에서 사용자명을 알아낼 수 없어요",
     "toastVerifiedTitle": "확인됨!",
