@@ -187,7 +187,7 @@ const MUST_BE_TRANSLATED_PREFIXES = [
   // is deliberately absent: six locales intentionally keep the English
   // sample because their script cannot form a valid handle or, for Filipino,
   // the surrounding copy already uses the English word "username".
-  'linkedAccountsSettings.proofInstructions.discord',
+  'linkedAccountsSettings.proofInstructions.',
   'linkedAccountsSettings.discordUsernameLabel',
   'linkedAccountsSettings.toastInvalidDiscordLink',
 ];
