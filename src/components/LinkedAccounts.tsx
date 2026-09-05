@@ -83,13 +83,13 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
 
   // Seed from localStorage cache if available (skip stale 'manual' results so they get re-verified)
   const rawCached = identity.proof
-    ? getCachedVerification(identity.platform, identity.identity, identity.proof)
+    ? getCachedVerification(identity.platform, identity.identity, identity.proof, pubkey)
     : undefined;
   const cachedResult = rawCached?.error === 'manual' ? undefined : rawCached;
 
   // Eager verification — runs as soon as proof exists (uses verifyer service for all platforms)
   const verification = useQuery({
-    queryKey: ['identity-verify', identity.platform, identity.identity, identity.proof],
+    queryKey: ['identity-verify', pubkey, identity.platform, identity.identity, identity.proof],
     queryFn: () => verifyIdentityClaim(identity, pubkey),
     enabled: !!identity.proof,
     staleTime: 10 * 60 * 1000, // Cache 10 min (re-check periodically)

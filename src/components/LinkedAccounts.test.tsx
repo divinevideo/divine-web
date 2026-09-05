@@ -92,4 +92,43 @@ describe('LinkedAccounts', () => {
       expect(screen.queryByTestId('identity-badge-github')).not.toBeInTheDocument();
     });
   });
+
+  it('re-verifies the same claim for a different Nostr pubkey', async () => {
+    mockUseExternalIdentities.mockReturnValue({
+      data: [
+        {
+          platform: 'github',
+          identity: 'alice',
+          proof: 'abc123',
+          profileUrl: 'https://github.com/alice',
+          proofUrl: 'https://gist.github.com/alice/abc123',
+        },
+      ],
+      isLoading: false,
+    });
+    mockVerifyIdentityClaim
+      .mockResolvedValueOnce({ verified: true })
+      .mockResolvedValueOnce({ verified: false });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <LinkedAccounts pubkey={'a'.repeat(64)} />
+      </QueryClientProvider>,
+    );
+    await screen.findByTestId('identity-badge-github');
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <LinkedAccounts pubkey={'b'.repeat(64)} />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(mockVerifyIdentityClaim).toHaveBeenCalledTimes(2));
+    await waitFor(() => {
+      expect(screen.queryByTestId('identity-badge-github')).not.toBeInTheDocument();
+    });
+  });
 });

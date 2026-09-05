@@ -287,13 +287,24 @@ export async function verifyIdentityClaim(
   }
 
   // Check localStorage cache first (skip 'manual' so verifyer service gets a chance)
-  const cached = getCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof);
+  const cached = getCachedVerification(
+    cleanedIdentity.platform,
+    cleanedIdentity.identity,
+    cleanedIdentity.proof,
+    pubkey,
+  );
   if (cached && cached.error !== 'manual') return cached;
 
   // Try verification service if available
   const serviceResult = await verifyViaService(cleanedIdentity, pubkey);
   if (serviceResult) {
-    setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, serviceResult);
+    setCachedVerification(
+      cleanedIdentity.platform,
+      cleanedIdentity.identity,
+      cleanedIdentity.proof,
+      pubkey,
+      serviceResult,
+    );
     return serviceResult;
   }
 
@@ -316,7 +327,13 @@ export async function verifyIdentityClaim(
 
     if (!response.ok) {
       const result = { verified: false, error: `HTTP ${response.status}` };
-      setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, result);
+      setCachedVerification(
+        cleanedIdentity.platform,
+        cleanedIdentity.identity,
+        cleanedIdentity.proof,
+        pubkey,
+        result,
+      );
       return result;
     }
 
@@ -325,7 +342,13 @@ export async function verifyIdentityClaim(
 
     const found = expectedTexts.some((expected) => text.includes(expected));
     const result = { verified: found, error: found ? undefined : 'npub not found in proof' };
-    setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, result);
+    setCachedVerification(
+      cleanedIdentity.platform,
+      cleanedIdentity.identity,
+      cleanedIdentity.proof,
+      pubkey,
+      result,
+    );
     return result;
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Fetch failed';

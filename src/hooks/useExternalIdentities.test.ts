@@ -508,6 +508,7 @@ describe('verifyIdentityClaim', () => {
 
     expect(mockSetCached).toHaveBeenCalledWith(
       'github', 'alice', 'abc123',
+      TEST_PUBKEY,
       expect.objectContaining({ verified: expect.any(Boolean) }),
     );
   });
