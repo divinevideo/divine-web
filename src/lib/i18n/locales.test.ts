@@ -184,8 +184,9 @@ const MUST_BE_TRANSLATED_PREFIXES = [
   // quote a menu item in Discord's own client and the label separates the
   // handle from the display name, so an English fallback is a wrong
   // instruction, not merely an untranslated one. discordUsernamePlaceholder
-  // is deliberately absent: it is a sample handle, and locales that do not
-  // use a Latin script keep the English one.
+  // is deliberately absent: six locales intentionally keep the English
+  // sample because their script cannot form a valid handle or, for Filipino,
+  // the surrounding copy already uses the English word "username".
   'linkedAccountsSettings.proofInstructions.discord',
   'linkedAccountsSettings.discordUsernameLabel',
   'linkedAccountsSettings.toastInvalidDiscordLink',
