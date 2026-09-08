@@ -68,7 +68,7 @@ describe('FAQPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('explains follower/following counts and does not claim blocking changes them', () => {
+  it('explains follower/following counts and what a block does to each of them', () => {
     render(
       <MemoryRouter>
         <FAQPage />
@@ -86,11 +86,16 @@ describe('FAQPage', () => {
     expect(
       screen.getByText(/number of accounts that currently follow you/i),
     ).toBeInTheDocument();
-    // Accurate to shipped behavior: blocking does not change the public count.
+    // Accurate to shipped behavior, both directions. useBlockUser republishes
+    // kind 3 without the blocked pubkey (src/hooks/useBlockList.ts, asserted by
+    // "republishes kind 3 once without the blocked pubkey when target is
+    // followed"), so a block unfollows them and both counts move. It cannot
+    // retract their follow of you, which lives on their account.
     expect(
-      screen.getByText(
-        /blocking doesn't remove their follow or change public follower counts/i,
-      ),
+      screen.getByText(/blocking unfollows them too/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/your own follower count stays the same/i),
     ).toBeInTheDocument();
   });
 });

@@ -39,11 +39,14 @@ describe('prerendered FAQ parity', () => {
     expect(source).toContain(
       'Your follower count is the number of accounts that currently follow you',
     );
-    // Follower counts come from Funnelcake, which filters platform-banned,
-    // suspended, and vanished pubkeys — not the profile owner's mute list. A
-    // follow is a public Nostr event, so blocking cannot retract it.
+    // Blocking is a mute-list write *and* a kind-3 republish without the
+    // blocked pubkey (`src/hooks/useBlockList.ts`), so it unfollows them: the
+    // blocker's following count and the blocked account's follower count both
+    // drop. It cannot retract their follow of the blocker, which is a public
+    // event on their own account, so the blocker's follower count is unchanged.
     expect(source).toContain(
-      'blocking doesn\'t remove their follow or change public follower counts',
+      'blocking unfollows them too, so your following count drops by one and so does their follower count',
     );
+    expect(source).toContain('your own follower count stays the same');
   });
 });

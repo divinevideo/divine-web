@@ -826,9 +826,14 @@ export function FAQPage() {
                   </p>
                   <p>
                     When you block someone, Divine stops showing you their content and hides their
-                    interactions with you. Because Nostr is a public network, blocking doesn't remove
-                    their follow or change public follower counts, and it can't stop them from finding
-                    your public posts through another app or relay.
+                    interactions with you. If you were following them, blocking unfollows them too, so
+                    your following count drops by one and so does their follower count.
+                  </p>
+                  <p>
+                    Blocking does not touch their follow of you. A follow is a public Nostr event
+                    published from their account, not yours, so your own follower count stays the
+                    same. Blocking also can't stop them from finding your public posts through
+                    another app or relay.
                   </p>
                 </div>
               </FAQQuestion>
