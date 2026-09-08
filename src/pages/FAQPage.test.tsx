@@ -67,4 +67,30 @@ describe('FAQPage', () => {
       screen.getByText(/never merges, replaces, or deletes any other account/i),
     ).toBeInTheDocument();
   });
+
+  it('explains follower/following counts and does not claim blocking changes them', () => {
+    render(
+      <MemoryRouter>
+        <FAQPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /how does divine count followers and following\?/i,
+      }),
+    );
+
+    // Stable anchor the mobile Creator Analytics explanation deep-links to.
+    expect(document.getElementById('follower-counts')).toBeInTheDocument();
+    expect(
+      screen.getByText(/number of accounts that currently follow you/i),
+    ).toBeInTheDocument();
+    // Accurate to shipped behavior: blocking does not change the public count.
+    expect(
+      screen.getByText(
+        /blocking doesn't remove their follow or change public follower counts/i,
+      ),
+    ).toBeInTheDocument();
+  });
 });
