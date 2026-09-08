@@ -12,6 +12,10 @@ function collectIds(source: string, pattern: RegExp) {
   return [...source.matchAll(pattern)].map((match) => match[1]);
 }
 
+function countTags(source: string, pattern: RegExp) {
+  return [...source.matchAll(pattern)].length;
+}
+
 describe('prerendered FAQ parity', () => {
   // `npm run build` writes dist/faq/index.html from faq-content.html, so that
   // file — not FAQPage.tsx — is the document a visitor, a crawler, or a
@@ -19,14 +23,20 @@ describe('prerendered FAQ parity', () => {
   // React page alone is missing from the served HTML until the SPA boots, and
   // its #anchor does not exist for the browser to scroll to at all.
   it('mirrors every FAQ anchor from the React page into the prerendered page', () => {
-    const spaAnchors = collectIds(
-      readSource('src/pages/FAQPage.tsx'),
-      /<FAQQuestion\s+value="([^"]+)"/g,
-    );
-    const prerenderAnchors = collectIds(
-      readSource('scripts/prerender-content/faq-content.html'),
-      /<details\s+id="([^"]+)"/g,
-    );
+    const spaSource = readSource('src/pages/FAQPage.tsx');
+    const prerenderSource = readSource('scripts/prerender-content/faq-content.html');
+
+    const spaAnchors = collectIds(spaSource, /<FAQQuestion\s+value="([^"]+)"/g);
+    const prerenderAnchors = collectIds(prerenderSource, /<details\s+id="([^"]+)"/g);
+
+    // Both patterns assume the anchor attribute comes first. Writing
+    // <FAQQuestion question="..." value="..."> would drop that entry from
+    // spaAnchors, and the parity assertion below would pass while no longer
+    // covering it — a guardrail that silently stops guarding. Count every tag
+    // and require the extraction to have seen all of them, so an unexpected
+    // attribute order fails loudly here instead.
+    expect(spaAnchors).toHaveLength(countTags(spaSource, /<FAQQuestion[\s>]/g));
+    expect(prerenderAnchors).toHaveLength(countTags(prerenderSource, /<details[\s>]/g));
 
     expect(spaAnchors.length).toBeGreaterThan(0);
     expect(prerenderAnchors).toEqual(expect.arrayContaining(spaAnchors));
