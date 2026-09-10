@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { createHead, UnheadProvider } from '@unhead/react/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { getProductAnalyticsUtm } from '@/lib/analyticsClient';
 import { initializeI18n } from '@/lib/i18n';
 import AppRouter from './AppRouter';
 
@@ -115,12 +116,16 @@ describe('AppRouter', () => {
     expect(screen.getByTestId('discovery-page')).toBeInTheDocument();
   });
 
-  it('redirects retired invite URLs to ordinary signup without retaining the code', async () => {
+  it('redirects retired invite URLs to ordinary signup with sanitized campaign attribution', async () => {
     mockUseCurrentUser.mockReturnValue({
       user: undefined,
       isResolvingJwt: false,
     });
-    window.history.pushState({}, '', '/invite/ABCD-1234?utm_source=old-invite');
+    window.history.pushState(
+      {},
+      '',
+      '/invite/ABCD-1234?utm_source=Old-Invite&utm_campaign=launch-1&utm_term=secret&next=/admin',
+    );
 
     renderRouter();
 
@@ -129,6 +134,10 @@ describe('AppRouter', () => {
     });
     expect(window.location.search).toBe('');
     expect(sessionStorage.getItem('openSignup')).toBe('1');
+    expect(getProductAnalyticsUtm()).toEqual({
+      utm_source: 'old-invite',
+      utm_campaign: 'launch-1',
+    });
     expect(screen.getByTestId('index-page')).toBeInTheDocument();
   });
 

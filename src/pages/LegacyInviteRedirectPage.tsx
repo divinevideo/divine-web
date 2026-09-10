@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { CircleNotch } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 
+import { captureProductAnalyticsUtm } from '@/lib/analyticsClient';
+
 interface LegacyInviteRedirectPageProps {
   hasUser: boolean;
   isSessionResolving: boolean;
@@ -19,6 +21,8 @@ export function LegacyInviteRedirectPage({
     if (isSessionResolving) {
       return;
     }
+
+    captureProductAnalyticsUtm(window.location.search);
 
     if (!hasUser) {
       sessionStorage.setItem('openSignup', '1');
