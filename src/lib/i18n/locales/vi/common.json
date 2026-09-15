@@ -420,8 +420,6 @@
     "subtitleSignIn": "Đăng nhập tại login.divine.video bằng tài khoản hiện có của bạn.",
     "tabRegister": "Đăng ký",
     "tabSignIn": "Đăng nhập",
-    "checkingInvite": "Đang kiểm tra trạng thái thư mời...",
-    "inviteUnavailable": "Đăng ký bằng thư mời hiện chưa khả dụng. Bạn vẫn có thể đăng nhập ở tab bên cạnh.",
     "tabExtension": "Tiện ích mở rộng",
     "tabExtensionShort": "Ext",
     "tabKey": "Khóa",
@@ -453,8 +451,6 @@
     "errorFileEmpty": "Không đọc được nội dung file.",
     "errorFileNoValidKey": "File không chứa khóa bí mật hợp lệ.",
     "errorFileReadFailed": "Không đọc được file.",
-    "errorInviteValidationFailed": "Không xác thực được mã mời",
-    "errorInviteCodeUsed": "Mã mời này đã được sử dụng",
     "errorSignInStartFailed": "Không bắt đầu được đăng nhập",
     "subtitleCreate": "Thiết lập tài khoản Divine của bạn.",
     "createAccountButton": "Tạo tài khoản",
@@ -1462,22 +1458,6 @@
     "cancel": "Hủy",
     "confirm": "Xóa bình luận",
     "deleting": "Đang xóa..."
-  },
-  "inviteCodeForm": {
-    "label": "Mã mời",
-    "placeholder": "Dán mã mời của bạn",
-    "checking": "Đang kiểm tra...",
-    "continue": "Tiếp tục"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "Tham gia Divine với mã mời {{code}}",
-    "seoTitleDefault": "Tham gia Divine",
-    "seoDescription": "Bạn được mời rồi! Dùng mã mời {{code}} để tham gia Divine.",
-    "seoDescriptionDefault": "Dùng mã mời của bạn để tham gia Divine và bắt đầu chia sẻ video.",
-    "heading": "Bạn được mời rồi!",
-    "subheading": "Nhập mã mời để tham gia Divine",
-    "alreadyHaveAccount": "Đã có tài khoản?",
-    "signIn": "Đăng nhập"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Gặp lại Vine và cuộc chiến chống rác AI",

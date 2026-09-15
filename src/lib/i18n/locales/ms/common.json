@@ -420,8 +420,6 @@
     "subtitleSignIn": "Log masuk di login.divine.video dengan akaun sedia ada anda.",
     "tabRegister": "Daftar",
     "tabSignIn": "Log masuk",
-    "checkingInvite": "Menyemak status jemputan...",
-    "inviteUnavailable": "Pendaftaran jemputan tidak tersedia sekarang. Anda masih boleh log masuk di tab seterusnya.",
     "tabExtension": "Ekstensi",
     "tabExtensionShort": "Eks",
     "tabKey": "Kunci",
@@ -453,8 +451,6 @@
     "errorFileEmpty": "Tidak dapat membaca kandungan fail.",
     "errorFileNoValidKey": "Fail tidak mengandungi kunci rahsia yang sah.",
     "errorFileReadFailed": "Gagal membaca fail.",
-    "errorInviteValidationFailed": "Tidak dapat mengesahkan kod jemputan",
-    "errorInviteCodeUsed": "Kod jemputan ini telah digunakan",
     "errorSignInStartFailed": "Tidak dapat memulakan log masuk",
     "subtitleCreate": "Sediakan akaun Divine anda.",
     "createAccountButton": "Cipta akaun",
@@ -1462,22 +1458,6 @@
     "cancel": "Batal",
     "confirm": "Padam Komen",
     "deleting": "Memadam..."
-  },
-  "inviteCodeForm": {
-    "label": "Kod jemputan",
-    "placeholder": "Tampal kod jemputan anda",
-    "checking": "Menyemak...",
-    "continue": "Teruskan"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "Sertai Divine dengan kod jemputan {{code}}",
-    "seoTitleDefault": "Sertai Divine",
-    "seoDescription": "Anda dijemput! Gunakan kod jemputan {{code}} untuk menyertai Divine.",
-    "seoDescriptionDefault": "Gunakan kod jemputan anda untuk menyertai Divine dan mula berkongsi video.",
-    "heading": "Anda Dijemput!",
-    "subheading": "Masukkan kod jemputan anda untuk menyertai Divine",
-    "alreadyHaveAccount": "Sudah mempunyai akaun?",
-    "signIn": "Log masuk"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

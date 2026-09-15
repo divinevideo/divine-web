@@ -30,7 +30,6 @@ function getSurface(pathname: string): ProductAnalyticsV2Surface {
   ) return 'discovery';
   if (pathname.startsWith('/search')) return 'search_results';
   if (pathname.startsWith('/profile') || pathname.startsWith('/u/')) return 'profile';
-  if (pathname.startsWith('/invite/')) return 'registration';
   if (pathname.startsWith('/notifications')) return 'notifications';
   if (pathname.startsWith('/settings')) return 'settings';
   return 'unknown';
@@ -38,7 +37,6 @@ function getSurface(pathname: string): ProductAnalyticsV2Surface {
 
 function getLandingPage(pathname: string): ProductAnalyticsV2LandingPage | null {
   if (pathname === '/') return 'home';
-  if (pathname.startsWith('/invite/')) return 'invite';
   return null;
 }
 
@@ -49,6 +47,11 @@ export function AnalyticsPageTracker() {
 
   useEffect(() => {
     const pathname = location.pathname;
+
+    if (pathname.startsWith('/invite/')) {
+      return;
+    }
+
     const utm = captureProductAnalyticsUtm(location.search);
     const landingPage = getLandingPage(pathname);
 

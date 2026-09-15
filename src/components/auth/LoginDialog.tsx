@@ -88,11 +88,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ initialTab = 'signin', isOpen
 
     registrationRecordedRef.current = true;
     const pathname = window.location.pathname;
-    const entryPoint = pathname.startsWith('/invite')
-      ? 'invite'
-      : pathname === '/'
-        ? 'landing'
-        : 'unknown';
+    const entryPoint = pathname === '/' ? 'landing' : 'unknown';
     void trackProductEvent('registration_started', {
       entry_point: entryPoint,
       ...getProductAnalyticsUtm(),

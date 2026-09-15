@@ -97,7 +97,6 @@ if (result.token) {
   saveSession(result.token, null, false);
 }
 
-clearInviteHandoff();
 navigate(result.returnPath || '/home', { replace: true });
 ```
 

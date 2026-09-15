@@ -420,8 +420,6 @@
     "subtitleSignIn": "Conectează-te pe login.divine.video cu contul existent.",
     "tabRegister": "Înregistrare",
     "tabSignIn": "Conectare",
-    "checkingInvite": "Se verifică starea invitației...",
-    "inviteUnavailable": "Înscrierea pe bază de invitație nu e disponibilă acum. Te poți totuși conecta din tab-ul următor.",
     "tabExtension": "Extensie",
     "tabExtensionShort": "Ext",
     "tabKey": "Cheie",
@@ -453,8 +451,6 @@
     "errorFileEmpty": "Nu am putut citi conținutul fișierului.",
     "errorFileNoValidKey": "Fișierul nu conține o cheie secretă validă.",
     "errorFileReadFailed": "Citirea fișierului a eșuat.",
-    "errorInviteValidationFailed": "Codul de invitație nu poate fi validat",
-    "errorInviteCodeUsed": "Acest cod de invitație a fost deja folosit",
     "errorSignInStartFailed": "Conectarea nu poate fi pornită",
     "subtitleCreate": "Configurează-ți contul Divine.",
     "createAccountButton": "Creează cont",
@@ -1470,22 +1466,6 @@
     "cancel": "Anulează",
     "confirm": "Șterge comentariul",
     "deleting": "Se șterge..."
-  },
-  "inviteCodeForm": {
-    "label": "Cod de invitație",
-    "placeholder": "Lipește codul tău de invitație",
-    "checking": "Se verifică...",
-    "continue": "Continuă"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "Alătură-te Divine cu codul de invitație {{code}}",
-    "seoTitleDefault": "Alătură-te Divine",
-    "seoDescription": "Ai fost invitat! Folosește codul {{code}} ca să te alături Divine.",
-    "seoDescriptionDefault": "Folosește codul tău de invitație ca să te alături Divine și să începi să distribui video.",
-    "heading": "Ești invitat!",
-    "subheading": "Introdu codul de invitație ca să te alături Divine",
-    "alreadyHaveAccount": "Ai deja un cont?",
-    "signIn": "Conectează-te"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

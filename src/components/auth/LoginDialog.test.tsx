@@ -635,13 +635,12 @@ describe('LoginDialog', () => {
     expect(await screen.findByText(/Unable to start sign-up/i)).toBeInTheDocument();
   });
 
-  it('renders both auth tabs immediately without contacting the invite service', async () => {
+  it('renders both auth tabs without an availability request', async () => {
     const user = userEvent.setup();
     render(<LoginDialog isOpen onClose={vi.fn()} onLogin={vi.fn()} />);
 
     const registerTab = await screen.findByRole('tab', { name: /^Register$/i });
     expect(screen.getByRole('tab', { name: /^Sign in$/i })).toHaveAttribute('data-state', 'active');
-    expect(screen.queryByText(/Checking invite status/i)).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
 
     await user.click(registerTab);

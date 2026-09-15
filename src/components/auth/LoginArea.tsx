@@ -22,10 +22,9 @@ export function LoginArea({ className }: LoginAreaProps) {
   const [localLoginDialogOpen, setLocalLoginDialogOpen] = useState(false);
   const [localInitialTab, setLocalInitialTab] = useState<'register' | 'signin'>('signin');
 
-  // Open invite-first auth dialog via legacy #signup deep link handling in main.tsx
+  // Open registration from the legacy #signup deep link handling in main.tsx.
   useEffect(() => {
-    if (sessionStorage.getItem('openInviteAuth') || sessionStorage.getItem('openSignup')) {
-      sessionStorage.removeItem('openInviteAuth');
+    if (sessionStorage.getItem('openSignup')) {
       sessionStorage.removeItem('openSignup');
       setLocalInitialTab('register');
       setLocalLoginDialogOpen(true);

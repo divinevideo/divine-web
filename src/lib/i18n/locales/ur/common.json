@@ -420,8 +420,6 @@
     "subtitleSignIn": "اپنے موجودہ اکاؤنٹ سے login.divine.video پر سائن اِن کریں۔",
     "tabRegister": "رجسٹر",
     "tabSignIn": "سائن اِن",
-    "checkingInvite": "دعوت نامہ چیک ہو رہا ہے...",
-    "inviteUnavailable": "فی الحال دعوت نامے سے سائن اپ دستیاب نہیں۔ آپ اگلے ٹیب سے سائن اِن کر سکتے ہیں۔",
     "tabExtension": "ایکسٹینشن",
     "tabExtensionShort": "Ext",
     "tabKey": "کی",
@@ -453,8 +451,6 @@
     "errorFileEmpty": "فائل کا مواد نہیں پڑھا جا سکا۔",
     "errorFileNoValidKey": "فائل میں کوئی درست خفیہ کلید نہیں۔",
     "errorFileReadFailed": "فائل نہیں پڑھی جا سکی۔",
-    "errorInviteValidationFailed": "دعوت نامہ کوڈ کی تصدیق نہیں ہو سکی",
-    "errorInviteCodeUsed": "یہ دعوت نامہ کوڈ پہلے ہی استعمال ہو چکا ہے",
     "errorSignInStartFailed": "سائن اِن شروع نہیں ہو سکا",
     "subtitleCreate": "اپنا Divine اکاؤنٹ ترتیب دیں۔",
     "createAccountButton": "اکاؤنٹ بنائیں",
@@ -1462,22 +1458,6 @@
     "cancel": "منسوخ",
     "confirm": "تبصرہ ڈیلیٹ کریں",
     "deleting": "ڈیلیٹ ہو رہا ہے..."
-  },
-  "inviteCodeForm": {
-    "label": "دعوت نامہ کوڈ",
-    "placeholder": "اپنا دعوت نامہ کوڈ پیسٹ کریں",
-    "checking": "چیک ہو رہا ہے...",
-    "continue": "جاری رکھیں"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "دعوت نامہ کوڈ {{code}} سے Divine میں شامل ہوں",
-    "seoTitleDefault": "Divine میں شامل ہوں",
-    "seoDescription": "آپ کو دعوت ملی ہے! Divine میں شامل ہونے کے لیے دعوت نامہ کوڈ {{code}} استعمال کریں۔",
-    "seoDescriptionDefault": "Divine میں شامل ہونے اور ویڈیو شیئرنگ شروع کرنے کے لیے اپنا دعوت نامہ کوڈ استعمال کریں۔",
-    "heading": "آپ کو دعوت ہے!",
-    "subheading": "Divine میں شامل ہونے کے لیے اپنا دعوت نامہ کوڈ درج کریں",
-    "alreadyHaveAccount": "پہلے سے اکاؤنٹ ہے؟",
-    "signIn": "سائن اِن"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine کی واپسی اور AI slop کے خلاف جنگ",

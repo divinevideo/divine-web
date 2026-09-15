@@ -95,6 +95,8 @@ in the browser and presents the matching app-store link without automatically
 redirecting; unknown and desktop platforms receive every store choice.
 The retired `/discovery/new` chronological feed redirects to
 `/discovery/hot`; Discovery does not expose or mount an all-new-video feed.
+Retired `/invite/:code` links discard the obsolete code and redirect signed-out
+visitors to ordinary registration; signed-in visitors return to `/home`.
 `/discovery/:tab` accepts the built-in Discovery tabs plus the currently
 eligible server-configured featured tab slug, when Funnelcake serves one.
 Public profiles expose a compact mixed NIP-51 list shelf and a filterable

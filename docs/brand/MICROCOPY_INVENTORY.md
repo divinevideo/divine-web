@@ -180,9 +180,6 @@ updated EN files.
 | src/components/ZapDialog.tsx | 306 | toast() | Invoice copied. | Invoice copied. | done |
 | src/components/ZapDialog.tsx | 205 | placeholder | Custom amount |  |  |
 | src/components/ZapDialog.tsx | 212 | placeholder | Say something (optional) | Say something (optional) | done |
-| src/components/auth/InviteCodeForm.tsx | 37 | placeholder | Paste your invite code | Paste your invite code | done |
-| src/components/auth/InviteCodeForm.tsx | 53 | empty-state | No invite? Get on the waitlist.
-         |  |  |
 | src/components/auth/LoginDialog.tsx | 398 | placeholder | nsec1... |  |  |
 | src/components/auth/LoginDialog.tsx | 440 | placeholder | bunker:// |  |  |
 | src/components/auth/WaitlistForm.tsx | 55 | placeholder | you@example.com |  |  |

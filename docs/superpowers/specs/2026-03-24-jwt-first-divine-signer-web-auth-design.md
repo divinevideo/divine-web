@@ -1,7 +1,7 @@
 # JWT-First Divine Signer Web Auth Design
 
-**Date:** 2026-03-24  
-**Status:** Approved for planning  
+**Date:** 2026-03-24
+**Status:** Approved for planning
 **Scope:** Replace bunker-first web auth hydration with JWT-first `divine-signer` auth for standard `login.divine.video` users while preserving advanced manual signer login paths
 
 ## Goal
@@ -27,16 +27,15 @@ This is also the wrong architecture for the intended product. Standard web users
 
 ## Primary User Flows
 
-### 1. Existing or invited user completes `login.divine.video` auth
+### 1. User completes `login.divine.video` auth
 
-1. User starts sign-in or sign-up from the invite-first auth dialog.
+1. User starts sign-in or sign-up from the auth dialog.
 2. User completes OAuth at `login.divine.video`.
 3. Web returns to `/auth/callback` with an auth code.
 4. Web exchanges the code for a JWT-backed session.
 5. Web saves the JWT session locally.
-6. Web clears invite handoff state.
-7. Web navigates immediately back into the app.
-8. App initializes the REST signer from the saved JWT in the background and exposes the user as logged in.
+6. Web navigates immediately back into the app.
+7. App initializes the REST signer from the saved JWT in the background and exposes the user as logged in.
 
 ### 2. Logged-in web user publishes content
 
@@ -120,7 +119,6 @@ Manual account switching remains available only when the app is operating on man
 - parse the OAuth callback
 - exchange it through `@divinevideo/login`
 - save the JWT session
-- clear invite handoff
 - navigate to the stored return path or `/home`
 
 It should not:
@@ -180,7 +178,7 @@ It should not:
 
 ## Non-Goals
 
-- Do not redesign the invite-first login dialog again.
+- Do not redesign the login dialog again.
 - Do not remove advanced manual signer login options.
 - Do not implement mixed account switching between JWT auth and manual accounts.
 - Do not redesign cross-subdomain auth for manual logins in this pass.

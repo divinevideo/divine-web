@@ -420,8 +420,6 @@
     "subtitleSignIn": "既存のアカウントでlogin.divine.videoからサインインしてください。",
     "tabRegister": "登録",
     "tabSignIn": "サインイン",
-    "checkingInvite": "招待ステータスを確認中...",
-    "inviteUnavailable": "招待による登録は現在ご利用いただけません。次のタブからサインインできます。",
     "tabExtension": "拡張機能",
     "tabExtensionShort": "拡張",
     "tabKey": "キー",
@@ -453,8 +451,6 @@
     "errorFileEmpty": "ファイルの内容を読み込めませんでした。",
     "errorFileNoValidKey": "ファイルに有効な秘密鍵が含まれていません。",
     "errorFileReadFailed": "ファイルの読み込みに失敗しました。",
-    "errorInviteValidationFailed": "招待コードを検証できません",
-    "errorInviteCodeUsed": "この招待コードはすでに使用されています",
     "errorSignInStartFailed": "サインインを開始できません",
     "subtitleCreate": "Divineアカウントを設定しましょう。",
     "createAccountButton": "アカウントを作成",
@@ -1462,22 +1458,6 @@
     "cancel": "キャンセル",
     "confirm": "コメントを削除",
     "deleting": "削除中..."
-  },
-  "inviteCodeForm": {
-    "label": "招待コード",
-    "placeholder": "招待コードを貼り付けてください",
-    "checking": "確認中...",
-    "continue": "続ける"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "招待コード {{code}} でDivineに参加",
-    "seoTitleDefault": "Divineに参加",
-    "seoDescription": "招待されています！コード {{code}} を使ってDivineに参加しましょう。",
-    "seoDescriptionDefault": "招待コードを使ってDivineに参加し、動画の共有を始めましょう。",
-    "heading": "招待されています！",
-    "subheading": "Divineに参加するには招待コードを入力してください",
-    "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
-    "signIn": "サインイン"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",

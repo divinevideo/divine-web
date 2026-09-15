@@ -420,8 +420,6 @@
     "subtitleSignIn": "Zaloguj się na login.divine.video swoim kontem.",
     "tabRegister": "Rejestracja",
     "tabSignIn": "Zaloguj się",
-    "checkingInvite": "Sprawdzamy status zaproszenia...",
-    "inviteUnavailable": "Rejestracja przez zaproszenie chwilowo niedostępna. Możesz zalogować się w sąsiedniej zakładce.",
     "tabExtension": "Rozszerzenie",
     "tabExtensionShort": "Rozsz",
     "tabKey": "Klucz",
@@ -453,8 +451,6 @@
     "errorFileEmpty": "Nie udało się odczytać zawartości pliku.",
     "errorFileNoValidKey": "Plik nie zawiera prawidłowego klucza prywatnego.",
     "errorFileReadFailed": "Nie udało się odczytać pliku.",
-    "errorInviteValidationFailed": "Nie można zweryfikować kodu zaproszenia",
-    "errorInviteCodeUsed": "Ten kod zaproszenia został już użyty",
     "errorSignInStartFailed": "Nie można rozpocząć logowania",
     "subtitleCreate": "Skonfiguruj konto Divine.",
     "createAccountButton": "Utwórz konto",
@@ -1478,22 +1474,6 @@
     "cancel": "Anuluj",
     "confirm": "Usuń komentarz",
     "deleting": "Usuwanie..."
-  },
-  "inviteCodeForm": {
-    "label": "Kod zaproszenia",
-    "placeholder": "Wklej swój kod zaproszenia",
-    "checking": "Sprawdzanie...",
-    "continue": "Dalej"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "Dołącz do Divine z kodem zaproszenia {{code}}",
-    "seoTitleDefault": "Dołącz do Divine",
-    "seoDescription": "Masz zaproszenie! Użyj kodu {{code}}, aby dołączyć do Divine.",
-    "seoDescriptionDefault": "Użyj kodu zaproszenia, aby dołączyć do Divine i zacząć udostępniać wideo.",
-    "heading": "Masz zaproszenie!",
-    "subheading": "Wpisz kod zaproszenia, aby dołączyć do Divine",
-    "alreadyHaveAccount": "Masz już konto?",
-    "signIn": "Zaloguj się"
   },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
