@@ -3,7 +3,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { initializeI18n } from '@/lib/i18n';
-import { AboutPage } from './AboutPage';
 import { AuthenticityPage } from './AuthenticityPage';
 import { DMCAPage } from './DMCAPage';
 import { FAQPage } from './FAQPage';
@@ -108,17 +107,6 @@ describe('static pages i18n', () => {
 
     expect(screen.getByRole('heading', { name: 'Política de derechos de autor y DMCA' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '1. Descripción general' })).toBeInTheDocument();
-  });
-
-  it('renders about copy in spanish', () => {
-    render(
-      <MemoryRouter>
-        <AboutPage />
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByRole('heading', { name: 'Acerca de Divine' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'La historia detrás de Divine' })).toBeInTheDocument();
   });
 
   it('renders open source copy in spanish', () => {

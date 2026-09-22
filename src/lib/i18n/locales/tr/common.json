@@ -40,6 +40,7 @@
   },
   "footer": {
     "aboutDivine": "Divine hakkinda",
+    "vinesRecovered": "{{count}} Vine kurtarildi",
     "termsAndOpenSource": "Kosullar ve Acik Kaynak",
     "copyright": "© 2026 Divine"
   },

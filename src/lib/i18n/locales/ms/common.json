@@ -40,6 +40,7 @@
   },
   "footer": {
     "aboutDivine": "Perihal Divine",
+    "vinesRecovered": "{{count}} Vine dipulihkan",
     "termsAndOpenSource": "Terma & Sumber Terbuka",
     "copyright": "© 2026 Divine"
   },

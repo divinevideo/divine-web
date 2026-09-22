@@ -40,6 +40,7 @@
   },
   "footer": {
     "aboutDivine": "Giới thiệu về Divine",
+    "vinesRecovered": "Đã khôi phục {{count}} Vine",
     "termsAndOpenSource": "Điều khoản & Mã nguồn mở",
     "copyright": "© 2026 Divine"
   },

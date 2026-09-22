@@ -8,8 +8,10 @@ import { initializeI18n } from '@/lib/i18n';
 import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 import { AppSidebar } from './AppSidebar';
 import type { CategoryWithConfig } from '@/hooks/useCategories';
+import type { PlatformStats } from '@/hooks/usePlatformStats';
 
-const { mockNavigate, mockSetTheme, mockCategories, shell } = vi.hoisted(() => ({
+const { mockNavigate, mockSetTheme, mockCategories, shell, mockStats } = vi.hoisted(() => ({
+  mockStats: { current: undefined as PlatformStats | undefined },
   mockNavigate: vi.fn(),
   mockSetTheme: vi.fn(),
   mockCategories: [] as CategoryWithConfig[],
@@ -21,6 +23,10 @@ const { mockNavigate, mockSetTheme, mockCategories, shell } = vi.hoisted(() => (
 
 vi.mock('@/hooks/useCategories', () => ({
   useCategories: () => ({ data: mockCategories }),
+}));
+
+vi.mock('@/hooks/usePlatformStats', () => ({
+  usePlatformStats: () => ({ data: mockStats.current }),
 }));
 
 vi.mock('@/hooks/useTheme', () => ({
@@ -60,6 +66,7 @@ vi.mock('@/hooks/useRssFeedAvailable', () => ({
 
 describe('AppSidebar', () => {
   beforeEach(async () => {
+    mockStats.current = { total_events: 0, total_videos: 0, vine_videos: 2158963 };
     const storage = new Map<string, string>();
 
     Object.defineProperty(window, 'localStorage', {
@@ -129,18 +136,26 @@ describe('AppSidebar', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/delete-account');
   });
 
-  it('hides the sidebar imported Vines total', () => {
-    const fetchSpy = vi.fn();
-    vi.stubGlobal('fetch', fetchSpy);
-
+  it('shows the sidebar imported Vines total', () => {
     render(
       <MemoryRouter>
         <AppSidebar />
       </MemoryRouter>,
     );
 
+    expect(screen.getByText(/2,158,963 vines (recovered|recuperados)/i)).toBeInTheDocument();
+  });
+
+  it('does not show a zero archive total', () => {
+    // Funnelcake answers 200 with vine_videos: 0 when its count query fails,
+    // so a zero means "unknown", not "none recovered".
+    mockStats.current = { total_events: 0, total_videos: 0, vine_videos: 0 };
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
     expect(screen.queryByText(/vines (recovered|recuperados)/i)).not.toBeInTheDocument();
-    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('shows both store badges', () => {
