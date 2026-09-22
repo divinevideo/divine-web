@@ -1540,5 +1540,27 @@
     "searchUnavailable": "Zoeken lukt nu niet. Opnieuw proberen?",
     "noFollowers": "Nog geen volgers.",
     "noFollowing": "Volgt nog niemand."
+  },
+  "supporters": {
+    "chip": "Supporter",
+    "title": "Divine-supporters",
+    "intro": "Help Divine onafhankelijk, menselijk en voor iedereen toegankelijk te houden.",
+    "membership": "Je supporterlidmaatschap",
+    "thankYou": "Bedankt dat je Divine steunt.",
+    "thanksDetail": "Jouw steun helpt deze plek voor mensen te behouden. Fijn dat je er bent.",
+    "showChip": "Mijn supporterbadge op mijn profiel tonen",
+    "privacy": "Je lidmaatschap is standaard privé. Zet dit aan om je badge openbaar te tonen. Je kunt dit altijd wijzigen.",
+    "check": "Supporterstatus controleren",
+    "checking": "Supporterstatus wordt gecontroleerd…",
+    "checkHint": "Al supporter? Controleer het lidmaatschap van dit account. Je ondertekenaar kan om toestemming vragen.",
+    "checkError": "We konden je supporterstatus niet controleren. Probeer het opnieuw.",
+    "unknown": "Je supporterstatus is nog niet bevestigd. Controleer opnieuw voordat je nog een aankoop doet.",
+    "saveError": "We konden je zichtbaarheidskeuze niet opslaan. Probeer het opnieuw.",
+    "purchaseInstructions": "Word supporter in de mobiele Divine-app: meld je aan met hetzelfde account en open het supportergedeelte in de instellingen. Al gekocht? Herstel je aankoop daar en controleer je status hier.",
+    "getApp": "Download de app om supporter te worden",
+    "verificationPrerequisite": "Word supporter om verificatie aan te vragen",
+    "verificationNext": "Je volgende stap: verificatie",
+    "verificationDetail": "Een supporterlidmaatschap is vereist om verificatie aan te vragen. Het verifieert je identiteit niet en garandeert geen goedkeuring. Je kunt bestaande accounts koppelen om identiteitsbewijzen te delen.",
+    "linkAccounts": "Ga naar gekoppelde accounts"
   }
 }

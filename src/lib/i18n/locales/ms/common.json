@@ -1540,5 +1540,27 @@
     "searchUnavailable": "Carian tidak dapat dibuat sekarang. Cuba lagi?",
     "noFollowers": "Belum ada pengikut.",
     "noFollowing": "Belum mengikuti sesiapa."
+  },
+  "supporters": {
+    "chip": "Penyokong",
+    "title": "Penyokong Divine",
+    "intro": "Bantu Divine kekal bebas, berteraskan manusia dan terbuka kepada semua.",
+    "membership": "Keahlian penyokong anda",
+    "thankYou": "Terima kasih kerana menyokong Divine.",
+    "thanksDetail": "Sokongan anda membantu mengekalkan ruang ini untuk manusia. Kami gembira anda di sini.",
+    "showChip": "Paparkan lencana penyokong pada profil saya",
+    "privacy": "Keahlian anda adalah peribadi secara lalai. Hidupkan pilihan ini untuk memaparkan lencana anda secara umum. Anda boleh menukarnya pada bila-bila masa.",
+    "check": "Semak status penyokong",
+    "checking": "Menyemak status penyokong…",
+    "checkHint": "Sudah menjadi penyokong? Semak keahlian akaun ini. Alat tandatangan anda mungkin meminta kebenaran.",
+    "checkError": "Kami tidak dapat menyemak status penyokong anda. Cuba lagi.",
+    "unknown": "Status penyokong anda belum disahkan. Semak semula sebelum membuat pembelian lain.",
+    "saveError": "Kami tidak dapat menyimpan pilihan paparan anda. Cuba lagi.",
+    "purchaseInstructions": "Jadi penyokong dalam aplikasi mudah alih Divine: log masuk dengan akaun yang sama, kemudian buka bahagian penyokong dalam Tetapan. Sudah membeli? Pulihkan pembelian di sana, kemudian semak status anda di sini.",
+    "getApp": "Dapatkan aplikasi untuk menjadi penyokong",
+    "verificationPrerequisite": "Jadi penyokong untuk memohon pengesahan",
+    "verificationNext": "Langkah seterusnya: pengesahan",
+    "verificationDetail": "Keahlian penyokong diperlukan untuk memohon pengesahan. Keahlian tidak mengesahkan identiti anda atau menjamin kelulusan. Anda boleh memautkan akaun sedia ada untuk berkongsi bukti identiti.",
+    "linkAccounts": "Teruskan ke akaun yang dipautkan"
   }
 }

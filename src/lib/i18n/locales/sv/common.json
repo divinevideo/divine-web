@@ -1540,5 +1540,27 @@
     "searchUnavailable": "Det gick inte att söka nu. Försöka igen?",
     "noFollowers": "Inga följare än.",
     "noFollowing": "Följer ingen än."
+  },
+  "supporters": {
+    "chip": "Supporter",
+    "title": "Divine-supportrar",
+    "intro": "Hjälp Divine att förbli oberoende, mänskligt och öppet för alla.",
+    "membership": "Ditt supportermedlemskap",
+    "thankYou": "Tack för att du stöttar Divine.",
+    "thanksDetail": "Ditt stöd hjälper oss att behålla den här platsen för människor. Vi är glada att du är här.",
+    "showChip": "Visa mitt supportermärke på min profil",
+    "privacy": "Ditt medlemskap är privat som standard. Aktivera detta för att visa märket offentligt. Du kan ändra det när som helst.",
+    "check": "Kontrollera supporterstatus",
+    "checking": "Kontrollerar supporterstatus…",
+    "checkHint": "Redan supporter? Kontrollera medlemskapet för det här kontot. Ditt signeringsverktyg kan be om tillåtelse.",
+    "checkError": "Vi kunde inte kontrollera din supporterstatus. Försök igen.",
+    "unknown": "Din supporterstatus är inte bekräftad än. Kontrollera igen innan du gör ett nytt köp.",
+    "saveError": "Vi kunde inte spara ditt synlighetsval. Försök igen.",
+    "purchaseInstructions": "Bli supporter i Divines mobilapp: logga in med samma konto och öppna supporterdelen i inställningarna. Redan köpt? Återställ köpet där och kontrollera din status här.",
+    "getApp": "Hämta appen för att bli supporter",
+    "verificationPrerequisite": "Bli supporter för att ansöka om verifiering",
+    "verificationNext": "Ditt nästa steg: verifiering",
+    "verificationDetail": "Supportermedlemskap krävs för att ansöka om verifiering. Det verifierar inte din identitet och garanterar inget godkännande. Du kan länka befintliga konton för att dela identitetsbevis.",
+    "linkAccounts": "Fortsätt till länkade konton"
   }
 }

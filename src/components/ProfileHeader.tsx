@@ -1,3 +1,4 @@
+import { OwnSupporterRecognition, PublicSupporterRecognition } from '@/components/SupporterRecognition';
 // ABOUTME: Profile header component showing user avatar, bio, stats, and follow button
 // ABOUTME: Displays user metadata, social stats, and follow/unfollow functionality
 
@@ -263,6 +264,7 @@ export function ProfileHeader({
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
+                {isOwnProfile ? <OwnSupporterRecognition /> : <PublicSupporterRecognition pubkey={pubkey} />}
                 {/* Show NIP-05 with visual feedback based on validation state */}
                 {nip05 ? (
                   <div className="flex items-center gap-1 justify-center sm:justify-start">

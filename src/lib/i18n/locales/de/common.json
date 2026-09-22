@@ -1540,5 +1540,27 @@
     "searchUnavailable": "Die Suche klappt gerade nicht. Noch mal versuchen?",
     "noFollowers": "Noch keine Follower.",
     "noFollowing": "Folgt noch niemandem."
+  },
+  "supporters": {
+    "chip": "Unterstützer",
+    "title": "Divine-Supporter",
+    "intro": "Hilf mit, Divine unabhängig, menschlich und für alle offen zu halten.",
+    "membership": "Deine Unterstützer-Mitgliedschaft",
+    "thankYou": "Danke, dass du Divine unterstützt.",
+    "thanksDetail": "Deine Unterstützung hilft, diesen Ort für Menschen zu bewahren. Schön, dass du da bist.",
+    "showChip": "Mein Unterstützer-Abzeichen im Profil anzeigen",
+    "privacy": "Deine Mitgliedschaft ist standardmäßig privat. Aktiviere diese Option, um dein Abzeichen öffentlich zu zeigen. Du kannst das jederzeit ändern.",
+    "check": "Unterstützerstatus prüfen",
+    "checking": "Unterstützerstatus wird geprüft…",
+    "checkHint": "Schon Unterstützer? Prüfe die Mitgliedschaft dieses Kontos. Dein Signierprogramm kann um Zustimmung bitten.",
+    "checkError": "Dein Unterstützerstatus konnte nicht geprüft werden. Versuch es erneut.",
+    "unknown": "Dein Unterstützerstatus ist noch nicht bestätigt. Prüfe ihn erneut, bevor du noch einmal kaufst.",
+    "saveError": "Deine Anzeigeeinstellung konnte nicht gespeichert werden. Versuch es erneut.",
+    "purchaseInstructions": "Werde Unterstützer in der mobilen Divine-App: Melde dich mit demselben Konto an und öffne den Unterstützerbereich in den Einstellungen. Schon gekauft? Stelle den Kauf dort wieder her und prüfe deinen Status hier.",
+    "getApp": "App holen und Unterstützer werden",
+    "verificationPrerequisite": "Werde Unterstützer, um eine Verifizierung zu beantragen",
+    "verificationNext": "Dein nächster Schritt: Verifizierung",
+    "verificationDetail": "Eine Unterstützer-Mitgliedschaft ist Voraussetzung für einen Verifizierungsantrag. Sie bestätigt weder deine Identität noch garantiert sie eine Genehmigung. Du kannst bestehende Konten verknüpfen, um Identitätsnachweise zu teilen.",
+    "linkAccounts": "Weiter zu verknüpften Konten"
   }
 }

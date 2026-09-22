@@ -1556,5 +1556,27 @@
     "searchUnavailable": "Wyszukiwanie teraz nie działa. Spróbować ponownie?",
     "noFollowers": "Brak obserwujących.",
     "noFollowing": "Jeszcze nikogo nie obserwuje."
+  },
+  "supporters": {
+    "chip": "Wspierający",
+    "title": "Wspierający Divine",
+    "intro": "Pomóż zachować niezależność Divine i przestrzeń dla ludzi, otwartą dla wszystkich.",
+    "membership": "Twoja subskrypcja wspierającego",
+    "thankYou": "Dziękujemy za wspieranie Divine.",
+    "thanksDetail": "Twoje wsparcie pomaga zachować to miejsce dla ludzi. Cieszymy się, że tu jesteś.",
+    "showChip": "Pokaż odznakę wspierającego na moim profilu",
+    "privacy": "Twoja subskrypcja jest domyślnie prywatna. Włącz tę opcję, aby pokazać odznakę publicznie. Możesz to zmienić w każdej chwili.",
+    "check": "Sprawdź status wspierającego",
+    "checking": "Sprawdzanie statusu…",
+    "checkHint": "Już wspierasz? Sprawdź subskrypcję tego konta. Narzędzie do podpisywania może poprosić o zgodę.",
+    "checkError": "Nie udało się sprawdzić twojego statusu. Spróbuj ponownie.",
+    "unknown": "Twój status wspierającego nie został jeszcze potwierdzony. Sprawdź ponownie przed kolejnym zakupem.",
+    "saveError": "Nie udało się zapisać ustawienia widoczności. Spróbuj ponownie.",
+    "purchaseInstructions": "Zostań wspierającym w aplikacji mobilnej Divine: zaloguj się na to samo konto i otwórz sekcję wspierających w ustawieniach. Zakup już zrobiony? Przywróć go w aplikacji, a następnie sprawdź status tutaj.",
+    "getApp": "Pobierz aplikację, aby wspierać",
+    "verificationPrerequisite": "Zostań wspierającym, aby ubiegać się o weryfikację",
+    "verificationNext": "Następny krok: weryfikacja",
+    "verificationDetail": "Subskrypcja wspierającego jest wymagana do złożenia wniosku o weryfikację. Nie potwierdza tożsamości ani nie gwarantuje zatwierdzenia. Możesz połączyć istniejące konta, aby udostępnić dowody tożsamości.",
+    "linkAccounts": "Przejdź do połączonych kont"
   }
 }

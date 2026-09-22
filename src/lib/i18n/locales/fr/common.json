@@ -1548,5 +1548,27 @@
     "searchUnavailable": "Recherche impossible pour le moment. Réessayer ?",
     "noFollowers": "Pas encore d’abonnés.",
     "noFollowing": "Ne suit encore personne."
+  },
+  "supporters": {
+    "chip": "Soutien",
+    "title": "Supporters Divine",
+    "intro": "Aidez Divine à rester indépendant, humain et ouvert à tous.",
+    "membership": "Votre abonnement de soutien",
+    "thankYou": "Merci de soutenir Divine.",
+    "thanksDetail": "Votre soutien aide à préserver cet espace pour les humains. Heureux de vous y retrouver.",
+    "showChip": "Afficher mon badge de soutien sur mon profil",
+    "privacy": "Votre abonnement est privé par défaut. Activez cette option pour afficher votre badge publiquement. Vous pouvez changer d’avis à tout moment.",
+    "check": "Vérifier mon statut de soutien",
+    "checking": "Vérification du statut…",
+    "checkHint": "Déjà membre de soutien ? Vérifiez l’abonnement de ce compte. Votre outil de signature peut demander votre autorisation.",
+    "checkError": "Impossible de vérifier votre statut de soutien. Réessayez.",
+    "unknown": "Votre statut de soutien n’est pas encore confirmé. Vérifiez à nouveau avant de refaire un achat.",
+    "saveError": "Impossible d’enregistrer votre préférence d’affichage. Réessayez.",
+    "purchaseInstructions": "Abonnez-vous dans l’application mobile Divine : connectez-vous avec ce même compte, puis ouvrez la rubrique de soutien dans les paramètres. Déjà acheté ? Restaurez votre achat dans l’application, puis vérifiez votre statut ici.",
+    "getApp": "Télécharger l’application pour soutenir Divine",
+    "verificationPrerequisite": "Devenez membre de soutien pour demander la vérification",
+    "verificationNext": "Prochaine étape : la vérification",
+    "verificationDetail": "Un abonnement de soutien est nécessaire pour demander la vérification. Il ne vérifie pas votre identité et ne garantit pas l’approbation. Vous pouvez lier vos comptes existants pour partager des preuves d’identité.",
+    "linkAccounts": "Accéder aux comptes liés"
   }
 }

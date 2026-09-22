@@ -1540,5 +1540,27 @@
     "searchUnavailable": "Pencarian sedang tidak bisa. Coba lagi?",
     "noFollowers": "Belum ada pengikut.",
     "noFollowing": "Belum mengikuti siapa pun."
+  },
+  "supporters": {
+    "chip": "Pendukung",
+    "title": "Pendukung Divine",
+    "intro": "Bantu Divine tetap mandiri, berpusat pada manusia, dan terbuka untuk semua.",
+    "membership": "Keanggotaan pendukungmu",
+    "thankYou": "Terima kasih telah mendukung Divine.",
+    "thanksDetail": "Dukunganmu membantu menjaga tempat ini untuk manusia. Senang kamu ada di sini.",
+    "showChip": "Tampilkan lencana pendukung di profil saya",
+    "privacy": "Keanggotaanmu bersifat pribadi secara bawaan. Aktifkan ini untuk menampilkan lencana secara publik. Kamu bisa mengubahnya kapan saja.",
+    "check": "Periksa status pendukung",
+    "checking": "Memeriksa status pendukung…",
+    "checkHint": "Sudah menjadi pendukung? Periksa keanggotaan akun ini. Alat penandatanganmu mungkin meminta persetujuan.",
+    "checkError": "Kami tidak dapat memeriksa status pendukungmu. Coba lagi.",
+    "unknown": "Status pendukungmu belum dikonfirmasi. Periksa lagi sebelum membeli kembali.",
+    "saveError": "Kami tidak dapat menyimpan pilihan tampilanmu. Coba lagi.",
+    "purchaseInstructions": "Jadi pendukung di aplikasi seluler Divine: masuk dengan akun yang sama, lalu buka bagian pendukung di Pengaturan. Sudah membeli? Pulihkan pembelian di sana, lalu periksa statusmu di sini.",
+    "getApp": "Unduh aplikasi untuk menjadi pendukung",
+    "verificationPrerequisite": "Jadi pendukung untuk mengajukan verifikasi",
+    "verificationNext": "Langkah berikutnya: verifikasi",
+    "verificationDetail": "Keanggotaan pendukung adalah syarat untuk mengajukan verifikasi. Keanggotaan tidak memverifikasi identitasmu atau menjamin persetujuan. Kamu bisa menautkan akun yang sudah ada untuk membagikan bukti identitas.",
+    "linkAccounts": "Lanjut ke akun tertaut"
   }
 }

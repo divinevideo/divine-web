@@ -1548,5 +1548,27 @@
     "searchUnavailable": "No se pudo buscar ahora. ¿Lo intentamos de nuevo?",
     "noFollowers": "Todavía no hay seguidores.",
     "noFollowing": "Todavía no sigue a nadie."
+  },
+  "supporters": {
+    "chip": "Colaborador",
+    "title": "Supporters de Divine",
+    "intro": "Ayuda a mantener Divine independiente, humano y abierto a todo el mundo.",
+    "membership": "Tu suscripción de colaborador",
+    "thankYou": "Gracias por apoyar a Divine.",
+    "thanksDetail": "Tu apoyo ayuda a mantener este espacio para las personas. Nos alegra que estés aquí.",
+    "showChip": "Mostrar mi distintivo de colaborador en mi perfil",
+    "privacy": "Tu suscripción es privada por defecto. Activa esta opción para mostrar tu distintivo públicamente. Puedes cambiarla cuando quieras.",
+    "check": "Consultar estado de colaborador",
+    "checking": "Consultando estado de colaborador…",
+    "checkHint": "¿Ya colaboras? Consulta la suscripción de esta cuenta. Tu firmante podría pedirte autorización.",
+    "checkError": "No pudimos consultar tu estado de colaborador. Inténtalo de nuevo.",
+    "unknown": "Tu estado de colaborador aún no está confirmado. Vuelve a consultarlo antes de comprar otra vez.",
+    "saveError": "No pudimos guardar tu preferencia de reconocimiento. Inténtalo de nuevo.",
+    "purchaseInstructions": "Suscríbete en la aplicación móvil de Divine: inicia sesión con esta misma cuenta y abre la sección de colaboradores en Ajustes. ¿Ya has comprado? Restaura la compra allí y consulta tu estado aquí.",
+    "getApp": "Consigue la aplicación para colaborar",
+    "verificationPrerequisite": "Hazte colaborador para solicitar la verificación",
+    "verificationNext": "Tu siguiente paso: la verificación",
+    "verificationDetail": "Ser colaborador es un requisito para solicitar la verificación. No verifica tu identidad ni garantiza la aprobación. Puedes vincular tus cuentas existentes para compartir pruebas de identidad.",
+    "linkAccounts": "Ir a las cuentas vinculadas"
   }
 }

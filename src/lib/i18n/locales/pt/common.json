@@ -1548,5 +1548,27 @@
     "searchUnavailable": "Não foi possível buscar agora. Tentar de novo?",
     "noFollowers": "Ainda não há seguidores.",
     "noFollowing": "Ainda não segue ninguém."
+  },
+  "supporters": {
+    "chip": "Apoiador",
+    "title": "Apoiadores do Divine",
+    "intro": "Ajude a manter o Divine independente, humano e aberto a todos.",
+    "membership": "Sua assinatura de apoiador",
+    "thankYou": "Obrigado por apoiar o Divine.",
+    "thanksDetail": "Seu apoio ajuda a manter este espaço para as pessoas. Que bom ter você aqui.",
+    "showChip": "Mostrar meu selo de apoiador no perfil",
+    "privacy": "Sua assinatura é privada por padrão. Ative esta opção para mostrar seu selo publicamente. Você pode mudar isso a qualquer momento.",
+    "check": "Consultar status de apoiador",
+    "checking": "Consultando status de apoiador…",
+    "checkHint": "Já é apoiador? Consulte a assinatura desta conta. Seu assinador pode pedir autorização.",
+    "checkError": "Não foi possível consultar seu status de apoiador. Tente novamente.",
+    "unknown": "Seu status de apoiador ainda não foi confirmado. Consulte novamente antes de fazer outra compra.",
+    "saveError": "Não foi possível salvar sua preferência de reconhecimento. Tente novamente.",
+    "purchaseInstructions": "Torne-se apoiador no aplicativo móvel do Divine: entre com esta mesma conta e abra a seção de apoiadores nas configurações. Já comprou? Restaure a compra no aplicativo e consulte seu status aqui.",
+    "getApp": "Baixe o aplicativo para apoiar",
+    "verificationPrerequisite": "Torne-se apoiador para solicitar a verificação",
+    "verificationNext": "Seu próximo passo: verificação",
+    "verificationDetail": "A assinatura de apoiador é um requisito para solicitar a verificação. Ela não verifica sua identidade nem garante aprovação. Você pode vincular suas contas existentes para compartilhar provas de identidade.",
+    "linkAccounts": "Continuar para contas vinculadas"
   }
 }

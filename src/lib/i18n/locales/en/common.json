@@ -1540,5 +1540,27 @@
     "searchUnavailable": "Couldn't search right now. Try again?",
     "noFollowers": "No followers yet.",
     "noFollowing": "Not following anyone yet."
+  },
+  "supporters": {
+    "chip": "Supporter",
+    "title": "Divine Supporters",
+    "intro": "Help keep Divine independent, human, and open to everyone.",
+    "membership": "Your supporter membership",
+    "thankYou": "Thank you for supporting Divine.",
+    "thanksDetail": "Your support helps keep this place for people. We’re glad you’re here.",
+    "showChip": "Show my supporter chip on my profile",
+    "privacy": "Your membership is private by default. Turn this on to share your supporter chip publicly. You can change it any time.",
+    "check": "Check supporter status",
+    "checking": "Checking supporter status…",
+    "checkHint": "Already a supporter? Check the membership for this account. Your signer may ask you to approve.",
+    "checkError": "We couldn’t check your supporter status. Try again.",
+    "unknown": "Your supporter status isn’t confirmed yet. Check again before making another purchase.",
+    "saveError": "We couldn’t save your recognition choice. Try again.",
+    "purchaseInstructions": "Become a supporter in the Divine mobile app: sign in with this same account, then open the supporter section in Settings. Already purchased? Restore your purchase there, then check your status here.",
+    "getApp": "Get the app to become a supporter",
+    "verificationPrerequisite": "Become a supporter to apply for verification",
+    "verificationNext": "Your next step: verification",
+    "verificationDetail": "Supporter membership is a prerequisite to apply for verification. It does not verify your identity or guarantee approval. You can link your existing accounts to share identity proofs.",
+    "linkAccounts": "Continue to linked accounts"
   }
 }

@@ -1540,5 +1540,27 @@
     "searchUnavailable": "Hiện chưa tìm kiếm được. Thử lại nhé?",
     "noFollowers": "Chưa có người theo dõi.",
     "noFollowing": "Chưa theo dõi ai."
+  },
+  "supporters": {
+    "chip": "Người ủng hộ",
+    "title": "Người ủng hộ Divine",
+    "intro": "Giúp Divine luôn độc lập, dành cho con người và mở cửa cho tất cả.",
+    "membership": "Gói thành viên ủng hộ của bạn",
+    "thankYou": "Cảm ơn bạn đã ủng hộ Divine.",
+    "thanksDetail": "Sự ủng hộ của bạn giúp giữ nơi này dành cho mọi người. Thật vui khi có bạn ở đây.",
+    "showChip": "Hiển thị huy hiệu người ủng hộ trên hồ sơ của tôi",
+    "privacy": "Gói thành viên của bạn mặc định là riêng tư. Bật tùy chọn này để hiển thị huy hiệu công khai. Bạn có thể thay đổi bất cứ lúc nào.",
+    "check": "Kiểm tra trạng thái người ủng hộ",
+    "checking": "Đang kiểm tra trạng thái người ủng hộ…",
+    "checkHint": "Bạn đã là người ủng hộ? Kiểm tra gói thành viên của tài khoản này. Công cụ ký của bạn có thể yêu cầu xác nhận.",
+    "checkError": "Không thể kiểm tra trạng thái người ủng hộ của bạn. Hãy thử lại.",
+    "unknown": "Trạng thái người ủng hộ của bạn chưa được xác nhận. Hãy kiểm tra lại trước khi mua lần nữa.",
+    "saveError": "Không thể lưu lựa chọn hiển thị của bạn. Hãy thử lại.",
+    "purchaseInstructions": "Trở thành người ủng hộ trong ứng dụng Divine trên điện thoại: đăng nhập bằng cùng tài khoản này, rồi mở mục người ủng hộ trong Cài đặt. Đã mua? Khôi phục giao dịch mua ở đó, rồi kiểm tra trạng thái tại đây.",
+    "getApp": "Tải ứng dụng để trở thành người ủng hộ",
+    "verificationPrerequisite": "Trở thành người ủng hộ để đăng ký xác minh",
+    "verificationNext": "Bước tiếp theo: xác minh",
+    "verificationDetail": "Bạn cần là thành viên ủng hộ để đăng ký xác minh. Tư cách thành viên không xác minh danh tính hay bảo đảm được chấp thuận. Bạn có thể liên kết các tài khoản hiện có để chia sẻ bằng chứng danh tính.",
+    "linkAccounts": "Tiếp tục đến tài khoản đã liên kết"
   }
 }

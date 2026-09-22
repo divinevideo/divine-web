@@ -416,3 +416,19 @@ list:
 Mutations additionally refuse to publish unless the relay read reached EOSE
 (`MuteListUnavailableError`), so an unestablished read is never mistaken for an
 empty list.
+
+### Supporter membership
+
+The public `/supporters` page explains membership and points purchases and
+restores to the mobile app. `useSupporter` reads private account state from
+`https://supporters.divine.video/v1/me` with NIP-98 authentication; recognition
+changes sign all three preference fields in a PATCH to `/v1/me/recognition`.
+Hosted and local-key accounts refresh on window focus. External signers require
+an explicit status check so ordinary browsing cannot trigger a signing prompt.
+Private queries are keyed by account, held only in memory, and discarded when
+unobserved. Failed and unknown reads never become an inactive membership.
+
+Owners see a private Supporter chip and thanks even when recognition is hidden.
+Other profile visitors read only `/v1/public/supporters?pubkeys=<full-hex-key>`;
+only active, explicitly visible supporters receive a public chip. Membership
+never creates an identity proof or changes the linked-account proof workflow.
