@@ -40,6 +40,7 @@
   },
   "footer": {
     "aboutDivine": "Over Divine",
+    "vinesRecovered": "{{count}} Vines hersteld",
     "termsAndOpenSource": "Voorwaarden en open source",
     "copyright": "© 2026 Divine"
   },

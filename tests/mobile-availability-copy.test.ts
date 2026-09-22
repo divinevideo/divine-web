@@ -7,7 +7,6 @@ import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 const REPO_ROOT = resolve(__dirname, '..');
 const TSX_MOBILE_SURFACES = [
   'src/pages/FAQPage.tsx',
-  'src/pages/AboutPage.tsx',
   'src/pages/OpenSourcePage.tsx',
 ];
 const STALE_MOBILE_COPY = [

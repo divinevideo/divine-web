@@ -40,6 +40,7 @@
   },
   "footer": {
     "aboutDivine": "Uber Divine",
+    "vinesRecovered": "{{count}} Vines wiederhergestellt",
     "termsAndOpenSource": "Bedingungen und Open Source",
     "copyright": "© 2026 Divine"
   },

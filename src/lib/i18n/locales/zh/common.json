@@ -40,6 +40,7 @@
   },
   "footer": {
     "aboutDivine": "关于 Divine",
+    "vinesRecovered": "已恢复 {{count}} 个 Vine",
     "termsAndOpenSource": "条款与开源",
     "copyright": "© 2026 Divine"
   },

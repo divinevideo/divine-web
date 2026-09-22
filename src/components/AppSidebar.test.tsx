@@ -23,6 +23,10 @@ vi.mock('@/hooks/useCategories', () => ({
   useCategories: () => ({ data: mockCategories }),
 }));
 
+vi.mock('@/hooks/usePlatformStats', () => ({
+  usePlatformStats: () => ({ data: { total_events: 0, total_videos: 0, vine_videos: 2158963 } }),
+}));
+
 vi.mock('@/hooks/useTheme', () => ({
   useTheme: () => ({ displayTheme: 'light', setTheme: mockSetTheme }),
 }));
@@ -129,18 +133,14 @@ describe('AppSidebar', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/delete-account');
   });
 
-  it('hides the sidebar imported Vines total', () => {
-    const fetchSpy = vi.fn();
-    vi.stubGlobal('fetch', fetchSpy);
-
+  it('shows the sidebar imported Vines total', () => {
     render(
       <MemoryRouter>
         <AppSidebar />
       </MemoryRouter>,
     );
 
-    expect(screen.queryByText(/vines (recovered|recuperados)/i)).not.toBeInTheDocument();
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(screen.getByText(/2,158,963 vines (recovered|recuperados)/i)).toBeInTheDocument();
   });
 
   it('shows both store badges', () => {

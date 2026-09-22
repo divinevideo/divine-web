@@ -40,6 +40,7 @@
   },
   "footer": {
     "aboutDivine": "Divine について",
+    "vinesRecovered": "{{count}} 件の Vine を復元",
     "termsAndOpenSource": "利用規約とオープンソース",
     "copyright": "© 2026 Divine"
   },

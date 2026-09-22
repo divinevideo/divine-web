@@ -40,6 +40,7 @@
   },
   "footer": {
     "aboutDivine": "Divine 소개",
+    "vinesRecovered": "{{count}}개의 Vine 복구됨",
     "termsAndOpenSource": "약관 및 오픈 소스",
     "copyright": "© 2026 Divine"
   },

@@ -73,6 +73,10 @@ const APEX_DOMAINS = ['dvine.video', 'divine.video'];
 
 // External redirects - always redirect to about.divine.video (Option A)
 const EXTERNAL_REDIRECTS = {
+  // public/_redirects only covers the Cloudflare deploy, so /about has to be
+  // listed here too or Fastly serves the SPA shell and the route 404s.
+  '/about': { url: 'https://about.divine.video/', status: 301 },
+  '/about/': { url: 'https://about.divine.video/', status: 301 },
   '/press': { url: 'https://about.divine.video/press/', status: 301 },
   '/news': { url: 'https://about.divine.video/news/', status: 301 },
   '/media-resources': { url: 'https://about.divine.video/media-resources/', status: 301 },
