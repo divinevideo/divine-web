@@ -76,7 +76,10 @@ export function AppSidebar({ className }: { className?: string }) {
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const { data: categories } = useCategories();
-  const classicVinesRecovered = platformStats?.vine_videos?.toLocaleString();
+  // Funnelcake answers 200 with vine_videos: 0 when its count query fails, so a
+  // zero means the total is unknown. Show nothing rather than "0 Vines recovered".
+  const vineVideos = platformStats?.vine_videos;
+  const classicVinesRecovered = vineVideos ? vineVideos.toLocaleString() : undefined;
 
   // Prerendered routes are served from a directory (dist/services/index.html),
   // and Cloudflare Pages 308-redirects /services to /services/. Match the
