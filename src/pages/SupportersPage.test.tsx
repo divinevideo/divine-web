@@ -15,7 +15,7 @@ describe('SupportersPage', () => {
     state({ isActive: true, data: { status: 'active', recognition: { haloVisible: false } } });
     render(<MemoryRouter><SupportersPage /></MemoryRouter>);
     expect(screen.getByText('Thank you for supporting Divine.')).toBeInTheDocument();
-    expect(screen.getByRole('switch', { name: 'Show my supporter chip on my profile' })).not.toBeChecked();
+    expect(screen.getByRole('switch', { name: 'Show my supporter badge on my profile' })).not.toBeChecked();
     expect(screen.queryByRole('link', { name: 'Get the app to become a supporter' })).not.toBeInTheDocument();
   });
   it('promotes native purchase and explains the verification prerequisite for inactive accounts', () => {

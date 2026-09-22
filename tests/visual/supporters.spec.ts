@@ -36,7 +36,7 @@ test('a supporter sees thanks and can opt into public recognition', async ({ pag
   });
   await page.goto('/supporters');
   await expect(page.getByText('Thank you for supporting Divine.')).toBeVisible();
-  const toggle = page.getByRole('switch', { name: 'Show my supporter chip on my profile' });
+  const toggle = page.getByRole('switch', { name: 'Show my supporter badge on my profile' });
   await expect(toggle).not.toBeChecked();
   await toggle.click();
   await expect(toggle).toBeChecked();
