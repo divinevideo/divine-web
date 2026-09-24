@@ -7,7 +7,7 @@ export function useSupporter() {
   const { user, signer, isHostedAccount, isResolvingJwt } = useCurrentUser();
   const queryClient = useQueryClient();
   const pubkey = user?.pubkey;
-  const canAutoRefresh = !!signer && (isHostedAccount || (!!user && 'method' in user && user.method === 'nsec'));
+  const canAutoRefresh = !!signer && (isHostedAccount || user?.method === 'nsec');
   const query = useQuery({
     queryKey: ['supporter', pubkey],
     queryFn: ({ signal }) => {

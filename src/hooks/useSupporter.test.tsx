@@ -45,7 +45,7 @@ describe('useSupporter', () => {
     focusManager.setFocused(undefined);
   });
   it('loads automatically for a local-key login independent of signer package identity', async () => {
-    vi.mocked(useCurrentUser).mockReturnValue({ user: { pubkey: 'a'.repeat(64), method: 'nsec' }, signer: {}, isHostedAccount: false } as unknown as ReturnType<typeof useCurrentUser>);
+    vi.mocked(useCurrentUser).mockReturnValue({ user: { pubkey: 'a'.repeat(64), method: 'nsec' }, signer: {}, isHostedAccount: false } as ReturnType<typeof useCurrentUser>);
     const { result } = renderHook(() => useSupporter(), { wrapper });
     await waitFor(() => expect(result.current.isActive).toBe(true));
   });
