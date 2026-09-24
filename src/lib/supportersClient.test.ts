@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NostrSigner } from '@nostrify/nostrify';
+import { API_CONFIG } from '@/config/api';
 import { createNip98AuthHeader } from '@/lib/nip98Auth';
 import { fetchSupporter, updateSupporterRecognition, fetchPublicSupporter } from './supportersClient';
 
@@ -46,6 +47,17 @@ describe('supporters client', () => {
   it('preserves explicit unknown entitlement state', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ ...snapshot, status: 'unknown', entitlement: { isActive: false } })));
     expect((await fetchSupporter(signer, pubkey)).status).toBe('unknown');
+  });
+  it('bounds the private and public requests so a stalled service cannot hang the UI', async () => {
+    await fetchSupporter(signer, pubkey);
+    expect(vi.mocked(fetch).mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ supporters: [] })));
+    await fetchPublicSupporter(pubkey);
+    expect(vi.mocked(fetch).mock.calls[1][1]?.signal).toBeInstanceOf(AbortSignal);
+  });
+  it('reads the service host from the API configuration', async () => {
+    await fetchSupporter(signer, pubkey);
+    expect(fetch).toHaveBeenCalledWith(`${API_CONFIG.supportersService.baseUrl}/v1/me`, expect.anything());
   });
   it('shows public recognition only for the requested full pubkey with affirmative visibility', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ supporters: [{ pubkey, haloVisible: true }] })));

@@ -421,8 +421,12 @@ empty list.
 
 The public `/supporters` page explains membership and points purchases and
 restores to the mobile app. `useSupporter` reads private account state from
-`https://supporters.divine.video/v1/me` with NIP-98 authentication; recognition
+`/v1/me` on the supporters service with NIP-98 authentication; recognition
 changes sign all three preference fields in a PATCH to `/v1/me/recognition`.
+The host comes from `API_CONFIG.supportersService`, which defaults to
+`https://supporters.divine.video` and is overridable with
+`VITE_SUPPORTERS_SERVICE_URL` so a preview or staging build can be pointed away
+from live membership data. Every request carries a timeout signal.
 Hosted and local-key accounts refresh on window focus. External signers require
 an explicit status check so ordinary browsing cannot trigger a signing prompt.
 Private queries are keyed by account, held only in memory, and discarded when
