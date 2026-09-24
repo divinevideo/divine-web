@@ -156,11 +156,15 @@ export function AppSidebar({ className }: { className?: string }) {
           </a>
         </div>
 
-        <div className="px-3">
-          <NavItem icon={<Heart className="h-[18px] w-[18px]" />} label={t('supporters.title')} onClick={() => navigate('/supporters')} isActive={isActive('/supporters')} />
-        </div>
         {/* Main Navigation */}
         <nav className="flex flex-col gap-0.5 px-3 pt-2">
+          <NavItem
+            icon={<Heart className="h-[18px] w-[18px]" weight={isActive('/supporters') ? 'fill' : 'bold'} />}
+            label={t('supporters.title')}
+            onClick={() => navigate('/supporters')}
+            isActive={isActive('/supporters')}
+          />
+
           <NavItem
             icon={<Search className="h-[18px] w-[18px]" weight={isActive('/search') ? 'fill' : 'bold'} />}
             label={t('nav.search')}
