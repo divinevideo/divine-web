@@ -4,5 +4,10 @@ import { Badge } from '@/components/ui/badge';
 
 export function SupporterChip() {
   const { t } = useTranslation();
-  return <Badge variant="secondary" className="gap-1"><Heart weight="fill" aria-hidden="true" className="h-3 w-3" />{t('supporters.chip')}</Badge>;
+  return (
+    <Badge variant="secondary" className="gap-1">
+      <Heart weight="fill" aria-hidden="true" className="h-3 w-3" />
+      {t('supporters.chip')}
+    </Badge>
+  );
 }

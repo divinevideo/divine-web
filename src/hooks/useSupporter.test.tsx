@@ -6,11 +6,26 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fetchSupporter } from '@/lib/supportersClient';
 import { useSupporter } from './useSupporter';
 
-vi.mock('@/hooks/useCurrentUser', () => ({ useCurrentUser: vi.fn() }));
-vi.mock('@/lib/supportersClient', () => ({ fetchSupporter: vi.fn(), updateSupporterRecognition: vi.fn() }));
-const active = { status: 'active', entitlement: { isActive: true }, recognition: { haloVisible: false, discoveryVisible: false, foundingHistoryVisible: false } } as const;
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: vi.fn(),
+}));
+vi.mock('@/lib/supportersClient', () => ({
+  fetchSupporter: vi.fn(),
+  updateSupporterRecognition: vi.fn(),
+}));
+const active = {
+  status: 'active',
+  entitlement: { isActive: true },
+  recognition: {
+    haloVisible: false,
+    discoveryVisible: false,
+    foundingHistoryVisible: false,
+  },
+} as const;
 function setUser(pubkey: string, isHostedAccount = true) {
-  vi.mocked(useCurrentUser).mockReturnValue({ user: { pubkey }, signer: {}, isHostedAccount } as ReturnType<typeof useCurrentUser>);
+  vi.mocked(useCurrentUser).mockReturnValue(
+    { user: { pubkey }, signer: {}, isHostedAccount } as ReturnType<typeof useCurrentUser>,
+  );
 }
 function wrapper({ children }: PropsWithChildren) {
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
@@ -45,7 +60,11 @@ describe('useSupporter', () => {
     focusManager.setFocused(undefined);
   });
   it('loads automatically for a local-key login independent of signer package identity', async () => {
-    vi.mocked(useCurrentUser).mockReturnValue({ user: { pubkey: 'a'.repeat(64), method: 'nsec' }, signer: {}, isHostedAccount: false } as ReturnType<typeof useCurrentUser>);
+    vi.mocked(useCurrentUser).mockReturnValue({
+      user: { pubkey: 'a'.repeat(64), method: 'nsec' },
+      signer: {},
+      isHostedAccount: false,
+    } as ReturnType<typeof useCurrentUser>);
     const { result } = renderHook(() => useSupporter(), { wrapper });
     await waitFor(() => expect(result.current.isActive).toBe(true));
   });

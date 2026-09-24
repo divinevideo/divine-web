@@ -9,7 +9,14 @@ export function OwnSupporterRecognition() {
   const { t } = useTranslation();
   const { isActive } = useSupporter();
   if (!isActive) return null;
-  return <div className="space-y-1"><Link to="/supporters"><SupporterChip /></Link><p className="text-sm text-muted-foreground">{t('supporters.thankYou')}</p></div>;
+  return (
+    <div className="space-y-1">
+      <Link to="/supporters">
+        <SupporterChip />
+      </Link>
+      <p className="text-sm text-muted-foreground">{t('supporters.thankYou')}</p>
+    </div>
+  );
 }
 
 export function PublicSupporterRecognition({ pubkey }: { pubkey: string }) {

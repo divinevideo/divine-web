@@ -26,7 +26,14 @@ function boundedSignal(signal?: AbortSignal): AbortSignal {
   return signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
 }
 
-async function supporterRequest(signer: NostrSigner, expectedPubkey: string, url: string, method: string, body?: string, signal?: AbortSignal) {
+async function supporterRequest(
+  signer: NostrSigner,
+  expectedPubkey: string,
+  url: string,
+  method: string,
+  body?: string,
+  signal?: AbortSignal,
+) {
   const authorization = await createNip98AuthHeader(signer, url, method, body);
   if (!authorization) throw new Error('Supporter authentication failed');
   const signedEvent = JSON.parse(atob(authorization.slice('Nostr '.length))) as { pubkey?: string };
@@ -44,7 +51,12 @@ export function fetchSupporter(signer: NostrSigner, pubkey: string, signal?: Abo
   return supporterRequest(signer, pubkey, supportersUrl('me'), 'GET', undefined, signal);
 }
 
-export function updateSupporterRecognition(signer: NostrSigner, pubkey: string, recognition: SupporterRecognition, signal?: AbortSignal) {
+export function updateSupporterRecognition(
+  signer: NostrSigner,
+  pubkey: string,
+  recognition: SupporterRecognition,
+  signal?: AbortSignal,
+) {
   return supporterRequest(signer, pubkey, supportersUrl('recognition'), 'PATCH', JSON.stringify({
     halo_visible: recognition.haloVisible,
     discovery_visible: recognition.discoveryVisible,
@@ -58,6 +70,12 @@ export async function fetchPublicSupporter(pubkey: string, signal?: AbortSignal)
     signal: boundedSignal(signal), cache: 'no-store', redirect: 'error',
   });
   if (!response.ok) throw new Error('Public supporter request failed');
-  const data = z.object({ supporters: z.array(z.object({ pubkey: z.string(), haloVisible: z.literal(true) })) }).parse(await response.json());
+  const data = z
+    .object({
+      supporters: z.array(
+        z.object({ pubkey: z.string(), haloVisible: z.literal(true) }),
+      ),
+    })
+    .parse(await response.json());
   return data.supporters.some(supporter => supporter.pubkey === pubkey);
 }
