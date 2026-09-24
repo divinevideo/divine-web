@@ -1,4 +1,3 @@
-import { OwnSupporterRecognition, PublicSupporterRecognition } from '@/components/SupporterRecognition';
 // ABOUTME: Profile header component showing user avatar, bio, stats, and follow button
 // ABOUTME: Displays user metadata, social stats, and follow/unfollow functionality
 
@@ -7,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { linkifyProfileBioText, normalizeExternalUrl } from '@/lib/profileBioLinkify';
+import { OwnSupporterRecognition, PublicSupporterRecognition } from '@/components/SupporterRecognition';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
