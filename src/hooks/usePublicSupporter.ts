@@ -8,6 +8,5 @@ export function usePublicSupporter(pubkey: string) {
     enabled: /^[0-9a-f]{64}$/.test(pubkey),
     staleTime: 60_000,
     retry: false,
-    refetchOnWindowFocus: 'always',
   });
 }

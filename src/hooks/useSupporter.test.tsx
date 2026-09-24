@@ -23,11 +23,24 @@ beforeEach(() => {
   setUser('a'.repeat(64));
 });
 describe('useSupporter', () => {
-  it('loads automatically for hosted accounts and refreshes on window focus', async () => {
+  it('loads automatically for hosted accounts and refreshes a stale read on window focus', async () => {
+    const { result, unmount } = renderHook(() => useSupporter(), { wrapper });
+    await waitFor(() => expect(result.current.isActive).toBe(true));
+    act(() => {
+      client.setQueryData(['supporter', 'a'.repeat(64)], active, { updatedAt: Date.now() - 120_000 });
+      focusManager.setFocused(false);
+      focusManager.setFocused(true);
+    });
+    await waitFor(() => expect(fetchSupporter).toHaveBeenCalledTimes(2));
+    unmount();
+    focusManager.setFocused(undefined);
+  });
+  it('does not ask the signer again while the membership read is still fresh', async () => {
     const { result, unmount } = renderHook(() => useSupporter(), { wrapper });
     await waitFor(() => expect(result.current.isActive).toBe(true));
     act(() => { focusManager.setFocused(false); focusManager.setFocused(true); });
-    await waitFor(() => expect(fetchSupporter).toHaveBeenCalledTimes(2));
+    await act(async () => { await Promise.resolve(); });
+    expect(fetchSupporter).toHaveBeenCalledTimes(1);
     unmount();
     focusManager.setFocused(undefined);
   });

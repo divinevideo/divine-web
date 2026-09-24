@@ -18,7 +18,10 @@ export function useSupporter() {
     staleTime: 60_000,
     gcTime: 0,
     retry: false,
-    refetchOnWindowFocus: canAutoRefresh ? 'always' : false,
+    // Stale-aware, not 'always': the AccountSwitcher keeps this query mounted on
+    // every page, so 'always' asked the signer for a fresh NIP-98 event every
+    // time the tab regained focus and made the 60s staleTime meaningless.
+    refetchOnWindowFocus: canAutoRefresh,
     refetchOnReconnect: canAutoRefresh,
   });
   const mutation = useMutation({
