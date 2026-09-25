@@ -31,7 +31,7 @@ const REVIEW_WINDOW_DAYS = 15;
 
 const SECTIONS: SectionAnchor[] = [
   { id: "path-13-15", title: "Divine Greenlight (13-15)" },
-  { id: "path-mistake", title: "If you're 16 or older" },
+  { id: "path-16-plus", title: "If you're 16 or older" },
   { id: "no-response", title: "If we don't hear from you" },
 ];
 
@@ -268,7 +268,7 @@ export function AgeReviewPage() {
         </Anchor>
 
         {/* 2. 16+ mistake path */}
-        <Anchor id="path-mistake">
+        <Anchor id="path-16-plus">
           <SectionHero
             eyebrow="For users 16 or older"
             icon={<ShieldCheck weight="fill" className="h-7 w-7" />}
