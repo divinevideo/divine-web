@@ -105,7 +105,7 @@ export function AppSidebar({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-svh w-[240px] flex-col border-r border-border bg-background",
+        "fixed left-0 top-0 z-40 flex h-svh w-[240px] flex-col border-r border-border bg-background py-safe pl-safe",
         className
       )}
     >

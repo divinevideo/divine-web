@@ -154,7 +154,7 @@ export function VideoMetadataForm({
       </div>
 
       {/* Metadata Form - scrollable */}
-      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: 'var(--sab)' }}>
+      <div className="flex-1 overflow-y-auto pb-safe">
         <div className="p-4 space-y-4">
           <div>
             <Label htmlFor="title">{t('videoMetadataForm.titleLabel')}</Label>
@@ -283,7 +283,7 @@ export function VideoMetadataForm({
   // Desktop: wrap in centered modal
   if (isDesktop) {
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-safe-offset-4 z-50">
         <div className="relative w-full max-w-2xl max-h-[90vh] rounded-2xl overflow-hidden shadow-2xl bg-background">
           {formContent}
         </div>

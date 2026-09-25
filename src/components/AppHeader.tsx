@@ -42,7 +42,7 @@ export function AppHeader({ className }: AppHeaderProps) {
   };
 
   return (
-    <header className={cn("sticky top-0 z-50 w-full border-b border-border bg-background backdrop-blur-md shadow-sm", className)}>
+    <header className={cn("sticky top-0 z-50 w-full border-b border-border bg-background backdrop-blur-md shadow-sm pt-safe px-safe", className)}>
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-4">
           <button

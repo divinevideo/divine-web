@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import tailwindcssAnimate from "tailwindcss-animate";
+import tailwindcssSafeArea from "tailwindcss-safe-area";
 
 export default {
 	darkMode: ["class"],
@@ -126,14 +127,8 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
-			},
-			spacing: {
-				'safe-top': 'var(--sat)',
-				'safe-right': 'var(--sar)',
-				'safe-bottom': 'var(--sab)',
-				'safe-left': 'var(--sal)',
 			}
 		}
 	},
-	plugins: [tailwindcssAnimate],
+	plugins: [tailwindcssAnimate, tailwindcssSafeArea],
 } satisfies Config;
