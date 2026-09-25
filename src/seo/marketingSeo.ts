@@ -1,7 +1,7 @@
 // ABOUTME: Family route SEO view over the shared PAGE_SEO table, plus family-only breadcrumb labels
 // ABOUTME: Consumed by the family JSON-LD components, the family SSG prerender, and tests
 
-import { MARKETING_PUBLICATION_DATE, PAGE_SEO, SITE_ORIGIN } from './pageSeo';
+import { MARKETING_PUBLICATION_DATE, PAGE_SEO, resolvePageSeo, SITE_ORIGIN } from './pageSeo';
 
 export { MARKETING_PUBLICATION_DATE, SITE_ORIGIN };
 
@@ -36,15 +36,16 @@ export const FAMILY_SEO: MarketingSeoRoute[] = PAGE_SEO.filter((row) => row.prer
   if (typeof row.title !== 'string') {
     throw new Error(`${row.path}: family titles are plain English`);
   }
+  const head = resolvePageSeo(row, (key) => key);
   return {
     path: row.path,
-    title: row.title,
-    description: row.description,
-    ogTitle: row.previewTitle ?? row.title,
-    ogDescription: row.previewDescription ?? row.description,
-    ogImage: `${SITE_ORIGIN}${row.image ?? '/og.png'}`,
-    ogType: row.type ?? 'website',
-    canonical: `${SITE_ORIGIN}${row.path}`,
+    title: head.title,
+    description: head.description,
+    ogTitle: head.previewTitle,
+    ogDescription: head.previewDescription,
+    ogImage: head.image.url,
+    ogType: head.type,
+    canonical: head.canonical,
     breadcrumb: BREADCRUMBS[row.path] ?? '',
   };
 });
