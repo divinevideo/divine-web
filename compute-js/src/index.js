@@ -10,7 +10,7 @@ import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
 import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
-import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
+import { buildCrawlerHtml, cleanText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
 import { buildAccountPortabilityRedirectResponse, buildWwwRedirectResponse } from './hostRedirect.js';
 import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
