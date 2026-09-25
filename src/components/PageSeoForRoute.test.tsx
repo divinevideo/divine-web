@@ -96,13 +96,14 @@ describe('PageSeoForRoute', () => {
   });
 
   it('follows the active language', async () => {
-    renderAt('/trending');
-    await waitFor(() => expect(document.title).toBe('Trending - Divine'));
+    renderAt('/leaderboard');
+    await waitFor(() => expect(document.title).toBe('Leaderboard - Divine'));
     await act(async () => {
       await changeLanguage('de');
     });
-    // German trendingPage.heading is "Trending" too, so it doesn't add "Divine" itself
-    await waitFor(() => expect(document.title).toBe('Trending - Divine'));
+    // German leaderboardPage.seoTitle is "Bestenliste - Divine", distinct from English,
+    // so this proves the title actually follows the active language (not just a suffix rule)
+    await waitFor(() => expect(document.title).toBe('Bestenliste - Divine'));
   });
 
   it('lets a page-level useHead title win over the brand default', async () => {
