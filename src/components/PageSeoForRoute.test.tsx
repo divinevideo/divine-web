@@ -3,13 +3,13 @@
 
 import { act, render, waitFor } from '@testing-library/react';
 import { InferSeoMetaPlugin } from '@unhead/addons';
-import { useSeoMeta } from '@unhead/react';
+import { useHead, useSeoMeta } from '@unhead/react';
 import { createHead, UnheadProvider } from '@unhead/react/client';
 import { useEffect } from 'react';
 import { MemoryRouter, Route, Routes, useNavigate, type NavigateFunction } from 'react-router-dom';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { initializeI18n } from '@/lib/i18n';
+import { changeLanguage, initializeI18n } from '@/lib/i18n';
 import { BRAND_DEFAULT_TITLE } from '@/seo/pageSeo';
 
 import { PageSeoForRoute } from './PageSeoForRoute';
@@ -29,6 +29,11 @@ function VideoStub() {
   return null;
 }
 
+function HashtagStub() {
+  useHead({ title: 'A hashtag on Divine' });
+  return null;
+}
+
 // PageSeoForRoute is mounted AFTER the routes here, the worst case: unhead breaks
 // equal-priority ties in favour of the later entry, so only tagPriority 'low'
 // lets a page's own title win from this position.
@@ -40,6 +45,7 @@ function renderAt(path: string) {
         <CaptureNavigate />
         <Routes>
           <Route path="/video/:id" element={<VideoStub />} />
+          <Route path="/some-hashtag-page" element={<HashtagStub />} />
           <Route path="*" element={null} />
         </Routes>
         <PageSeoForRoute />
@@ -53,6 +59,10 @@ const canonical = () => document.head.querySelector('link[rel="canonical"]')?.ge
 
 beforeAll(async () => {
   await initializeI18n({ languages: ['en'] });
+});
+
+afterEach(async () => {
+  await changeLanguage('en');
 });
 
 describe('PageSeoForRoute', () => {
@@ -83,5 +93,20 @@ describe('PageSeoForRoute', () => {
     await waitFor(() => expect(document.title).toBe('A video on Divine'));
     // The brand default sets no og:* tags, so the inferred preview title follows the page title
     await waitFor(() => expect(meta('meta[property="og:title"]')).toBe('A video on Divine'));
+  });
+
+  it('follows the active language', async () => {
+    renderAt('/trending');
+    await waitFor(() => expect(document.title).toBe('Trending - Divine'));
+    await act(async () => {
+      await changeLanguage('de');
+    });
+    // German trendingPage.heading is "Trending" too, so it doesn't add "Divine" itself
+    await waitFor(() => expect(document.title).toBe('Trending - Divine'));
+  });
+
+  it('lets a page-level useHead title win over the brand default', async () => {
+    renderAt('/some-hashtag-page');
+    await waitFor(() => expect(document.title).toBe('A hashtag on Divine'));
   });
 });
