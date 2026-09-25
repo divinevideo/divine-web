@@ -25,7 +25,7 @@ function PageHead({ head }: { head: ResolvedPageHead }) {
     ogImage: head.image.url,
     ogImageWidth: head.image.width,
     ogImageHeight: head.image.height,
-    ogImageType: head.image.type as 'image/png',
+    ogImageType: head.image.type,
     ogImageAlt: head.image.alt,
     ogSiteName: head.siteName,
     twitterCard: 'summary_large_image',

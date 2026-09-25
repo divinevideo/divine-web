@@ -12,7 +12,7 @@ export interface ResolvedPageHead {
   canonical: string;
   type: 'website' | 'article';
   siteName: string;
-  image: { url: string; width: number; height: number; type: string; alt: string };
+  image: { url: string; width: number; height: number; type: 'image/png'; alt: string };
   lastModified?: string;
   prerenderedBy?: 'legal' | 'marketing';
 }
