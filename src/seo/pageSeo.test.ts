@@ -91,6 +91,7 @@ describe('withTitleSuffix', () => {
     expect(withTitleSuffix('Leaderboard - Divine')).toBe('Leaderboard - Divine');
     expect(withTitleSuffix('Merch — Divine')).toBe('Merch — Divine');
     expect(withTitleSuffix('Download Divine')).toBe('Download Divine');
+    expect(withTitleSuffix('Kids on Divine — How accounts work for under-16s')).toBe('Kids on Divine — How accounts work for under-16s');
   });
 });
 
