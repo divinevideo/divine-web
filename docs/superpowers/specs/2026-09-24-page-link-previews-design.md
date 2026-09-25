@@ -113,7 +113,8 @@ language's strings for client use via i18next.
 
 ### 2. Shared head renderer and build step
 
-One head renderer (plain JS, importable by build scripts) produces the full
+One head renderer (`src/seo/headTags.ts`, loaded by build scripts through Vite
+SSR, so it is type-checked and linted like the rest of `src/`) produces the full
 tag set from a resolved row: `<title>`, `description`, `canonical`, `og:type`,
 `og:url`, `og:title`, `og:description`, `og:image`, `og:image:width`,
 `og:image:height`, `og:image:type`, `og:image:alt`, `og:site_name`,
@@ -286,6 +287,9 @@ always name `https://divine.video<path>`. This is intended.
 ## Open Items
 
 - Marketing/Comms approves drafted descriptions and title wording before merge.
+- Preview titles default to the untranslated page title without the tab
+  suffix; `/faq` sets `previewTitle` so its preview reads "Frequently Asked
+  Questions" rather than "FAQ".
 - Whether existing em-dash titles (`Merch — Divine`, `Account review — Divine`,
   family) move to `" - Divine"`: Marketing/Comms.
 - #726 lists `/collabs` as affected; it is logged-in only and is excluded here.

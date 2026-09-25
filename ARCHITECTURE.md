@@ -131,9 +131,20 @@ for variant management. No CSS modules or styled-components.
 vite build
 cp dist/index.html dist/404.html
 node scripts/copy-well-known.mjs
-node scripts/prerender-legal.mjs
+node scripts/prerender-legal.mjs      # legal pages, /faq, /services: full body + table head
+node scripts/prerender-marketing.mjs  # /family/*: React SSG body + table head
+node scripts/prerender-pages.mjs      # every other fixed page: shell + table head; sitemap.xml; self-check
 node scripts/verify-well-known.mjs
 ```
+
+Fixed public pages (legal, family, kids, support, and the rest) take their
+title, description, and preview image from `src/seo/pageSeo.ts`, the only
+place that copy is written. The build writes each page's tags into a static
+`dist/<path>/index.html` so any link-preview app sees them without running
+JavaScript, generates `dist/sitemap.xml`, and fails if any page's tags do not
+match the table. In the browser, `src/components/PageSeoForRoute.tsx` sets the
+tab title from the same table. Adding a public route without a table row or an
+exclusion reason fails `src/seo/pageRoutes.test.ts`.
 
 Dev server runs on port 8080 with CORS proxies for `/cdn-proxy`
 (cdn.divine.video) and `/api/moderation` (moderation-api.divine.video).
