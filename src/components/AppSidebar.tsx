@@ -2,7 +2,7 @@
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
 import { Link, useLocation } from 'react-router-dom';
-import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp, Handshake } from '@phosphor-icons/react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp, Handshake, Heart } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
@@ -158,6 +158,13 @@ export function AppSidebar({ className }: { className?: string }) {
 
         {/* Main Navigation */}
         <nav className="flex flex-col gap-0.5 px-3 pt-2">
+          <NavItem
+            icon={<Heart className="h-[18px] w-[18px]" weight={isActive('/supporters') ? 'fill' : 'bold'} />}
+            label={t('supporters.title')}
+            onClick={() => navigate('/supporters')}
+            isActive={isActive('/supporters')}
+          />
+
           <NavItem
             icon={<Search className="h-[18px] w-[18px]" weight={isActive('/search') ? 'fill' : 'bold'} />}
             label={t('nav.search')}

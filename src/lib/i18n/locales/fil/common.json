@@ -1540,5 +1540,27 @@
     "searchUnavailable": "Hindi makapaghanap ngayon. Subukan ulit?",
     "noFollowers": "Wala pang followers.",
     "noFollowing": "Wala pang fina-follow."
+  },
+  "supporters": {
+    "chip": "Tagasuporta",
+    "title": "Mga Divine Supporter",
+    "intro": "Tulungang manatiling malaya, para sa tao, at bukas sa lahat ang Divine.",
+    "membership": "Ang pagiging tagasuporta mo",
+    "thankYou": "Salamat sa pagsuporta sa Divine.",
+    "thanksDetail": "Tumutulong ang suporta mo na panatilihing para sa tao ang lugar na ito. Masaya kaming nandito ka.",
+    "showChip": "Ipakita ang badge ng tagasuporta sa profile ko",
+    "privacy": "Pribado ang pagiging tagasuporta mo bilang default. I-on ito para ipakita sa publiko ang badge mo. Maaari mo itong baguhin anumang oras.",
+    "check": "Tingnan ang katayuan bilang tagasuporta",
+    "checking": "Tinitingnan ang katayuan bilang tagasuporta…",
+    "checkHint": "Tagasuporta ka na ba? Tingnan ang membership ng account na ito. Maaaring humingi ng pahintulot ang iyong panglagda.",
+    "checkError": "Hindi namin matingnan ang katayuan mo bilang tagasuporta. Subukan muli.",
+    "unknown": "Hindi pa kumpirmado ang katayuan mo bilang tagasuporta. Tingnan muli bago bumili ulit.",
+    "saveError": "Hindi namin na-save ang pinili mong pagpapakita ng badge. Subukan muli.",
+    "purchaseInstructions": "Maging tagasuporta sa Divine mobile app: mag-sign in gamit ang parehong account, pagkatapos buksan ang seksyon ng tagasuporta sa Mga Setting. Nakabili na? Ibalik ang binili mo roon, pagkatapos tingnan ang katayuan mo rito.",
+    "getApp": "Kunin ang app para maging tagasuporta",
+    "verificationPrerequisite": "Maging tagasuporta para mag-apply para sa beripikasyon",
+    "verificationNext": "Susunod mong hakbang: beripikasyon",
+    "verificationDetail": "Kailangan ang pagiging tagasuporta para mag-apply para sa beripikasyon. Hindi nito bineberipika ang pagkakakilanlan mo o ginagarantiya ang pag-apruba. Maaari mong i-link ang mga account mo para magbahagi ng patunay ng pagkakakilanlan.",
+    "linkAccounts": "Magpatuloy sa mga naka-link na account"
   }
 }

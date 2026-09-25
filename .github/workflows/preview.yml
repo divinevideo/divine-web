@@ -31,6 +31,10 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Keep PR previews from signing requests to live supporter accounts.
+          # Use the reserved .invalid domain until a preview service is wired in.
+          VITE_SUPPORTERS_SERVICE_URL: https://supporters-preview.invalid
 
       - name: Deploy to Cloudflare Pages
         id: deploy

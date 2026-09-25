@@ -1548,5 +1548,27 @@
     "searchUnavailable": "La ricerca non funziona ora. Riprovi?",
     "noFollowers": "Ancora nessun follower.",
     "noFollowing": "Non segue ancora nessuno."
+  },
+  "supporters": {
+    "chip": "Sostenitore",
+    "title": "Sostenitori Divine",
+    "intro": "Aiuta Divine a restare indipendente, umano e aperto a tutti.",
+    "membership": "Il tuo abbonamento di sostegno",
+    "thankYou": "Grazie per il tuo sostegno a Divine.",
+    "thanksDetail": "Il tuo sostegno aiuta a mantenere questo spazio per le persone. Siamo felici che tu sia qui.",
+    "showChip": "Mostra il mio distintivo di sostenitore sul profilo",
+    "privacy": "Il tuo abbonamento è privato per impostazione predefinita. Attiva questa opzione per mostrare il distintivo pubblicamente. Puoi cambiarla quando vuoi.",
+    "check": "Controlla lo stato di sostenitore",
+    "checking": "Controllo dello stato in corso…",
+    "checkHint": "Sei già sostenitore? Controlla l’abbonamento di questo account. Il tuo strumento di firma potrebbe chiedere l’autorizzazione.",
+    "checkError": "Non siamo riusciti a controllare il tuo stato. Riprova.",
+    "unknown": "Il tuo stato di sostenitore non è ancora confermato. Ricontrolla prima di acquistare di nuovo.",
+    "saveError": "Non siamo riusciti a salvare la tua preferenza di visibilità. Riprova.",
+    "purchaseInstructions": "Diventa sostenitore nell’app mobile Divine: accedi con questo stesso account e apri la sezione sostenitori nelle impostazioni. Hai già acquistato? Ripristina l’acquisto nell’app, poi controlla lo stato qui.",
+    "getApp": "Scarica l’app per diventare sostenitore",
+    "verificationPrerequisite": "Diventa sostenitore per richiedere la verifica",
+    "verificationNext": "Il prossimo passo: la verifica",
+    "verificationDetail": "L’abbonamento di sostegno è necessario per richiedere la verifica. Non verifica la tua identità e non garantisce l’approvazione. Puoi collegare i tuoi account esistenti per condividere prove d’identità.",
+    "linkAccounts": "Vai agli account collegati"
   }
 }

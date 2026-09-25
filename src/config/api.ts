@@ -214,6 +214,16 @@ export const API_CONFIG = {
     },
   },
 
+  supportersService: {
+    baseUrl: import.meta.env.VITE_SUPPORTERS_SERVICE_URL || 'https://supporters.divine.video',
+    timeout: 10000,
+    endpoints: {
+      me: '/v1/me',
+      recognition: '/v1/me/recognition',
+      publicSupporters: '/v1/public/supporters',
+    },
+  },
+
   accountPortability: {
     url: import.meta.env.VITE_ACCOUNT_PORTABILITY_URL || '/exit',
   },

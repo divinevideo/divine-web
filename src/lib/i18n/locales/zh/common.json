@@ -1540,5 +1540,27 @@
     "searchUnavailable": "现在无法搜索。再试一次？",
     "noFollowers": "还没有关注者。",
     "noFollowing": "还没有关注任何人。"
+  },
+  "supporters": {
+    "chip": "支持者",
+    "title": "Divine 支持者",
+    "intro": "帮助 Divine 保持独立、以人为本，并向所有人开放。",
+    "membership": "你的支持者会员资格",
+    "thankYou": "感谢你支持 Divine。",
+    "thanksDetail": "你的支持帮助我们守护这个属于人的空间。很高兴有你在这里。",
+    "showChip": "在我的个人资料上显示支持者徽章",
+    "privacy": "你的会员资格默认不公开。开启此选项即可公开显示徽章。你随时可以更改。",
+    "check": "查看支持者状态",
+    "checking": "正在查看支持者状态…",
+    "checkHint": "已经是支持者？查看此账号的会员资格。你的签名工具可能会请求授权。",
+    "checkError": "无法查看你的支持者状态。请重试。",
+    "unknown": "你的支持者状态尚未确认。再次购买前请先重新查看。",
+    "saveError": "无法保存你的显示偏好。请重试。",
+    "purchaseInstructions": "在 Divine 手机应用中成为支持者：使用同一账号登录，然后打开设置中的支持者栏目。已经购买？请在应用中恢复购买，然后在此查看状态。",
+    "getApp": "获取应用，成为支持者",
+    "verificationPrerequisite": "成为支持者后即可申请认证",
+    "verificationNext": "下一步：认证",
+    "verificationDetail": "支持者会员资格是申请认证的前提。会员资格本身不会验证你的身份，也不保证获批。你可以关联已有账号，分享身份证明。",
+    "linkAccounts": "前往已关联账号"
   }
 }

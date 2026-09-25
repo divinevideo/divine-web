@@ -1540,5 +1540,27 @@
     "searchUnavailable": "Şu anda arama yapılamıyor. Tekrar dene?",
     "noFollowers": "Henüz takipçi yok.",
     "noFollowing": "Henüz kimseyi takip etmiyor."
+  },
+  "supporters": {
+    "chip": "Destekçi",
+    "title": "Divine Destekçileri",
+    "intro": "Divine'ın bağımsız, insana odaklı ve herkese açık kalmasına yardım et.",
+    "membership": "Destekçi üyeliğin",
+    "thankYou": "Divine'ı desteklediğin için teşekkürler.",
+    "thanksDetail": "Desteğin, buranın insanlar için bir yer olarak kalmasını sağlıyor. Burada olmana sevindik.",
+    "showChip": "Destekçi rozetimi profilimde göster",
+    "privacy": "Üyeliğin varsayılan olarak gizlidir. Rozetini herkese göstermek için bu seçeneği aç. İstediğin zaman değiştirebilirsin.",
+    "check": "Destekçi durumunu kontrol et",
+    "checking": "Destekçi durumu kontrol ediliyor…",
+    "checkHint": "Zaten destekçi misin? Bu hesabın üyeliğini kontrol et. İmzalama aracın onay isteyebilir.",
+    "checkError": "Destekçi durumunu kontrol edemedik. Tekrar dene.",
+    "unknown": "Destekçi durumun henüz onaylanmadı. Yeni bir satın alma yapmadan önce tekrar kontrol et.",
+    "saveError": "Görünürlük tercihini kaydedemedik. Tekrar dene.",
+    "purchaseInstructions": "Divine mobil uygulamasında destekçi ol: aynı hesapla giriş yap, ardından Ayarlarda destekçi bölümünü aç. Zaten satın aldın mı? Satın almanı orada geri yükle, ardından durumunu burada kontrol et.",
+    "getApp": "Destekçi olmak için uygulamayı indir",
+    "verificationPrerequisite": "Doğrulamaya başvurmak için destekçi ol",
+    "verificationNext": "Sonraki adımın: doğrulama",
+    "verificationDetail": "Doğrulamaya başvurmak için destekçi üyeliği gerekir. Üyelik kimliğini doğrulamaz veya onay garantisi vermez. Kimlik kanıtlarını paylaşmak için mevcut hesaplarını bağlayabilirsin.",
+    "linkAccounts": "Bağlı hesaplara devam et"
   }
 }

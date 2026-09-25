@@ -25,6 +25,7 @@ import { getLocalNsecLogin } from '@/lib/localNsecAccount';
 import { OVERLAY_LAYERS } from '@/lib/overlayLayers';
 import { API_CONFIG } from '@/config/api';
 import { RelaySelector } from '@/components/RelaySelector';
+import { AccountSupporterStatus } from '@/components/AccountSupporterStatus';
 import { LocalNsecBanner } from './LocalNsecBanner';
 
 interface AccountSwitcherProps {
@@ -90,6 +91,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
             </Avatar>
             <div className='hidden min-w-0 flex-1 truncate text-left md:block'>
               <p className='font-medium text-sm truncate'>{getDisplayName(currentUser)}</p>
+              <AccountSupporterStatus />
             </div>
             <ChevronDown className='w-4 h-4 text-muted-foreground' />
           </button>
@@ -129,6 +131,9 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
           >
             <Export className='w-4 h-4' />
             <span>{t('accountSwitcher.accountPortability', 'Move your account')}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate('/supporters')} className='flex items-center gap-2 cursor-pointer p-2 rounded-md'>
+            <span>{t('supporters.title')}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>{t('accountSwitcher.switchRelay')}</DropdownMenuLabel>

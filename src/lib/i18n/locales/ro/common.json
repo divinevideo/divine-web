@@ -1548,5 +1548,27 @@
     "searchUnavailable": "Căutarea nu merge acum. Mai încerci?",
     "noFollowers": "Încă nu sunt urmăritori.",
     "noFollowing": "Încă nu urmărește pe nimeni."
+  },
+  "supporters": {
+    "chip": "Susținător",
+    "title": "Susținătorii Divine",
+    "intro": "Ajută Divine să rămână independent, uman și deschis tuturor.",
+    "membership": "Abonamentul tău de susținător",
+    "thankYou": "Îți mulțumim că susții Divine.",
+    "thanksDetail": "Sprijinul tău ajută la păstrarea acestui loc pentru oameni. Ne bucurăm că ești aici.",
+    "showChip": "Arată insigna mea de susținător pe profil",
+    "privacy": "Abonamentul tău este privat în mod implicit. Activează această opțiune pentru a afișa insigna public. Poți schimba alegerea oricând.",
+    "check": "Verifică statutul de susținător",
+    "checking": "Se verifică statutul de susținător…",
+    "checkHint": "Ești deja susținător? Verifică abonamentul acestui cont. Instrumentul de semnare îți poate cere aprobarea.",
+    "checkError": "Nu am putut verifica statutul tău de susținător. Încearcă din nou.",
+    "unknown": "Statutul tău de susținător nu este încă confirmat. Verifică din nou înainte de o nouă achiziție.",
+    "saveError": "Nu am putut salva preferința de vizibilitate. Încearcă din nou.",
+    "purchaseInstructions": "Devino susținător în aplicația mobilă Divine: conectează-te cu același cont, apoi deschide secțiunea de susținători din setări. Ai cumpărat deja? Restaurează achiziția acolo, apoi verifică statutul aici.",
+    "getApp": "Descarcă aplicația pentru a deveni susținător",
+    "verificationPrerequisite": "Devino susținător pentru a solicita verificarea",
+    "verificationNext": "Următorul pas: verificarea",
+    "verificationDetail": "Abonamentul de susținător este necesar pentru a solicita verificarea. Nu îți verifică identitatea și nu garantează aprobarea. Poți conecta conturile existente pentru a distribui dovezi de identitate.",
+    "linkAccounts": "Continuă la conturile conectate"
   }
 }

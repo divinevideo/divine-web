@@ -32,6 +32,7 @@ import PeopleListDetailPage from "./pages/PeopleListDetailPage";
 import ProfileListsPage from "./pages/ProfileListsPage";
 import ModerationSettingsPage from "./pages/ModerationSettingsPage";
 import LinkedAccountsSettingsPage from "./pages/LinkedAccountsSettingsPage";
+import SupportersPage from "./pages/SupportersPage";
 import RelaysSettingsPage from "./pages/RelaysSettingsPage";
 // import { NIP05ProfilePage } from "./pages/NIP05ProfilePage";
 import { UniversalUserPage } from "./pages/UniversalUserPage";
@@ -119,6 +120,7 @@ export function AppRouter() {
       <Route path="/search" element={<SearchPage />} />
       <Route path="/leaderboard" element={<LeaderboardPage />} />
       <Route path="/merch" element={<MerchPage />} />
+      <Route path="/supporters" element={<SupportersPage />} />
       <Route path="/services" element={<ServicesPage />} />
       <Route path="/u/:userId" element={<UniversalUserPage />} />
       <Route path="/list/:pubkey/:listId" element={<ListDetailPage />} />

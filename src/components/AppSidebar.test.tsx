@@ -236,6 +236,19 @@ describe('AppSidebar', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/services');
   });
 
+  it('keeps the supporters entry inside the navigation landmark', () => {
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    const supporters = screen.getByRole('button', { name: 'Supporters de Divine' });
+    expect(screen.getByRole('navigation')).toContainElement(supporters);
+    fireEvent.click(supporters);
+    expect(mockNavigate).toHaveBeenCalledWith('/supporters');
+  });
+
   it('marks the services nav item active on the prerendered /services/ URL', () => {
     // Cloudflare Pages 308-redirects /services to /services/, so a direct hit,
     // reload, or shared link always lands on the trailing-slash form.
