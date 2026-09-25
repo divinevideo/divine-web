@@ -13,6 +13,14 @@ import { useNip07Availability } from './useNip07Availability';
 type CurrentUser = {
   pubkey: string;
   signer?: NostrSigner;
+  /**
+   * How this account signs. Present on every manual login (`NUser` carries it);
+   * absent on the hosted-JWT user, which has no `NLoginType` behind it. Callers
+   * that need "is this key held locally" must read this rather than testing the
+   * signer's class: the login dependency bundles its own copy of the signer
+   * package, so `instanceof` compares against a different constructor.
+   */
+  method?: NUser['method'];
 };
 
 // The result of resolving a hosted-JWT signer, tagged with the token it belongs

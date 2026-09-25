@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { linkifyProfileBioText, normalizeExternalUrl } from '@/lib/profileBioLinkify';
+import { OwnSupporterRecognition, PublicSupporterRecognition } from '@/components/SupporterRecognition';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -263,6 +264,7 @@ export function ProfileHeader({
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
+                {isOwnProfile ? <OwnSupporterRecognition /> : <PublicSupporterRecognition pubkey={pubkey} />}
                 {/* Show NIP-05 with visual feedback based on validation state */}
                 {nip05 ? (
                   <div className="flex items-center gap-1 justify-center sm:justify-start">
