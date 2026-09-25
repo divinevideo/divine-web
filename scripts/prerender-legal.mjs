@@ -3,10 +3,13 @@
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import { resolveDistDir } from './lib/distDir.mjs';
+import { withViteSsr } from './lib/viteSsr.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DIST = join(__dirname, '..', 'dist');
+const ROOT = join(__dirname, '..');
 
 // Read the built index.html to extract CSS bundle links, fonts, and styles
 function getShellTemplate(indexHtml) {
@@ -44,7 +47,7 @@ function getShellTemplate(indexHtml) {
   return { cssLinks, styleBlocks, fontLinks, cspMeta };
 }
 
-function buildPage({ title, description, path, content, shell }) {
+function buildPage({ headTags, content, shell }) {
   const { cssLinks, styleBlocks, fontLinks, cspMeta } = shell;
 
   return `<!DOCTYPE html>
@@ -53,20 +56,10 @@ function buildPage({ title, description, path, content, shell }) {
     <meta charset="UTF-8">
     ${cspMeta}
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
-    <title>${title} - Divine Web</title>
-    <meta name="description" content="${description}">
+    ${headTags}
     <meta name="theme-color" content="#27C58B">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://divine.video${path}">
-    <meta property="og:title" content="${title} - Divine Web">
-    <meta property="og:description" content="${description}">
-    <meta property="og:image" content="https://divine.video/og.png">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="${title} - Divine Web">
-    <meta name="twitter:description" content="${description}">
     <link rel="icon" type="image/png" sizes="72x72" href="/favicon.png">
     <link rel="apple-touch-icon" href="/app_icon.png">
-    <link rel="canonical" href="https://divine.video${path}">
     ${fontLinks.join('\n    ')}
     ${cssLinks.join('\n    ')}
     ${styleBlocks.join('\n    ')}
@@ -161,43 +154,13 @@ function resolveTCalls(source, content) {
 
 // ── Page content (semantic HTML versions of the React components) ──────────
 
-const PAGES = [
-  {
-    path: '/terms',
-    title: 'Terms of Service',
-    description: 'Terms of Service for Divine Web - Short-form looping videos on the Nostr network.',
-    sourceFile: '../src/pages/TermsPage.tsx',
-  },
-  {
-    path: '/privacy',
-    title: 'Privacy Policy',
-    description: 'Privacy Policy for Divine Web - How we handle your data on the decentralized Nostr network.',
-    sourceFile: '../src/pages/PrivacyPage.tsx',
-  },
-  {
-    path: '/safety',
-    title: 'Safety Standards',
-    description: 'Safety Standards for Divine Web - Our commitment to protecting users and preventing child exploitation.',
-    sourceFile: '../src/pages/SafetyPage.tsx',
-  },
-  {
-    path: '/dmca',
-    title: 'DMCA & Copyright Policy',
-    description: 'Copyright and DMCA Policy for Divine Web - Fair use basis, content sources, and takedown procedures.',
-    sourceFile: '../src/pages/DMCAPage.tsx',
-  },
-  {
-    path: '/faq',
-    title: 'Frequently Asked Questions',
-    description: 'Frequently Asked Questions about Divine Web - Everything you need to know about the platform.',
-    contentFile: 'faq-content.html',
-  },
-  {
-    path: '/services',
-    title: 'Divine Services',
-    description: 'Companion services that help you make the most of Divine: Space, Sounds, Badges, Crossposter, Verifier, and Status.',
-    contentFile: 'services-content.html',
-  },
+export const PAGES = [
+  { path: '/terms', sourceFile: '../src/pages/TermsPage.tsx' },
+  { path: '/privacy', sourceFile: '../src/pages/PrivacyPage.tsx' },
+  { path: '/safety', sourceFile: '../src/pages/SafetyPage.tsx' },
+  { path: '/dmca', sourceFile: '../src/pages/DMCAPage.tsx' },
+  { path: '/faq', contentFile: 'faq-content.html' },
+  { path: '/services', contentFile: 'services-content.html' },
 ];
 
 function extractContentFromTsx(sourcePath) {
@@ -220,11 +183,18 @@ function extractContentFromTsx(sourcePath) {
 
 // ── Main ──────────────────────────────────────────────────────────────────
 
-function main() {
+async function main() {
+  const DIST = resolveDistDir(ROOT);
   if (!existsSync(DIST)) {
     console.error('Error: dist/ directory not found. Run "vite build" first.');
     process.exit(1);
   }
+
+  const { heads, renderHeadTags } = await withViteSsr(ROOT, async (load) => ({
+    heads: await (await load('/src/seo/pageSeo.ts')).resolveAllPageSeoForBuild(),
+    renderHeadTags: (await load('/src/seo/headTags.ts')).renderHeadTags,
+  }));
+  const legalHeads = new Map(heads.filter((h) => h.prerenderedBy === 'legal').map((h) => [h.path, h]));
 
   // Check if the built index.html has the actual JS bundle reference
   // (not the dev /src/main.tsx)
@@ -258,10 +228,13 @@ function main() {
       content = readFileSync(contentPath, 'utf-8');
     }
 
+    const head = legalHeads.get(page.path);
+    if (!head) {
+      throw new Error(`${page.path}: no PAGE_SEO row with prerenderedBy 'legal'`);
+    }
+
     const html = buildPage({
-      title: page.title,
-      description: page.description,
-      path: page.path,
+      headTags: renderHeadTags(head),
       content,
       shell,
     });
@@ -285,4 +258,9 @@ function main() {
   console.log('Legal page pre-rendering complete.');
 }
 
-main();
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    console.error('prerender-legal failed:', err);
+    process.exit(1);
+  });
+}
