@@ -1,5 +1,5 @@
 // ABOUTME: Pins verify-og-tags.sh to survive a transient network blip against the live edge
-// ABOUTME: One dropped connection out of 64 must not fail the deploy-gating OG parity audit
+// ABOUTME: One dropped connection out of about 190 must not fail the deploy-gating OG parity audit
 
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -169,7 +169,7 @@ describe('verify-og-tags.sh network resilience', () => {
 
     expect(output).not.toContain('000000');
     expect(output).toMatch(/network error.*curl exit \d+/);
-    expect(output).toContain('FAILED: 1 of 16 checks did not pass');
+    expect(output).toContain('FAILED: 1 of 41 checks did not pass');
     expect(status).toBe(1);
   }, 60_000);
 
