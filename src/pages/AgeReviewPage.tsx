@@ -76,8 +76,8 @@ export function AgeReviewPage() {
             Your account is under review
           </h1>
           <p className="text-lg md:text-xl text-brand-light-green max-w-3xl leading-relaxed">
-            Divine flagged this account as possibly belonging to someone under
-            16. To keep the account open, the steps on this page need to happen
+            We think you might be under 16, so we have paused your account
+            while we check. To keep it, the steps on this page need to happen
             within{" "}
             <strong className="text-brand-off-white">
               {REVIEW_WINDOW_DAYS} days
@@ -85,11 +85,9 @@ export function AgeReviewPage() {
             of the in-app notice.
           </p>
           <p className="text-base md:text-lg text-brand-off-white/80 max-w-3xl leading-relaxed mt-4">
-            While the review is open, the account is suspended—you can read
-            this page and email Divine, but you can't post or engage publicly.
-            After {REVIEW_WINDOW_DAYS} days with no response, support closes
-            the account and deletes the personal information Divine holds
-            about it.
+            While we are checking, you can read this page and email us, but
+            you can't post or interact. If we don't hear from you within{" "}
+            {REVIEW_WINDOW_DAYS} days, we close your account permanently.
           </p>
 
           <AnchorNav sections={SECTIONS} />
@@ -249,11 +247,22 @@ export function AgeReviewPage() {
                 <span>A note on privacy</span>
               </div>
               <p>
-                The video is used to confirm the situation and is handled by
-                Divine's Support and Trust &amp; Safety teams. Divine uses the video only for account review, safety, legal, and compliance purposes, and keeps it only as long as reasonably necessary for those purposes unless a longer retention period is required or permitted by law. It isn't
-                published anywhere on Divine and isn't shared with other
-                users.
+                Only Divine's Support and Trust &amp; Safety teams see your
+                video, and they use it only to check your age. It is never
+                published on Divine and never shared with other users. We keep
+                it no longer than we need to.
               </p>
+              <details className="mt-2 text-sm">
+                <summary className="cursor-pointer underline underline-offset-2">
+                  The exact policy details
+                </summary>
+                <p className="mt-2">
+                  The video is used to confirm the situation and is handled by
+                  Divine's Support and Trust &amp; Safety teams. Divine uses the video only for account review, safety, legal, and compliance purposes, and keeps it only as long as reasonably necessary for those purposes unless a longer retention period is required or permitted by law. It isn't
+                  published anywhere on Divine and isn't shared with other
+                  users.
+                </p>
+              </details>
             </CardContent>
           </Card>
         </Anchor>
@@ -353,17 +362,28 @@ export function AgeReviewPage() {
             eyebrow="If we don't hear from you"
             icon={<Path weight="fill" className="h-7 w-7" />}
             title={`What happens after ${REVIEW_WINDOW_DAYS} days with no response`}
-            lead={`After ${REVIEW_WINDOW_DAYS} days with no email to Support, the account is closed and the personal information Divine holds about it is deleted. The closed account doesn't come back.`}
+            lead={`After ${REVIEW_WINDOW_DAYS} days with no reply, we close your account and delete what we hold about you. It doesn't come back.`}
           />
 
           <Card variant="brand" accent="orange">
             <CardContent className="pt-6 space-y-3 text-base leading-relaxed">
               <ul className="space-y-2 list-disc pl-5 marker:text-brand-orange">
                 <li>
-                  Support closes the account and deletes everything tied to
-                  it from Divine's infrastructure—profile, videos,
-                  comments, follow lists, and any email or IP-derived data
-                  on file, except information Divine is required or permitted to keep for legal, safety, security, fraud-prevention, dispute-resolution, or compliance purposes.
+                  We delete your profile, your videos, your comments and your
+                  follow lists, along with your email address and the network
+                  information we have on file. A minimal amount is retained for
+                  legal and safety reasons.
+                  <details className="mt-2 text-sm">
+                    <summary className="cursor-pointer underline underline-offset-2">
+                      The exact policy details
+                    </summary>
+                    <p className="mt-2">
+                      Support closes the account and deletes everything tied to
+                      it from Divine's infrastructure—profile, videos,
+                      comments, follow lists, and any email or IP-derived data
+                      on file, except information Divine is required or permitted to keep for legal, safety, security, fraud-prevention, dispute-resolution, or compliance purposes.
+                    </p>
+                  </details>
                 </li>
                 <li>
                   Divine issues a deletion request across the Nostr network.
