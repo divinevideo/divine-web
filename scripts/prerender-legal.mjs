@@ -140,23 +140,39 @@ function getTranslationValue(messages, key) {
 }
 
 function resolveTCalls(source, content) {
-  const namespaceMatch = source.match(/useTranslation\('([^']+)'\)/);
+  // Pages that call useTranslation() with no argument resolve against the
+  // default namespace ('common'), same as the i18n instance does.
+  const namespaceMatch = source.match(/useTranslation\(\s*(?:'([^']+)')?\s*\)/);
+  const namespace = namespaceMatch?.[1] ?? 'common';
 
-  if (!namespaceMatch) {
-    return content;
-  }
-
-  const localePath = join(__dirname, '..', 'src', 'lib', 'i18n', 'locales', 'en', `${namespaceMatch[1]}.json`);
+  const localePath = join(__dirname, '..', 'src', 'lib', 'i18n', 'locales', 'en', `${namespace}.json`);
   if (!existsSync(localePath)) {
     return content;
   }
 
   const messages = JSON.parse(readFileSync(localePath, 'utf-8'));
 
-  return content.replace(/\{t\('([^']+)'\)\}/g, (match, key) => {
-    const value = getTranslationValue(messages, key);
-    return typeof value === 'string' ? value : match;
-  });
+  // Matches {t('key')} and {t('key', { name: 'value' })}. The second form
+  // carries interpolation options, so its string values replace the matching
+  // {{name}} placeholders in the resolved message.
+  return content.replace(
+    /\{t\(\s*'([^']+)'\s*(?:,\s*(\{[^}]*\}))?\s*\)\}/g,
+    (match, key, optionsSource) => {
+      const value = getTranslationValue(messages, key);
+      if (typeof value !== 'string') {
+        return match;
+      }
+
+      if (!optionsSource) {
+        return value;
+      }
+
+      return [...optionsSource.matchAll(/(\w+)\s*:\s*'([^']*)'/g)].reduce(
+        (resolved, [, name, replacement]) => resolved.replaceAll(`{{${name}}}`, replacement),
+        value,
+      );
+    },
+  );
 }
 
 // ── Page content (semantic HTML versions of the React components) ──────────
