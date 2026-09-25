@@ -8,12 +8,34 @@ import { describe, expect, it } from 'vitest';
 
 import { EXCLUDED_ROUTES, PAGE_SEO } from './pageSeo';
 
-function staticRoutes(): string[] {
-  const source = readFileSync(join(process.cwd(), 'src/AppRouter.tsx'), 'utf8')
+function stripComments(source: string): string {
+  return source
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, '') // JSX comments
     .replace(/\/\*[\s\S]*?\*\//g, '') // block comments
     .replace(/^\s*\/\/.*$/gm, ''); // line comments
-  const paths = [...source.matchAll(/<Route\s[^>]*?\bpath="([^"]+)"/g)].map((m) => m[1]);
+}
+
+function rawRoutePaths(source: string): string[] {
+  return [...source.matchAll(/<Route\s[^>]*?\bpath="([^"]+)"/g)].map((m) => m[1]);
+}
+
+/**
+ * Counts <Route> tags that carry a path= attribute anywhere in their own opening
+ * tag, without the naive regex's limitation of stopping at the first `>` (which a
+ * nested self-closing element, e.g. `<Route element={<X />} path="/new">`, hits
+ * before `path=` when `path` comes after `element`). Splitting on each `<Route`
+ * occurrence isolates one tag's own attributes from the next tag's, so it stays
+ * accurate whether `path` comes first or last.
+ */
+function countRouteTagsWithPath(source: string): number {
+  return source
+    .split(/(?=<Route\b)/)
+    .filter((segment) => /^<Route\b/.test(segment) && /\bpath\s*=\s*"/.test(segment)).length;
+}
+
+function staticRoutes(): string[] {
+  const source = stripComments(readFileSync(join(process.cwd(), 'src/AppRouter.tsx'), 'utf8'));
+  const paths = rawRoutePaths(source);
   return [...new Set(paths.filter((path) => !path.includes(':') && path !== '*'))];
 }
 
@@ -26,6 +48,11 @@ describe('fixed-page route coverage', () => {
     expect(routes).toContain('/__brand-preview'); // multi-line <Route> under a DEV guard
     expect(routes).not.toContain('/upload'); // only exists inside a JSX comment
     expect(routes.length).toBeGreaterThan(40);
+  });
+
+  it('does not miss a route whose path attribute follows element (parser sanity check)', () => {
+    const source = stripComments(readFileSync(join(process.cwd(), 'src/AppRouter.tsx'), 'utf8'));
+    expect(rawRoutePaths(source).length).toBe(countRouteTagsWithPath(source));
   });
 
   it('gives every static route a table row or an exclusion reason', () => {
