@@ -18,9 +18,9 @@ import {
 const HEAD: ResolvedPageHead = {
   path: '/dmca',
   title: 'DMCA & Copyright Policy - Divine',
-  description: 'What Divine can and can\'t take down, and how to file a "counter-notice".',
+  description: 'What Divine can and can’t take down, and how to file a "counter-notice".',
   previewTitle: 'DMCA & Copyright Policy',
-  previewDescription: 'What Divine can and can\'t take down, and how to file a "counter-notice".',
+  previewDescription: 'What Divine can and can’t take down, and how to file a "counter-notice".',
   canonical: 'https://divine.video/dmca',
   type: 'website',
   siteName: 'Divine',
@@ -119,7 +119,7 @@ describe('checkHeadTags', () => {
 
 describe('escapeHtml / decodeHtml', () => {
   it('round-trips quotes, ampersands, angle brackets and apostrophes', () => {
-    const value = `Tom & Jerry's "<b>" — Can't`;
+    const value = `Tom & Jerry's "<b>" — Can’t`;
     expect(decodeHtml(escapeHtml(value))).toBe(value);
   });
 });
