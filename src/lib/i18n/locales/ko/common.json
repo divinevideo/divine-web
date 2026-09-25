@@ -743,8 +743,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "리더보드 - Divine",
-    "seoDescription": "Divine에서 루프 기준 인기 비디오와 크리에이터",
-    "seoOgDescription": "가장 인기 있는 비디오와 크리에이터 보기",
     "heading": "리더보드",
     "subheading": "루프 기준 인기 비디오와 크리에이터",
     "topVideos": "인기 비디오",
@@ -1216,8 +1214,6 @@
   },
   "merchPage": {
     "metaTitle": "굿즈 — Divine",
-    "metaDescription": "너무 진지하지 않은 티셔츠, 후디, 모자, 그리고 이런저런 것들. Divine이 디자인하고 Bonfire가 인쇄·배송해요.",
-    "ogTitle": "Divine 굿즈",
     "headline": "회원님의 루프를 입어요.",
     "body": "너무 진지하지 않은 티셔츠, 후디, 모자, 그리고 이런저런 것들.",
     "storeCta": "전체 보기",

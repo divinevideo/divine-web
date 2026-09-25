@@ -750,8 +750,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "Tabla de líderes - Divine",
-    "seoDescription": "Mejores videos y creadores por loops en Divine",
-    "seoOgDescription": "Mira los videos y creadores más populares",
     "heading": "Tabla de líderes",
     "subheading": "Mejores videos y creadores por loops",
     "topVideos": "Mejores videos",
@@ -1224,8 +1222,6 @@
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",
-    "metaDescription": "Camisetas, hoodies, gorras y cosas que no se toman demasiado en serio. Diseñado por Divine, impreso y enviado por Bonfire.",
-    "ogTitle": "Merch de Divine",
     "headline": "Lleva puestos tus loops.",
     "body": "Camisetas, hoodies, gorras y cosas que no se toman demasiado en serio.",
     "storeCta": "Comprar todo",

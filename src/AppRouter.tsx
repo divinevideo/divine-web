@@ -5,6 +5,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
+import { PageSeoForRoute } from "@/components/PageSeoForRoute";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
 import { getSubdomainUser } from "./hooks/useSubdomainUser";
@@ -157,6 +158,7 @@ export function AppRouter() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <PageSeoForRoute />
       {/* AnalyticsUserTracker first: it configures the analytics identity that
           AnalyticsPageTracker's identity-linked events depend on. */}
       <AnalyticsUserTracker />

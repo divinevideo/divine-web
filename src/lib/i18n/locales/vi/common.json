@@ -743,8 +743,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "Bảng xếp hạng - Divine",
-    "seoDescription": "Video và nhà sáng tạo hàng đầu theo vòng lặp trên Divine",
-    "seoOgDescription": "Xem những video và nhà sáng tạo phổ biến nhất",
     "heading": "Bảng xếp hạng",
     "subheading": "Video và nhà sáng tạo hàng đầu theo vòng lặp",
     "topVideos": "Video hàng đầu",
@@ -1216,8 +1214,6 @@
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",
-    "metaDescription": "Áo thun, hoodie, mũ và những món đồ không tự coi mình quá nghiêm túc. Thiết kế bởi Divine, in và vận chuyển bởi Bonfire.",
-    "ogTitle": "Merch Divine",
     "headline": "Diện vòng lặp lên người.",
     "body": "Áo thun, hoodie, mũ và những món đồ không tự coi mình quá nghiêm túc.",
     "storeCta": "Mua tất cả",
