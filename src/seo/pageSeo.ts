@@ -147,14 +147,14 @@ export const PAGE_SEO: readonly PageSeoRow[] = [
   },
   {
     path: '/age-review',
-    // source: existing (compute-js/src/index.js, src/lib/serverSocialMeta.ts)
+    // source: existing (formerly compute-js/src/index.js and src/lib/serverSocialMeta.ts)
     title: 'Account review — Divine',
     description: 'If your Divine account was flagged as possibly belonging to someone under 16, this page explains what to do — and the 15-day window for responding.',
     imageAlt: 'Divine — account review information',
   },
   {
     path: '/kids',
-    // source: existing (src/lib/serverSocialMeta.ts; the Fastly copy lacked the Greenlight clause the page has)
+    // source: existing (formerly src/lib/serverSocialMeta.ts; the old Fastly copy lacked the Greenlight clause the page has)
     title: 'Kids on Divine — How accounts work for under-16s',
     description: 'How Divine handles accounts for people under 16 — the rules, the reasoning, Divine Greenlight for teens 13-15, and what families can do together regardless of age.',
     imageAlt: 'Divine — how accounts work for kids and families',

@@ -254,6 +254,17 @@ describe('functions/[[path]]', () => {
     expect(await response.text()).toBe(pageHtml);
   });
 
+  it('leaves a static fixed page untouched at a route a removed handler used to match', async () => {
+    const pageHtml = INDEX_HTML.replace('Divine Web - Short-form Looping Videos on Nostr</title>', 'Download Divine</title>');
+    const response = await onRequest({
+      request: new Request('https://divine.video/download'),
+      next: async () => new Response(pageHtml, { status: 200, headers: { 'content-type': 'text/html; charset=UTF-8' } }),
+      env: {},
+    });
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe(pageHtml);
+  });
+
   it('injects category metadata for category routes', async () => {
     const response = await onRequest({
       request: new Request('https://divine.video/category/dance'),
