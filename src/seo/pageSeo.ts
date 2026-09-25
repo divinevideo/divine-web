@@ -225,6 +225,7 @@ export const PAGE_SEO: readonly PageSeoRow[] = [
     title: { key: 'leaderboardPage.seoTitle' },
     // source: existing (leaderboardPage.seoDescription / seoOgDescription English values)
     description: 'Top videos and creators by loops on Divine',
+    previewTitle: 'Leaderboard',
     previewDescription: 'See the most popular videos and creators',
   },
   {

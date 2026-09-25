@@ -152,6 +152,8 @@ describe('resolvePageSeo', () => {
         expect(head.previewTitle, row.path).not.toBe(row.title.key);
       }
       expect(head.title, row.path).toMatch(/Divine/);
+      // Preview titles never get the tab-title suffix
+      expect(head.previewTitle, row.path).not.toMatch(/ - Divine$/);
     });
     expect(heads.find((head) => head.path === '/dmca')?.title).toBe('DMCA & Copyright Policy - Divine');
   });
