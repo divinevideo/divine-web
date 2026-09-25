@@ -12,7 +12,7 @@ import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
 import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
-import { buildWwwRedirectResponse } from './hostRedirect.js';
+import { buildAccountPortabilityRedirectResponse, buildWwwRedirectResponse } from './hostRedirect.js';
 import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
 import { extractStaticAssetsFromHtml, readPublishedStaticFile } from './staticContent.js';
 import {
@@ -143,6 +143,13 @@ async function handleRequest(event) {
   const redirect = EXTERNAL_REDIRECTS[url.pathname];
   if (redirect) {
     return Response.redirect(redirect.url, redirect.status);
+  }
+
+  // 3a. /account-portability moved to /exit (#591). After the www redirect, so
+  // www takes one hop to the apex and then one to /exit.
+  const accountPortabilityRedirect = buildAccountPortabilityRedirectResponse(url, hostnameToUse);
+  if (accountPortabilityRedirect) {
+    return accountPortabilityRedirect;
   }
 
   // 3b. Handle /@username paths on apex domain (e.g., divine.video/@samuelgrubbs)
