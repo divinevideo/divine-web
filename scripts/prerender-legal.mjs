@@ -156,7 +156,7 @@ function resolveTCalls(source, content) {
   // carries interpolation options, so its string values replace the matching
   // {{name}} placeholders in the resolved message.
   return content.replace(
-    /\{t\(\s*'([^']+)'\s*(?:,\s*(\{[^}]*\}))?\s*\)\}/g,
+    /\{t\(\s*'([^']+)'\s*(?:,\s*(\{(?:[^}']|'[^']*')*\}))?\s*\)\}/g,
     (match, key, optionsSource) => {
       const value = getTranslationValue(messages, key);
       if (typeof value !== 'string') {
