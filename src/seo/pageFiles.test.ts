@@ -77,4 +77,17 @@ describe('buildSitemap', () => {
       expect(xml).toContain(`<loc>https://divine.video${path}</loc>\n    <lastmod>2026-07-22</lastmod>`);
     }
   });
+
+  it('keeps the dates the hand-kept sitemap had', () => {
+    const xml = buildSitemap(heads);
+    const expected: Record<string, string> = {
+      '/kids': '2026-07-22',
+      '/exit': '2026-08-15',
+      '/download': '2026-08-21',
+      '/delete-account': '2026-08-15',
+    };
+    for (const [path, lastmod] of Object.entries(expected)) {
+      expect(xml).toContain(`<loc>https://divine.video${path}</loc>\n    <lastmod>${lastmod}</lastmod>`);
+    }
+  });
 });

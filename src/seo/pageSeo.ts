@@ -158,6 +158,7 @@ export const PAGE_SEO: readonly PageSeoRow[] = [
     title: 'Kids on Divine — How accounts work for under-16s',
     description: 'How Divine handles accounts for people under 16 — the rules, the reasoning, Divine Greenlight for teens 13-15, and what families can do together regardless of age.',
     imageAlt: 'Divine — how accounts work for kids and families',
+    lastModified: '2026-07-22',
   },
   {
     path: '/download',
@@ -165,12 +166,14 @@ export const PAGE_SEO: readonly PageSeoRow[] = [
     title: 'Download Divine',
     description: 'Get Divine from the App Store, Google Play, or Zapstore.',
     imageAlt: 'Download the Divine mobile app',
+    lastModified: '2026-08-21',
   },
   {
     path: '/exit',
     // source: existing (src/pages/PortabilityPage.tsx)
     title: 'Account Portability on Divine',
     description: 'A plain-language guide to moving your Divine account and content to infrastructure you choose.',
+    lastModified: '2026-08-15',
   },
   {
     path: '/exit/start',
@@ -183,6 +186,7 @@ export const PAGE_SEO: readonly PageSeoRow[] = [
     // source: existing (src/pages/DeleteAccountPage.tsx)
     title: 'Delete Your Divine Account',
     description: 'How to request deletion of your Divine account and what deletion can and cannot remove on an open network.',
+    lastModified: '2026-08-15',
   },
   {
     path: '/support',
