@@ -221,6 +221,11 @@ export const PAGE_SEO: readonly PageSeoRow[] = [
     previewTitle: 'Divine Merch',
   },
   {
+    path: '/supporters',
+    title: { key: 'supporters.title' },
+    description: 'Help keep Divine independent, human, and open to everyone. Become a supporter in the Divine app and check your membership here.',
+  },
+  {
     path: '/leaderboard',
     title: { key: 'leaderboardPage.seoTitle' },
     // source: existing (leaderboardPage.seoDescription / seoOgDescription English values)

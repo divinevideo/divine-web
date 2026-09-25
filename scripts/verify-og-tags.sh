@@ -64,7 +64,7 @@ TABLE_ROUTES=(
   "/family/media-plan" "/family/when-something-goes-wrong" "/family/safety-tools"
   "/age-review" "/kids" "/download" "/exit" "/exit/start" "/delete-account"
   "/support" "/faq" "/get-embed" "/services" "/merch" "/leaderboard"
-  "/trending" "/popular" "/hashtags"
+  "/trending" "/popular" "/hashtags" "/supporters"
 )
 
 # linkedin and chrome are defined but not asserted on here.

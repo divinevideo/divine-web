@@ -169,7 +169,7 @@ describe('verify-og-tags.sh network resilience', () => {
 
     expect(output).not.toContain('000000');
     expect(output).toMatch(/network error.*curl exit \d+/);
-    expect(output).toContain('FAILED: 1 of 41 checks did not pass');
+    expect(output).toContain('FAILED: 1 of 42 checks did not pass');
     expect(status).toBe(1);
   }, 60_000);
 

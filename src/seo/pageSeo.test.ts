@@ -38,10 +38,10 @@ function pngSize(file: string): { width: number; height: number } {
 }
 
 describe('PAGE_SEO', () => {
-  it('lists 28 unique paths', () => {
+  it('lists 29 unique paths', () => {
     const paths = PAGE_SEO.map((row) => row.path);
-    expect(paths).toHaveLength(28);
-    expect(new Set(paths).size).toBe(28);
+    expect(paths).toHaveLength(29);
+    expect(new Set(paths).size).toBe(29);
   });
 
   it('keeps descriptions between 1 and 200 characters', () => {
@@ -144,7 +144,7 @@ describe('resolvePageSeo', () => {
 
   it('resolves every row in English for the build', async () => {
     const heads = await resolveAllPageSeoForBuild();
-    expect(heads).toHaveLength(28);
+    expect(heads).toHaveLength(29);
     PAGE_SEO.forEach((row, index) => {
       const head = heads[index];
       if (typeof row.title !== 'string') {
