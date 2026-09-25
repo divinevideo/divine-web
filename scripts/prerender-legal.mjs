@@ -1,7 +1,7 @@
 // ABOUTME: Build-time pre-render script for legal pages (terms, privacy, safety, dmca, faq)
 // ABOUTME: Generates static HTML in dist/ so non-JS clients see real content instead of a loading spinner
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, realpathSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -258,7 +258,7 @@ async function main() {
   console.log('Legal page pre-rendering complete.');
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   main().catch((err) => {
     console.error('prerender-legal failed:', err);
     process.exit(1);
