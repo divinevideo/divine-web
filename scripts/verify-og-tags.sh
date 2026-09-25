@@ -15,7 +15,8 @@
 
 set -uo pipefail
 
-BASE_URL="${BASE_URL:-https://divine.video}"
+PRODUCTION_BASE_URL="https://divine.video"
+BASE_URL="${BASE_URL:-${PRODUCTION_BASE_URL}}"
 UA_ONLY="${UA_ONLY:-}"
 
 REAL_VIDEO_ID="3ca833a0027dd6240b2956dec98643032ff43ee75c0f0cde9d2096186b4b2605"
@@ -29,6 +30,9 @@ USER_AGENTS=(
   "linkedin|LinkedInBot/1.0 (compatible; Mozilla/5.0)"
   "discord|Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)"
   "chrome|Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+  # Not on Fastly's isSocialMediaCrawler() list: fixed pages must preview as
+  # themselves in every app, not only allowlisted crawlers (#726).
+  "mastodon|http.rb/5.1.1 (Mastodon/4.2.0; +https://mastodon.social/)"
 )
 
 ROUTES=(
@@ -42,9 +46,6 @@ ROUTES=(
   "/profile/${SYNTHETIC_NPUB}|synthetic npub (does not exist)|og_title_is_brand"
   "/category/dance|category with video count|og_title_not_brand && og_url_matches_path"
   "/category|category index|og_title_not_brand && og_url_matches_path"
-  "/family|family resource hub|og_title_not_brand && og_url_matches_path"
-  "/age-review|age review page|og_title_not_brand && og_url_matches_path"
-  "/kids|kids policy page|og_title_not_brand && og_url_matches_path"
   "/t/funny|hashtag page|og_title_not_brand && og_url_matches_path"
   "/search?q=cats|search results|og_title_not_brand && og_url_matches_path"
   "/discovery|discovery (trending)|og_title_not_brand && og_url_matches_path"
@@ -54,15 +55,29 @@ ROUTES=(
   "/|apex home|og_title_not_brand"
 )
 
-# Crawler UAs known to trigger Fastly's isSocialMediaCrawler() switch.
-# These are the UAs for which per-route OG handlers SHOULD fire.
-# Browsers (chrome) and bots not on the Fastly list (linkedin) are expected
-# to fall through to the SPA shell and are NOT asserted on.
+# Fixed public pages whose tags are written into static HTML at build time from
+# src/seo/pageSeo.ts (#726): every row of that table, and nothing else.
+# tests/verify-og-tags-table-routes.test.ts keeps this list equal to the table.
+TABLE_ROUTES=(
+  "/authenticity" "/privacy" "/terms" "/open-source" "/proofmode"
+  "/human-created" "/dmca" "/safety" "/family" "/family/talking-to-your-teen"
+  "/family/media-plan" "/family/when-something-goes-wrong" "/family/safety-tools"
+  "/age-review" "/kids" "/download" "/exit" "/exit/start" "/delete-account"
+  "/support" "/faq" "/get-embed" "/services" "/merch" "/leaderboard"
+  "/trending" "/popular" "/hashtags"
+)
+
+# linkedin and chrome are defined but not asserted on here.
 CRAWLER_UA_LABELS=(
   "slackbot"
   "facebook"
   "twitter"
   "discord"
+)
+
+# Run against TABLE_ROUTES only: static pages must not depend on the allowlist.
+TABLE_ONLY_UA_LABELS=(
+  "mastodon"
 )
 
 total_checks=0
@@ -121,7 +136,7 @@ run_check() {
   trap '[[ "${cleanup_needed:-false}" == "true" ]] && rm -f "$tmp_headers" "$tmp_body" "$tmp_error"' RETURN
   cleanup_needed=true
 
-  # This audit makes ~64 live requests to a CDN edge per run, so a single dropped
+  # This audit makes ~190 live requests to a CDN edge per run, so a single dropped
   # connection used to fail the whole deploy gate. Retry transport errors before
   # calling it a parity failure. --retry-max-time keeps a genuinely unreachable
   # origin from stacking 30s timeouts on every route.
@@ -229,7 +244,10 @@ run_check() {
       og_title_not_brand)
         local og_title
         og_title=$(extract_meta "$body" "og:title")
-        if [[ "$og_title" == "Divine Web - Short-form Looping Videos on Nostr" ]]; then
+        if [[ -z "$og_title" ]]; then
+          all_passed=false
+          echo "    FAIL: missing og:title tag"
+        elif [[ "$og_title" == "Divine Web - Short-form Looping Videos on Nostr" ]]; then
           all_passed=false
           echo "    FAIL: og:title is generic brand fallback (no per-route handler fired)"
           echo "          got: ${og_title}"
@@ -253,32 +271,40 @@ run_check() {
         local og_url
         local alternate_og_url=""
         og_url=$(extract_meta "$body" "og:url")
-        case "$path" in
-          /discovery/hot|/discovery/classics)
-            # TODO(#667): Remove after Fastly emits metadata for the current discovery slugs.
-            alternate_og_url="https://divine.video/discovery"
-            ;;
-          /family)
-            # The prerendered marketing page intentionally canonicalizes previews to production.
-            alternate_og_url="https://divine.video/family"
-            ;;
-        esac
-        if [[ -z "$og_url" ]]; then
-          all_passed=false
-          echo "    FAIL: missing og:url tag"
-        elif [[ "$og_url" == *"inherently-ethical-gelding.edgecompute.app"* ]]; then
-          all_passed=false
-          echo "    FAIL: og:url leaks Fastly origin host (should be ${BASE_URL})"
-          echo "          got: ${og_url}"
-        elif [[ "$og_url" != "${BASE_URL}${path}" \
-          && "$og_url" != "${BASE_URL}${path}/" \
-          && "$og_url" != "${BASE_URL}/" \
-          && "$og_url" != "$alternate_og_url" \
-          && "$og_url" != "${alternate_og_url}/" ]]; then
-          all_passed=false
-          echo "    FAIL: og:url does not match expected path"
-          echo "          expected: ${BASE_URL}${path}"
-          echo "          got:      ${og_url}"
+        if is_table_route "$path"; then
+          # Static files always name the production URL, whatever host serves
+          # them (Cloudflare, local Fastly, dvine.video). No trailing slash and no
+          # homepage URL: a homepage og:url is exactly the bug these pages fix.
+          if [[ "$og_url" != "${PRODUCTION_BASE_URL}${path}" && "$og_url" != "${BASE_URL}${path}" ]]; then
+            all_passed=false
+            echo "    FAIL: og:url is not the page's canonical URL"
+            echo "          expected: ${PRODUCTION_BASE_URL}${path}"
+            echo "          got:      ${og_url:-<missing>}"
+          fi
+        else
+          case "$path" in
+            /discovery/hot|/discovery/classics)
+              # TODO(#667): Remove after Fastly emits metadata for the current discovery slugs.
+              alternate_og_url="https://divine.video/discovery"
+              ;;
+          esac
+          if [[ -z "$og_url" ]]; then
+            all_passed=false
+            echo "    FAIL: missing og:url tag"
+          elif [[ "$og_url" == *"inherently-ethical-gelding.edgecompute.app"* ]]; then
+            all_passed=false
+            echo "    FAIL: og:url leaks Fastly origin host (should be ${BASE_URL})"
+            echo "          got: ${og_url}"
+          elif [[ "$og_url" != "${BASE_URL}${path}" \
+            && "$og_url" != "${BASE_URL}${path}/" \
+            && "$og_url" != "${BASE_URL}/" \
+            && "$og_url" != "$alternate_og_url" \
+            && "$og_url" != "${alternate_og_url}/" ]]; then
+            all_passed=false
+            echo "    FAIL: og:url does not match expected path"
+            echo "          expected: ${BASE_URL}${path}"
+            echo "          got:      ${og_url}"
+          fi
         fi
         ;;
       *)
@@ -319,6 +345,49 @@ get_user_agent() {
   done
 
   return 1
+}
+
+is_table_route() {
+  local wanted="$1"
+  local table_path
+  for table_path in "${TABLE_ROUTES[@]}"; do
+    [[ "$table_path" == "$wanted" ]] && return 0
+  done
+  return 1
+}
+
+# Cloudflare Pages deployments (production and previews) are served on *.pages.dev.
+is_cloudflare_target() {
+  local host="${BASE_URL#*://}"
+  host="${host%%/*}"
+  host="${host%%:*}"
+  [[ "$host" == *.pages.dev ]]
+}
+
+# Run one route against the given User-Agent labels, honoring UA_ONLY.
+audit_route() {
+  local path="$1" description="$2" assertions="$3"
+  shift 3
+
+  echo
+  echo "-- ${description} --"
+  echo "   path: ${path}"
+
+  local ua_label
+  for ua_label in "$@"; do
+    if [[ -n "$UA_ONLY" && "$UA_ONLY" != "$ua_label" ]]; then
+      continue
+    fi
+
+    local ua_value
+    if ! ua_value=$(get_user_agent "$ua_label"); then
+      echo "ERROR: unknown User-Agent label '${ua_label}'"
+      exit 2
+    fi
+
+    total_checks=$((total_checks + 1))
+    run_check "$path" "$description" "$assertions" "$ua_label" "$ua_value"
+  done
 }
 
 print_summary() {
@@ -367,26 +436,21 @@ main() {
     local rest="${route_entry#*|}"
     local description="${rest%%|*}"
     local assertions="${rest#*|}"
+    audit_route "$path" "$description" "$assertions" "${CRAWLER_UA_LABELS[@]}"
+  done
 
-    echo
-    echo "-- ${description} --"
-    echo "   path: ${path}"
-
-    local ua_label
-    for ua_label in "${CRAWLER_UA_LABELS[@]}"; do
-      if [[ -n "$UA_ONLY" && "$UA_ONLY" != "$ua_label" ]]; then
-        continue
-      fi
-
-      local ua_value
-      if ! ua_value=$(get_user_agent "$ua_label"); then
-        echo "ERROR: unknown User-Agent label '${ua_label}'"
-        exit 2
-      fi
-
-      total_checks=$((total_checks + 1))
-      run_check "$path" "$description" "$assertions" "$ua_label" "$ua_value"
-    done
+  local table_path
+  for table_path in "${TABLE_ROUTES[@]}"; do
+    if [[ "$table_path" == "/faq" ]] && is_cloudflare_target; then
+      # Cloudflare redirects /faq to about.divine.video/faqs/ (public/_redirects)
+      # while Fastly serves the prerendered page. That host split is a separate
+      # change (#726 design, Non-goals); only Fastly has a /faq preview.
+      echo
+      echo "-- fixed page /faq: skipped on Cloudflare (deferred /faq host split) --"
+      continue
+    fi
+    audit_route "$table_path" "fixed page" "og_title_not_brand && og_url_matches_path" \
+      "${CRAWLER_UA_LABELS[@]}" "${TABLE_ONLY_UA_LABELS[@]}"
   done
 
   print_summary
