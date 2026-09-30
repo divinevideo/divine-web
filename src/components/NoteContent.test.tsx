@@ -41,10 +41,10 @@ function makeEvent(content: string): NostrEvent {
   };
 }
 
-function renderContent(content: string) {
+function renderContent(content: string, linkifyBareDomains = false) {
   return render(
     <MemoryRouter>
-      <NoteContent event={makeEvent(content)} />
+      <NoteContent event={makeEvent(content)} linkifyBareDomains={linkifyBareDomains} />
     </MemoryRouter>,
   );
 }
@@ -57,6 +57,47 @@ beforeEach(() => {
     isInvalid: true,
     state: 'invalid',
     nip05: undefined,
+  });
+});
+
+describe('NoteContent — bare domains', () => {
+  it('links a domain and path when enabled', () => {
+    renderContent('check out divine.video/leaderboard', true);
+
+    expect(screen.getByRole('link', { name: 'divine.video/leaderboard' }))
+      .toHaveAttribute('href', 'https://divine.video/leaderboard');
+  });
+
+  it('keeps a query string while excluding surrounding punctuation', () => {
+    renderContent('See (divine.video/leaderboard?tab=weekly&sort=hot).', true);
+
+    expect(screen.getByRole('link', { name: 'divine.video/leaderboard?tab=weekly&sort=hot' }))
+      .toHaveAttribute('href', 'https://divine.video/leaderboard?tab=weekly&sort=hot');
+    expect(screen.getByText(/\)\.$/)).toBeInTheDocument();
+  });
+
+  it('does not link bare domains by default', () => {
+    renderContent('check out divine.video/leaderboard');
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('does not link domains inside email addresses or longer words', () => {
+    renderContent('mail person@example.com or example.com@evil.com or foo_divine.video', true);
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('keeps full URLs, hashtags, and Nostr references as distinct links', () => {
+    renderContent(`https://example.com/path divine.video/leaderboard #skating ${NOTE}`, true);
+
+    expect(screen.getAllByRole('link')).toHaveLength(4);
+    expect(screen.getByRole('link', { name: 'https://example.com/path' }))
+      .toHaveAttribute('href', 'https://example.com/path');
+    expect(screen.getByRole('link', { name: 'divine.video/leaderboard' }))
+      .toHaveAttribute('href', 'https://divine.video/leaderboard');
+    expect(screen.getByRole('link', { name: '#skating' })).toHaveAttribute('href', '/t/skating');
+    expect(screen.getByRole('link', { name: NOTE })).toHaveAttribute('href', `/${NOTE}`);
   });
 });
 

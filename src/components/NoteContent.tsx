@@ -10,19 +10,24 @@ import { cn } from '@/lib/utils';
 interface NoteContentProps {
   event: NostrEvent;
   className?: string;
+  linkifyBareDomains?: boolean;
 }
 
 /** Parses content of text note events so that URLs and hashtags are linkified. */
 export function NoteContent({
   event, 
   className, 
+  linkifyBareDomains = false,
 }: NoteContentProps) {  
   // Process the content to render mentions, links, etc.
   const content = useMemo(() => {
     const text = event.content;
     
     const nip19Chars = '023456789acdefghjklmnpqrstuvwxyz';
-    const regex = new RegExp(`(https?:\\/\\/[^\\s]+)|(?:nostr:)?\\b((?:npub1|note1)[${nip19Chars}]{58}|(?:nprofile1|nevent1|naddr1)[${nip19Chars}]+)(?=$|[^A-Za-z0-9_]|nostr:)|(#\\w+)`, 'g');
+    const bareDomain = linkifyBareDomains
+      ? '(?<![\\w@./:-])[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\\.[A-Za-z]{2,}(?![\\w@-])(?:[/?#][^\\s]*)?'
+      : '(?!)';
+    const regex = new RegExp(`(https?:\\/\\/[^\\s]+)|(${bareDomain})|(?:nostr:)?\\b((?:npub1|note1)[${nip19Chars}]{58}|(?:nprofile1|nevent1|naddr1)[${nip19Chars}]+)(?=$|[^A-Za-z0-9_]|nostr:)|(#\\w+)`, 'g');
 
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
@@ -30,7 +35,7 @@ export function NoteContent({
     let keyCounter = 0;
 
     while ((match = regex.exec(text)) !== null) {
-      const [fullMatch, url, nostrId, hashtag] = match;
+      const [fullMatch, url, bareUrl, nostrId, hashtag] = match;
       const index = match.index;
       
       // Add text before this match
@@ -38,19 +43,23 @@ export function NoteContent({
         parts.push(text.substring(lastIndex, index));
       }
       
-      if (url) {
+      if (url || bareUrl) {
         // Handle URLs
+        const linkText = bareUrl ? fullMatch.replace(/[.,!?;:)}\]]+$/, '') : fullMatch;
         parts.push(
           <a 
             key={`url-${keyCounter++}`}
-            href={url}
+            href={url ? linkText : `https://${linkText}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-500 hover:underline"
           >
-            {url}
+            {linkText}
           </a>
         );
+        if (linkText.length < fullMatch.length) {
+          parts.push(fullMatch.slice(linkText.length));
+        }
       } else if (nostrId) {
         // Handle Nostr references
         try {
@@ -106,7 +115,7 @@ export function NoteContent({
     }
     
     return parts;
-  }, [event]);
+  }, [event, linkifyBareDomains]);
 
   return (
     <div className={cn("whitespace-pre-wrap break-words", className)}>
