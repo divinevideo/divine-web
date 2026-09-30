@@ -236,6 +236,43 @@ describe('AppSidebar', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/services');
   });
 
+  it('shows the translated leaderboard after Popular and navigates there for visitors', () => {
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    const leaderboard = screen.getByRole('button', { name: 'Tabla de líderes' });
+    const popular = screen.getByRole('button', { name: 'Popular' });
+    expect(screen.getByRole('navigation')).toContainElement(leaderboard);
+    expect(popular.compareDocumentPosition(leaderboard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.click(leaderboard);
+    expect(mockNavigate).toHaveBeenCalledWith('/leaderboard');
+  });
+
+  it('shows the leaderboard for signed-in visitors', () => {
+    shell.user = { pubkey: 'a'.repeat(64) };
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Tabla de líderes' })).toBeVisible();
+  });
+
+  it('marks the leaderboard active on its route', () => {
+    render(
+      <MemoryRouter initialEntries={['/leaderboard']}>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Tabla de líderes' })).toHaveClass('bg-primary');
+  });
+
   it('keeps the supporters entry inside the navigation landmark', () => {
     render(
       <MemoryRouter>
