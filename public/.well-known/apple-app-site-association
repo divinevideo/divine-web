@@ -30,6 +30,10 @@
             "comment": "Playlist (curated list) deep links"
           },
           {
+            "/": "/people-lists/*",
+            "comment": "People list deep links"
+          },
+          {
             "/": "/app/callback",
             "comment": "OAuth callback for Divine app"
           }
