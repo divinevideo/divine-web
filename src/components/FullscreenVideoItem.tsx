@@ -302,7 +302,7 @@ export function FullscreenVideoItem({
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto"
+          className="absolute top-safe-offset-4 left-safe-offset-4 bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto"
           onClick={(e) => { e.stopPropagation(); onBack(); }}
         >
           <ArrowLeft className="h-5 w-5" />
@@ -314,7 +314,7 @@ export function FullscreenVideoItem({
             variant="ghost"
             size="icon"
             className={cn(
-              "absolute top-4 right-16 backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto",
+              "absolute top-safe-offset-4 right-safe-offset-16 backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto",
               "bg-black/50 hover:bg-black/70",
               showSubtitles ? "text-white" : "text-white/50"
             )}
@@ -331,7 +331,7 @@ export function FullscreenVideoItem({
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto"
+          className="absolute top-safe-offset-4 right-safe-offset-4 bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm rounded-full w-10 h-10 pointer-events-auto"
           onClick={(e) => { e.stopPropagation(); setGlobalMuted(!globalMuted); }}
         >
           {globalMuted ? (
@@ -342,8 +342,8 @@ export function FullscreenVideoItem({
         </Button>
 
         {/* Bottom overlay - author info and actions */}
-        <div className="absolute bottom-0 left-0 right-0 pb-8" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-end justify-between px-4">
+        <div className="absolute bottom-0 left-0 right-0 pb-safe-offset-8" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-end justify-between px-safe-offset-4">
             {/* Left side - Author info */}
             <div className="flex-1 max-w-[70%]">
               <SmartLink to={profileUrl} ownerPubkey={video.pubkey} className="flex items-center gap-3 mb-2 pointer-events-auto" onClick={(e) => e.stopPropagation()}>

@@ -12,7 +12,7 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <MarketingHeader />
-      <div className="flex-1 pt-16">
+      <div className="flex-1 pt-safe-offset-16">
         {children}
       </div>
       <AppFooter />
