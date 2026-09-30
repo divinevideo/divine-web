@@ -25,7 +25,7 @@ export function NoteContent({
     
     const nip19Chars = '023456789acdefghjklmnpqrstuvwxyz';
     const bareDomain = linkifyBareDomains
-      ? '(?<![\\w@./:-])[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\\.[A-Za-z]{2,}(?![\\w@-])(?:[/?#][^\\s]*)?'
+      ? '[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\\.[A-Za-z]{2,}(?![\\w@-])(?:[/?#][^\\s]*)?'
       : '(?!)';
     const regex = new RegExp(`(https?:\\/\\/[^\\s]+)|(${bareDomain})|(?:nostr:)?\\b((?:npub1|note1)[${nip19Chars}]{58}|(?:nprofile1|nevent1|naddr1)[${nip19Chars}]+)(?=$|[^A-Za-z0-9_]|nostr:)|(#\\w+)`, 'g');
 
@@ -37,6 +37,13 @@ export function NoteContent({
     while ((match = regex.exec(text)) !== null) {
       const [fullMatch, url, bareUrl, nostrId, hashtag] = match;
       const index = match.index;
+
+      // A bare domain must not start mid-token (an email's domain, foo_bar.com).
+      // Checked here rather than with a lookbehind, which Safari before 16.4 rejects.
+      if (bareUrl && index > 0 && /[\w@./:-]/.test(text[index - 1])) {
+        regex.lastIndex = index + 1;
+        continue;
+      }
       
       // Add text before this match
       if (index > lastIndex) {

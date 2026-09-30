@@ -88,6 +88,28 @@ describe('NoteContent — bare domains', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
+  it('works where the regex engine has no lookbehind, as in Safari before 16.4', () => {
+    const NativeRegExp = globalThis.RegExp;
+    vi.stubGlobal('RegExp', new Proxy(NativeRegExp, {
+      construct(target, args: [string | RegExp, string?]) {
+        if (/\(\?<[=!]/.test(String(args[0]))) {
+          throw new SyntaxError('Invalid regular expression: invalid group specifier name');
+        }
+        return Reflect.construct(target, args);
+      },
+    }));
+
+    try {
+      renderContent('check out divine.video/leaderboard or person@example.com', true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'divine.video/leaderboard' }))
+      .toHaveAttribute('href', 'https://divine.video/leaderboard');
+  });
+
   it('keeps full URLs, hashtags, and Nostr references as distinct links', () => {
     renderContent(`https://example.com/path divine.video/leaderboard #skating ${NOTE}`, true);
 
