@@ -1,9 +1,9 @@
 // ABOUTME: Build-time SSG for marketing (family) routes using the real React components
 // ABOUTME: Renders each route via vite ssrLoadModule and writes dist/<route>/index.html with per-route meta
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, realpathSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 import { resolveDistDir } from './lib/distDir.mjs';
 import { withViteSsr } from './lib/viteSsr.mjs';
@@ -120,9 +120,7 @@ async function main() {
   console.log('Marketing page pre-rendering complete.');
 }
 
-if (import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
-  main().catch((err) => {
-    console.error('prerender-marketing failed:', err);
-    process.exit(1);
-  });
-}
+main().catch((err) => {
+  console.error('prerender-marketing failed:', err);
+  process.exit(1);
+});

@@ -1,9 +1,9 @@
 // ABOUTME: Writes dist/<path>/index.html for every fixed-page row no other prerender owns, plus dist/sitemap.xml
 // ABOUTME: Runs last in the prerender chain and ends with the self-check over every row, including legal and family
 
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 import { resolveDistDir } from './lib/distDir.mjs';
 import { withViteSsr } from './lib/viteSsr.mjs';
@@ -42,9 +42,7 @@ async function main() {
   console.log('Page heads verified for every fixed page; sitemap written.');
 }
 
-if (import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
-  main().catch((err) => {
-    console.error('prerender-pages failed:', err);
-    process.exit(1);
-  });
-}
+main().catch((err) => {
+  console.error('prerender-pages failed:', err);
+  process.exit(1);
+});
