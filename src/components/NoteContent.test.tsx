@@ -121,6 +121,16 @@ describe('NoteContent — bare domains', () => {
     expect(screen.getByRole('link', { name: '#skating' })).toHaveAttribute('href', '/t/skating');
     expect(screen.getByRole('link', { name: NOTE })).toHaveAttribute('href', `/${NOTE}`);
   });
+
+  it('renders a relay-maximum comment with no spaces without stalling', () => {
+    // The relay accepts 100 KB of content. A domain pattern with no length bound
+    // rescans the rest of a long run from every position, which took seconds here.
+    const started = performance.now();
+    renderContent('a'.repeat(102_400), true);
+
+    expect(performance.now() - started).toBeLessThan(1000);
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
 });
 
 describe('NoteContent — bare nostr identifiers', () => {

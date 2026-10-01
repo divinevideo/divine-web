@@ -24,8 +24,11 @@ export function NoteContent({
     const text = event.content;
     
     const nip19Chars = '023456789acdefghjklmnpqrstuvwxyz';
+    // Bounded by DNS limits (63-character labels, 127 labels) so a long run with no
+    // spaces is scanned in linear time; unbounded repeats rescan it from every position.
+    const domainLabel = '[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?';
     const bareDomain = linkifyBareDomains
-      ? '[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\\.[A-Za-z]{2,}(?![\\w@-])(?:[/?#][^\\s]*)?'
+      ? `${domainLabel}(?:\\.${domainLabel}){0,126}\\.[A-Za-z]{2,63}(?![\\w@-])(?:[/?#][^\\s]*)?`
       : '(?!)';
     const regex = new RegExp(`(https?:\\/\\/[^\\s]+)|(${bareDomain})|(?:nostr:)?\\b((?:npub1|note1)[${nip19Chars}]{58}|(?:nprofile1|nevent1|naddr1)[${nip19Chars}]+)(?=$|[^A-Za-z0-9_]|nostr:)|(#\\w+)`, 'g');
 
