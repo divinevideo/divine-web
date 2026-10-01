@@ -60,13 +60,13 @@ crawlers; build-time prerendered pages are correct for every app.
 
 ## Pages
 
-**In the table (28):** `/authenticity`, `/privacy`, `/terms`, `/open-source`,
+**In the table (29):** `/authenticity`, `/privacy`, `/terms`, `/open-source`,
 `/proofmode`, `/human-created`, `/dmca`, `/safety`, `/family`,
 `/family/talking-to-your-teen`, `/family/media-plan`,
 `/family/when-something-goes-wrong`, `/family/safety-tools`, `/age-review`,
 `/kids`, `/download`, `/exit`, `/exit/start`, `/delete-account`, `/support`,
-`/faq`, `/get-embed`, `/services`, `/merch`, `/leaderboard`, `/trending`,
-`/popular`, `/hashtags`.
+`/faq`, `/get-embed`, `/services`, `/merch`, `/supporters`, `/leaderboard`,
+`/trending`, `/popular`, `/hashtags`.
 
 **Excluded, with reason recorded in code:**
 
@@ -299,3 +299,5 @@ always name `https://divine.video<path>`. This is intended.
   `AnalyticsPageTracker.tsx` (surface classification) and `AppSidebar.tsx`
   (active state for `/popular/`) misfire. This already happens for today's
   prerendered pages there and does not affect divine.video.
+- `/supporters` was added to main (#724) during review and has a row; its
+  description is a new draft for Marketing/Comms.
