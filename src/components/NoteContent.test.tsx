@@ -131,6 +131,30 @@ describe('NoteContent — bare domains', () => {
     expect(performance.now() - started).toBeLessThan(1000);
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
+
+  it('renders a relay-maximum run of dotted labels that never form a domain without stalling', () => {
+    // Every label ends in a digit, so no position yields a top-level domain.
+    // Retrying the pattern from inside each label took seconds even with length bounds.
+    const started = performance.now();
+    renderContent(`${'a'.repeat(62)}1.`.repeat(1600), true);
+
+    expect(performance.now() - started).toBeLessThan(1000);
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('keeps a hashtag that runs into a domain as a hashtag', () => {
+    renderContent('#divine.video', true);
+
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByRole('link', { name: '#divine' })).toHaveAttribute('href', '/t/divine');
+  });
+
+  it('links a bare domain at the start of a line', () => {
+    renderContent('first line\ndivine.video/leaderboard', true);
+
+    expect(screen.getByRole('link', { name: 'divine.video/leaderboard' }))
+      .toHaveAttribute('href', 'https://divine.video/leaderboard');
+  });
 });
 
 describe('NoteContent — bare nostr identifiers', () => {

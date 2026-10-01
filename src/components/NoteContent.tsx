@@ -24,13 +24,17 @@ export function NoteContent({
     const text = event.content;
     
     const nip19Chars = '023456789acdefghjklmnpqrstuvwxyz';
-    // Bounded by DNS limits (63-character labels, 127 labels) so a long run with no
-    // spaces is scanned in linear time; unbounded repeats rescan it from every position.
+    // Bounded by DNS limits (63-character labels, 127 labels).
     const domainLabel = '[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?';
+    // A bare domain starts only at the beginning of the text or after a character
+    // that cannot continue a token (not an email's domain or foo_bar.com). Matching
+    // that character, rather than a lookbehind, which Safari before 16.4 rejects,
+    // keeps attempts from starting inside a long run, which would rescan it from
+    // every position. `#` stays out so `#divine.video` remains a hashtag.
     const bareDomain = linkifyBareDomains
-      ? `${domainLabel}(?:\\.${domainLabel}){0,126}\\.[A-Za-z]{2,63}(?![\\w@-])(?:[/?#][^\\s]*)?`
-      : '(?!)';
-    const regex = new RegExp(`(https?:\\/\\/[^\\s]+)|(${bareDomain})|(?:nostr:)?\\b((?:npub1|note1)[${nip19Chars}]{58}|(?:nprofile1|nevent1|naddr1)[${nip19Chars}]+)(?=$|[^A-Za-z0-9_]|nostr:)|(#\\w+)`, 'g');
+      ? `(^|[^\\w@./:#-])(${domainLabel}(?:\\.${domainLabel}){0,126}\\.[A-Za-z]{2,63}(?![\\w@-])(?:[/?#][^\\s]*)?)`
+      : '(?!)()()';
+    const regex = new RegExp(`(https?:\\/\\/[^\\s]+)|${bareDomain}|(?:nostr:)?\\b((?:npub1|note1)[${nip19Chars}]{58}|(?:nprofile1|nevent1|naddr1)[${nip19Chars}]+)(?=$|[^A-Za-z0-9_]|nostr:)|(#\\w+)`, 'g');
 
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
@@ -38,15 +42,10 @@ export function NoteContent({
     let keyCounter = 0;
 
     while ((match = regex.exec(text)) !== null) {
-      const [fullMatch, url, bareUrl, nostrId, hashtag] = match;
-      const index = match.index;
-
-      // A bare domain must not start mid-token (an email's domain, foo_bar.com).
-      // Checked here rather than with a lookbehind, which Safari before 16.4 rejects.
-      if (bareUrl && index > 0 && /[\w@./:-]/.test(text[index - 1])) {
-        regex.lastIndex = index + 1;
-        continue;
-      }
+      const [matched, url, bareBoundary = '', bareUrl, nostrId, hashtag] = match;
+      // The boundary character before a bare domain stays plain text.
+      const index = match.index + bareBoundary.length;
+      const fullMatch = matched.slice(bareBoundary.length);
       
       // Add text before this match
       if (index > lastIndex) {
