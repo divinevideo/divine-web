@@ -15,7 +15,6 @@ import { SectionHeader } from "@/components/brand/SectionHeader";
 import { ZendeskWidget } from "@/components/ZendeskWidget";
 import { FamilySectionNav } from "@/components/family/FamilySectionNav";
 import { FamilyResources } from "@/components/family/FamilyResources";
-import { FamilySeoHead } from "@/components/family/FamilySeoHead";
 import { StoreBadgesCta } from "@/components/family/StoreBadgesCta";
 import { ArticleJsonLd } from "@/components/family/JsonLd";
 import {
@@ -69,7 +68,6 @@ export function FamilyHubPage() {
 
   return (
     <MarketingLayout>
-      {seo && <FamilySeoHead seo={seo} />}
       {seo && <ArticleJsonLd seo={seo} citeStirLab />}
       <ZendeskWidget />
       <BackToTopButton />

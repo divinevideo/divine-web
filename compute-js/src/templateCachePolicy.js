@@ -1,8 +1,6 @@
 const ORIGINAL_HOST_VARY = 'X-Original-Host';
 const CRAWLER_VARY = `${ORIGINAL_HOST_VARY}, User-Agent`;
 
-export const HOST_DEPENDENT_CRAWLER_VARY = CRAWLER_VARY;
-
 export function createEdgeTemplateHeaders({
   cacheControl,
   subdomain,

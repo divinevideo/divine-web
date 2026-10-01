@@ -68,18 +68,6 @@ describe('FAMILY_SEO', () => {
     }
   });
 
-  it('derives utm campaign slugs from route slugs', () => {
-    expect(getFamilySeo('/family')?.campaign).toBe('family');
-    expect(getFamilySeo('/family/media-plan')?.campaign).toBe('media-plan');
-    expect(getFamilySeo('/family/talking-to-your-teen')?.campaign).toBe(
-      'talking-to-your-teen'
-    );
-    expect(getFamilySeo('/family/when-something-goes-wrong')?.campaign).toBe(
-      'when-something-goes-wrong'
-    );
-    expect(getFamilySeo('/family/safety-tools')?.campaign).toBe('safety-tools');
-  });
-
   it('marks the hub as website and children as article for og:type', () => {
     expect(getFamilySeo('/family')?.ogType).toBe('website');
     for (const route of FAMILY_SEO.filter((r) => r.path !== '/family')) {

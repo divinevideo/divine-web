@@ -743,8 +743,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "Leaderboard - Divine",
-    "seoDescription": "Video dan kreator teratas berdasarkan loop di Divine",
-    "seoOgDescription": "Lihat video dan kreator paling populer",
     "heading": "Leaderboard",
     "subheading": "Video dan kreator teratas berdasarkan loop",
     "topVideos": "Video Teratas",
@@ -1216,8 +1214,6 @@
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",
-    "metaDescription": "Kaos, hoodie, topi, dan barang lain yang santai aja. Didesain oleh Divine, dicetak dan dikirim oleh Bonfire.",
-    "ogTitle": "Merch Divine",
     "headline": "Pakai loop kamu.",
     "body": "Kaos, hoodie, topi, dan barang lain yang nggak terlalu serius.",
     "storeCta": "Belanja semuanya",

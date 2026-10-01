@@ -12,7 +12,6 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import { useNostrLogin } from "@nostrify/react/login";
-import { useHead } from "@unhead/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -79,18 +78,6 @@ async function downloadArchive(files: ArchiveFiles): Promise<void> {
 }
 
 export function ExitStartPage() {
-  useHead({
-    title: "Export your Divine account",
-    link: [{ rel: "canonical", href: "https://divine.video/exit/start" }],
-    meta: [
-      {
-        name: "description",
-        content:
-          "Download a portable archive of your Divine posts, video records, and media files.",
-      },
-    ],
-  });
-
   const { user, signer, hostedToken, isHostedAccount, isResolvingJwt } = useCurrentUser();
   const { logins } = useNostrLogin();
   const localNsecLogin = user ? getLocalNsecLogin(logins, user.pubkey) : null;
