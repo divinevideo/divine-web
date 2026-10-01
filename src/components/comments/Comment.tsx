@@ -180,7 +180,7 @@ export function Comment({ root, comment, depth = 0, maxDepth = 3, limit, parentC
 
             {/* Comment Content */}
             <div className="text-sm text-foreground">
-              <NoteContent event={comment} className="text-sm" />
+              <NoteContent event={comment} className="text-sm" linkifyBareDomains />
             </div>
 
             {/* Comment Actions */}

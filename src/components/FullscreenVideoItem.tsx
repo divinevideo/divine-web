@@ -371,6 +371,7 @@ export function FullscreenVideoItem({
               {(video.title || video.content) && (
                 <div className="text-white text-sm drop-shadow-lg line-clamp-2 mb-2 pointer-events-auto">
                   <NoteContent
+                    linkifyBareDomains
                     event={{
                       id: video.id,
                       pubkey: video.pubkey,
