@@ -10,6 +10,21 @@ function readPrerenderedPrivacy(): string {
 }
 
 describe('prerendered privacy policy', () => {
+  it('discloses transcript translation in both versions of the policy', () => {
+    const copies = [
+      readPrerenderedPrivacy(),
+      readFileSync(resolve(REPO_ROOT, 'src/pages/PrivacyPage.tsx'), 'utf8').replace(/\s+/g, ' '),
+    ];
+
+    for (const copy of copies) {
+      expect(copy).toContain(
+        "When a viewer requests subtitles in another language, Divine sends the video's transcript text to Google Cloud Translation to generate a machine translation.",
+      );
+      expect(copy).toContain('Divine stores the translated subtitles to serve later viewers.');
+      expect(copy).toContain('Machine translations may contain errors; the original subtitles remain available.');
+    }
+  });
+
   it('keeps the Shorebird update-telemetry disclosure in the prerendered copy', () => {
     const source = readPrerenderedPrivacy();
 

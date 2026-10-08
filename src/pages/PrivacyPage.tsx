@@ -12,7 +12,7 @@ export function PrivacyPage() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
         <h1 className="text-4xl font-extrabold mb-4">{t('privacyPage.title')}</h1>
-        <p className="text-muted-foreground mb-8">{t('privacyPage.lastUpdated', { date: 'August 17, 2026' })}</p>
+        <p className="text-muted-foreground mb-8">{t('privacyPage.lastUpdated', { date: 'October 8, 2026' })}</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Overview */}
@@ -222,6 +222,12 @@ export function PrivacyPage() {
               instructions to support the operation of Divine-controlled infrastructure, to comply with legal
               obligations or lawful requests, to protect the rights, safety, and integrity of the Service and its
               users, or as otherwise permitted by law.
+            </p>
+            <p className="mb-3">
+              When a viewer requests subtitles in another language, Divine sends the video's transcript text to
+              Google Cloud Translation to generate a machine translation. Divine stores the translated subtitles
+              to serve later viewers. Machine translations may contain errors; the original subtitles remain
+              available.
             </p>
             <p>
               Because the Service interacts with decentralized systems, information contained in Nostr events may
