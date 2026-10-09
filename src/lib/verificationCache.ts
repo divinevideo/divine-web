@@ -8,6 +8,7 @@ const KEY_PREFIX = 'divine_verify_';
 interface VerificationCacheEntry {
   verified: boolean;
   error?: string;
+  code?: string;
   timestamp: number;
 }
 
@@ -20,7 +21,7 @@ export function getCachedVerification(
   identity: string,
   proof: string,
   pubkey: string,
-): { verified: boolean; error?: string } | null {
+): { verified: boolean; error?: string; code?: string } | null {
   if (typeof window === 'undefined') return null;
 
   try {
@@ -37,7 +38,11 @@ export function getCachedVerification(
       return null;
     }
 
-    return { verified: entry.verified, error: entry.error };
+    return {
+      verified: entry.verified,
+      error: entry.error,
+      ...(typeof entry.code === 'string' ? { code: entry.code } : {}),
+    };
   } catch {
     return null;
   }
@@ -51,7 +56,7 @@ export function setCachedVerification(
   identity: string,
   proof: string,
   pubkey: string,
-  result: { verified: boolean; error?: string },
+  result: { verified: boolean; error?: string; code?: string },
 ): void {
   if (typeof window === 'undefined') return;
 
@@ -60,6 +65,7 @@ export function setCachedVerification(
     const entry: VerificationCacheEntry = {
       verified: result.verified,
       error: result.error,
+      code: result.code,
       timestamp: Date.now(),
     };
     localStorage.setItem(key, JSON.stringify(entry));

@@ -54,6 +54,22 @@ describe('getCachedVerification', () => {
     expect(result).toEqual({ verified: false, error: 'HTTP 404' });
   });
 
+  it('keeps the verification service\'s code with a saved rejection', () => {
+    setCachedVerification('discord', 'alice', 'https://discord.com/channels/1/2/3', PUBKEY, {
+      verified: false,
+      error: 'npub not found in message',
+      code: 'discord_npub_not_in_message',
+    });
+
+    expect(
+      getCachedVerification('discord', 'alice', 'https://discord.com/channels/1/2/3', PUBKEY),
+    ).toEqual({
+      verified: false,
+      error: 'npub not found in message',
+      code: 'discord_npub_not_in_message',
+    });
+  });
+
   it('expires verified results after 24 hours', () => {
     setCachedVerification('github', 'alice', 'abc123', PUBKEY, { verified: true });
 
