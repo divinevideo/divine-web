@@ -156,7 +156,7 @@ describe('LinkedAccounts', () => {
 
     // The badge's own query retries twice; no delay keeps the test fast.
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false, retryDelay: 0 } },
+      defaultOptions: { queries: { retryDelay: 0 } },
     });
     render(
       <QueryClientProvider client={queryClient}>
