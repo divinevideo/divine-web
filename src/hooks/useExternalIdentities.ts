@@ -147,6 +147,20 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
 
 export const SUPPORTED_PLATFORMS = PLATFORM_CONFIG;
 
+/**
+ * The verification service's code for "couldn't be checked right now": the
+ * platform didn't answer, so this isn't a verdict on the claim. Such answers
+ * aren't saved, so the next view asks again.
+ */
+export const VERIFIER_TEMPORARILY_UNAVAILABLE = 'temporarily_unavailable';
+
+export interface IdentityVerificationResult {
+  verified: boolean;
+  error?: string;
+  /** The verification service's machine-readable reason, when it gave one. */
+  code?: string;
+}
+
 export function parseIdentityTag(tag: string[]): ExternalIdentity | null {
   if (tag[0] !== 'i' || !tag[1]) return null;
 
@@ -268,7 +282,7 @@ function cleanProofId(platform: string, proof: string): string {
 export async function verifyIdentityClaim(
   identity: ExternalIdentity,
   pubkey: string,
-): Promise<{ verified: boolean; error?: string }> {
+): Promise<IdentityVerificationResult> {
   if (!identity.proofUrl && !identity.proof) {
     return { verified: false, error: 'No proof URL' };
   }
@@ -298,13 +312,15 @@ export async function verifyIdentityClaim(
   // Try verification service if available
   const serviceResult = await verifyViaService(cleanedIdentity, pubkey);
   if (serviceResult) {
-    setCachedVerification(
-      cleanedIdentity.platform,
-      cleanedIdentity.identity,
-      cleanedIdentity.proof,
-      pubkey,
-      serviceResult,
-    );
+    if (serviceResult.code !== VERIFIER_TEMPORARILY_UNAVAILABLE) {
+      setCachedVerification(
+        cleanedIdentity.platform,
+        cleanedIdentity.identity,
+        cleanedIdentity.proof,
+        pubkey,
+        serviceResult,
+      );
+    }
     return serviceResult;
   }
 
@@ -363,7 +379,7 @@ export async function verifyIdentityClaim(
 async function verifyViaService(
   identity: ExternalIdentity,
   pubkey: string,
-): Promise<{ verified: boolean; error?: string } | null> {
+): Promise<IdentityVerificationResult | null> {
   const baseUrl = API_CONFIG.verificationService.baseUrl;
   if (!baseUrl || !getFeatureFlag('useVerificationService')) return null;
 
@@ -383,7 +399,11 @@ async function verifyViaService(
     if (!response.ok) return null;
 
     const data = await response.json();
-    return { verified: !!data.verified, error: data.error };
+    return {
+      verified: !!data.verified,
+      error: data.error,
+      ...(typeof data.code === 'string' ? { code: data.code } : {}),
+    };
   } catch {
     return null; // Service unavailable, fall through to browser verification
   }

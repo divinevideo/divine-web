@@ -10,6 +10,7 @@ const mockVerifyIdentityClaim = vi.fn();
 vi.mock('@/hooks/useExternalIdentities', () => ({
   useExternalIdentities: (...args: unknown[]) => mockUseExternalIdentities(...args),
   verifyIdentityClaim: (...args: unknown[]) => mockVerifyIdentityClaim(...args),
+  VERIFIER_TEMPORARILY_UNAVAILABLE: 'temporarily_unavailable',
   SUPPORTED_PLATFORMS: {
     github: {
       label: 'GitHub',
@@ -130,5 +131,41 @@ describe('LinkedAccounts', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('identity-badge-github')).not.toBeInTheDocument();
     });
+  });
+
+  it('keeps a verified badge when a later check couldn\'t be completed', async () => {
+    mockUseExternalIdentities.mockReturnValue({
+      data: [
+        {
+          platform: 'github',
+          identity: 'alice',
+          proof: 'abc123',
+          profileUrl: 'https://github.com/alice',
+          proofUrl: 'https://gist.github.com/alice/abc123',
+        },
+      ],
+      isLoading: false,
+    });
+    mockVerifyIdentityClaim
+      .mockResolvedValueOnce({ verified: true })
+      .mockResolvedValue({ verified: false, code: 'temporarily_unavailable', error: 'GitHub couldn\'t be checked right now.' });
+
+    // The badge's own query retries twice; no delay keeps the test fast.
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, retryDelay: 0 } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <LinkedAccounts pubkey={'a'.repeat(64)} />
+      </QueryClientProvider>,
+    );
+    await screen.findByTestId('identity-badge-github');
+
+    // Resolves once the refetch and its two retries have all come back
+    // "couldn't check".
+    await queryClient.invalidateQueries();
+
+    expect(mockVerifyIdentityClaim).toHaveBeenCalledTimes(4);
+    expect(screen.getByTestId('identity-badge-github')).toBeInTheDocument();
   });
 });
