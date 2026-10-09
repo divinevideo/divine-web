@@ -35,10 +35,6 @@ vi.mock('@/hooks/useToast', () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 
-vi.mock('@/components/NoteContent', () => ({
-  NoteContent: ({ event }: { event: NostrEvent }) => <span>{event.content}</span>,
-}));
-
 vi.mock('@/components/SmartLink', () => ({
   SmartLink: ({ children }: { children: ReactNode }) => <span>{children}</span>,
 }));
@@ -128,5 +124,17 @@ describe('Comment', () => {
     );
 
     expect(screen.getByText('Visible Parent')).toBeInTheDocument();
+  });
+
+  it('links a bare domain in a comment body', () => {
+    render(
+      <Comment
+        root={new URL('https://example.com/video')}
+        comment={makeComment(COMMENTER_PUBKEY, 'check out divine.video/leaderboard')}
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: 'divine.video/leaderboard' }))
+      .toHaveAttribute('href', 'https://divine.video/leaderboard');
   });
 });

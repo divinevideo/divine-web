@@ -811,6 +811,7 @@ export function VideoCard({
             {video.content && video.content.trim() !== video.title?.trim() && (
               <div className={cn("whitespace-pre-wrap break-words", isHorizontal && "line-clamp-2")}>
                 <NoteContent
+                  linkifyBareDomains
                   event={{
                     id: video.id,
                     pubkey: video.pubkey,
