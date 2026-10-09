@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -161,9 +161,13 @@ describe('LinkedAccounts', () => {
     );
     await screen.findByTestId('identity-badge-github');
 
-    // Resolves once the refetch and its two retries have all come back
-    // "couldn't check".
-    await queryClient.invalidateQueries();
+    // invalidateQueries() resolves once the refetch and its two retries have
+    // all come back "couldn't check", but React Query tells the badge on the
+    // next tick. Wait for that render, or the badge check reads the old DOM.
+    await act(async () => {
+      await queryClient.invalidateQueries();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
 
     expect(mockVerifyIdentityClaim).toHaveBeenCalledTimes(4);
     expect(screen.getByTestId('identity-badge-github')).toBeInTheDocument();
