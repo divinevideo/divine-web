@@ -33,7 +33,7 @@ const twitterClaim: ExternalIdentity = {
   proofUrl: 'https://x.com/alice/status/1234567890',
 };
 
-function serviceAnswers(body: Record<string, unknown>) {
+function mockServiceAnswer(body: Record<string, unknown>) {
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: async () => body,
@@ -47,7 +47,7 @@ describe('verifyIdentityClaim with the verification service', () => {
   });
 
   it('keeps the service\'s code with its answer', async () => {
-    serviceAnswers({ verified: false, code: 'temporarily_unavailable', error: 'Twitter / X couldn\'t be checked right now. Try again in a few minutes.' });
+    mockServiceAnswer({ verified: false, code: 'temporarily_unavailable', error: 'Twitter / X couldn\'t be checked right now. Try again in a few minutes.' });
 
     const result = await verifyIdentityClaim(twitterClaim, TEST_PUBKEY);
 
@@ -59,7 +59,7 @@ describe('verifyIdentityClaim with the verification service', () => {
   });
 
   it('does not save an answer the service couldn\'t check, so the next view asks again', async () => {
-    serviceAnswers({ verified: false, code: 'temporarily_unavailable', error: 'Twitter / X couldn\'t be checked right now. Try again in a few minutes.' });
+    mockServiceAnswer({ verified: false, code: 'temporarily_unavailable', error: 'Twitter / X couldn\'t be checked right now. Try again in a few minutes.' });
 
     await verifyIdentityClaim(twitterClaim, TEST_PUBKEY);
 
@@ -67,7 +67,7 @@ describe('verifyIdentityClaim with the verification service', () => {
   });
 
   it('still saves a real rejection', async () => {
-    serviceAnswers({ verified: false, error: 'Tweet not found' });
+    mockServiceAnswer({ verified: false, error: 'Tweet not found' });
 
     await verifyIdentityClaim(twitterClaim, TEST_PUBKEY);
 
@@ -75,7 +75,7 @@ describe('verifyIdentityClaim with the verification service', () => {
   });
 
   it('still saves a verified answer', async () => {
-    serviceAnswers({ verified: true });
+    mockServiceAnswer({ verified: true });
 
     await verifyIdentityClaim(twitterClaim, TEST_PUBKEY);
 
@@ -83,7 +83,7 @@ describe('verifyIdentityClaim with the verification service', () => {
   });
 
   it('ignores a code that isn\'t text', async () => {
-    serviceAnswers({ verified: false, code: 42, error: 'Tweet not found' });
+    mockServiceAnswer({ verified: false, code: 42, error: 'Tweet not found' });
 
     const result = await verifyIdentityClaim(twitterClaim, TEST_PUBKEY);
 
