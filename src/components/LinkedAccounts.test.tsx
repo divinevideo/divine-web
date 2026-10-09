@@ -7,20 +7,24 @@ import { LinkedAccounts } from './LinkedAccounts';
 const mockUseExternalIdentities = vi.fn();
 const mockVerifyIdentityClaim = vi.fn();
 
-vi.mock('@/hooks/useExternalIdentities', () => ({
-  useExternalIdentities: (...args: unknown[]) => mockUseExternalIdentities(...args),
-  verifyIdentityClaim: (...args: unknown[]) => mockVerifyIdentityClaim(...args),
-  VERIFIER_TEMPORARILY_UNAVAILABLE: 'temporarily_unavailable',
-  SUPPORTED_PLATFORMS: {
-    github: {
-      label: 'GitHub',
-      profileUrl: (id: string) => `https://github.com/${id}`,
-      proofUrl: (id: string, proof: string) => `https://gist.github.com/${id}/${proof}`,
-      verificationText: () => [],
-      canVerifyInBrowser: false,
+vi.mock('@/hooks/useExternalIdentities', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/hooks/useExternalIdentities')>();
+  return {
+    useExternalIdentities: (...args: unknown[]) => mockUseExternalIdentities(...args),
+    verifyIdentityClaim: (...args: unknown[]) => mockVerifyIdentityClaim(...args),
+    VERIFIER_TEMPORARILY_UNAVAILABLE: actual.VERIFIER_TEMPORARILY_UNAVAILABLE,
+    SUPPORTED_PLATFORMS: {
+      github: {
+        label: 'GitHub',
+        profileUrl: (id: string) => `https://github.com/${id}`,
+        proofUrl: (id: string, proof: string) => `https://gist.github.com/${id}/${proof}`,
+        verificationText: () => [],
+        canVerifyInBrowser: false,
+      },
     },
-  },
-}));
+  };
+});
 
 vi.mock('@/lib/verificationCache', () => ({
   getCachedVerification: () => null,
