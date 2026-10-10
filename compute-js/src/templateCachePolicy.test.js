@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  createEdgeTemplateHeaders,
-  HOST_DEPENDENT_CRAWLER_VARY,
-} from './templateCachePolicy.js';
+import { createEdgeTemplateHeaders } from './templateCachePolicy.js';
 
 describe('edge template cache policy', () => {
   it('separates crawler responses from browser responses by default', () => {
@@ -24,9 +21,5 @@ describe('edge template cache policy', () => {
 
     expect(headers.get('Vary')).toBe('X-Original-Host');
     expect(headers.get('X-Divine-Subdomain')).toBe('creator');
-  });
-
-  it('varies host-dependent crawler responses by host and user agent', () => {
-    expect(HOST_DEPENDENT_CRAWLER_VARY).toBe('X-Original-Host, User-Agent');
   });
 });

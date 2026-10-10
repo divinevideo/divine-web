@@ -9,7 +9,6 @@ import {
   Prohibit,
   Trash,
 } from "@phosphor-icons/react";
-import { useHead } from "@unhead/react";
 import { Link } from "react-router-dom";
 
 import { SectionHeader } from "@/components/brand/SectionHeader";
@@ -36,18 +35,6 @@ const SECTIONS: SectionAnchor[] = [
 ];
 
 export function DeleteAccountPage() {
-  useHead({
-    title: "Delete Your Divine Account",
-    link: [{ rel: "canonical", href: "https://divine.video/delete-account" }],
-    meta: [
-      {
-        name: "description",
-        content:
-          "How to request deletion of your Divine account and what deletion can and cannot remove on an open network.",
-      },
-    ],
-  });
-
   return (
     <MarketingLayout>
       <BackToTopButton />

@@ -4,7 +4,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useSeoMeta } from '@unhead/react';
 import { useTranslation } from 'react-i18next';
 import { Trophy, VideoCamera as Video, User, Clock, Calendar, CalendarDots as CalendarDays, CalendarBlank as CalendarRange, Infinity as InfinityIcon } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -440,13 +439,6 @@ export function LeaderboardPage() {
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
-
-  useSeoMeta({
-    title: t('leaderboardPage.seoTitle'),
-    description: t('leaderboardPage.seoDescription'),
-    ogTitle: t('leaderboardPage.seoTitle'),
-    ogDescription: t('leaderboardPage.seoOgDescription'),
-  });
 
   const TimePeriodIcon = useMemo(() => getTimePeriodIcon(timePeriod), [timePeriod]);
 

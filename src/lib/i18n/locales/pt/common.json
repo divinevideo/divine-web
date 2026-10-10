@@ -750,8 +750,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "Ranking - Divine",
-    "seoDescription": "Top vídeos e criadores por loops na Divine",
-    "seoOgDescription": "Veja os vídeos e criadores mais populares",
     "heading": "Ranking",
     "subheading": "Top vídeos e criadores por loops",
     "topVideos": "Top vídeos",
@@ -1224,8 +1222,6 @@
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",
-    "metaDescription": "Camisetas, moletons, bonés e umas paradas que não se levam a sério. Desenhado pela Divine, impresso e enviado pela Bonfire.",
-    "ogTitle": "Merch da Divine",
     "headline": "Vista seus loops.",
     "body": "Camisetas, moletons, bonés e umas paradas que não se levam a sério.",
     "storeCta": "Ver tudo na loja",
