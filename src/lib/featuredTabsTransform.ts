@@ -100,6 +100,10 @@ export const DEFAULT_FEATURED_TAB_EMOJI = '\u2728';
 // room for every real emoji while bounding what a config can make us render.
 const MAX_EMOJI_SCALARS = 16;
 const PICTOGRAPH = /^\p{Extended_Pictographic}$/u;
+// Extended_Pictographic includes these letter-like symbols (©, ®, ™, ℹ, Ⓜ), but
+// they read as text rather than as a tab icon. The Funnelcake validator
+// rejects them when an admin saves the emoji, and this check stays in step.
+const TEXT_SYMBOLS = new Set(['©', '®', '™', 'ℹ', 'Ⓜ']);
 const SKIN_TONE = /^\p{Emoji_Modifier}$/u;
 const REGIONAL_INDICATOR = /^\p{Regional_Indicator}$/u;
 const VS16 = '\uFE0F';
@@ -109,7 +113,7 @@ const CANCEL_TAG = '\u{E007F}';
 const TAG_SPEC = /^[\u{E0020}-\u{E007E}]$/u;
 
 function isPictograph(scalar: string | undefined): boolean {
-  return scalar !== undefined && PICTOGRAPH.test(scalar);
+  return scalar !== undefined && !TEXT_SYMBOLS.has(scalar) && PICTOGRAPH.test(scalar);
 }
 
 /** A subdivision flag: the black flag, tag specs, then the cancel tag. */

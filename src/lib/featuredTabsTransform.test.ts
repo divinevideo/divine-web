@@ -93,6 +93,15 @@ describe('featured tab transforms', () => {
       ['tag characters with no black-flag base', '\u{E0067}\u{E007F}'],
       ['a zero-width space after an emoji', '\u2728\u200B'],
       ['a keycap', '1\uFE0F\u20E3'],
+      // Extended_Pictographic includes these, but they read as text rather than
+      // as a tab icon, and the Funnelcake validator rejects them on write.
+      ['copyright', '\u00A9'],
+      ['registered', '\u00AE'],
+      ['trade mark', '\u2122'],
+      ['trade mark with VS16', '\u2122\uFE0F'],
+      ['information source', '\u2139'],
+      ['circled M', '\u24C2'],
+      ['a text symbol inside a ZWJ sequence', '\u{1F469}\u200D\u00A9'],
       ['null', null],
       ['undefined', undefined],
       ['a number', 42],
