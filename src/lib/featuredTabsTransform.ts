@@ -103,7 +103,7 @@ const PICTOGRAPH = /^\p{Extended_Pictographic}$/u;
 // Extended_Pictographic includes these letter-like symbols (©, ®, ™, ℹ, Ⓜ), but
 // they read as text rather than as a tab icon. The Funnelcake validator
 // rejects them when an admin saves the emoji, and this check stays in step.
-const TEXT_SYMBOLS = new Set(['©', '®', '™', 'ℹ', 'Ⓜ']);
+const TEXT_SYMBOLS = new Set(['\u00A9', '\u00AE', '\u2122', '\u2139', '\u24C2']);
 const SKIN_TONE = /^\p{Emoji_Modifier}$/u;
 const REGIONAL_INDICATOR = /^\p{Regional_Indicator}$/u;
 const VS16 = '\uFE0F';
