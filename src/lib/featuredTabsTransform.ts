@@ -99,23 +99,53 @@ export const DEFAULT_FEATURED_TAB_EMOJI = '\u2728';
 // One ZWJ family sequence is 7 scalars and a subdivision flag is 7; 16 leaves
 // room for every real emoji while bounding what a config can make us render.
 const MAX_EMOJI_SCALARS = 16;
-const EXTENDED_PICTOGRAPHIC = /\p{Extended_Pictographic}/u;
+const PICTOGRAPH = /^\p{Extended_Pictographic}$/u;
+const SKIN_TONE = /^\p{Emoji_Modifier}$/u;
+const REGIONAL_INDICATOR = /^\p{Regional_Indicator}$/u;
+const VS16 = '\uFE0F';
+const ZWJ = '\u200D';
+const BLACK_FLAG = '\u{1F3F4}';
+const CANCEL_TAG = '\u{E007F}';
+const TAG_SPEC = /^[\u{E0020}-\u{E007E}]$/u;
+
+function isPictograph(scalar: string | undefined): boolean {
+  return scalar !== undefined && PICTOGRAPH.test(scalar);
+}
+
+/** A subdivision flag: the black flag, tag specs, then the cancel tag. */
+function isTagFlag(scalars: string[]): boolean {
+  if (scalars[0] !== BLACK_FLAG || scalars.length < 3) return false;
+  if (scalars[scalars.length - 1] !== CANCEL_TAG) return false;
+  return scalars.slice(1, -1).every((scalar) => TAG_SPEC.test(scalar));
+}
 
 /**
- * Codepoints that may appear inside a single emoji: pictographs, the VS16
- * presentation selector, skin-tone modifiers, the zero-width joiner that glues
- * ZWJ sequences together, regional indicators (flags), and the tag characters
- * of subdivision flags. Keycaps (digit + U+20E3) are deliberately not allowed:
- * admitting their base characters would let plain digits through.
+ * A pictograph, each optionally followed by VS16 or a skin-tone modifier, and
+ * ZWJ-joined to further pictographs. Every joiner, selector and modifier must
+ * sit next to a pictograph, so a value made only of those invisible scalars is
+ * rejected instead of rendering an empty tab. Keycaps (digit + U+20E3) are
+ * deliberately not allowed: admitting their base characters would let plain
+ * digits through.
  */
-function isEmojiScalar(char: string): boolean {
-  const code = char.codePointAt(0) ?? 0;
-  return EXTENDED_PICTOGRAPHIC.test(char)
-    || code === 0xfe0f                          // VS16, emoji presentation
-    || (code >= 0x1f3fb && code <= 0x1f3ff)     // skin-tone modifiers
-    || code === 0x200d                          // zero-width joiner
-    || (code >= 0x1f1e6 && code <= 0x1f1ff)     // regional indicators
-    || (code >= 0xe0020 && code <= 0xe007f);    // tag characters
+function isPictographSequence(scalars: string[]): boolean {
+  if (!isPictograph(scalars[0])) return false;
+  for (let i = 1; i < scalars.length; i += 1) {
+    const scalar = scalars[i];
+    const previous = scalars[i - 1];
+    if (scalar === VS16 || SKIN_TONE.test(scalar)) {
+      if (!isPictograph(previous)) return false;
+    } else if (scalar === ZWJ) {
+      if (!isPictograph(scalars[i + 1])) return false;
+    } else if (!isPictograph(scalar) || previous !== ZWJ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** Exactly two regional indicators make a flag; one alone is not an emoji. */
+function isRegionalFlag(scalars: string[]): boolean {
+  return scalars.length === 2 && scalars.every((scalar) => REGIONAL_INDICATOR.test(scalar));
 }
 
 /**
@@ -144,8 +174,10 @@ export function parseFeaturedTabEmoji(value: unknown): string | null {
 
   const scalars = Array.from(emoji);
   if (scalars.length > MAX_EMOJI_SCALARS) return null;
-  if (!scalars.every(isEmojiScalar)) return null;
   if (countGraphemes(emoji) !== 1) return null;
+  if (!isRegionalFlag(scalars) && !isTagFlag(scalars) && !isPictographSequence(scalars)) {
+    return null;
+  }
 
   return emoji;
 }
