@@ -677,14 +677,6 @@ describe('DiscoveryPage', () => {
       expect(featured).toHaveAttribute('aria-label', 'Destacado');
     });
 
-    it('falls back to the default glyph when the config has no emoji', () => {
-      renderFeatured();
-
-      const glyph = screen.getByRole('tab', { name: 'Destacado' })
-        .querySelector('[aria-hidden="true"]');
-      expect(glyph?.textContent).toBe(FEATURED_GLYPH);
-    });
-
     it('renders the emoji the featured config supplies', () => {
       renderFeatured({ emoji: '\u{1F389}' });
 

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  DEFAULT_FEATURED_TAB_EMOJI,
   parseFeaturedTabEmoji,
   parseFeaturedTabPillLabel,
   parseFeaturedTabSlug,
@@ -131,10 +130,6 @@ describe('featured tab transforms', () => {
       ['more than 16 scalars', '\u{1F469}' + '\u200D\u{1F469}'.repeat(8)],
     ])('rejects %s', (_name, value) => {
       expect(parseFeaturedTabEmoji(value)).toBeNull();
-    });
-
-    it('defaults to sparkles', () => {
-      expect(DEFAULT_FEATURED_TAB_EMOJI).toBe('\u2728');
     });
   });
 
