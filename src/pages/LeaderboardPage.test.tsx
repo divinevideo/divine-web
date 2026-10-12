@@ -1,7 +1,7 @@
 // ABOUTME: Tests the leaderboard's Classic Vine vs Made on Divine source filter
 // ABOUTME: Checks the API params it sends and that the choice survives in the URL hash
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -89,6 +89,29 @@ describe('LeaderboardPage source filter', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Everything' }));
 
     await waitFor(() => expect(window.location.hash).toBe('#videos-day'));
+  });
+
+  it('follows the source in the hash on back and forward', async () => {
+    renderPage('#videos-day');
+    await waitFor(() => expect(leaderboardVideoRequests(fetchSpy)).toHaveLength(1));
+
+    act(() => {
+      window.history.replaceState(null, '', '/leaderboard#videos-day-classic');
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+
+    await waitFor(() => expect(leaderboardVideoRequests(fetchSpy)).toHaveLength(2));
+    expect(leaderboardVideoRequests(fetchSpy)[1].searchParams.get('platform')).toBe('vine');
+    expect(screen.getByRole('button', { name: 'Classic Vine' })).toHaveAttribute('aria-pressed', 'true');
+
+    act(() => {
+      window.history.replaceState(null, '', '/leaderboard#videos-day');
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Everything' })).toHaveAttribute('aria-pressed', 'true')
+    );
   });
 
   it('hides the source filter on the creators tab, which the API cannot split yet', async () => {
