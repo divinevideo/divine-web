@@ -152,6 +152,8 @@ function isRegionalFlag(scalars: string[]): boolean {
   return scalars.length === 2 && scalars.every((scalar) => REGIONAL_INDICATOR.test(scalar));
 }
 
+let graphemeSegmenter: Intl.Segmenter | undefined;
+
 /**
  * Returns null where `Intl.Segmenter` is unavailable (older browsers), which
  * fails the emoji check and lands on the default glyph rather than guessing.
@@ -159,8 +161,10 @@ function isRegionalFlag(scalars: string[]): boolean {
 function countGraphemes(value: string): number | null {
   if (typeof Intl.Segmenter !== 'function') return null;
 
-  const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
-  return Array.from(segmenter.segment(value)).length;
+  // Built on first use and reused: selection runs on every render of every
+  // useFeaturedTab consumer, and constructing a segmenter each time is waste.
+  graphemeSegmenter ??= new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+  return Array.from(graphemeSegmenter.segment(value)).length;
 }
 
 /**
