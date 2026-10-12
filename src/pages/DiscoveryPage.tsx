@@ -41,7 +41,7 @@ interface DiscoveryTabItem {
 // none, or one that failed validation, the default is shown. Named for the slot
 // rather than any glyph: the emoji is editorial and changes per campaign, and
 // identifiers that spell out a campaign do not belong in a public repository.
-function FeaturedGlyph({ emoji, className }: { emoji: string | null; className?: string }) {
+function FeaturedGlyph({ emoji = null, className }: { emoji?: string | null; className?: string }) {
   return (
     <span
       className={cn('inline-flex items-center justify-center text-base leading-none', className)}
@@ -62,7 +62,7 @@ function insertFeaturedTab(
   const item: DiscoveryTabItem = {
     value: featuredTab.slug,
     label: featuredLabel,
-    Icon: ({ className }) => <FeaturedGlyph emoji={featuredTab.emoji} className={className} />,
+    Icon: FeaturedGlyph,
     pillLabel: featuredTab.pillLabel,
     featuredTab,
   };
@@ -284,7 +284,14 @@ export function DiscoveryPage() {
                 )}
                 aria-label={pillLabel ? `${label}: ${pillLabel}` : label}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                {featuredConfig ? (
+                  // The emoji travels as a prop on a stable component type. An
+                  // `Icon` built from the config here would be a new type on
+                  // every render, and React would remount the glyph each time.
+                  <FeaturedGlyph emoji={featuredConfig.emoji} className="h-4 w-4 shrink-0" />
+                ) : (
+                  <Icon className="h-4 w-4 shrink-0" />
+                )}
                 <span className="hidden min-w-0 truncate sm:inline" title={label}>{label}</span>
                 {pillLabel && (
                   /*

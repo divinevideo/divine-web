@@ -695,6 +695,31 @@ describe('DiscoveryPage', () => {
       expect(featured).toHaveAttribute('aria-label', 'Destacado');
     });
 
+    // useFeaturedTab hands back a fresh object on every render, so the glyph
+    // must not be a component type minted from that object: React would unmount
+    // and remount it on each render and restart anything animating the glyph.
+    it('keeps the same glyph element when the config is re-delivered unchanged', () => {
+      const tree = () => (
+        <MemoryRouter initialEntries={['/discovery/classics']}>
+          <Routes>
+            <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+      mockFeaturedTab.current = { ...FEATURED, emoji: '\u{1F389}' };
+      const { rerender } = render(tree());
+      const before = screen.getByRole('tab', { name: 'Destacado' })
+        .querySelector('[aria-hidden="true"]');
+
+      mockFeaturedTab.current = { ...FEATURED, emoji: '\u{1F389}' };
+      rerender(tree());
+      const after = screen.getByRole('tab', { name: 'Destacado' })
+        .querySelector('[aria-hidden="true"]');
+
+      expect(before).not.toBeNull();
+      expect(after).toBe(before);
+    });
+
     it('leaves the non-featured tabs on their own icons', () => {
       renderFeatured();
 
