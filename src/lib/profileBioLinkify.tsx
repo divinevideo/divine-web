@@ -33,6 +33,13 @@ export function normalizeExternalUrl(input: string | undefined): string | null {
   }
 }
 
+// Only link references that actually decode. Imported archive text can carry a
+// mention whose bech32 checksum is broken; linking it would point the reader at
+// a profile or event that cannot exist.
+function isDecodableNostrRef(nostrRef: string): boolean {
+  return nip19.decodeNostrURI(nostrRef).type !== 'invalid';
+}
+
 export function linkifyProfileBioText(text: string): ReactNode[] {
   const parts: ReactNode[] = [];
   let lastIndex = 0;
@@ -76,18 +83,8 @@ export function linkifyProfileBioText(text: string): ReactNode[] {
       }
     } else if (nostrRef) {
       const nostrId = nostrRef.slice('nostr:'.length);
-      // Only link references that actually decode. Imported archive text can
-      // carry a mention whose bech32 checksum is broken; linking it would point
-      // the reader at a profile or event that cannot exist.
-      let decodes = false;
-      try {
-        nip19.decode(nostrId);
-        decodes = true;
-      } catch {
-        decodes = false;
-      }
 
-      if (decodes) {
+      if (isDecodableNostrRef(nostrRef)) {
         parts.push(
           <SmartLink
             key={`nostr-${keyCounter++}`}
