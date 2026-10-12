@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  DEFAULT_FEATURED_TAB_EMOJI,
+  parseFeaturedTabEmoji,
   parseFeaturedTabPillLabel,
   parseFeaturedTabSlug,
   parseFeaturedTabSponsorName,
@@ -53,6 +55,48 @@ describe('featured tab transforms', () => {
     expect(parseFeaturedTabPillLabel('Ska\u200bte')).toBe('Skate');
     expect(parseFeaturedTabSponsorName('Acme\u200b Bikes')).toBe('Acme Bikes');
     expect(parseFeaturedTabSponsorName('\u200b\u202e')).toBeNull();
+  });
+
+  describe('parseFeaturedTabEmoji', () => {
+    it.each([
+      ['sparkles', '\u2728'],
+      ['party popper', '\u{1F389}'],
+      ['star without a presentation selector', '\u2B50'],
+      ['heart with VS16', '\u2764\uFE0F'],
+      ['thumbs up with a skin tone', '\u{1F44D}\u{1F3FD}'],
+      ['ZWJ sequence', '\u{1F469}\u200D\u{1F4BB}'],
+      ['rainbow flag', '\u{1F3F3}\uFE0F\u200D\u{1F308}'],
+      ['regional indicator flag', '\u{1F1FA}\u{1F1F8}'],
+      ['tag sequence flag', '\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}'],
+    ])('accepts a single emoji: %s', (_name, emoji) => {
+      expect(parseFeaturedTabEmoji(emoji)).toBe(emoji);
+    });
+
+    it('trims surrounding whitespace', () => {
+      expect(parseFeaturedTabEmoji('  \u2728\n')).toBe('\u2728');
+    });
+
+    it.each([
+      ['empty string', ''],
+      ['whitespace', '  '],
+      ['letters', 'ab'],
+      ['two emoji', '\u2728\u2728'],
+      ['emoji with text', '\u2728 hi'],
+      ['a digit', '1'],
+      ['markup', '<b>'],
+      ['a bidi override before the emoji', '\u202E\u2728'],
+      ['null', null],
+      ['undefined', undefined],
+      ['a number', 42],
+      ['an object', { emoji: '\u2728' }],
+      ['more than 16 scalars', '\u{1F469}' + '\u200D\u{1F469}'.repeat(8)],
+    ])('rejects %s', (_name, value) => {
+      expect(parseFeaturedTabEmoji(value)).toBeNull();
+    });
+
+    it('defaults to sparkles', () => {
+      expect(DEFAULT_FEATURED_TAB_EMOJI).toBe('\u2728');
+    });
   });
 
   it('maps featured video envelopes without reordering server data', () => {

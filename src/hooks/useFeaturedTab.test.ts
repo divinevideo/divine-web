@@ -123,7 +123,42 @@ describe('useFeaturedTab', () => {
       label: 'Especial',
       pillLabel: null,
       sponsorName: null,
+      emoji: null,
     });
+  });
+
+  it('passes a valid admin-set emoji through to the resolved tab', async () => {
+    mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse({ emoji: '\u{1F389}' }));
+
+    const { result } = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+
+    await flushQuery();
+
+    expect(result.current.tab?.emoji).toBe('\u{1F389}');
+  });
+
+  it('resolves an invalid emoji to null rather than rendering it', async () => {
+    mockFetchFeaturedTabs.mockResolvedValueOnce(makeResponse({ emoji: 'not an emoji' }));
+
+    const { result } = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+
+    await flushQuery();
+
+    expect(result.current.tab?.id).toBe('ft_1234abcd');
+    expect(result.current.tab?.emoji).toBeNull();
+  });
+
+  it('resolves an absent emoji field to null, as served before the field existed', async () => {
+    const response = makeResponse();
+    delete response.featured_tabs[0].emoji;
+    mockFetchFeaturedTabs.mockResolvedValueOnce(response);
+
+    const { result } = renderHook(() => useFeaturedTab(), { wrapper: createWrapper() });
+
+    await flushQuery();
+
+    expect(result.current.tab?.id).toBe('ft_1234abcd');
+    expect(result.current.tab?.emoji).toBeNull();
   });
 
   it('fetches configuration from the supplied Funnelcake host', async () => {

@@ -93,6 +93,63 @@ export function parseFeaturedTabSponsorName(value: unknown): string | null {
   return cleaned || null;
 }
 
+/** The featured tab's glyph when the config supplies no usable emoji. */
+export const DEFAULT_FEATURED_TAB_EMOJI = '\u2728';
+
+// One ZWJ family sequence is 7 scalars and a subdivision flag is 7; 16 leaves
+// room for every real emoji while bounding what a config can make us render.
+const MAX_EMOJI_SCALARS = 16;
+const EXTENDED_PICTOGRAPHIC = /\p{Extended_Pictographic}/u;
+
+/**
+ * Codepoints that may appear inside a single emoji: pictographs, the VS16
+ * presentation selector, skin-tone modifiers, the zero-width joiner that glues
+ * ZWJ sequences together, regional indicators (flags), and the tag characters
+ * of subdivision flags. Keycaps (digit + U+20E3) are deliberately not allowed:
+ * admitting their base characters would let plain digits through.
+ */
+function isEmojiScalar(char: string): boolean {
+  const code = char.codePointAt(0) ?? 0;
+  return EXTENDED_PICTOGRAPHIC.test(char)
+    || code === 0xfe0f                          // VS16, emoji presentation
+    || (code >= 0x1f3fb && code <= 0x1f3ff)     // skin-tone modifiers
+    || code === 0x200d                          // zero-width joiner
+    || (code >= 0x1f1e6 && code <= 0x1f1ff)     // regional indicators
+    || (code >= 0xe0020 && code <= 0xe007f);    // tag characters
+}
+
+/**
+ * Returns null where `Intl.Segmenter` is unavailable (older browsers), which
+ * fails the emoji check and lands on the default glyph rather than guessing.
+ */
+function countGraphemes(value: string): number | null {
+  if (typeof Intl.Segmenter !== 'function') return null;
+
+  const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+  return Array.from(segmenter.segment(value)).length;
+}
+
+/**
+ * The featured tab's emoji is server-supplied and rendered as the whole tab on
+ * a phone, so it is validated rather than cleaned: anything that is not exactly
+ * one emoji is rejected and the caller falls back to the default. It must not
+ * go through stripInvisibleFormatting, which removes the zero-width joiner and
+ * would split a ZWJ sequence into several separate pictographs.
+ */
+export function parseFeaturedTabEmoji(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+
+  const emoji = value.trim();
+  if (!emoji) return null;
+
+  const scalars = Array.from(emoji);
+  if (scalars.length > MAX_EMOJI_SCALARS) return null;
+  if (!scalars.every(isEmojiScalar)) return null;
+  if (countGraphemes(emoji) !== 1) return null;
+
+  return emoji;
+}
+
 export function toFunnelcakeVideo(raw: FeaturedTabVideoRaw): FunnelcakeVideoRaw {
   const createdAt = typeof raw.created_at === 'string'
     ? Math.floor(new Date(raw.created_at).getTime() / 1000)

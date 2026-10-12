@@ -22,7 +22,8 @@ function queryPartnershipDisclosure(): HTMLElement | null {
   );
 }
 
-const FEATURED_GLYPH = '🌮';
+// The fallback glyph when the featured config carries no usable emoji.
+const FEATURED_GLYPH = '\u2728';
 
 const {
   mockNavigate,
@@ -210,6 +211,7 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: 'Skate week',
       sponsorName: null,
+      emoji: null,
     };
 
     render(
@@ -236,6 +238,7 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: null,
       sponsorName: null,
+      emoji: null,
     };
 
     render(
@@ -262,6 +265,7 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: null,
       sponsorName: null,
+      emoji: null,
     });
     mockFeaturedTab.current = config();
 
@@ -320,6 +324,7 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: null,
       sponsorName: null,
+      emoji: null,
     };
 
     const tree = () => (
@@ -365,6 +370,7 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: 'Skate week',
       sponsorName: 'Acme Bikes',
+      emoji: null,
     };
 
     render(
@@ -396,6 +402,7 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: null,
       sponsorName: 'Acme Bikes',
+      emoji: null,
     };
 
     render(
@@ -418,6 +425,7 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: 'Skate week',
       sponsorName: null,
+      emoji: null,
     };
 
     render(
@@ -441,6 +449,7 @@ describe('DiscoveryPage', () => {
         label: 'Especial',
         pillLabel: null,
         sponsorName: 'Acme Bikes',
+        emoji: null,
       };
 
       render(
@@ -465,6 +474,7 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: null,
       sponsorName: 'Acme Bikes',
+      emoji: null,
     };
 
     render(
@@ -488,6 +498,7 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: null,
       sponsorName: 'Acme Bikes',
+      emoji: null,
     };
 
     render(
@@ -516,6 +527,7 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: null,
       sponsorName: 'Acme Bikes',
+      emoji: null,
     };
 
     render(
@@ -537,6 +549,7 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: 'Skate week',
       sponsorName: 'Acme Bikes',
+      emoji: null,
     };
 
     render(
@@ -562,6 +575,7 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: 'Skate week',
       sponsorName: null,
+      emoji: null,
     };
 
     function renderAt(route: string) {
@@ -629,10 +643,11 @@ describe('DiscoveryPage', () => {
       label: 'Especial',
       pillLabel: null,
       sponsorName: null,
+      emoji: null,
     };
 
-    function renderFeatured() {
-      mockFeaturedTab.current = FEATURED;
+    function renderFeatured(overrides: Partial<ResolvedFeaturedTab> = {}) {
+      mockFeaturedTab.current = { ...FEATURED, ...overrides };
       return render(
         <MemoryRouter initialEntries={['/discovery/classics']}>
           <Routes>
@@ -659,6 +674,24 @@ describe('DiscoveryPage', () => {
       const glyph = featured.querySelector('[aria-hidden="true"]');
       expect(glyph).not.toBeNull();
       expect(glyph).toHaveTextContent(FEATURED_GLYPH);
+      expect(featured).toHaveAttribute('aria-label', 'Destacado');
+    });
+
+    it('falls back to the default glyph when the config has no emoji', () => {
+      renderFeatured();
+
+      const glyph = screen.getByRole('tab', { name: 'Destacado' })
+        .querySelector('[aria-hidden="true"]');
+      expect(glyph?.textContent).toBe(FEATURED_GLYPH);
+    });
+
+    it('renders the emoji the featured config supplies', () => {
+      renderFeatured({ emoji: '\u{1F389}' });
+
+      const featured = screen.getByRole('tab', { name: 'Destacado' });
+      const glyph = featured.querySelector('[aria-hidden="true"]');
+      expect(glyph?.textContent).toBe('\u{1F389}');
+      expect(featured.textContent).not.toContain(FEATURED_GLYPH);
       expect(featured).toHaveAttribute('aria-label', 'Destacado');
     });
 

@@ -1,4 +1,5 @@
 import {
+  parseFeaturedTabEmoji,
   parseFeaturedTabPillLabel,
   parseFeaturedTabSlug,
   parseFeaturedTabSponsorName,
@@ -80,6 +81,7 @@ export function selectFeaturedTab(
       label,
       pillLabel: parseFeaturedTabPillLabel(config.pill_label),
       sponsorName: parseFeaturedTabSponsorName(config.disclosure_label),
+      emoji: parseFeaturedTabEmoji(config.emoji),
     };
   }
 

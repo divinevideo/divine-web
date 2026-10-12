@@ -84,6 +84,7 @@ describe('featured tab eligibility', () => {
       label: 'Especial',
       pillLabel: 'Skate week',
       sponsorName: 'Acme Bikes',
+      emoji: null,
     });
   });
 
@@ -106,6 +107,7 @@ describe('featured tab eligibility', () => {
       label: 'Seasonal',
       pillLabel: 'Skate week',
       sponsorName: null,
+      emoji: null,
     });
   });
 
@@ -143,6 +145,7 @@ describe('featured tab eligibility', () => {
       label: 'Especial',
       pillLabel: 'Skate week',
       sponsorName: 'Acme Bikes',
+      emoji: null,
     });
   });
 });

@@ -15,6 +15,8 @@ export interface FeaturedTabConfigRaw {
   visible_to_minors: boolean;
   pill_label: unknown;
   disclosure_label: unknown;
+  // Optional because servers that predate the field omit it entirely.
+  emoji?: unknown;
   has_content: boolean;
 }
 
@@ -24,6 +26,8 @@ export interface ResolvedFeaturedTab {
   label: string;
   pillLabel: string | null;
   sponsorName: string | null;
+  /** A validated single emoji, or null to use the default glyph. */
+  emoji: string | null;
 }
 
 export interface FeaturedTabVideoRaw extends Omit<FunnelcakeVideoRaw, 'created_at'> {
