@@ -76,6 +76,28 @@ describe('featured tab transforms', () => {
       expect(parseFeaturedTabEmoji('  \u2728\n')).toBe('\u2728');
     });
 
+    // Sixteen scalars is the most a real sequence needs; one more is rejected
+    // by the "more than 16 scalars" case below.
+    it('accepts a sequence of exactly 16 scalars', () => {
+      const sixteen = '\u{1F469}\u{1F3FD}' + '\u200d\u{1F469}'.repeat(7);
+
+      expect(Array.from(sixteen)).toHaveLength(16);
+      expect(parseFeaturedTabEmoji(sixteen)).toBe(sixteen);
+    });
+
+    // Older browsers lack Intl.Segmenter. The check cannot count graphemes
+    // there, so it rejects rather than guesses and the default glyph shows.
+    it('rejects a valid emoji where Intl.Segmenter is unavailable', () => {
+      const original = Intl.Segmenter;
+      Object.defineProperty(Intl, 'Segmenter', { value: undefined, configurable: true, writable: true });
+      try {
+        expect(parseFeaturedTabEmoji('\u2728')).toBeNull();
+      } finally {
+        Object.defineProperty(Intl, 'Segmenter', { value: original, configurable: true, writable: true });
+      }
+      expect(parseFeaturedTabEmoji('\u2728')).toBe('\u2728');
+    });
+
     it.each([
       ['empty string', ''],
       ['whitespace', '  '],
