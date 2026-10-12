@@ -43,4 +43,42 @@ describe('linkifyProfileBioText — nostr references', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(container.textContent).toBe(corrupted);
   });
+
+  it.each([
+    ['note', nip19.noteEncode('d'.repeat(64))],
+    [
+      'nprofile',
+      nip19.nprofileEncode({ pubkey: 'c'.repeat(64), relays: ['wss://relay.example.com'] }),
+    ],
+    [
+      'nevent',
+      nip19.neventEncode({ id: 'd'.repeat(64), relays: ['wss://relay.example.com'] }),
+    ],
+  ])('still links a valid %s mention', (_kind, id) => {
+    renderText(`see nostr:${id}`);
+
+    expect(screen.getByRole('link', { name: `nostr:${id}` })).toHaveAttribute('href', `/${id}`);
+  });
+
+  it('keeps trailing punctuation outside the link of a valid mention', () => {
+    const npub = nip19.npubEncode('c'.repeat(64));
+
+    const { container } = renderText(`say hi to nostr:${npub}.`);
+
+    expect(screen.getByRole('link', { name: `nostr:${npub}` })).toHaveAttribute(
+      'href',
+      `/${npub}`,
+    );
+    expect(container.textContent).toBe(`say hi to nostr:${npub}.`);
+  });
+
+  it('renders an undecodable nprofile reference as plain text', () => {
+    const nprofile = nip19.nprofileEncode({ pubkey: 'c'.repeat(64) });
+    const corrupted = `nostr:${nprofile}zz`;
+
+    const { container } = renderText(corrupted);
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(container.textContent).toBe(corrupted);
+  });
 });
