@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 // ABOUTME: Live relay client for Concord chat — existing signer only, no new login or token store.
-// ABOUTME: Public-channel POC transport is signed rumor kinds 9/1111/7/3302/5; private sealing stays in protocol.ts.
+// ABOUTME: The page's transport is kind 1059 wraps around 20013 seals (built in protocol.ts); publishRumor/subscribeChannel are the unused plaintext path.
 import { groupKey, hexToBytes, isExpiredRumor, openWrap, sealRumor, sha256Bytes, verifyChatRumor, wrapSeal, type GroupKey, type Nip44Cipher, type Rumor, type SignerLike } from './protocol';
 import { verifyEvent, type Event as NostrEvent } from 'nostr-tools';
 

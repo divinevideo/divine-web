@@ -35,7 +35,7 @@ export default function ChatPage() {
     let off: (() => void) | undefined;
     void relay.connect().then(() => {
       off = relay.subscribeSealed(stream, (r) => setRumors((m) => (m.some((x) => x.id === r.id) ? m : [...m, r])));
-    }).catch(() => { /* shell shows reconnecting via online/offline state */ });
+    }).catch(() => { /* a failed connect is not shown; the shell only tracks the browser's online/offline state */ });
     return () => { off?.(); relay.close(); };
   }, [relay, channelId, stream]);
   if (isResolvingJwt) return <p role="status">Loading chat…</p>;

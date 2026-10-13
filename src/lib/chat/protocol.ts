@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 // ABOUTME: Pure TypeScript Concord protocol (CORD-01..08) — no React, no IO, no new signer.
-// ABOUTME: Derivations/kinds per Concord spec Appx A/B; crypto via existing nostr-tools only.
+// ABOUTME: Derivations/kinds per Concord spec Appx A/B; secp256k1 and NIP-44 via nostr-tools, SHA-256/HMAC/HKDF implemented here.
 
 import { finalizeEvent, generateSecretKey, getPublicKey, nip44, verifyEvent, type Event as NostrEvent } from 'nostr-tools';
 
