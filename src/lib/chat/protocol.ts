@@ -298,6 +298,16 @@ export function publicChannelKey(communityRootHex: string, channelIdHex: string,
 export function privateChannelKey(channelKeyHex: string, channelIdHex: string, channelEpoch: number): ChannelKeying {
   return { pubkey: groupKeyHex('concord/channel', channelKeyHex, channelIdHex, channelEpoch).pubkey, secretKind: 'private', epoch: channelEpoch };
 }
+/** Resolve the live stream key for a channel from kind-33302-held material.
+ *  List fields are base64url-43; a held channel `key` means private (per-channel
+ *  epoch), otherwise the key derives from community_root at root_epoch. */
+export function streamKeyFromListEntry(entry: { current: JoinMaterial }, channelIdB64: string): GroupKey | null {
+  const channel = entry.current.channels.find((c) => c.id === channelIdB64);
+  if (!channel) return null;
+  const channelIdHex = b64urlToHex(channel.id);
+  if (channel.key) return groupKeyHex('concord/channel', b64urlToHex(channel.key), channelIdHex, channel.epoch);
+  return groupKeyHex('concord/channel', b64urlToHex(entry.current.community_root), channelIdHex, entry.current.root_epoch);
+}
 /** Privatise mints an independent key at the NEXT monotonic channel_epoch (first = 1). */
 export const nextPrivateEpoch = (currentEpoch: number): number => Math.max(0, Math.floor(currentEpoch)) + 1;
 export interface ChannelMetadata { name: string; private: boolean; deleted?: boolean; custom?: Record<string, unknown>; [unknown: string]: unknown }

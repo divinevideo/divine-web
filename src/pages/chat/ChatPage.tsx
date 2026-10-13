@@ -8,16 +8,25 @@ import { useChatSession } from '@/hooks/useChatSession';
 import { canPostToChat, foldChatRumors, foldControlEditions, type Rumor } from '@/lib/chat/protocol';
 import { channelRumors, ConcordRelayClient, pocStreamKey } from '@/lib/chat/relay';
 import { CONCORD_RELAY_URL } from '@/lib/chat/store';
+import { streamKeyFromListEntry } from '@/lib/chat/protocol';
 
 export default function ChatPage() {
   const { communityId, channelId, threadId } = useParams();
-  const { isLoggedIn, isResolvingJwt, user, signer } = useChatSession();
+  const { isLoggedIn, isResolvingJwt, user, signer, store } = useChatSession();
   const [rumors, setRumors] = useState<Rumor[]>([]);
   const relay = useMemo(() => {
     if (!signer || !channelId) return null;
     return new ConcordRelayClient(CONCORD_RELAY_URL, signer as never);
   }, [signer, channelId]);
-  const stream = useMemo(() => (channelId ? pocStreamKey(channelId) : null), [channelId]);
+  // Held kind-33302 keys win (private channels especially); the labeled POC
+  // key is only the fallback for communities the list does not hold yet.
+  const stream = useMemo(() => {
+    if (!channelId) return null;
+    const entry = store?.listDoc?.entries[0];
+    const heldChannel = entry?.current.channels.find((c) => c.name === channelId || c.id === channelId);
+    const held = entry && heldChannel ? streamKeyFromListEntry(entry as never, heldChannel.id) : null;
+    return held ?? pocStreamKey(channelId);
+  }, [channelId, store]);
   useEffect(() => {
     if (!relay || !channelId || !stream) return;
     let off: (() => void) | undefined;

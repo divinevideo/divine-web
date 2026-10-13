@@ -5,6 +5,8 @@ import type { Rumor } from './protocol';
 export const chatQueryScope = (pubkey: string) => `chat:v1:${pubkey}`;
 export class ChatStore {
   readonly scope: string;
+  /** Kind-33302 Community List document held for this account (merged fragments). */
+  listDoc: { entries: { community_id: string; current: { community_root: string; root_epoch: number; channels: { id: string; key?: string; epoch: number; name: string }[] } }[] } | null = null;
   messages: Rumor[] = [];
   pending: string[] = [];
   keyMaterial: Record<string, string> = {};
@@ -13,7 +15,7 @@ export class ChatStore {
   onCleanup(fn: () => void) { this.subs.add(fn); return () => this.subs.delete(fn); }
   addMessage(m: Rumor) { this.messages = [...this.messages, m]; }
   /** Cancel subs, clear decrypted state, pending sends and keys material held here. */
-  dispose() { this.subs.forEach((fn) => { try { fn(); } catch { /* noop */ } }); this.subs.clear(); this.messages = []; this.pending = []; this.keyMaterial = {}; }
+  dispose() { this.subs.forEach((fn) => { try { fn(); } catch { /* noop */ } }); this.subs.clear(); this.messages = []; this.pending = []; this.keyMaterial = {}; this.listDoc = null; }
 }
 const env = (typeof import.meta !== 'undefined' && (import.meta as unknown as { env?: Record<string, string> }).env) || {};
 /** Controlled POC relay: VITE_CONCORD_RELAY_URL preferred, VITE_CHAT_RELAY_URL is the existing alias. */
