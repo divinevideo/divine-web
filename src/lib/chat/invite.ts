@@ -25,6 +25,13 @@ export function parseInviteUrl(pathname: string, hash: string): Invite | null {
   return { ...frag, naddr: m?.[1] };
 }
 export function stashInvite(invite: Invite): void { try { sessionStorage.setItem(PENDING_INVITE_KEY, JSON.stringify(invite)); } catch { /* private mode */ } }
+/** Read the stashed invite without removing it. */
+export function peekInvite(): Invite | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_INVITE_KEY);
+    return raw ? (JSON.parse(raw) as Invite) : null;
+  } catch { return null; }
+}
 export function consumeInvite(): Invite | null {
   try {
     const raw = sessionStorage.getItem(PENDING_INVITE_KEY);

@@ -104,6 +104,35 @@ describe('control fold', () => {
     const orphan = ed({ rumorId: 'm9', actor: bob, vac: [grantEid, '9', 'ff'.repeat(32)], content: '{"name":"Parked"}' });
     expect(foldControlEditions(alice, [role, grant, orphan]).parked.some((p) => p.rumorId === 'm9')).toBe(true);
   });
+  it('role hierarchy: a MANAGE_ROLES holder cannot create, edit or grant roles at or above their own rank', () => {
+    const carol = 'cc'.repeat(32);
+    const roleDef = (id: string, position: number, permissions: string) => JSON.stringify({ role_id: id, name: `r${position}`, position, permissions, scope: { kind: 'server' }, color: 0 });
+    const adminId = '10'.repeat(32); const modId = '15'.repeat(32); const lowId = '16'.repeat(32);
+    const admin = ed({ rumorId: 'a1', vsk: 1, eid: adminId, content: roleDef(adminId, 1, '255') });
+    const mod = ed({ rumorId: 'a2', vsk: 1, eid: modId, content: roleDef(modId, 5, '1') });
+    const bobIsMod = ed({ rumorId: 'a3', vsk: 3, eid: '40'.repeat(32), content: JSON.stringify({ member: bob, role_ids: [modId] }) });
+    const carolIsAdmin = ed({ rumorId: 'a4', vsk: 3, eid: '41'.repeat(32), content: JSON.stringify({ member: carol, role_ids: [adminId] }) });
+    const base = [admin, mod, bobIsMod, carolIsAdmin];
+    const reason = (s: ReturnType<typeof foldControlEditions>, id: string) => s.rejected.find((r) => r.rumorId === id)?.reason;
+    const outranking = ed({ rumorId: 'b1', actor: bob, vsk: 1, eid: '50'.repeat(32), content: roleDef('50'.repeat(32), 1, '255') });
+    const editAdmin = ed({ rumorId: 'b2', actor: bob, vsk: 1, eid: adminId, ev: 2, content: roleDef(adminId, 9, '0') });
+    const selfPromote = ed({ rumorId: 'b3', actor: bob, vsk: 3, eid: '42'.repeat(32), content: JSON.stringify({ member: bob, role_ids: [modId, adminId] }) });
+    const demoteCarol = ed({ rumorId: 'b4', actor: bob, vsk: 3, eid: '41'.repeat(32), ev: 2, content: JSON.stringify({ member: carol, role_ids: [] }) });
+    const s = foldControlEditions(alice, [...base, outranking, editAdmin, selfPromote, demoteCarol]);
+    expect(reason(s, 'b1')).toBe('role-outranks-actor');
+    expect(reason(s, 'b2')).toBe('role-outranks-actor');
+    expect(reason(s, 'b3')).toBe('grant-outranks-actor');
+    expect(reason(s, 'b4')).toBe('target-outranks-actor');
+    expect(s.roles.get(adminId)?.position).toBe(1);
+    expect(s.grants.get(bob)?.role_ids).toEqual([modId]);
+    expect(s.grants.get(carol)?.role_ids).toEqual([adminId]);
+    // Below his own rank Bob can still manage roles and grants.
+    const low = ed({ rumorId: 'b5', actor: bob, vsk: 1, eid: lowId, content: roleDef(lowId, 6, '0') });
+    const grantLow = ed({ rumorId: 'b6', actor: bob, vsk: 3, eid: '43'.repeat(32), content: JSON.stringify({ member: 'dd'.repeat(32), role_ids: [lowId] }) });
+    const ok = foldControlEditions(alice, [...base, low, grantLow]);
+    expect(ok.roles.get(lowId)?.position).toBe(6);
+    expect(ok.grants.get('dd'.repeat(32))?.role_ids).toEqual([lowId]);
+  });
   it('edition rumor round-trip', () => {
     const r = buildEditionRumor({ actor: alice, vsk: 4, eid: '33'.repeat(32), ev: 1, content: '[]', createdAt: 1, ms: 5 });
     expect(editionFromRumor(r).vsk).toBe(4);
@@ -126,6 +155,17 @@ describe('33302 list', () => {
     const rejoined = mergeCommunityLists([tombstoned, back]);
     expect(rejoined.entries).toHaveLength(0); // re-merge of same stale entry still loses
     expect(canRepack([0], 2)).toBe(false); expect(canRepack([0, 1], 2)).toBe(true);
+  });
+  it('merge keeps the oldest-epoch seed whatever the fragment order', () => {
+    const doc = F.communityList33302 as unknown as Parameters<typeof mergeCommunityLists>[0][number];
+    const entry = doc.entries[0];
+    const at = (epoch: number, root: string) => ({ ...entry.current, root_epoch: epoch, community_root: root });
+    const older = { ...entry, seed: at(1, 'f'.repeat(43)), current: at(3, 'c'.repeat(43)) };
+    const newer = { ...entry, seed: at(2, '0'.repeat(43)), current: at(3, 'c'.repeat(43)) };
+    const frag = (e: typeof older) => ({ frags: 1, entries: [e], tombstones: [] });
+    for (const order of [[older, newer], [newer, older]]) {
+      expect(mergeCommunityLists(order.map(frag)).entries[0].seed?.root_epoch).toBe(1);
+    }
   });
 });
 

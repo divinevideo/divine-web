@@ -399,9 +399,24 @@ export function foldControlEditions(owner: string, editions: ControlEdition[]): 
           if (pass < 3) { deferred.push(e); continue; }
           state.rejected.push({ rumorId: e.rumorId, reason: 'actor-not-authorised' }); continue;
         }
-        if (e.vsk === 1) { try { const role = JSON.parse(e.content) as RoleDef; if (role.position === 0) { state.rejected.push({ rumorId: e.rumorId, reason: 'position-zero-reserved' }); continue; } if (rank.position >= role.position && e.actor !== owner) { /* strictly outrank check for grants enforced below */ } } catch { state.rejected.push({ rumorId: e.rumorId, reason: 'bad-role-content' }); continue; } }
+        // Hierarchy: a non-owner acts only on roles and members it strictly outranks (lower position = higher rank).
+        if (e.vsk === 1) {
+          let role: RoleDef;
+          try { role = JSON.parse(e.content) as RoleDef; } catch { state.rejected.push({ rumorId: e.rumorId, reason: 'bad-role-content' }); continue; }
+          if (role.position === 0) { state.rejected.push({ rumorId: e.rumorId, reason: 'position-zero-reserved' }); continue; }
+          const existing = state.roles.get(e.eid);
+          if (role.position <= rank.position || (existing && existing.position <= rank.position)) { state.rejected.push({ rumorId: e.rumorId, reason: 'role-outranks-actor' }); continue; }
+        }
         if (e.vsk === 3) {
-          try { const grant = JSON.parse(e.content) as GrantDef; if (rank.position >= memberRank(state, grant.member).position && grant.member !== e.actor && state.grants.has(grant.member)) { /* peer cannot act on peer when ranks known */ } } catch { state.rejected.push({ rumorId: e.rumorId, reason: 'bad-grant-content' }); continue; }
+          let grant: GrantDef;
+          try { grant = JSON.parse(e.content) as GrantDef; } catch { state.rejected.push({ rumorId: e.rumorId, reason: 'bad-grant-content' }); continue; }
+          const roles = (grant.role_ids ?? []).map((id) => state.roles.get(id));
+          if (roles.some((r) => r === undefined)) {
+            if (pass < 3) { deferred.push(e); continue; }
+            state.rejected.push({ rumorId: e.rumorId, reason: 'unknown-role' }); continue;
+          }
+          if (roles.some((r) => r!.position <= rank.position)) { state.rejected.push({ rumorId: e.rumorId, reason: 'grant-outranks-actor' }); continue; }
+          if (grant.member !== e.actor && memberRank(state, grant.member).position <= rank.position) { state.rejected.push({ rumorId: e.rumorId, reason: 'target-outranks-actor' }); continue; }
         }
       }
       // Apply
@@ -537,7 +552,7 @@ export function mergeCommunityLists(docs: CommunityListDoc[]): CommunityListDoc 
     const e = normalizeEntry(raw); const cur = entries.get(e.community_id);
     if (!cur) { entries.set(e.community_id, e); continue; }
     const seedCur = cur.seed ?? cur.current; const seedNew = e.seed ?? e.current;
-    const seed = seedNew.root_epoch < seedCur.root_epoch ? seedNew : seedCur.root_epoch > seedNew.root_epoch ? seedCur : (canonicalJson(seedNew) < canonicalJson(seedCur) ? seedNew : seedCur);
+    const seed = seedNew.root_epoch < seedCur.root_epoch ? seedNew : seedCur.root_epoch < seedNew.root_epoch ? seedCur : (canonicalJson(seedNew) < canonicalJson(seedCur) ? seedNew : seedCur);
     const current = e.current.root_epoch > cur.current.root_epoch ? e.current : cur.current.root_epoch > e.current.root_epoch ? cur.current : (canonicalJson(e.current) < canonicalJson(cur.current) ? e.current : cur.current);
     entries.set(e.community_id, normalizeEntry({ ...cur, ...e, seed, current, added_at: Math.max(cur.added_at, e.added_at) }));
   }

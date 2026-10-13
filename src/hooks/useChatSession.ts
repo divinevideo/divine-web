@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from './useCurrentUser';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { ChatStore } from '@/lib/chat/store';
-import { consumeInvite, parseInviteHash, parseInviteUrl, stashInvite, stripInviteFromUrl } from '@/lib/chat/invite';
+import { consumeInvite, parseInviteHash, parseInviteUrl, peekInvite, stashInvite, stripInviteFromUrl } from '@/lib/chat/invite';
 import { probeSignerCapabilities } from '@/lib/chat/protocol';
 
 export function useChatSession() {
@@ -30,8 +30,10 @@ export function useChatSession() {
     }
     if (storeRef.current && storeRef.current.scope !== `chat:v1:${pubkey}`) storeRef.current.dispose();
     if (!storeRef.current) storeRef.current = new ChatStore(pubkey);
-    const invite = consumeInvite();
-    if (invite?.communityId) navigate(`/chat/${invite.communityId}`, { replace: true });
+    if (peekInvite()?.communityId) {
+      const invite = consumeInvite();
+      navigate(`/chat/${invite!.communityId}`, { replace: true });
+    }
     // Token-only spec invites stay stashed until the bundle is fetched/decrypted; the fragment never leaves the client.
   }, [pubkey, isResolvingJwt, navigate, openLoginDialog]);
 

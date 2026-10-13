@@ -15,7 +15,8 @@ export default function ChatPage() {
   return (
     <main>
       <h1>Chat</h1>
-      <ChatShell communityId={communityId} channelId={channelId} threadId={threadId}
+      {/* Keyed so the timeline and draft reset per account, community, channel and thread. */}
+      <ChatShell key={`${user?.pubkey}:${communityId}:${channelId}:${threadId}`} communityId={communityId} channelId={channelId} threadId={threadId}
         canPost={control && user ? canPostToChat(control, user.pubkey) : true} />
     </main>
   );
