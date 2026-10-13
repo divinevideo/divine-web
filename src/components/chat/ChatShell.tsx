@@ -34,7 +34,8 @@ export function ChatShell({ communityId, channelId, threadId, canPost = true, in
 
   const send = () => {
     const body = draft.trim(); if (!body || !canPost) return;
-    const rumor = messageRumor({ author: authorPubkey ?? 'you', channelId: binding?.channelId ?? channelId ?? 'general', epoch: binding?.epoch ?? 0, body, createdAt: Math.floor(Date.now()/1000), ms: Date.now()%1000 });
+    const now = Date.now();
+    const rumor = messageRumor({ author: authorPubkey ?? 'you', channelId: binding?.channelId ?? channelId ?? 'general', epoch: binding?.epoch ?? 0, body, createdAt: Math.floor(now / 1000), ms: now % 1000 });
     if (onSendLive) onSendLive(rumor); else setMessages((m) => [...m, rumor]);
     setDraft(''); setState('ready');
   };
