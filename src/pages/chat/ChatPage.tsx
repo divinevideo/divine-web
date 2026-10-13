@@ -6,7 +6,7 @@ import { useParams } from 'react-router-dom';
 import { ChatShell } from '@/components/chat/ChatShell';
 import { useChatSession } from '@/hooks/useChatSession';
 import { canPostToChat, foldChatRumors, foldControlEditions, type Rumor } from '@/lib/chat/protocol';
-import { ConcordRelayClient } from '@/lib/chat/relay';
+import { ConcordRelayClient, pocStreamKey } from '@/lib/chat/relay';
 import { CONCORD_RELAY_URL } from '@/lib/chat/store';
 
 export default function ChatPage() {
@@ -17,14 +17,15 @@ export default function ChatPage() {
     if (!signer || !channelId) return null;
     return new ConcordRelayClient(CONCORD_RELAY_URL, signer as never);
   }, [signer, channelId]);
+  const stream = useMemo(() => (channelId ? pocStreamKey(channelId) : null), [channelId]);
   useEffect(() => {
-    if (!relay || !channelId) return;
+    if (!relay || !channelId || !stream) return;
     let off: (() => void) | undefined;
     void relay.connect().then(() => {
-      off = relay.subscribeChannel(channelId, (r) => setRumors((m) => (m.some((x) => x.id === r.id) ? m : [...m, r])));
+      off = relay.subscribeSealed(stream, (r) => setRumors((m) => (m.some((x) => x.id === r.id) ? m : [...m, r])));
     }).catch(() => { /* shell shows reconnecting via online/offline state */ });
     return () => { off?.(); relay.close(); };
-  }, [relay, channelId]);
+  }, [relay, channelId, stream]);
   if (isResolvingJwt) return <p role="status">Loading chat…</p>;
   if (!isLoggedIn) return <p role="status">Log in to join the conversation. We opened the login for you.</p>;
   const control = user ? foldControlEditions(user.pubkey, []) : null;
@@ -36,7 +37,7 @@ export default function ChatPage() {
       <ChatShell key={`${user?.pubkey}:${communityId}:${channelId}:${threadId}`} communityId={communityId} channelId={channelId} threadId={threadId}
         authorPubkey={user?.pubkey}
         liveMessages={relay ? live : undefined}
-        onSendLive={relay ? (r) => { setRumors((m) => [...m, r]); void relay.publishRumor(r); } : undefined}
+        onSendLive={relay && stream ? (r) => { setRumors((m) => [...m, r]); void relay.publishSealed(r, stream); } : undefined}
         canPost={control && user ? canPostToChat(control, user.pubkey) : true} />
     </main>
   );

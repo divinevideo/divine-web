@@ -3,7 +3,7 @@
 // ABOUTME: Pure TypeScript Concord protocol (CORD-01..08) — no React, no IO, no new signer.
 // ABOUTME: Derivations/kinds per Concord spec Appx A/B; crypto via existing nostr-tools only.
 
-import { getPublicKey, nip44 } from 'nostr-tools';
+import { finalizeEvent, generateSecretKey, getPublicKey, nip44, verifyEvent, type Event as NostrEvent } from 'nostr-tools';
 
 // --- byte helpers ---
 export const utf8 = (s: string): Uint8Array => new TextEncoder().encode(s);
@@ -635,6 +635,34 @@ export function mergeInviteLists(a: InviteListDoc, b: InviteListDoc): InviteList
 }
 export const inviteEventShape = (live: boolean): { kind: 33301; tags: string[][] } =>
   ({ kind: 33301, tags: [['d', ''], ['vsk', live ? '6' : '9']] });
+
+// --- sealed envelope plane: wrap 1059 (stream key) / seal 20013|20014 (author) / rumor ---
+export type SealSigner = (t: { kind: number; content: string; tags: string[][]; created_at: number }) => Promise<NostrEvent>;
+/** Seal a rumor with the author's real identity (20013 encrypts under the stream conversation key). */
+export async function sealRumor(rumor: Rumor, sealKind: 20013 | 20014, stream: GroupKey, signer: SealSigner): Promise<NostrEvent> {
+  assertNip44Plaintext(JSON.stringify(rumor));
+  const content = sealKind === 20013 ? nip44.encrypt(JSON.stringify(rumor), stream.conversationKey) : JSON.stringify(rumor);
+  return signer({ kind: sealKind, content, tags: [], created_at: rumor.created_at });
+}
+/** Wrap a signed seal under the stream key (kind 1059, random ephemeral p tag). */
+export function wrapSeal(seal: NostrEvent, stream: GroupKey, opts?: { expiration?: number }): NostrEvent {
+  const tags: string[][] = [['p', getPublicKey(generateSecretKey())]];
+  if (opts?.expiration !== undefined) tags.push(['expiration', String(Math.floor(opts.expiration))]);
+  return finalizeEvent({ kind: 1059, content: nip44.encrypt(JSON.stringify(seal), stream.conversationKey), tags, created_at: Math.floor(Date.now() / 1000) }, stream.secretKey);
+}
+export interface OpenedStreamEvent { rumorId: string; author: string; kind: number; content: string; tags: string[][]; createdAt: number; sealKind: number; rumor: Rumor }
+/** Open + fully verify a wrap: stream author, seal signature, rumor author == seal signer, rumor id == NIP-01 hash. */
+export function openWrap(wrap: NostrEvent, stream: GroupKey): OpenedStreamEvent {
+  if (wrap.kind !== 1059) throw new Error('concord: bad-wrap-kind');
+  if (wrap.pubkey !== stream.pubkey) throw new Error('concord: wrap author is not this stream address');
+  const seal = JSON.parse(nip44.decrypt(wrap.content, stream.conversationKey)) as NostrEvent;
+  if (seal.kind !== 20013 && seal.kind !== 20014) throw new Error('concord: bad-seal-kind');
+  if (!verifyEvent(seal)) throw new Error('concord: bad-seal-signature');
+  const rumor = JSON.parse(seal.kind === 20013 ? nip44.decrypt(seal.content, stream.conversationKey) : seal.content) as Rumor;
+  if (rumor.pubkey !== seal.pubkey) throw new Error('concord: rumor author does not match seal signer');
+  if (rumor.id !== computeEventId(rumor)) throw new Error('concord: bad-rumor-id');
+  return { rumorId: rumor.id, author: seal.pubkey, kind: rumor.kind, content: rumor.content, tags: rumor.tags, createdAt: rumor.created_at, sealKind: seal.kind, rumor };
+}
 
 // --- signer capability probe (reuses DivineJWTSigner / any NostrSigner; adds no signer) ---
 export interface SignerLike { getPublicKey(): Promise<string>; signEvent(e: never): Promise<unknown>; nip44?: Nip44Cipher }
