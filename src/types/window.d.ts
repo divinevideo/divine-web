@@ -13,7 +13,7 @@ declare global {
     __DIVINE_FEED__?: FunnelcakeResponse | FunnelcakeVideoRaw[];
     /** Feed type that was injected (trending, recent, classics) */
     __DIVINE_FEED_TYPE__?: string;
-    /** Set by divine-brain simulations before page scripts run to suppress analytics. */
+    /** Set by divine-brain simulations before page scripts run, or by stripSignInCode when it removes a sign-in code, to suppress analytics. */
     __DIVINE_ANALYTICS_DISABLED__?: boolean;
     /** Set when /app/callback removed a one-time sign-in code from the address before the app loaded. */
     __DIVINE_SIGNIN_CODE_STRIPPED__?: boolean;
