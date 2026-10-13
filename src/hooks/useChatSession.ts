@@ -14,6 +14,9 @@ export function useChatSession() {
   const { openLoginDialog } = useLoginDialog();
   const navigate = useNavigate();
   const storeRef = useRef<ChatStore | null>(null);
+  // openLoginDialog changes identity on every dialog open/close, which re-runs the
+  // effect below; prompt once per logged-out stretch so a dismissal sticks.
+  const promptedLoginRef = useRef(false);
   const pubkey = user?.pubkey;
 
   // Capture invite fragment before anything can log the URL; never sent to analytics.
@@ -25,9 +28,10 @@ export function useChatSession() {
   useEffect(() => {
     if (!pubkey) {
       storeRef.current?.dispose(); storeRef.current = null;
-      if (!isResolvingJwt) openLoginDialog();
+      if (!isResolvingJwt && !promptedLoginRef.current) { promptedLoginRef.current = true; openLoginDialog(); }
       return;
     }
+    promptedLoginRef.current = false;
     if (storeRef.current && storeRef.current.scope !== chatQueryScope(pubkey)) { storeRef.current.dispose(); storeRef.current = null; }
     if (!storeRef.current) storeRef.current = new ChatStore(pubkey);
     if (peekInvite()?.communityId) {

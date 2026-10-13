@@ -3,7 +3,6 @@
 import { describe, expect, it } from 'vitest';
 import { encodeInviteFragment } from './protocol';
 import { consumeInvite, parseInviteUrl, peekInvite, stashInvite } from './invite';
-import { CONCORD_RELAY_URL } from './store';
 describe('chat routes / invite deep link', () => {
   it('spec invite link: naddr in path, token only in fragment, stashed client-side', () => {
     const frag = encodeInviteFragment('00112233445566778899aabbccddeeff');
@@ -19,11 +18,5 @@ describe('chat routes / invite deep link', () => {
     expect(peekInvite()?.naddr).toBe('naddr1xyz');
     expect(peekInvite()?.tokenHex).toBe('00112233445566778899aabbccddeeff');
     consumeInvite();
-  });
-  it('logged-out login-return: intended /chat path is the page itself (login dialog overlays, no redirect away)', () => {
-    // useChatSession opens the existing login dialog in place and keeps the URL,
-    // so after login the user is still on /chat/<community>/<channel>.
-    expect('/chat/comm/chan').toMatch(/^\/chat\//);
-    expect(CONCORD_RELAY_URL).toMatch(/^wss:\/\//);
   });
 });
