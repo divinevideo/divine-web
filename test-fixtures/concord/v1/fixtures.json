@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "seed": "concord-test-seed-v1",
+  "note": "TEST-ONLY synthetic identities; never real keys. Dart side consumes this same JSON.",
+  "identities": {
+    "alice": {
+      "secret": "bad6726ee37fe895587b4b99f2d0712f0fde4e9e45fa8ad16d4c4d6c6b570c27",
+      "pubkey": "306a7cafd3e9332ef370d567f05ccb9ca4c43e67032be31cd0026cdfbba532f9"
+    },
+    "bob": {
+      "secret": "8b0b9fdfba47529d63b0a581df6968349ee325ebd7e0ccb246f36a4958476dab",
+      "pubkey": "d0c590465f9c2e1db81a7f177cb8686bd17ab9c7aa16ea40331b3d15962f04b8"
+    }
+  },
+  "derivations": {
+    "communityId": "2f0a28e95bd70c4ba91942dc671064e4cc76e8fb424ed95e56a4a0b1cd403342",
+    "channelId": "82a5ca23c320f8abcfeb4b797ae7dda4e34cb5fed09e3ec7112bb84126a24a5a",
+    "streamId": "9d97e31c0cf9f9a5d9a7868c25030252934effd9a3cd42a8a358c05117266c0b",
+    "threadId": "e816016d4a4c830b2d1f862eab77cdb422bbcec3694e6a39ab8a92d8858bb246"
+  },
+  "sha256Vectors": [
+    {
+      "input": "abc",
+      "expected": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    },
+    {
+      "input": "",
+      "expected": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "payloads": {
+    "message": {
+      "type": "message",
+      "id": "f7549983a648fed00935efac410e340e8c68f9f9eacd3ab1fec31efb0a9ef411",
+      "channelId": "82a5ca23c320f8abcfeb4b797ae7dda4e34cb5fed09e3ec7112bb84126a24a5a",
+      "body": "hello"
+    }
+  },
+  "expiry": {
+    "stampedAt": 1000,
+    "ttlSeconds": 300,
+    "exp": 1300,
+    "expiredAt": 1300
+  },
+  "controlFold": {
+    "owner": "306a7cafd3e9332ef370d567f05ccb9ca4c43e67032be31cd0026cdfbba532f9",
+    "events": [
+      {
+        "seq": 1,
+        "actor": "306a7cafd3e9332ef370d567f05ccb9ca4c43e67032be31cd0026cdfbba532f9",
+        "authorityEventId": "evt-1",
+        "action": {
+          "kind": "ban",
+          "pubkey": "d0c590465f9c2e1db81a7f177cb8686bd17ab9c7aa16ea40331b3d15962f04b8"
+        }
+      }
+    ],
+    "expectedBans": [
+      "d0c590465f9c2e1db81a7f177cb8686bd17ab9c7aa16ea40331b3d15962f04b8"
+    ]
+  },
+  "communityList33302": {
+    "communityId": "2f0a28e95bd70c4ba91942dc671064e4cc76e8fb424ed95e56a4a0b1cd403342",
+    "channelIds": [
+      "82a5ca23c320f8abcfeb4b797ae7dda4e34cb5fed09e3ec7112bb84126a24a5a"
+    ],
+    "unknownField": "preserve-me"
+  }
+}

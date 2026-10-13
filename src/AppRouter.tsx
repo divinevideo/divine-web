@@ -82,6 +82,7 @@ import CollabsPage from "./pages/CollabsPage";
 const BrandPreview = import.meta.env.DEV
   ? lazy(() => import("./pages/_BrandPreview"))
   : null;
+const ChatPage = lazy(() => import("./pages/chat/ChatPage"));
 
 export function AppRouter() {
   const { user, isAuthPending, isRenewingSession } = useCurrentUser();
@@ -152,6 +153,13 @@ export function AppRouter() {
           <Route path="/debug-video" element={<DebugVideoPage />} />
         </Route>
       )}
+
+      {/* Chat POC — page itself login-gates via useChatSession so invite deep links survive */}
+      <Route path="/chat" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
+      <Route path="/chat/invite" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
+      <Route path="/chat/:communityId" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
+      <Route path="/chat/:communityId/:channelId" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
+      <Route path="/chat/:communityId/:channelId/thread/:threadId" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
 
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
