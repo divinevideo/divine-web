@@ -127,6 +127,10 @@
   <body>
     <div id="root"></div>
 
+    <!-- Removes a one-time sign-in code from /app/callback's address before any
+         other script reads it. Must stay the first module script. -->
+    <script type="module" src="/src/lib/stripSignInCode.ts"></script>
+
     <!-- HubSpot tracking code & GDPR cookie consent banner. The module keeps
          the sim-suppression guard out of inline HTML so CSP lint stays clean. -->
     <script type="module" src="/src/lib/hubSpotLoader.ts"></script>
