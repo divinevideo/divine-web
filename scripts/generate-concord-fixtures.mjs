@@ -1,27 +1,85 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-// Pinned generator: node scripts/generate-concord-fixtures.mjs — deterministic, TEST-ONLY identities.
-import { createHash } from 'node:crypto';
+// Pinned generator: node scripts/generate-concord-fixtures.mjs — deterministic, TEST-ONLY synthetic identities.
+// Spec: Concord CORD-02 Appx A (frozen derivations). Byte-stable: sorted keys, no timestamps from clock.
+import { createHash, createECDH, hkdfSync } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
-const sha = (s) => createHash('sha256').update(s).digest('hex');
-const derive = (ns, ...p) => sha(['concord:v1', ns, ...p].join(':'));
+const shaB = (b) => createHash('sha256').update(b).digest();
+const sha = (s) => shaB(Buffer.from(s, 'utf8')).toString('hex');
+const hexB = (h) => Buffer.from(h, 'hex');
+const ORDER = BigInt('0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141');
+function hkdf(secret, label, id, epoch, counter) {
+  let info = Buffer.concat([Buffer.from(label, 'utf8'), Buffer.from([0]), id]);
+  if (epoch !== undefined) { const e = Buffer.alloc(8); e.writeBigUInt64BE(BigInt(epoch)); info = Buffer.concat([info, e]); }
+  if (counter !== undefined) info = Buffer.concat([info, Buffer.from([counter])]);
+  return Buffer.from(hkdfSync('sha256', secret, Buffer.alloc(0), info, 32));
+}
+function groupKey(label, secret, id, epoch) {
+  let counter;
+  for (;;) {
+    const seed = hkdf(secret, label, id, epoch, counter);
+    const v = BigInt('0x' + seed.toString('hex'));
+    if (v > 0n && v < ORDER) {
+      const ecdh = createECDH('secp256k1'); ecdh.setPrivateKey(seed);
+      const pub = ecdh.getPublicKey(null, 'uncompressed');
+      return { seed: seed.toString('hex'), pubkey: pub.subarray(1, 33).toString('hex') };
+    }
+    counter = (counter ?? -1) + 1;
+  }
+}
+const b64url = (buf) => buf.toString('base64url').replace(/=+$/, '');
 const SEED = 'concord-test-seed-v1';
-const alice = sha(`${SEED}:alice`), bob = sha(`${SEED}:bob`);
-const communityId = derive('community', alice, 'test-community');
-const channelId = derive('channel', communityId, 'general');
-const fixture = {
-  version: 1, seed: SEED, note: 'TEST-ONLY synthetic identities; never real keys. Dart side consumes this same JSON.',
-  identities: { alice: { secret: alice, pubkey: sha(`pubkey:${alice}`) }, bob: { secret: bob, pubkey: sha(`pubkey:${bob}`) } },
-  derivations: { communityId, channelId, streamId: derive('stream', communityId, channelId), threadId: derive('thread', channelId, 'root-1') },
-  sha256Vectors: [{ input: 'abc', expected: sha('abc') }, { input: '', expected: sha('') }],
-  payloads: { message: { type: 'message', id: derive('msg', channelId, 'seed-1', 'hello'), channelId, body: 'hello' } },
-  expiry: { stampedAt: 1000, ttlSeconds: 300, exp: 1300, expiredAt: 1300 },
-  controlFold: {
-    owner: sha(`pubkey:${alice}`),
-    events: [{ seq: 1, actor: sha(`pubkey:${alice}`), authorityEventId: 'evt-1', action: { kind: 'ban', pubkey: sha(`pubkey:${bob}`) } }],
-    expectedBans: [sha(`pubkey:${bob}`)],
-  },
-  communityList33302: { communityId, channelIds: [channelId], unknownField: 'preserve-me' },
+const aliceSecret = sha(`${SEED}:alice`);
+const bobSecret = sha(`${SEED}:bob`);
+const xonlyOf = (secretHex) => { const e = createECDH('secp256k1'); e.setPrivateKey(hexB(secretHex)); return e.getPublicKey(null, 'uncompressed').subarray(1, 33).toString('hex'); };
+const alice = xonlyOf(aliceSecret); const bob = xonlyOf(bobSecret);
+const ownerSalt = sha(`${SEED}:owner-salt`);
+const communityRoot = sha(`${SEED}:community-root`);
+const controlRoot = sha(`${SEED}:control-root`);
+const channelKey = sha(`${SEED}:channel-key`);
+const communityId = shaB(Buffer.concat([Buffer.from('concord/community', 'utf8'), hexB(alice), hexB(ownerSalt)])).toString('hex');
+const channelId = sha(`${SEED}:channel-id`);
+const gk = (label, secretHex, idHex, epoch) => groupKey(label, hexB(secretHex), hexB(idHex), epoch);
+const editionHash = (eid, version, prev, content) => {
+  const label = Buffer.from('vector-community/v1/edition', 'utf8');
+  const len64 = (b) => { const n = Buffer.alloc(8); n.writeBigUInt64BE(BigInt(b.length)); return Buffer.concat([n, b]); };
+  const ver = Buffer.alloc(8); ver.writeBigUInt64BE(BigInt(version));
+  const prevPart = prev ? Buffer.concat([Buffer.from([1]), hexB(prev)]) : Buffer.concat([Buffer.from([0]), Buffer.alloc(32)]);
+  return shaB(Buffer.concat([len64(label), hexB(eid), ver, prevPart, len64(Buffer.from(content, 'utf8'))])).toString('hex');
 };
-writeFileSync(new URL('../test-fixtures/concord/v1/fixtures.json', import.meta.url), JSON.stringify(fixture, null, 2) + '\n');
-console.log('wrote fixtures', communityId);
+const eventId = (pubkey, created, kind, tags, content) => sha(JSON.stringify([0, pubkey, created, kind, tags, content]));
+const chanTags = (ms, extra = []) => [['channel', channelId], ['epoch', '0'], ['ms', String(ms)], ...extra];
+const msgTags = chanTags(417);
+const fixture = {
+  version: 2, seed: SEED, note: 'TEST-ONLY synthetic identities; never real keys. Dart side consumes this same JSON. Generated by scripts/generate-concord-fixtures.mjs; do not hand-edit.',
+  identities: { alice: { secret: aliceSecret, pubkey: alice }, bob: { secret: bobSecret, pubkey: bob } },
+  secrets: { ownerSalt, communityRoot, controlRoot, channelKey },
+  derivations: {
+    communityId,
+    controlSigner: gk('concord/control-signer', controlRoot, communityId, 0),
+    controlRead: gk('concord/control', communityRoot, communityId, 0),
+    guestbook: gk('concord/guestbook', communityRoot, communityId, 0),
+    publicChannel: { channelId, ...gk('concord/channel', communityRoot, channelId, 0) },
+    privateChannel: { channelId, ...gk('concord/channel', channelKey, channelId, 1) },
+    dissolved: gk('concord/dissolved', communityId, '0'.repeat(64)),
+    grantLocatorAlice: hkdf(hexB(communityId), 'concord/grant', hexB(alice)).toString('hex'),
+    banlistLocator: hkdf(hexB(communityId), 'concord/banlist', Buffer.alloc(32)).toString('hex'),
+    epochKeyCommitment: shaB(Buffer.concat([Buffer.from('concord/epoch-key-commitment', 'utf8'), (() => { const e = Buffer.alloc(8); e.writeBigUInt64BE(0n); return e; })(), hexB(communityRoot)])).toString('hex'),
+  },
+  sha256Vectors: [{ input: 'abc', expected: sha('abc') }, { input: '', expected: sha('') }],
+  rumors: {
+    message: { id: eventId(alice, 1700000000, 9, msgTags, 'hello'), kind: 9, pubkey: alice, content: 'hello', tags: msgTags, created_at: 1700000000 },
+    reaction: { id: eventId(bob, 1700000001, 7, chanTags(112, [['e', eventId(alice, 1700000000, 9, msgTags, 'hello')], ['p', alice], ['k', '9']]), '🔥'), kind: 7, pubkey: bob, content: '🔥', tags: chanTags(112, [['e', eventId(alice, 1700000000, 9, msgTags, 'hello')], ['p', alice], ['k', '9']]), created_at: 1700000001 },
+  },
+  editionHashVector: { eid: communityId, version: 1, content: '{"name":"Test"}', expected: editionHash(communityId, 1, undefined, '{"name":"Test"}') },
+  communityList33302: {
+    frags: 1,
+    entries: [{ community_id: b64url(hexB(communityId)), current: { owner: b64url(hexB(alice)), owner_salt: b64url(hexB(ownerSalt)), community_root: b64url(hexB(communityRoot)), root_epoch: 0, control_pk: b64url(hexB(gk('concord/control-signer', controlRoot, communityId, 0).pubkey)), channels: [{ id: b64url(hexB(channelId)), epoch: 0, name: 'general' }], relays: ['wss://relay.staging.dvines.org'], name: 'Test' }, added_at: 1700000000000, unknownEntryField: 'preserve-me' }],
+    tombstones: [],
+    unknownFragmentField: 'preserve-me-too',
+  },
+  invite: { token: sha(`${SEED}:invite-token`).slice(0, 32), expiresAtMs: 1800000000000 },
+};
+const out = JSON.stringify(fixture, null, 2) + '\n';
+writeFileSync(new URL('../test-fixtures/concord/v1/fixtures.json', import.meta.url), out);
+console.log('wrote fixtures', communityId, out.length);

@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChatCircle, Hash, PaperPlaneTilt, WarningCircle, WifiSlash } from '@phosphor-icons/react';
-import { messagePayload, type ChatPayload } from '@/lib/chat/protocol';
+import { messageRumor, type Rumor } from '@/lib/chat/protocol';
 
 export type ChatViewState = 'loading' | 'ready' | 'empty' | 'reconnecting' | 'failure' | 'denied';
 const DEMO_COMMUNITIES = [{ id: 'demo-community', name: 'Divine test community', channels: ['general', 'introductions'] }];
@@ -13,10 +13,16 @@ export function ChatShell({ communityId, channelId, threadId, canPost = true, in
   communityId?: string; channelId?: string; threadId?: string; canPost?: boolean; initialState?: ChatViewState;
 }) {
   const [state, setState] = useState<ChatViewState>(initialState);
-  const [messages, setMessages] = useState<(ChatPayload & { author: string })[]>([]);
+  const [messages, setMessages] = useState<Rumor[]>([]);
   const [draft, setDraft] = useState('');
   const composerRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { composerRef.current?.focus(); }, [channelId]);
+  useEffect(() => {
+    const off = () => setState((s) => s === 'ready' || s === 'empty' ? 'reconnecting' : s);
+    const on = () => setState((s) => s === 'reconnecting' ? 'empty' : s);
+    window.addEventListener('offline', off); window.addEventListener('online', on);
+    return () => { window.removeEventListener('offline', off); window.removeEventListener('online', on); };
+  }, []);
 
   if (state === 'loading') return <p role="status">Loading chat…</p>;
   if (state === 'failure') return <div role="alert"><WarningCircle aria-hidden /> Something broke on our end. <button type="button" onClick={() => setState('empty')}>Try again</button></div>;
@@ -24,7 +30,7 @@ export function ChatShell({ communityId, channelId, threadId, canPost = true, in
 
   const send = () => {
     const body = draft.trim(); if (!body || !canPost) return;
-    setMessages((m) => [...m, { ...messagePayload(channelId ?? 'general', body, String(Date.now())), author: 'you' } as ChatPayload & { author: string }]);
+    setMessages((m) => [...m, messageRumor({ author: 'you', channelId: channelId ?? 'general', epoch: 0, body, createdAt: Math.floor(Date.now()/1000), ms: Date.now()%1000 })]);
     setDraft(''); setState('ready');
   };
   return (
@@ -41,7 +47,7 @@ export function ChatShell({ communityId, channelId, threadId, canPost = true, in
         <h2><ChatCircle aria-hidden /> {channelId ?? 'Pick a channel'}{communityId ? ` in ${communityId}` : ''}{threadId ? ` · thread ${threadId}` : ''}</h2>
         {state === 'reconnecting' && <p role="status"><WifiSlash aria-hidden /> Reconnecting…</p>}
         {messages.length === 0 ? <p>Nothing looping yet. Go find your people.</p> : (
-          <ol>{messages.map((m) => <li key={m.id}><strong>{m.author}:</strong> {'body' in m ? m.body : m.type}</li>)}</ol>
+          <ol>{messages.map((m) => <li key={m.id}><strong>{m.pubkey}:</strong> {m.content}</li>)}</ol>
         )}
         <div>
           <label htmlFor="chat-composer">Message</label>

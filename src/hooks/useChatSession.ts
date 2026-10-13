@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from './useCurrentUser';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { ChatStore } from '@/lib/chat/store';
-import { consumeInvite, parseInviteHash, stashInvite, stripInviteFromUrl } from '@/lib/chat/invite';
+import { consumeInvite, parseInviteHash, parseInviteUrl, stashInvite, stripInviteFromUrl } from '@/lib/chat/invite';
 import { probeSignerCapabilities } from '@/lib/chat/protocol';
 
 export function useChatSession() {
@@ -18,7 +18,7 @@ export function useChatSession() {
 
   // Capture invite fragment before anything can log the URL; never sent to analytics.
   useEffect(() => {
-    const invite = parseInviteHash(window.location.hash);
+    const invite = parseInviteUrl(window.location.pathname, window.location.hash) ?? parseInviteHash(window.location.hash);
     if (invite) { stashInvite(invite); stripInviteFromUrl(); }
   }, []);
 
@@ -31,7 +31,8 @@ export function useChatSession() {
     if (storeRef.current && storeRef.current.scope !== `chat:v1:${pubkey}`) storeRef.current.dispose();
     if (!storeRef.current) storeRef.current = new ChatStore(pubkey);
     const invite = consumeInvite();
-    if (invite) navigate(`/chat/${invite.communityId}`, { replace: true });
+    if (invite?.communityId) navigate(`/chat/${invite.communityId}`, { replace: true });
+    // Token-only spec invites stay stashed until the bundle is fetched/decrypted; the fragment never leaves the client.
   }, [pubkey, isResolvingJwt, navigate, openLoginDialog]);
 
   useEffect(() => () => { storeRef.current?.dispose(); storeRef.current = null; }, []);

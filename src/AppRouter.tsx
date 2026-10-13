@@ -157,6 +157,7 @@ export function AppRouter() {
       {/* Chat POC — page itself login-gates via useChatSession so invite deep links survive */}
       <Route path="/chat" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
       <Route path="/chat/invite" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
+      <Route path="/invite/:naddr" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
       <Route path="/chat/:communityId" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
       <Route path="/chat/:communityId/:channelId" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
       <Route path="/chat/:communityId/:channelId/thread/:threadId" element={<Suspense fallback={null}><ChatPage /></Suspense>} />

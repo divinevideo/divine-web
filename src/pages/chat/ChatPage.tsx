@@ -4,19 +4,19 @@
 import { useParams } from 'react-router-dom';
 import { ChatShell } from '@/components/chat/ChatShell';
 import { useChatSession } from '@/hooks/useChatSession';
-import { canPost, foldControlLog } from '@/lib/chat/protocol';
+import { canPostToChat, foldControlEditions } from '@/lib/chat/protocol';
 
 export default function ChatPage() {
   const { communityId, channelId, threadId } = useParams();
   const { isLoggedIn, isResolvingJwt, user } = useChatSession();
   if (isResolvingJwt) return <p role="status">Loading chat…</p>;
   if (!isLoggedIn) return <p role="status">Log in to join the conversation. We opened the login for you.</p>;
-  const control = user ? foldControlLog(user.pubkey, []) : null;
+  const control = user ? foldControlEditions(user.pubkey, []) : null;
   return (
     <main>
       <h1>Chat</h1>
       <ChatShell communityId={communityId} channelId={channelId} threadId={threadId}
-        canPost={control && user ? canPost(control, user.pubkey) : true} />
+        canPost={control && user ? canPostToChat(control, user.pubkey) : true} />
     </main>
   );
 }
