@@ -12,6 +12,17 @@ import {
 
 const BENIGN_SUBTITLE_VTT_STATUS_CODES = new Set([404, 410, 422]);
 
+// A one-time sign-in code that /app/callback can be opened with. stripSignInCode
+// removes it from the address bar, but the browser's navigation timing entry
+// keeps the address the page was opened with, and Sentry names page-load spans
+// and Replay entries from that entry.
+const SIGNIN_CODE_RE = /oauth_confirm=[^&#\s"'<>]*/g;
+const SIGNIN_CODE_FILTERED = 'oauth_confirm=[Filtered]';
+// rrweb's custom event type, which carries Replay's breadcrumbs and
+// performance entries. Page content events are left alone: the page never
+// shows the code, and walking every DOM snapshot would slow every page.
+const REPLAY_CUSTOM_EVENT_TYPE = 5;
+
 function toObject(value: unknown): Record<string, unknown> | null {
   if (typeof value === 'object' && value !== null) {
     return value as Record<string, unknown>;
@@ -105,6 +116,33 @@ export function shouldDropBenignSubtitleVttEvent(event: unknown): boolean {
   return BENIGN_SUBTITLE_VTT_STATUS_CODES.has(statusCode);
 }
 
+function isPlainData(value: object): boolean {
+  const proto = Object.getPrototypeOf(value);
+  return Array.isArray(value) || proto === Object.prototype || proto === null;
+}
+
+/**
+ * Replaces the value of every `oauth_confirm=` in the strings inside `value`,
+ * changing objects and arrays in place, and returns `value`. Only plain
+ * objects and arrays are walked: what Sentry sends is plain data, while the
+ * class instances it attaches (scopes, the client) are not sent.
+ */
+export function scrubSignInCode<T>(value: T, seen = new WeakSet<object>()): T {
+  if (typeof value === 'string') {
+    return value.replace(SIGNIN_CODE_RE, SIGNIN_CODE_FILTERED) as T;
+  }
+  if (typeof value !== 'object' || value === null || seen.has(value) || !isPlainData(value)) return value;
+  seen.add(value);
+  const record = value as Record<string, unknown>;
+  for (const key of Object.keys(record)) {
+    const descriptor = Object.getOwnPropertyDescriptor(record, key);
+    if (!descriptor?.writable) continue;
+    const scrubbed = scrubSignInCode(descriptor.value, seen);
+    if (scrubbed !== descriptor.value) record[key] = scrubbed;
+  }
+  return value;
+}
+
 /**
  * Initialize Sentry error tracking
  * Call this as early as possible in the app lifecycle
@@ -143,7 +181,8 @@ export function initializeSentry() {
         maskAllText: false,
         blockAllMedia: false,
         beforeAddRecordingEvent(event) {
-          return shouldDropKeyExportReplayEvent(event) ? null : event;
+          if (shouldDropKeyExportReplayEvent(event)) return null;
+          return event.type === REPLAY_CUSTOM_EVENT_TYPE ? scrubSignInCode(event) : event;
         },
       }),
       Sentry.httpClientIntegration({ failedRequestStatusCodes: [[400, 599]] }),
@@ -151,7 +190,11 @@ export function initializeSentry() {
     ],
 
     beforeBreadcrumb(breadcrumb) {
-      return shouldDropKeyExportBreadcrumb(breadcrumb) ? null : breadcrumb;
+      return shouldDropKeyExportBreadcrumb(breadcrumb) ? null : scrubSignInCode(breadcrumb);
+    },
+
+    beforeSendTransaction(event) {
+      return scrubSignInCode(event);
     },
 
     // Filter out noise - browser environment errors we can't fix
@@ -238,7 +281,7 @@ export function initializeSentry() {
         delete event.user.email;
         delete event.user.ip_address;
       }
-      return event;
+      return scrubSignInCode(event);
     },
   });
 
