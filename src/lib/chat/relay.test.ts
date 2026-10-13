@@ -42,6 +42,23 @@ describe('ConcordRelayClient', () => {
     await expect(pendingB).rejects.toThrow('relay closed');
     expect(cancelled.sent.some((f) => (JSON.parse(f) as unknown[])[0] === 'EVENT')).toBe(false);
   });
+  it('keeps a reconnect alive when the previous socket finishes closing after it started', async () => {
+    const signer = { getPublicKey: async () => 'a'.repeat(64), signEvent: async (e: object) => ({ ...(e as object), sig: 's'.repeat(128) }) };
+    const sockets: FakeSocket[] = [];
+    const client = new ConcordRelayClient('ws://127.0.0.1:7777', signer as never, () => {
+      const s = new FakeSocket(); s.readyState = 0; sockets.push(s); return s as never;
+    });
+    void client.connect();
+    sockets[0].readyState = 1; sockets[0].onopen?.();
+    client.close();
+    const reconnected = client.connect();
+    // A real socket fires close asynchronously, after the next connection is under way.
+    sockets[0].readyState = 3; sockets[0].onclose?.();
+    sockets[1].readyState = 1; sockets[1].onopen?.();
+    await expect(reconnected).resolves.toBeUndefined();
+    await client.publishRumor(messageRumor({ author: 'a'.repeat(64), channelId: 'chan1', epoch: 0, body: 'hi', createdAt: 1700000000, ms: 1 }));
+    expect(sockets[1].sent.map((f) => (JSON.parse(f) as unknown[])[0])).toEqual(['EVENT']);
+  });
   it('drops sealed wraps whose outer event signature does not verify', async () => {
     const sock = new FakeSocket();
     const client = new ConcordRelayClient('ws://127.0.0.1:7777', {} as never, () => sock as never);

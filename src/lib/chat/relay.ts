@@ -65,8 +65,10 @@ export class ConcordRelayClient {
     this.opened = socket.readyState === 1 ? Promise.resolve() : new Promise((resolve, reject) => {
       socket.onopen = () => resolve();
       // A refused handshake or a close before OPEN settles the attempt, so waiting sends reject.
-      this.rejectOpen = () => reject(new Error('concord: relay closed'));
-      socket.onclose = () => this.rejectOpen?.();
+      // Each socket settles only its own attempt: a replaced socket that finishes closing late must not fail the next one.
+      const fail = () => reject(new Error('concord: relay closed'));
+      this.rejectOpen = fail;
+      socket.onclose = fail;
     });
     this.opened.catch(() => undefined);
     return this.opened;
