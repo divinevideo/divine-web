@@ -16,10 +16,10 @@ describe('sign-in code strip load order', () => {
 
   it('imports nothing, so nothing else is evaluated before it', () => {
     const source = readFileSync('src/lib/stripSignInCode.ts', 'utf8');
-    expect(source).not.toMatch(/^\s*import\s/m);
+    expect(source).not.toMatch(/\bimport\b|\bexport\b[^;]*\bfrom\b/);
   });
 
-  it('is the only script before HubSpot (no classic scripts run earlier)', () => {
+  it('no script tag of any kind precedes it', () => {
     const scripts = [...html.matchAll(/<script\b[^>]*>/g)].map((m) => m[0]);
     expect(scripts[0]).toContain('/src/lib/stripSignInCode.ts');
   });

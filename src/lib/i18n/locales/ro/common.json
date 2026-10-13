@@ -1294,6 +1294,7 @@
   "appCallbackPage": {
     "appStore": "App Store",
     "googlePlay": "Google Play",
+    "signInCodeWarning": "If someone sent you a sign-in link, don't share this page's address.",
     "desktop": {
       "heading": "Deschide pe telefon",
       "body1": "Acest link trebuie deschis în aplicația Divine de pe dispozitivul tău mobil.",

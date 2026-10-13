@@ -1286,6 +1286,7 @@
   "appCallbackPage": {
     "appStore": "App Store",
     "googlePlay": "Google Play",
+    "signInCodeWarning": "If someone sent you a sign-in link, don't share this page's address.",
     "desktop": {
       "heading": "スマホで開いてください",
       "body1": "このリンクは、モバイル端末のDivineアプリで開く必要があります。",

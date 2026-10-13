@@ -1286,6 +1286,7 @@
   "appCallbackPage": {
     "appStore": "App Store",
     "googlePlay": "Google Play",
+    "signInCodeWarning": "If someone sent you a sign-in link, don't share this page's address.",
     "desktop": {
       "heading": "Auf deinem Handy öffnen",
       "body1": "Dieser Link muss in der Divine-App auf deinem Handy geöffnet werden.",
