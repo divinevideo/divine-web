@@ -81,6 +81,10 @@ vi.mock('./pages/CollabsPage', () => ({
   default: () => <div data-testid="collabs-page" />,
 }));
 
+vi.mock('./pages/chat/ChatPage', () => ({
+  default: () => <div data-testid="chat-page" />,
+}));
+
 vi.mock('@/components/MarketingLayout', () => ({
   MarketingLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
@@ -287,6 +291,20 @@ describe('AppRouter', () => {
       expect(window.location.pathname).toBe('/');
     });
     expect(sessionStorage.getItem('openSignup')).toBe('1');
+  });
+
+  it('routes chat invite links (naddr in the path) to the chat page instead of the retired invite redirect', async () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: undefined,
+      isResolvingJwt: false,
+    });
+    window.history.pushState({}, '', '/invite/naddr1xyz#AAEAESIzRFVmd4iZqrvM3e7_');
+
+    renderRouter();
+
+    expect(await screen.findByTestId('chat-page')).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/invite/naddr1xyz');
+    expect(sessionStorage.getItem('openSignup')).toBeNull();
   });
 
   it('keeps collaborator invitations routed separately', () => {
