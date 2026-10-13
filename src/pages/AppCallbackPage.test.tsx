@@ -5,7 +5,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { AppCallbackPage } from './AppCallbackPage';
 import { initializeI18n } from '@/lib/i18n';
 
-const WARNING = "If someone sent you a sign-in link, don't share this page's address.";
+const WARNING = "Don't share this page's address. It's unique to your sign-in for linking accounts.";
 
 function renderAt(address: string) {
   return render(
