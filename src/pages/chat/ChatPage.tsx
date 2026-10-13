@@ -6,7 +6,7 @@ import { useParams } from 'react-router-dom';
 import { ChatShell } from '@/components/chat/ChatShell';
 import { useChatSession } from '@/hooks/useChatSession';
 import { canPostToChat, foldChatRumors, foldControlEditions, type Rumor } from '@/lib/chat/protocol';
-import { ConcordRelayClient, pocStreamKey } from '@/lib/chat/relay';
+import { channelRumors, ConcordRelayClient, pocStreamKey } from '@/lib/chat/relay';
 import { CONCORD_RELAY_URL } from '@/lib/chat/store';
 
 export default function ChatPage() {
@@ -29,7 +29,7 @@ export default function ChatPage() {
   if (isResolvingJwt) return <p role="status">Loading chat…</p>;
   if (!isLoggedIn) return <p role="status">Log in to join the conversation. We opened the login for you.</p>;
   const control = user ? foldControlEditions(user.pubkey, []) : null;
-  const live = foldChatRumors(rumors);
+  const live = foldChatRumors(channelId ? channelRumors(rumors, channelId) : []);
   return (
     <main>
       <h1>Chat</h1>

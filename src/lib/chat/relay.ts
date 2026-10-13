@@ -3,7 +3,7 @@
 // ABOUTME: Live relay client for Concord chat — existing signer only, no new login or token store.
 // ABOUTME: Public-channel POC transport is signed rumor kinds 9/1111/7/3302/5; private sealing stays in protocol.ts.
 import { groupKey, hexToBytes, isExpiredRumor, openWrap, sealRumor, sha256Bytes, verifyChatRumor, wrapSeal, type GroupKey, type Nip44Cipher, type Rumor, type SignerLike } from './protocol';
-import type { Event as NostrEvent } from 'nostr-tools';
+import { verifyEvent, type Event as NostrEvent } from 'nostr-tools';
 
 /** POC stream key until kind-33302-held community keys are loaded: deterministic per channel, public by construction. Real private channels must use held channel keys instead. */
 export function pocStreamKey(channelId: string): GroupKey {
@@ -25,6 +25,10 @@ export function signerCipher(signer: SignerLike): Nip44Cipher {
 }
 
 const CHAT_KINDS = [9, 1111, 7, 3302, 5, 1740];
+
+/** Rumors bound to one channel; a page's timeline must not carry another channel's messages. */
+export const channelRumors = (rumors: Rumor[], channelId: string): Rumor[] =>
+  rumors.filter((r) => r.tags.some((t) => t[0] === 'channel' && t[1] === channelId));
 
 export class ConcordRelayClient {
   private socket: SocketLike | null = null;
@@ -49,6 +53,7 @@ export class ConcordRelayClient {
         const channelId = ev.tags?.find((t) => t[0] === 'channel')?.[1] ?? '';
         const epoch = Number(ev.tags?.find((t) => t[0] === 'epoch')?.[1] ?? 0);
         if (verifyChatRumor(ev, { channelId, epoch }) !== null) return;
+        if (!verifyEvent(ev as unknown as NostrEvent)) return;
         if (isExpiredRumor(ev, Math.floor(Date.now() / 1000))) return;
         handler(ev);
       } catch { /* ignore malformed relay frames */ }

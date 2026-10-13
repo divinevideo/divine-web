@@ -1,8 +1,9 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { describe, expect, it, vi } from 'vitest';
-import { ConcordRelayClient, signerCipher } from './relay';
-import { messageRumor } from './protocol';
+import { channelRumors, ConcordRelayClient, signerCipher } from './relay';
+import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools';
+import { messageRumor, withId, type Rumor } from './protocol';
 
 class FakeSocket {
   sent: string[] = [];
@@ -13,6 +14,14 @@ class FakeSocket {
   close() { /* noop */ }
   emit(data: unknown) { this.onmessage?.({ data: JSON.stringify(data) }); }
 }
+
+describe('channelRumors', () => {
+  it('keeps only the rumors bound to the open channel', () => {
+    const a = messageRumor({ author: 'a'.repeat(64), channelId: 'general', epoch: 0, body: 'g', createdAt: 1, ms: 1 });
+    const b = messageRumor({ author: 'a'.repeat(64), channelId: 'introductions', epoch: 0, body: 'i', createdAt: 2, ms: 1 });
+    expect(channelRumors([a, b], 'introductions')).toEqual([b]);
+  });
+});
 
 describe('ConcordRelayClient', () => {
   it('publishes a signed rumor and delivers subscribed rumors, dropping expired', async () => {
@@ -31,9 +40,17 @@ describe('ConcordRelayClient', () => {
     const frames = sock.sent.map((s) => JSON.parse(s) as unknown[]);
     expect(frames.some((f) => f[0] === 'REQ')).toBe(true);
     expect(frames.some((f) => f[0] === 'EVENT' && (f[1] as { sig?: string }).sig === 's'.repeat(128))).toBe(true);
-    sock.emit(['EVENT', 'sub1', { ...rumor, id: rumor.id, sig: 'x' }]);
-    sock.emit(['EVENT', 'sub1', { ...rumor, id: 'expired1', tags: [...rumor.tags, ['expiration', '1']] }]);
-    expect(seen).toEqual([rumor.id]);
+    // Inbound events must carry a valid signature, not only a matching id.
+    const sk = generateSecretKey(); const pk = getPublicKey(sk);
+    const signedIn = (r: Rumor) => finalizeEvent({ kind: r.kind, tags: r.tags, content: r.content, created_at: r.created_at }, sk);
+    const valid = signedIn(messageRumor({ author: pk, channelId: 'chan1', epoch: 0, body: 'hi', createdAt: 1700000000, ms: 1 }));
+    const forged = { ...withId({ kind: 9, pubkey: pk, content: 'forged', tags: valid.tags, created_at: valid.created_at }), sig: valid.sig };
+    const expired = signedIn(messageRumor({ author: pk, channelId: 'chan1', epoch: 0, body: 'old', createdAt: 1700000000, ms: 1, expirationSec: 1 }));
+    sock.emit(['EVENT', 'sub1', valid]);
+    sock.emit(['EVENT', 'sub1', forged]);
+    sock.emit(['EVENT', 'sub1', { ...rumor, sig: 'x' }]);
+    sock.emit(['EVENT', 'sub1', expired]);
+    expect(seen).toEqual([valid.id]);
     const cipher = signerCipher(signer as never);
     await expect(cipher.encrypt('b'.repeat(64), 'hello')).resolves.toBe('enc:hello');
     await expect(cipher.decrypt('b'.repeat(64), 'enc:hello')).resolves.toBe('hello');
