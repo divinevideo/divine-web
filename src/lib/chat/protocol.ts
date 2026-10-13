@@ -309,13 +309,17 @@ export function streamKeyFromListEntry(entry: { current: HeldJoinMaterial }, cha
   if (channel.key) return groupKeyHex('concord/channel', b64urlToHex(channel.key), channelIdHex, channel.epoch);
   return groupKeyHex('concord/channel', b64urlToHex(entry.current.community_root), channelIdHex, entry.current.root_epoch);
 }
-/** Held stream key for the route's community (base64url or hex id) and channel (name or id); null when not held. */
-export function heldStreamKey(entries: { community_id: string; current: HeldJoinMaterial }[], communityId: string | undefined, channelRef: string): GroupKey | null {
+/** A held channel's stream key plus the canonical binding its rumors carry (hex channel id, key epoch). */
+export interface HeldStream { key: GroupKey; channelId: string; epoch: number }
+/** Held stream for the route's community (base64url or hex id) and channel (name or id); null when not held. */
+export function heldStream(entries: { community_id: string; current: HeldJoinMaterial }[], communityId: string | undefined, channelRef: string): HeldStream | null {
   if (!communityId) return null;
   const id = /^[0-9a-f]{64}$/.test(communityId) ? hexToB64url(communityId) : communityId;
   const entry = entries.find((e) => e.community_id === id);
   const channel = entry?.current.channels.find((c) => c.name === channelRef || c.id === channelRef);
-  return entry && channel ? streamKeyFromListEntry(entry, channel.id) : null;
+  const key = entry && channel ? streamKeyFromListEntry(entry, channel.id) : null;
+  if (!entry || !channel || !key) return null;
+  return { key, channelId: b64urlToHex(channel.id), epoch: channel.key ? channel.epoch : entry.current.root_epoch };
 }
 /** Privatise mints an independent key at the NEXT monotonic channel_epoch (first = 1). */
 export const nextPrivateEpoch = (currentEpoch: number): number => Math.max(0, Math.floor(currentEpoch)) + 1;

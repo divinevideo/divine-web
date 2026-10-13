@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChatShell } from '@/components/chat/ChatShell';
 import { useChatSession } from '@/hooks/useChatSession';
-import { canPostToChat, foldChatRumors, foldControlEditions, heldStreamKey, type Rumor } from '@/lib/chat/protocol';
+import { canPostToChat, foldChatRumors, foldControlEditions, heldStream, type Rumor } from '@/lib/chat/protocol';
 import { channelRumors, ConcordRelayClient, pocStreamKey } from '@/lib/chat/relay';
 import { CONCORD_RELAY_URL } from '@/lib/chat/store';
 
@@ -19,11 +19,16 @@ export default function ChatPage() {
   }, [signer, channelId]);
   // Held kind-33302 keys win (private channels especially); the labeled POC
   // key is only the fallback for communities the list does not hold yet.
-  const stream = useMemo(() => {
-    if (!channelId) return null;
-    const held = heldStreamKey(store?.listDoc?.entries ?? [], communityId, channelId);
-    return held ?? pocStreamKey(channelId);
-  }, [communityId, channelId, store]);
+  // A held channel also fixes the canonical channel id and epoch its rumors carry.
+  const held = useMemo(
+    () => (channelId ? heldStream(store?.listDoc?.entries ?? [], communityId, channelId) : null),
+    [communityId, channelId, store],
+  );
+  const stream = useMemo(() => (held ? held.key : channelId ? pocStreamKey(channelId) : null), [held, channelId]);
+  const binding = useMemo(
+    () => (held ? { channelId: held.channelId, epoch: held.epoch } : channelId ? { channelId, epoch: 0 } : undefined),
+    [held, channelId],
+  );
   useEffect(() => {
     if (!relay || !channelId || !stream) return;
     let off: (() => void) | undefined;
@@ -35,13 +40,13 @@ export default function ChatPage() {
   if (isResolvingJwt) return <p role="status">Loading chat…</p>;
   if (!isLoggedIn) return <p role="status">Log in to join the conversation. We opened the login for you.</p>;
   const control = user ? foldControlEditions(user.pubkey, []) : null;
-  const live = foldChatRumors(channelId ? channelRumors(rumors, channelId) : []);
+  const live = foldChatRumors(binding ? channelRumors(rumors, binding.channelId) : []);
   return (
     <main>
       <h1>Chat</h1>
       {/* Keyed so the timeline and draft reset per account, community, channel and thread. */}
       <ChatShell key={`${user?.pubkey}:${communityId}:${channelId}:${threadId}`} communityId={communityId} channelId={channelId} threadId={threadId}
-        authorPubkey={user?.pubkey}
+        authorPubkey={user?.pubkey} binding={binding}
         liveMessages={relay ? live : undefined}
         onSendLive={relay && stream ? (r) => { setRumors((m) => [...m, r]); relay.publishSealed(r, stream).catch(() => setRumors((m) => m.filter((x) => x.id !== r.id))); } : undefined}
         canPost={control && user ? canPostToChat(control, user.pubkey) : true} />

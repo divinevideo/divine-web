@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { describe, expect, it } from 'vitest';
-import { b64urlToHex, heldStreamKey, hexToB64url, streamKeyFromListEntry, type ListEntry } from './protocol';
+import { b64urlToHex, heldStream, hexToB64url, streamKeyFromListEntry, type ListEntry } from './protocol';
 import fixtures from '../../../test-fixtures/concord/v1/fixtures.json';
 
 const fx = fixtures as unknown as {
@@ -37,9 +37,20 @@ describe('streamKeyFromListEntry (33302-held keys)', () => {
     const entries = [a, b];
     const expected = streamKeyFromListEntry(b, b.current.channels[0].id)?.pubkey;
     expect(expected).not.toBe(streamKeyFromListEntry(a, a.current.channels[0].id)?.pubkey);
-    expect(heldStreamKey(entries, b.community_id, 'general')?.pubkey).toBe(expected);
-    expect(heldStreamKey(entries, b64urlToHex(b.community_id), 'general')?.pubkey).toBe(expected);
-    expect(heldStreamKey(entries, 'demo-community', 'general')).toBeNull();
-    expect(heldStreamKey(entries, undefined, 'general')).toBeNull();
+    expect(heldStream(entries, b.community_id, 'general')?.key.pubkey).toBe(expected);
+    expect(heldStream(entries, b64urlToHex(b.community_id), 'general')?.key.pubkey).toBe(expected);
+    expect(heldStream(entries, 'demo-community', 'general')).toBeNull();
+    expect(heldStream(entries, undefined, 'general')).toBeNull();
+  });
+  it('binds held-channel rumors to the canonical hex channel id and the key epoch', () => {
+    const fxr = fixtures as unknown as { rumors: { message: { tags: string[][] } } };
+    const base = fx.communityList33302.entries[0] as ListEntry;
+    const pub = heldStream([base], base.community_id, 'general');
+    expect(pub?.channelId).toBe(fxr.rumors.message.tags.find((t) => t[0] === 'channel')?.[1]);
+    expect(pub?.epoch).toBe(0);
+    const priv: ListEntry = JSON.parse(JSON.stringify(base)) as ListEntry;
+    priv.current.channels[0].key = hexToB64url(fx.secrets.channelKey);
+    priv.current.channels[0].epoch = 1;
+    expect(heldStream([priv], priv.community_id, 'general')?.epoch).toBe(1);
   });
 });

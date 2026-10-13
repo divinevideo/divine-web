@@ -9,9 +9,11 @@ import { messageRumor, type Rumor } from '@/lib/chat/protocol';
 export type ChatViewState = 'loading' | 'ready' | 'empty' | 'reconnecting' | 'failure' | 'denied';
 const DEMO_COMMUNITIES = [{ id: 'demo-community', name: 'Divine test community', channels: ['general', 'introductions'] }];
 
-export function ChatShell({ communityId, channelId, threadId, canPost = true, initialState = 'empty', liveMessages, onSendLive, authorPubkey }: {
+export function ChatShell({ communityId, channelId, threadId, canPost = true, initialState = 'empty', liveMessages, onSendLive, authorPubkey, binding }: {
   communityId?: string; channelId?: string; threadId?: string; canPost?: boolean; initialState?: ChatViewState;
   liveMessages?: Rumor[]; onSendLive?: (rumor: Rumor) => void; authorPubkey?: string;
+  /** Channel id and epoch that outgoing rumors carry; defaults to the route channel at epoch 0. */
+  binding?: { channelId: string; epoch: number };
 }) {
   const [state, setState] = useState<ChatViewState>(initialState);
   const [localMessages, setMessages] = useState<Rumor[]>([]);
@@ -32,7 +34,7 @@ export function ChatShell({ communityId, channelId, threadId, canPost = true, in
 
   const send = () => {
     const body = draft.trim(); if (!body || !canPost) return;
-    const rumor = messageRumor({ author: authorPubkey ?? 'you', channelId: channelId ?? 'general', epoch: 0, body, createdAt: Math.floor(Date.now()/1000), ms: Date.now()%1000 });
+    const rumor = messageRumor({ author: authorPubkey ?? 'you', channelId: binding?.channelId ?? channelId ?? 'general', epoch: binding?.epoch ?? 0, body, createdAt: Math.floor(Date.now()/1000), ms: Date.now()%1000 });
     if (onSendLive) onSendLive(rumor); else setMessages((m) => [...m, rumor]);
     setDraft(''); setState('ready');
   };
