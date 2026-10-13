@@ -1,14 +1,15 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { describe, expect, it, vi } from 'vitest';
-import { channelRumors, ConcordRelayClient, signerCipher } from './relay';
+import { channelRumors, ConcordRelayClient, pocStreamKey, signerCipher } from './relay';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools';
-import { messageRumor, withId, type Rumor } from './protocol';
+import { messageRumor, sealRumor, withId, wrapSeal, type Rumor } from './protocol';
 
 class FakeSocket {
   sent: string[] = [];
   onmessage: ((e: { data: string }) => void) | null = null;
   onopen: (() => void) | null = null;
+  onclose: (() => void) | null = null;
   readyState = 1;
   send(d: string) { this.sent.push(d); }
   close() { /* noop */ }
@@ -24,6 +25,37 @@ describe('channelRumors', () => {
 });
 
 describe('ConcordRelayClient', () => {
+  it('rejects a send that is waiting for the handshake when the socket fails or the client closes', async () => {
+    const signer = { getPublicKey: async () => 'a'.repeat(64), signEvent: async (e: object) => ({ ...(e as object), sig: 's'.repeat(128) }) };
+    const rumor = messageRumor({ author: 'a'.repeat(64), channelId: 'chan1', epoch: 0, body: 'hi', createdAt: 1700000000, ms: 1 });
+    const refused = new FakeSocket(); refused.readyState = 0;
+    const a = new ConcordRelayClient('ws://127.0.0.1:7777', signer as never, () => refused as never);
+    void a.connect().catch(() => undefined);
+    const pendingA = a.publishRumor(rumor);
+    refused.readyState = 3; refused.onclose?.();
+    await expect(pendingA).rejects.toThrow('relay closed');
+    const cancelled = new FakeSocket(); cancelled.readyState = 0;
+    const b = new ConcordRelayClient('ws://127.0.0.1:7777', signer as never, () => cancelled as never);
+    void b.connect().catch(() => undefined);
+    const pendingB = b.publishRumor(rumor);
+    b.close();
+    await expect(pendingB).rejects.toThrow('relay closed');
+    expect(cancelled.sent.some((f) => (JSON.parse(f) as unknown[])[0] === 'EVENT')).toBe(false);
+  });
+  it('drops sealed wraps whose outer event signature does not verify', async () => {
+    const sock = new FakeSocket();
+    const client = new ConcordRelayClient('ws://127.0.0.1:7777', {} as never, () => sock as never);
+    await client.connect();
+    const stream = pocStreamKey('chan1');
+    const sk = generateSecretKey(); const pk = getPublicKey(sk);
+    const rumor = messageRumor({ author: pk, channelId: 'chan1', epoch: 0, body: 'sealed', createdAt: 1700000000, ms: 1 });
+    const wrap = wrapSeal(await sealRumor(rumor, 20013, stream, async (t) => finalizeEvent(t, sk)), stream);
+    const seen: string[] = [];
+    client.subscribeSealed(stream, (r) => seen.push(r.id ?? ''), 'sealed1');
+    sock.emit(['EVENT', 'sealed1', { ...wrap, sig: '0'.repeat(128) }]);
+    sock.emit(['EVENT', 'sealed1', wrap]);
+    expect(seen).toEqual([rumor.id]);
+  });
   it('waits for the socket to open before publishing, and rejects once closed', async () => {
     const sock = new FakeSocket(); sock.readyState = 0;
     const signer = { getPublicKey: async () => 'a'.repeat(64), signEvent: async (e: object) => ({ ...(e as object), sig: 's'.repeat(128) }) };

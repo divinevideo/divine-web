@@ -16,6 +16,7 @@ export interface SocketLike {
   close(): void;
   onmessage: ((e: { data: string }) => void) | null;
   onopen: (() => void) | null;
+  onclose?: (() => void) | null;
   readyState: number;
 }
 
@@ -34,6 +35,7 @@ export class ConcordRelayClient {
   private socket: SocketLike | null = null;
   private handlers = new Map<string, (r: Rumor) => void>();
   private opened: Promise<void> | null = null;
+  private rejectOpen: (() => void) | null = null;
   constructor(
     private url: string,
     private signer: SignerLike & { signEvent(e: never): Promise<{ id?: string; sig?: string }> },
@@ -50,17 +52,23 @@ export class ConcordRelayClient {
         const ev = msg[2] as Rumor & { sig?: string };
         const handler = this.handlers.get(subId);
         if (!handler || !ev) return;
+        if (!verifyEvent(ev as unknown as NostrEvent)) return;
         if (ev.kind === 1059) { handler(ev); return; }
         const channelId = ev.tags?.find((t) => t[0] === 'channel')?.[1] ?? '';
         const epoch = Number(ev.tags?.find((t) => t[0] === 'epoch')?.[1] ?? 0);
         if (verifyChatRumor(ev, { channelId, epoch }) !== null) return;
-        if (!verifyEvent(ev as unknown as NostrEvent)) return;
         if (isExpiredRumor(ev, Math.floor(Date.now() / 1000))) return;
         handler(ev);
       } catch { /* ignore malformed relay frames */ }
     };
     const socket = this.socket;
-    this.opened = socket.readyState === 1 ? Promise.resolve() : new Promise((resolve) => { socket.onopen = () => resolve(); });
+    this.opened = socket.readyState === 1 ? Promise.resolve() : new Promise((resolve, reject) => {
+      socket.onopen = () => resolve();
+      // A refused handshake or a close before OPEN settles the attempt, so waiting sends reject.
+      this.rejectOpen = () => reject(new Error('concord: relay closed'));
+      socket.onclose = () => this.rejectOpen?.();
+    });
+    this.opened.catch(() => undefined);
     return this.opened;
   }
 
@@ -105,6 +113,8 @@ export class ConcordRelayClient {
   close(): void {
     for (const subId of this.handlers.keys()) this.socket?.send(JSON.stringify(['CLOSE', subId]));
     this.handlers.clear();
+    this.rejectOpen?.();
+    this.rejectOpen = null;
     this.socket?.close();
     this.socket = null;
     this.opened = null;
