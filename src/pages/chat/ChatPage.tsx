@@ -3,6 +3,7 @@
 // ABOUTME: Lazy /chat routes — community/channel/thread/invite in one POC shell page.
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { LoginArea } from '@/components/auth/LoginArea';
 import { ChatShell } from '@/components/chat/ChatShell';
 import { useChatSession } from '@/hooks/useChatSession';
 import { canPostToChat, foldChatRumors, foldControlEditions, heldStream, type Rumor } from '@/lib/chat/protocol';
@@ -38,7 +39,16 @@ export default function ChatPage() {
     return () => { off?.(); relay.close(); };
   }, [relay, channelId, stream]);
   if (isResolvingJwt) return <p role="status">Loading chat…</p>;
-  if (!isLoggedIn) return <p role="status">Log in to join the conversation. We opened the login for you.</p>;
+  // /invite/<naddr> renders outside the app layout, whose LoginArea is what mounts the
+  // login dialog, so the page brings its own; its button also reopens a dismissed dialog.
+  if (!isLoggedIn) {
+    return (
+      <div>
+        <p role="status">Log in to join the conversation. We opened the login for you.</p>
+        <LoginArea />
+      </div>
+    );
+  }
   const control = user ? foldControlEditions(user.pubkey, []) : null;
   const live = foldChatRumors(binding ? channelRumors(rumors, binding.channelId) : []);
   return (
