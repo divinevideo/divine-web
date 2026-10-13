@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { describe, expect, it } from 'vitest';
-import { hexToB64url, streamKeyFromListEntry, type ListEntry } from './protocol';
+import { b64urlToHex, heldStreamKey, hexToB64url, streamKeyFromListEntry, type ListEntry } from './protocol';
 import fixtures from '../../../test-fixtures/concord/v1/fixtures.json';
 
 const fx = fixtures as unknown as {
@@ -28,5 +28,18 @@ describe('streamKeyFromListEntry (33302-held keys)', () => {
   it('returns null for a channel the list does not hold', () => {
     const entry = fx.communityList33302.entries[0] as ListEntry;
     expect(streamKeyFromListEntry(entry, hexToB64url('ab'.repeat(32)))).toBeNull();
+  });
+  it('resolves the held key from the community named in the route, not the first held entry', () => {
+    const a = fx.communityList33302.entries[0] as ListEntry;
+    const b: ListEntry = JSON.parse(JSON.stringify(a)) as ListEntry;
+    b.community_id = hexToB64url('cd'.repeat(32));
+    b.current.community_root = hexToB64url('ef'.repeat(32));
+    const entries = [a, b];
+    const expected = streamKeyFromListEntry(b, b.current.channels[0].id)?.pubkey;
+    expect(expected).not.toBe(streamKeyFromListEntry(a, a.current.channels[0].id)?.pubkey);
+    expect(heldStreamKey(entries, b.community_id, 'general')?.pubkey).toBe(expected);
+    expect(heldStreamKey(entries, b64urlToHex(b.community_id), 'general')?.pubkey).toBe(expected);
+    expect(heldStreamKey(entries, 'demo-community', 'general')).toBeNull();
+    expect(heldStreamKey(entries, undefined, 'general')).toBeNull();
   });
 });

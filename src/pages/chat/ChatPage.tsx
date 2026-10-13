@@ -5,10 +5,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChatShell } from '@/components/chat/ChatShell';
 import { useChatSession } from '@/hooks/useChatSession';
-import { canPostToChat, foldChatRumors, foldControlEditions, type Rumor } from '@/lib/chat/protocol';
+import { canPostToChat, foldChatRumors, foldControlEditions, heldStreamKey, type Rumor } from '@/lib/chat/protocol';
 import { channelRumors, ConcordRelayClient, pocStreamKey } from '@/lib/chat/relay';
 import { CONCORD_RELAY_URL } from '@/lib/chat/store';
-import { streamKeyFromListEntry } from '@/lib/chat/protocol';
 
 export default function ChatPage() {
   const { communityId, channelId, threadId } = useParams();
@@ -22,11 +21,9 @@ export default function ChatPage() {
   // key is only the fallback for communities the list does not hold yet.
   const stream = useMemo(() => {
     if (!channelId) return null;
-    const entry = store?.listDoc?.entries[0];
-    const heldChannel = entry?.current.channels.find((c) => c.name === channelId || c.id === channelId);
-    const held = entry && heldChannel ? streamKeyFromListEntry(entry as never, heldChannel.id) : null;
+    const held = heldStreamKey(store?.listDoc?.entries ?? [], communityId, channelId);
     return held ?? pocStreamKey(channelId);
-  }, [channelId, store]);
+  }, [communityId, channelId, store]);
   useEffect(() => {
     if (!relay || !channelId || !stream) return;
     let off: (() => void) | undefined;
