@@ -132,6 +132,13 @@ describe('control fold', () => {
     const ok = foldControlEditions(alice, [...base, low, grantLow]);
     expect(ok.roles.get(lowId)?.position).toBe(6);
     expect(ok.grants.get('dd'.repeat(32))?.role_ids).toEqual([lowId]);
+    // Malformed role/grant content from a non-owner is rejected, never aborts the fold.
+    const nullRole = ed({ rumorId: 'b7', actor: bob, vsk: 1, eid: '60'.repeat(32), content: 'null' });
+    const objRoles = ed({ rumorId: 'b8', actor: bob, vsk: 3, eid: '61'.repeat(32), content: JSON.stringify({ member: 'dd'.repeat(32), role_ids: {} }) });
+    const bad = foldControlEditions(alice, [...base, nullRole, objRoles, low]);
+    expect(reason(bad, 'b7')).toBe('bad-role-content');
+    expect(reason(bad, 'b8')).toBe('bad-grant-content');
+    expect(bad.roles.get(lowId)?.position).toBe(6);
   });
   it('edition rumor round-trip', () => {
     const r = buildEditionRumor({ actor: alice, vsk: 4, eid: '33'.repeat(32), ev: 1, content: '[]', createdAt: 1, ms: 5 });

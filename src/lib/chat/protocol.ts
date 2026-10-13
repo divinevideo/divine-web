@@ -402,15 +402,17 @@ export function foldControlEditions(owner: string, editions: ControlEdition[]): 
         // Hierarchy: a non-owner acts only on roles and members it strictly outranks (lower position = higher rank).
         if (e.vsk === 1) {
           let role: RoleDef;
-          try { role = JSON.parse(e.content) as RoleDef; } catch { state.rejected.push({ rumorId: e.rumorId, reason: 'bad-role-content' }); continue; }
+          try { role = JSON.parse(e.content) as RoleDef; } catch { role = null as unknown as RoleDef; }
+          if (!role || typeof role !== 'object' || typeof role.position !== 'number') { state.rejected.push({ rumorId: e.rumorId, reason: 'bad-role-content' }); continue; }
           if (role.position === 0) { state.rejected.push({ rumorId: e.rumorId, reason: 'position-zero-reserved' }); continue; }
           const existing = state.roles.get(e.eid);
           if (role.position <= rank.position || (existing && existing.position <= rank.position)) { state.rejected.push({ rumorId: e.rumorId, reason: 'role-outranks-actor' }); continue; }
         }
         if (e.vsk === 3) {
           let grant: GrantDef;
-          try { grant = JSON.parse(e.content) as GrantDef; } catch { state.rejected.push({ rumorId: e.rumorId, reason: 'bad-grant-content' }); continue; }
-          const roles = (grant.role_ids ?? []).map((id) => state.roles.get(id));
+          try { grant = JSON.parse(e.content) as GrantDef; } catch { grant = null as unknown as GrantDef; }
+          if (!grant || typeof grant !== 'object' || typeof grant.member !== 'string' || !Array.isArray(grant.role_ids)) { state.rejected.push({ rumorId: e.rumorId, reason: 'bad-grant-content' }); continue; }
+          const roles = grant.role_ids.map((id) => state.roles.get(id));
           if (roles.some((r) => r === undefined)) {
             if (pass < 3) { deferred.push(e); continue; }
             state.rejected.push({ rumorId: e.rumorId, reason: 'unknown-role' }); continue;
