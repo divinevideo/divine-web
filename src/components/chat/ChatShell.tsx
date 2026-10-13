@@ -9,11 +9,13 @@ import { messageRumor, type Rumor } from '@/lib/chat/protocol';
 export type ChatViewState = 'loading' | 'ready' | 'empty' | 'reconnecting' | 'failure' | 'denied';
 const DEMO_COMMUNITIES = [{ id: 'demo-community', name: 'Divine test community', channels: ['general', 'introductions'] }];
 
-export function ChatShell({ communityId, channelId, threadId, canPost = true, initialState = 'empty' }: {
+export function ChatShell({ communityId, channelId, threadId, canPost = true, initialState = 'empty', liveMessages, onSendLive, authorPubkey }: {
   communityId?: string; channelId?: string; threadId?: string; canPost?: boolean; initialState?: ChatViewState;
+  liveMessages?: Rumor[]; onSendLive?: (rumor: Rumor) => void; authorPubkey?: string;
 }) {
   const [state, setState] = useState<ChatViewState>(initialState);
-  const [messages, setMessages] = useState<Rumor[]>([]);
+  const [localMessages, setMessages] = useState<Rumor[]>([]);
+  const messages = liveMessages ?? localMessages;
   const [draft, setDraft] = useState('');
   const composerRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { composerRef.current?.focus(); }, [channelId]);
@@ -30,7 +32,8 @@ export function ChatShell({ communityId, channelId, threadId, canPost = true, in
 
   const send = () => {
     const body = draft.trim(); if (!body || !canPost) return;
-    setMessages((m) => [...m, messageRumor({ author: 'you', channelId: channelId ?? 'general', epoch: 0, body, createdAt: Math.floor(Date.now()/1000), ms: Date.now()%1000 })]);
+    const rumor = messageRumor({ author: authorPubkey ?? 'you', channelId: channelId ?? 'general', epoch: 0, body, createdAt: Math.floor(Date.now()/1000), ms: Date.now()%1000 });
+    if (onSendLive) onSendLive(rumor); else setMessages((m) => [...m, rumor]);
     setDraft(''); setState('ready');
   };
   return (
