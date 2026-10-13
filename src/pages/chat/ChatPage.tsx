@@ -37,7 +37,7 @@ export default function ChatPage() {
       <ChatShell key={`${user?.pubkey}:${communityId}:${channelId}:${threadId}`} communityId={communityId} channelId={channelId} threadId={threadId}
         authorPubkey={user?.pubkey}
         liveMessages={relay ? live : undefined}
-        onSendLive={relay && stream ? (r) => { setRumors((m) => [...m, r]); void relay.publishSealed(r, stream); } : undefined}
+        onSendLive={relay && stream ? (r) => { setRumors((m) => [...m, r]); relay.publishSealed(r, stream).catch(() => setRumors((m) => m.filter((x) => x.id !== r.id))); } : undefined}
         canPost={control && user ? canPostToChat(control, user.pubkey) : true} />
     </main>
   );

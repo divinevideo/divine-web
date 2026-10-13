@@ -24,6 +24,22 @@ describe('channelRumors', () => {
 });
 
 describe('ConcordRelayClient', () => {
+  it('waits for the socket to open before publishing, and rejects once closed', async () => {
+    const sock = new FakeSocket(); sock.readyState = 0;
+    const signer = { getPublicKey: async () => 'a'.repeat(64), signEvent: async (e: object) => ({ ...(e as object), sig: 's'.repeat(128) }) };
+    const client = new ConcordRelayClient('ws://127.0.0.1:7777', signer as never, () => sock as never);
+    void client.connect();
+    const rumor = messageRumor({ author: 'a'.repeat(64), channelId: 'chan1', epoch: 0, body: 'hi', createdAt: 1700000000, ms: 1 });
+    const sent = client.publishRumor(rumor);
+    await Promise.resolve();
+    expect(sock.sent).toEqual([]);
+    sock.readyState = 1; sock.onopen?.();
+    await sent;
+    expect(sock.sent.map((f) => (JSON.parse(f) as unknown[])[0])).toEqual(['EVENT']);
+    client.close();
+    await expect(client.publishRumor(rumor)).rejects.toThrow('relay closed');
+  });
+
   it('publishes a signed rumor and delivers subscribed rumors, dropping expired', async () => {
     const sock = new FakeSocket();
     const signer = {

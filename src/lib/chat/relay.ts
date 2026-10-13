@@ -33,6 +33,7 @@ export const channelRumors = (rumors: Rumor[], channelId: string): Rumor[] =>
 export class ConcordRelayClient {
   private socket: SocketLike | null = null;
   private handlers = new Map<string, (r: Rumor) => void>();
+  private opened: Promise<void> | null = null;
   constructor(
     private url: string,
     private signer: SignerLike & { signEvent(e: never): Promise<{ id?: string; sig?: string }> },
@@ -58,8 +59,16 @@ export class ConcordRelayClient {
         handler(ev);
       } catch { /* ignore malformed relay frames */ }
     };
-    if (this.socket.readyState === 1) return Promise.resolve();
-    return new Promise((resolve) => { this.socket!.onopen = () => resolve(); });
+    const socket = this.socket;
+    this.opened = socket.readyState === 1 ? Promise.resolve() : new Promise((resolve) => { socket.onopen = () => resolve(); });
+    return this.opened;
+  }
+
+  /** Publish only on an open socket; a closed client rejects so the caller can drop its optimistic echo. */
+  private async sendEvent(event: unknown): Promise<void> {
+    if (this.opened) await this.opened;
+    if (!this.socket || this.socket.readyState !== 1) throw new Error('concord: relay closed');
+    this.socket.send(JSON.stringify(['EVENT', event]));
   }
 
   subscribeChannel(channelId: string, onRumor: (r: Rumor) => void, subId = `chat-${channelId}`): () => void {
@@ -70,14 +79,14 @@ export class ConcordRelayClient {
 
   async publishRumor(rumor: Rumor): Promise<void> {
     const signed = await this.signer.signEvent(rumor as never) as unknown as Record<string, unknown>;
-    this.socket?.send(JSON.stringify(['EVENT', { ...rumor, ...signed }]));
+    await this.sendEvent({ ...rumor, ...signed });
   }
 
   /** Live transport is now the sealed plane: seal with the author signer, wrap under the stream key, publish kind 1059. */
   async publishSealed(rumor: Rumor, stream: GroupKey): Promise<void> {
     const seal = await sealRumor(rumor, 20013, stream, (t) => this.signer.signEvent(t as never) as Promise<NostrEvent>);
     const wrap = wrapSeal(seal, stream);
-    this.socket?.send(JSON.stringify(['EVENT', wrap]));
+    await this.sendEvent(wrap);
   }
 
   subscribeSealed(stream: GroupKey, onRumor: (r: Rumor) => void, subId = `sealed-${stream.pubkey.slice(0, 12)}`): () => void {
@@ -98,5 +107,6 @@ export class ConcordRelayClient {
     this.handlers.clear();
     this.socket?.close();
     this.socket = null;
+    this.opened = null;
   }
 }
