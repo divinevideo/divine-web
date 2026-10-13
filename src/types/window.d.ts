@@ -15,6 +15,8 @@ declare global {
     __DIVINE_FEED_TYPE__?: string;
     /** Set by divine-brain simulations before page scripts run to suppress analytics. */
     __DIVINE_ANALYTICS_DISABLED__?: boolean;
+    /** Set when /app/callback removed a one-time sign-in code from the address before the app loaded. */
+    __DIVINE_SIGNIN_CODE_STRIPPED__?: boolean;
   }
 }
 
