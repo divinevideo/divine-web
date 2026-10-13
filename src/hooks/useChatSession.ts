@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from './useCurrentUser';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
-import { ChatStore } from '@/lib/chat/store';
+import { ChatStore, chatQueryScope } from '@/lib/chat/store';
 import { consumeInvite, parseInviteHash, parseInviteUrl, peekInvite, stashInvite, stripInviteFromUrl } from '@/lib/chat/invite';
 import { probeSignerCapabilities } from '@/lib/chat/protocol';
 
@@ -28,7 +28,7 @@ export function useChatSession() {
       if (!isResolvingJwt) openLoginDialog();
       return;
     }
-    if (storeRef.current && storeRef.current.scope !== `chat:v1:${pubkey}`) storeRef.current.dispose();
+    if (storeRef.current && storeRef.current.scope !== chatQueryScope(pubkey)) { storeRef.current.dispose(); storeRef.current = null; }
     if (!storeRef.current) storeRef.current = new ChatStore(pubkey);
     if (peekInvite()?.communityId) {
       const invite = consumeInvite();

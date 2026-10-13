@@ -1,0 +1,52 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+ * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+import { renderHook } from '@testing-library/react';
+import type { PropsWithChildren } from 'react';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { LoginDialogProvider } from '@/contexts/LoginDialogContext';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { chatQueryScope } from '@/lib/chat/store';
+import { useChatSession } from './useChatSession';
+
+vi.mock('@/hooks/useCurrentUser', () => ({
+  useCurrentUser: vi.fn(),
+}));
+
+const ALICE = 'a'.repeat(64);
+const BOB = 'b'.repeat(64);
+
+function setUser(pubkey: string | undefined) {
+  vi.mocked(useCurrentUser).mockReturnValue(
+    { user: pubkey ? { pubkey } : undefined, signer: undefined, isResolvingJwt: false } as ReturnType<typeof useCurrentUser>,
+  );
+}
+
+function wrapper({ children }: PropsWithChildren) {
+  return (
+    <MemoryRouter initialEntries={['/chat/demo-community/general']}>
+      <LoginDialogProvider>{children}</LoginDialogProvider>
+    </MemoryRouter>
+  );
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+describe('useChatSession', () => {
+  it('gives an account it switches to its own store', () => {
+    setUser(ALICE);
+    const { result, rerender } = renderHook(() => useChatSession(), { wrapper });
+    // The store is created in an effect, so it shows up on the next render.
+    rerender();
+    const aliceStore = result.current.store;
+    expect(aliceStore?.scope).toBe(chatQueryScope(ALICE));
+
+    setUser(BOB);
+    rerender();
+    rerender();
+    expect(result.current.store?.scope).toBe(chatQueryScope(BOB));
+    expect(result.current.store).not.toBe(aliceStore);
+  });
+});
