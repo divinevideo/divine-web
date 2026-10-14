@@ -2,7 +2,11 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NLoginType } from '@nostrify/react/login';
 
-import { NIP07_GRACE_MS, NIP07_POLL_INTERVAL_MS } from './useNip07Availability';
+import {
+  NIP07_GRACE_MS,
+  NIP07_POLL_INTERVAL_MS,
+  resetNip07Availability,
+} from './useNip07Availability';
 
 const {
   mockGetValidToken,
@@ -87,6 +91,7 @@ describe('useCurrentUser', () => {
     mockUseAuthor.mockClear();
     mockReleaseBunkerSignersExcept.mockClear();
     resetNostrProvider();
+    resetNip07Availability();
   });
 
   // A removed login's signer is the last thing holding its sockets open, and
@@ -334,6 +339,61 @@ describe('useCurrentUser', () => {
         'Skipped extension login; no NIP-07 provider found',
         'extension:pub123',
       );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('picks up an extension that loads after the grace period once the tab regains focus', () => {
+    vi.useFakeTimers();
+    try {
+      mockLogins.push({
+        id: 'extension:pub123',
+        type: 'extension',
+        pubkey: 'pub123',
+        createdAt: '2026-03-10T00:00:00.000Z',
+        data: null,
+      });
+
+      const { result } = renderHook(() => useCurrentUser());
+      act(() => {
+        vi.advanceTimersByTime(NIP07_GRACE_MS + NIP07_POLL_INTERVAL_MS);
+      });
+      expect(result.current.user).toBeUndefined();
+
+      setNostrProvider();
+      act(() => {
+        window.dispatchEvent(new Event('focus'));
+      });
+
+      expect(result.current.user?.pubkey).toBe('pub123');
+      expect(result.current.signer).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps components that mounted before a slow extension loaded in step with later ones', () => {
+    vi.useFakeTimers();
+    try {
+      mockLogins.push({
+        id: 'extension:pub123',
+        type: 'extension',
+        pubkey: 'pub123',
+        createdAt: '2026-03-10T00:00:00.000Z',
+        data: null,
+      });
+
+      const early = renderHook(() => useCurrentUser());
+      act(() => {
+        vi.advanceTimersByTime(NIP07_GRACE_MS + NIP07_POLL_INTERVAL_MS);
+      });
+
+      setNostrProvider();
+      const late = renderHook(() => useCurrentUser());
+
+      expect(late.result.current.user?.pubkey).toBe('pub123');
+      expect(early.result.current.user?.pubkey).toBe('pub123');
     } finally {
       vi.useRealTimers();
     }

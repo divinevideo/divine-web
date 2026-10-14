@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NLoginType } from '@nostrify/react/login';
 
-import { NIP07_POLL_INTERVAL_MS } from './useNip07Availability';
+import { NIP07_POLL_INTERVAL_MS, resetNip07Availability } from './useNip07Availability';
 
 type MockCurrentUserResult = {
   metadata?: { name?: string };
@@ -92,6 +92,7 @@ describe('useLoggedInAccounts', () => {
     mockUseCurrentUser.mockReset();
     mockUseCurrentUser.mockReturnValue({ user: undefined, metadata: undefined });
     resetNostrProvider();
+    resetNip07Availability();
   });
 
   afterEach(() => {
