@@ -61,7 +61,9 @@ logged-in-only routes show a loading state until a user appears, and code that
 redirects or resets state for signed-out visitors waits for the flag to clear.
 A hosted session renewing its token is pending too, for the account already on
 screen, and also sets `isRenewingSession`; the routes keep the page mounted
-through that so it keeps what it holds. The extension check
+through that so it keeps what it holds. A new token counts as a renewal only
+when it names the same account as the last one (the audience of keycast's UCAN
+access token). The extension check
 (`useNip07Availability`) is shared by the whole app and looks again on focus, on
 tab switch, and when a component mounts, so a slow extension still signs the
 page in. It ignores the app's own hosted signer, which is also installed as

@@ -282,27 +282,62 @@ describe('useCurrentUser', () => {
   // renewal, so the page keeps what it holds without showing the signed-out
   // fallback of some other pending sign-in.
   describe('telling a token renewal apart from a new sign-in', () => {
-    it('reports a signed-in hosted session renewing its token as a renewal', async () => {
-      mockGetValidToken.mockReturnValue('token-A');
+    // keycast access tokens are UCANs that name their account in `aud`, the
+    // user's DID. Only the payload matters here.
+    function hostedToken(account: string, nonce: string): string {
+      return `header.${btoa(JSON.stringify({ aud: account, nnc: nonce }))}.signature`;
+    }
+    const ACCOUNT_A = 'did:key:account-a';
+    const ACCOUNT_B = 'did:key:account-b';
+
+    async function signInWithHostedToken(token: string) {
+      mockGetValidToken.mockReturnValue(token);
       mockJwtSigner.getPublicKey
         .mockResolvedValueOnce('a'.repeat(64))
         .mockReturnValue(new Promise(() => {}));
 
-      const { result, rerender } = renderHook(() => useCurrentUser());
+      const hook = renderHook(() => useCurrentUser());
       await waitFor(() => {
-        expect(result.current.user?.pubkey).toBe('a'.repeat(64));
+        expect(hook.result.current.user?.pubkey).toBe('a'.repeat(64));
       });
+      return hook;
+    }
+
+    it('reports a signed-in hosted session renewing its token as a renewal', async () => {
+      const { result, rerender } = await signInWithHostedToken(hostedToken(ACCOUNT_A, '1'));
       expect(result.current.isRenewingSession).toBe(false);
 
-      mockGetValidToken.mockReturnValue('token-B');
+      mockGetValidToken.mockReturnValue(hostedToken(ACCOUNT_A, '2'));
       rerender();
 
       expect(result.current.isAuthPending).toBe(true);
       expect(result.current.isRenewingSession).toBe(true);
     });
 
+    // The page stays mounted through a renewal, so a token for another
+    // account must not count as one, or that account would inherit the page.
+    it('does not report a token for a different account as a renewal', async () => {
+      const { result, rerender } = await signInWithHostedToken(hostedToken(ACCOUNT_A, '1'));
+
+      mockGetValidToken.mockReturnValue(hostedToken(ACCOUNT_B, '2'));
+      rerender();
+
+      expect(result.current.isAuthPending).toBe(true);
+      expect(result.current.isRenewingSession).toBe(false);
+    });
+
+    it('does not report a renewal when the tokens do not name their account', async () => {
+      const { result, rerender } = await signInWithHostedToken('token-A');
+
+      mockGetValidToken.mockReturnValue('token-B');
+      rerender();
+
+      expect(result.current.isAuthPending).toBe(true);
+      expect(result.current.isRenewingSession).toBe(false);
+    });
+
     it('does not report a first hosted sign-in as a renewal', () => {
-      mockGetValidToken.mockReturnValue('jwt-token');
+      mockGetValidToken.mockReturnValue(hostedToken(ACCOUNT_A, '1'));
       mockJwtSigner.getPublicKey.mockReturnValue(new Promise(() => {}));
 
       const { result } = renderHook(() => useCurrentUser());
@@ -312,21 +347,13 @@ describe('useCurrentUser', () => {
     });
 
     it('does not report a hosted sign-in after the session ended as a renewal', async () => {
-      mockGetValidToken.mockReturnValue('token-A');
-      mockJwtSigner.getPublicKey
-        .mockResolvedValueOnce('a'.repeat(64))
-        .mockReturnValue(new Promise(() => {}));
-
-      const { result, rerender } = renderHook(() => useCurrentUser());
-      await waitFor(() => {
-        expect(result.current.user?.pubkey).toBe('a'.repeat(64));
-      });
+      const { result, rerender } = await signInWithHostedToken(hostedToken(ACCOUNT_A, '1'));
 
       mockGetValidToken.mockReturnValue(null);
       rerender();
       expect(result.current.user).toBeUndefined();
 
-      mockGetValidToken.mockReturnValue('token-B');
+      mockGetValidToken.mockReturnValue(hostedToken(ACCOUNT_A, '2'));
       rerender();
 
       expect(result.current.isAuthPending).toBe(true);

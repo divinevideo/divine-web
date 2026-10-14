@@ -2,6 +2,7 @@ import { type NLoginType, NUser, useNostrLogin } from '@nostrify/react/login';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NostrSigner } from '@nostrify/nostrify';
 import { DivineJWTSigner } from '@/lib/DivineJWTSigner';
+import { decodeJWT } from '@/lib/jwtDecode';
 import { createUserFromLogin, getSafeUserSigner } from '@/lib/nostrLogin';
 import { releaseBunkerSignersExcept } from '@/lib/bunkerSignerRegistry';
 import { selectCurrentUsers, isJwtResolving } from '@/lib/selectCurrentUsers';
@@ -29,6 +30,22 @@ type CurrentUser = {
 type JwtResolution =
   | { token: string; pubkey: string }
   | { token: string; error: true };
+
+// The account a hosted token was issued for. keycast access tokens are UCANs
+// whose audience is the user's DID; null when the token doesn't say.
+function hostedAccountOf(token: string): string | null {
+  try {
+    const { aud } = decodeJWT(token);
+    return typeof aud === 'string' && aud ? aud : null;
+  } catch {
+    return null;
+  }
+}
+
+function isSameHostedAccount(tokenA: string, tokenB: string): boolean {
+  const account = hostedAccountOf(tokenA);
+  return account !== null && account === hostedAccountOf(tokenB);
+}
 
 export function useCurrentUser() {
   const { logins } = useNostrLogin();
@@ -153,10 +170,13 @@ export function useCurrentUser() {
   // Sign-in is still loading, not logged out: a hosted session is resolving,
   // or the saved login that would be current is waiting for its extension.
   const isAuthPending = !user && (isResolvingJwt || isExtensionPending);
-  // The hosted session already signed in here is resolving a renewed token:
-  // still pending, but for the account already on screen, not a new sign-in.
+  // The hosted session already signed in here is resolving a renewed token for
+  // the same account: still pending, but for the account already on screen, not
+  // a new sign-in. A token for another account, or one that doesn't name its
+  // account, is a new sign-in.
   const isRenewingSession =
-    isResolvingJwt && !!jwtResolution && 'pubkey' in jwtResolution;
+    isResolvingJwt && !!token && !!jwtResolution && 'pubkey' in jwtResolution
+    && isSameHostedAccount(jwtResolution.token, token);
   const signer = useMemo(() => getSafeUserSigner(user), [user]);
   const author = useAuthor(user?.pubkey);
   const isHostedAccount = !!user?.pubkey && user.pubkey === jwtPubkey;
