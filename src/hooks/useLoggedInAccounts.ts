@@ -19,7 +19,7 @@ export function useLoggedInAccounts() {
   const { nostr } = useNostr();
   const { logins, setLogin, removeLogin } = useNostrLogin();
   const { getValidToken } = useDivineSession();
-  const { metadata, user } = useCurrentUser();
+  const { metadata, user, isAuthPending } = useCurrentUser();
   const token = getValidToken();
   const hasExtensionLogin = logins.some((login) => login.type === 'extension');
   const nip07Status = useNip07Availability(hasExtensionLogin);
@@ -80,6 +80,18 @@ export function useLoggedInAccounts() {
     return {
       authors: [jwtCurrentUser],
       currentUser: jwtCurrentUser,
+      otherUsers: [],
+      setLogin,
+      removeLogin,
+    };
+  }
+
+  // Sign-in is still loading, so the current account isn't known yet. Showing
+  // another saved account meanwhile would disagree with the rest of the app.
+  if (isAuthPending) {
+    return {
+      authors: [],
+      currentUser: undefined,
       otherUsers: [],
       setLogin,
       removeLogin,

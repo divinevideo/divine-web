@@ -90,13 +90,18 @@ export function useCurrentUser() {
     releaseBunkerSignersExcept(loginIds ? loginIds.split(';') : []);
   }, [loginIds]);
 
-  const manualUsers = useMemo(() => {
+  const { manualUsers, isExtensionPending } = useMemo(() => {
     const users: CurrentUser[] = [];
 
     for (const login of logins) {
       // Extension content scripts can inject window.nostr after first render;
       // hold off on extension logins until the availability check settles.
       if (login.type === 'extension' && nip07Status === 'checking') {
+        // Nothing usable comes before it, so the current account is still
+        // unknown. Report no one rather than briefly showing the next one.
+        if (users.length === 0) {
+          return { manualUsers: [], isExtensionPending: true };
+        }
         continue;
       }
 
@@ -114,7 +119,7 @@ export function useCurrentUser() {
       }
     }
 
-    return users;
+    return { manualUsers: users, isExtensionPending: false };
   }, [logins, loginToUser, nip07Status]);
 
   const jwtUser = useMemo<CurrentUser | undefined>(() => {
@@ -140,6 +145,9 @@ export function useCurrentUser() {
   });
 
   const user = users[0];
+  // Sign-in is still loading, not logged out: a hosted session is resolving,
+  // or the saved login that would be current is waiting for its extension.
+  const isAuthPending = !user && (isResolvingJwt || isExtensionPending);
   const signer = useMemo(() => getSafeUserSigner(user), [user]);
   const author = useAuthor(user?.pubkey);
   const isHostedAccount = !!user?.pubkey && user.pubkey === jwtPubkey;
@@ -151,7 +159,7 @@ export function useCurrentUser() {
     signer,
     hostedToken,
     isHostedAccount,
-    isResolvingJwt,
+    isAuthPending,
     ...author.data,
   };
 }

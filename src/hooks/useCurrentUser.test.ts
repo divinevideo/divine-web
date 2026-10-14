@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { generateSecretKey, nip19 } from 'nostr-tools';
 import type { NLoginType } from '@nostrify/react/login';
 
 import {
@@ -198,7 +199,7 @@ describe('useCurrentUser', () => {
     expect(result.current.user).toBeUndefined();
     expect(result.current.users).toEqual([]);
     expect(result.current.signer).toBeUndefined();
-    expect(result.current.isResolvingJwt).toBe(true);
+    expect(result.current.isAuthPending).toBe(true);
   });
 
   it('falls back to a manual account when the JWT session fails to initialize', async () => {
@@ -230,12 +231,12 @@ describe('useCurrentUser', () => {
 
     const { result } = renderHook(() => useCurrentUser());
 
-    await waitFor(() => expect(result.current.isResolvingJwt).toBe(false));
+    await waitFor(() => expect(result.current.isAuthPending).toBe(false));
     expect(result.current.user).toBeUndefined();
     expect(result.current.hostedToken).toBeNull();
   });
 
-  it('reports isResolvingJwt while the session initializes, then clears it', async () => {
+  it('reports sign-in as still loading while a hosted session initializes, then clears it', async () => {
     mockGetValidToken.mockReturnValue('jwt-token');
     let resolvePubkey: (pubkey: string) => void = () => {};
     mockJwtSigner.getPublicKey.mockReturnValue(
@@ -245,7 +246,7 @@ describe('useCurrentUser', () => {
     const { result } = renderHook(() => useCurrentUser());
 
     // initializing
-    expect(result.current.isResolvingJwt).toBe(true);
+    expect(result.current.isAuthPending).toBe(true);
     expect(result.current.user).toBeUndefined();
 
     resolvePubkey('d'.repeat(64));
@@ -253,7 +254,7 @@ describe('useCurrentUser', () => {
     await waitFor(() => {
       expect(result.current.user?.pubkey).toBe('d'.repeat(64));
     });
-    expect(result.current.isResolvingJwt).toBe(false);
+    expect(result.current.isAuthPending).toBe(false);
   });
 
   it('does not pair a stale pubkey with the new signer after a token swap', async () => {
@@ -274,7 +275,7 @@ describe('useCurrentUser', () => {
 
     // must NOT briefly show token-A's pubkey paired with the token-B signer
     expect(result.current.user).toBeUndefined();
-    expect(result.current.isResolvingJwt).toBe(true);
+    expect(result.current.isAuthPending).toBe(true);
   });
 
   it('recovers an extension login when the provider injects shortly after mount', () => {
@@ -416,5 +417,115 @@ describe('useCurrentUser', () => {
     expect(result.current.users).toHaveLength(1);
     expect(result.current.signer).toBeDefined();
     expect(mockUseAuthor).toHaveBeenCalledWith('pub123');
+  });
+
+  // A reload with a saved extension login has a moment where the extension has
+  // not loaded yet. That is "still signing in", not "logged out", and nothing
+  // should look logged in as anyone else meanwhile (divine-web#266).
+  describe('while a saved extension login waits for the extension', () => {
+    const extensionLogin: NLoginType = {
+      id: 'extension:pub123',
+      type: 'extension',
+      pubkey: 'pub123',
+      createdAt: '2026-03-10T00:00:00.000Z',
+      data: null,
+    };
+    const nsecLogin: NLoginType = {
+      id: `nsec:${'b'.repeat(64)}`,
+      type: 'nsec',
+      pubkey: 'b'.repeat(64),
+      createdAt: '2026-03-10T00:00:00.000Z',
+      data: { nsec: nip19.nsecEncode(generateSecretKey()) },
+    };
+
+    function settleWithoutExtension() {
+      act(() => {
+        vi.advanceTimersByTime(NIP07_GRACE_MS + NIP07_POLL_INTERVAL_MS);
+      });
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('reports sign-in as still loading, then signs in once the extension loads', () => {
+      mockLogins.push(extensionLogin);
+
+      const { result } = renderHook(() => useCurrentUser());
+
+      expect(result.current.user).toBeUndefined();
+      expect(result.current.isAuthPending).toBe(true);
+
+      setNostrProvider();
+      act(() => {
+        vi.advanceTimersByTime(NIP07_POLL_INTERVAL_MS);
+      });
+
+      expect(result.current.user?.pubkey).toBe('pub123');
+      expect(result.current.isAuthPending).toBe(false);
+    });
+
+    it('stops reporting sign-in as loading once the wait for the extension runs out', () => {
+      mockLogins.push(extensionLogin);
+
+      const { result } = renderHook(() => useCurrentUser());
+      settleWithoutExtension();
+
+      expect(result.current.user).toBeUndefined();
+      expect(result.current.isAuthPending).toBe(false);
+    });
+
+    it('does not briefly show the next saved account as current', () => {
+      mockLogins.push(extensionLogin, nsecLogin);
+
+      const { result } = renderHook(() => useCurrentUser());
+
+      expect(result.current.user).toBeUndefined();
+      expect(result.current.users).toEqual([]);
+      expect(result.current.isAuthPending).toBe(true);
+
+      setNostrProvider();
+      act(() => {
+        vi.advanceTimersByTime(NIP07_POLL_INTERVAL_MS);
+      });
+
+      expect(result.current.user?.pubkey).toBe('pub123');
+    });
+
+    it('falls back to the next saved account once the wait for the extension runs out', () => {
+      mockLogins.push(extensionLogin, nsecLogin);
+
+      const { result } = renderHook(() => useCurrentUser());
+      settleWithoutExtension();
+
+      expect(result.current.user?.pubkey).toBe('b'.repeat(64));
+      expect(result.current.signer).toBeDefined();
+      expect(result.current.isAuthPending).toBe(false);
+    });
+
+    it('does not hold up an account that comes before the extension login', () => {
+      mockLogins.push(nsecLogin, extensionLogin);
+
+      const { result } = renderHook(() => useCurrentUser());
+
+      expect(result.current.user?.pubkey).toBe('b'.repeat(64));
+      expect(result.current.isAuthPending).toBe(false);
+    });
+
+    it('lets a resolved hosted session take precedence over the wait', async () => {
+      vi.useRealTimers();
+      mockGetValidToken.mockReturnValue('jwt-token');
+      mockJwtSigner.getPublicKey.mockResolvedValue('c'.repeat(64));
+      mockLogins.push(extensionLogin);
+
+      const { result } = renderHook(() => useCurrentUser());
+
+      await waitFor(() => expect(result.current.user?.pubkey).toBe('c'.repeat(64)));
+      expect(result.current.isAuthPending).toBe(false);
+    });
   });
 });

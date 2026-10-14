@@ -83,11 +83,12 @@ const BrandPreview = import.meta.env.DEV
   : null;
 
 export function AppRouter() {
-  const { user, isResolvingJwt } = useCurrentUser();
+  const { user, isAuthPending } = useCurrentUser();
 
-  // Treat an in-flight hosted-JWT session as "still determining auth", not
-  // "logged out" — otherwise the protected routes below unmount during the
-  // getPublicKey() round-trip and a reload bounces the user off the page.
+  // Treat sign-in that is still loading (a hosted session resolving, or a saved
+  // extension login waiting for the extension) as "still determining auth",
+  // not "logged out" — otherwise the protected routes below unmount and a
+  // reload shows the not-found page.
   //
   // Tradeoff (intentional): while resolving, `user` is still undefined, so a
   // protected page renders its own brief logged-out fallback (e.g. LoginArea)
@@ -95,7 +96,7 @@ export function AppRouter() {
   // previous behavior, which unmounted the route entirely and discarded the URL.
   // A resolving-aware loading state on protected pages is a possible follow-up;
   // it's deliberately out of scope for this precedence fix.
-  const isLoggedIn = Boolean(user) || isResolvingJwt;
+  const isLoggedIn = Boolean(user) || isAuthPending;
 
   // Check if we're on a subdomain profile (username.divine.video)
   const subdomainUser = getSubdomainUser();
@@ -196,7 +197,7 @@ export function AppRouter() {
           element={
             <LegacyInviteRedirectPage
               hasUser={Boolean(user)}
-              isSessionResolving={isResolvingJwt}
+              isSessionResolving={isAuthPending}
             />
           }
         />

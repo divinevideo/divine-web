@@ -9,13 +9,13 @@ import AppRouter from './AppRouter';
 
 interface CurrentUserMock {
   user: { pubkey: string } | undefined;
-  isResolvingJwt: boolean;
+  isAuthPending: boolean;
 }
 
 const { mockUseCurrentUser } = vi.hoisted(() => ({
   mockUseCurrentUser: vi.fn<() => CurrentUserMock>(() => ({
     user: undefined,
-    isResolvingJwt: true,
+    isAuthPending: true,
   })),
 }));
 
@@ -89,7 +89,7 @@ describe('AppRouter', () => {
     mockUseCurrentUser.mockReset();
     mockUseCurrentUser.mockReturnValue({
       user: undefined,
-      isResolvingJwt: true,
+      isAuthPending: true,
     });
     sessionStorage.clear();
     window.history.pushState({}, '', '/');
@@ -119,7 +119,7 @@ describe('AppRouter', () => {
   it('redirects retired invite URLs to ordinary signup with sanitized campaign attribution', async () => {
     mockUseCurrentUser.mockReturnValue({
       user: undefined,
-      isResolvingJwt: false,
+      isAuthPending: false,
     });
     window.history.pushState(
       {},
@@ -144,7 +144,7 @@ describe('AppRouter', () => {
   it('redirects retired invite URLs away from signup while a session is active', async () => {
     mockUseCurrentUser.mockReturnValue({
       user: { pubkey: 'a'.repeat(64) },
-      isResolvingJwt: false,
+      isAuthPending: false,
     });
     window.history.pushState({}, '', '/invite/ABCD-1234');
 
@@ -168,7 +168,7 @@ describe('AppRouter', () => {
 
     mockUseCurrentUser.mockReturnValue({
       user: undefined,
-      isResolvingJwt: false,
+      isAuthPending: false,
     });
     view.rerender(
       <UnheadProvider head={createHead()}>

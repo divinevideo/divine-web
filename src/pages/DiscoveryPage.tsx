@@ -84,7 +84,7 @@ export function DiscoveryPage() {
   const navigate = useSubdomainNavigate();
   const { t } = useTranslation();
   const params = useParams<{ tab?: string }>();
-  const { user, isResolvingJwt } = useCurrentUser();
+  const { user, isAuthPending } = useCurrentUser();
   const isLoggedIn = !!user?.pubkey;
   const { data: categories } = useCategories();
   const { apiUrl: featuredApiUrl } = useFunnelcakeSupport();
@@ -158,7 +158,7 @@ export function DiscoveryPage() {
   }, [routeTab, normalizedTab, allowedTabs, navigate]);
 
   useEffect(() => {
-    if (!isFeaturedConfigResolved || isResolvingJwt) return;
+    if (!isFeaturedConfigResolved || isAuthPending) return;
     if (!allowedTabs.includes(activeTab)) {
       setActiveTab(defaultTab);
       navigate(`/discovery/${defaultTab}`, { replace: true });
@@ -168,7 +168,7 @@ export function DiscoveryPage() {
     allowedTabs,
     defaultTab,
     isFeaturedConfigResolved,
-    isResolvingJwt,
+    isAuthPending,
     navigate,
   ]);
 
@@ -179,12 +179,13 @@ export function DiscoveryPage() {
   // Both guards below are about not mistaking "still loading" for "no such
   // tab", because this navigates with `replace` and so destroys the original
   // URL. An unknown slug may still be a live featured tab until the config
-  // resolves; and a hosted session reports no user while the JWT resolves, so
-  // `foryou` is briefly absent from `allowedTabs` — redirecting then would
+  // resolves; and there is no user while sign-in is still loading (a hosted
+  // session resolving, or a saved extension login waiting for the extension),
+  // so `foryou` is briefly absent from `allowedTabs` — redirecting then would
   // replace a logged-in reader's bookmark. AppRouter and AnalyticsPage guard
   // that same transient state.
   useEffect(() => {
-    if (!routeTab || !isFeaturedConfigResolved || isResolvingJwt) return;
+    if (!routeTab || !isFeaturedConfigResolved || isAuthPending) return;
     if (allowedTabs.includes(normalizedTab)) return;
 
     navigate(`/discovery/${defaultTab}`, { replace: true });
@@ -194,7 +195,7 @@ export function DiscoveryPage() {
     allowedTabs,
     defaultTab,
     isFeaturedConfigResolved,
-    isResolvingJwt,
+    isAuthPending,
     navigate,
   ]);
 
