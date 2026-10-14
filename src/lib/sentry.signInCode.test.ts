@@ -79,6 +79,33 @@ describe('scrubSignInCode', () => {
 <oauth_confirm=[Filtered]>`);
   });
 
+  it.each(['(', ':', '[', ',', ';', '`', '{', '|', '!', '='])(
+    'redacts the value when the name follows %s, which ends a name',
+    (before) => {
+      for (const name of ['oauth_confirm', '%6Fauth_confirm']) {
+        expect(scrubSignInCode(`x${before}${name}=${CODE} tail`)).toBe(`x${before}${name}=[Filtered] tail`);
+      }
+    },
+  );
+
+  it('scrubs a long value quickly', () => {
+    // A long run of name characters must take time in proportion to its
+    // length. Scanning it once from every start point takes over a second
+    // here, while one pass takes well under a millisecond.
+    const input = `?q=${'A'.repeat(50_000)}`;
+    const started = performance.now();
+    expect(scrubSignInCode(input)).toBe(input);
+    expect(performance.now() - started).toBeLessThan(250);
+  });
+
+  it('redacts a name at the very start of the text', () => {
+    expect(scrubSignInCode(`oauth_confirm=${CODE}&x=1`)).toBe('oauth_confirm=[Filtered]&x=1');
+  });
+
+  it('redacts a value that runs into a second name only once', () => {
+    expect(scrubSignInCode(`?oauth_confirm=${CODE}?oauth_confirm=${CODE}`)).toBe('?oauth_confirm=[Filtered]');
+  });
+
   it.each(['oauth%confirm', 'oauth_confirm%', 'oauth+confirm', 'prefixoauth_confirm', 'OAUTH_CONFIRM', '%256Fauth_confirm'])('leaves a different or malformed decoded name %s unchanged', (name) => {
     const input = `${ORIGIN}/app/callback?${name}=ordinary-value&next=%bad`;
     expect(scrubSignInCode(input)).toBe(input);
@@ -184,6 +211,15 @@ describe('Sentry setup keeps the sign-in code out of what it sends', () => {
     const breadcrumb = { category: 'navigation', data: { from: '/app/callback?signin=abc', to: OPENED_WITH_BOTH } };
 
     expect(JSON.stringify(beforeBreadcrumb(breadcrumb))).not.toContain(CODE);
+  });
+
+  it('scrubs a breadcrumb message', () => {
+    const { beforeBreadcrumb } = startSentry();
+    const breadcrumb = { category: 'console', message: `opened ${OPENED_WITH_BOTH}` };
+
+    expect((beforeBreadcrumb(breadcrumb) as { message: string }).message).toBe(
+      `opened ${ORIGIN}/app/callback?signin=abc&oauth_confirm=[Filtered]#oauth_confirm=[Filtered]&_=_`,
+    );
   });
 
   it('scrubs the navigation entry Replay records', () => {

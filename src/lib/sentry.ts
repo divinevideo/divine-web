@@ -16,7 +16,18 @@ const BENIGN_SUBTITLE_VTT_STATUS_CODES = new Set([404, 410, 422]);
 // removes it from the address bar, but the browser's navigation timing entry
 // keeps the address the page was opened with, and Sentry names page-load spans
 // and Replay entries from that entry.
-const PARAMETER_NAME_RE = /(^|[?&#\s"'<>])([^?&#\s"'<>/=]+)=/g;
+// For this scrub, a name is a whole run of URL-unreserved characters plus
+// `%`, `*` and `+`, which is enough to spell any encoding of
+// `oauth_confirm`. Any other character (`?`, `&`, `(`, `:`, `=`, ...) ends
+// a name. The first group matches that character, or the start of the
+// text, so a match never begins inside a run: that keeps
+// `prefixoauth_confirm` apart from `oauth_confirm`, and keeps the scan
+// linear on a long run. The `=` after a name is checked with a lookahead
+// and not consumed, so it can also be the character before the next name,
+// as in `x=oauth_confirm=`.
+// There is no lookbehind: older Safari can't parse one, and a parse error
+// here would stop the app from booting.
+const PARAMETER_NAME_RE = /(^|[^A-Za-z0-9%._~*+-])([A-Za-z0-9%._~*+-]+)(?==)/g;
 const PARAMETER_VALUE_RE = /^[^&#\s"'<>]*/;
 const SIGNIN_CODE_FILTERED = '[Filtered]';
 // rrweb's custom event type, which carries Replay's breadcrumbs and
@@ -136,8 +147,10 @@ function scrubSignInCodeText(text: string): string {
   let result = '';
   let cursor = 0;
   for (const match of text.matchAll(PARAMETER_NAME_RE)) {
-    if (match.index < cursor || !new URLSearchParams(`${match[2]}=`).has('oauth_confirm')) continue;
-    const valueStart = match.index + match[0].length;
+    const nameStart = match.index + match[1].length;
+    // A match inside a value already replaced would add a second [Filtered].
+    if (nameStart < cursor || !new URLSearchParams(`${match[2]}=`).has('oauth_confirm')) continue;
+    const valueStart = nameStart + match[2].length + 1;
     const valueLength = text.slice(valueStart).match(PARAMETER_VALUE_RE)?.[0].length ?? 0;
     result += text.slice(cursor, valueStart) + SIGNIN_CODE_FILTERED;
     cursor = valueStart + valueLength;
