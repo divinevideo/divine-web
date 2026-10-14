@@ -24,7 +24,7 @@ export function TermsPage() {
               (&ldquo;Terms&rdquo;). If you do not agree, do not use the Service.
             </p>
             <p className="mb-3">
-              The Service is provided by Verse Communications PBC dba Divine (&ldquo;Divine,&rdquo;
+              The Service is provided by Verse Communications, Inc. (&ldquo;Divine,&rdquo;
               &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;). These Terms form a binding agreement
               between you and Divine.
             </p>
@@ -669,10 +669,7 @@ export function TermsPage() {
             <p className="mb-3">{t('termsPage.appleStore.productClaims')}</p>
             <p className="mb-3">{t('termsPage.appleStore.ip')}</p>
             <p className="mb-3">{t('termsPage.appleStore.legalCompliance')}</p>
-            {/* TODO(legal): The developer postal address is unknown. Replace
-                "[postal address pending legal review]" with Verse Communications,
-                Inc.'s actual address before this ships. */}
-            <p className="mb-3">{t('termsPage.appleStore.developerContact')}</p>
+            <p className="mb-3 whitespace-pre-line">{t('termsPage.appleStore.developerContact')}</p>
             <p className="mb-3">{t('termsPage.appleStore.thirdPartyTerms')}</p>
             <p className="mb-3">{t('termsPage.appleStore.thirdPartyBeneficiary')}</p>
             <p>{t('termsPage.appleStore.googlePlay')}</p>
@@ -682,9 +679,6 @@ export function TermsPage() {
               removed there and this page is the EULA in use. */}
           {/* TODO(legal): Confirm whether Sections 23 and 24 belong in the
               Section 12 survival list, or leave Section 12 as it is. */}
-          {/* TODO(legal): Section 1 names the provider "Verse Communications PBC
-              dba Divine", while Sections 23-24 use "Verse Communications, Inc."
-              Confirm the correct legal entity and make all references consistent. */}
         </div>
       </div>
     </MarketingLayout>

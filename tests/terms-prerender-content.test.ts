@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -91,6 +92,23 @@ describe('prerendered terms of service', () => {
     expect(html).toContain('Verse Communications, Inc.');
     expect(html).toContain('not with Apple');
     expect(html).toContain('third-party beneficiaries');
-    expect(html).toContain('[postal address pending legal review]');
+    expect(html).toContain('9450 SW Gemini Dr PMB 21667\nBeaverton, Oregon 97008-7105 US');
+    expect(html).not.toContain('[postal address pending legal review]');
+  });
+
+  it('names the same supplied legal entity throughout the rendered terms', () => {
+    expect(html).toContain('The Service is provided by Verse Communications, Inc.');
+    expect(html).not.toContain('Verse Communications PBC');
+    expect(html).not.toContain('dba Divine');
+  });
+
+  it('keeps the supplied developer contact identical in every locale catalog', () => {
+    const english = JSON.parse(readFileSync(resolve(REPO_ROOT, 'src/lib/i18n/locales/en/common.json'), 'utf8')).termsPage.appleStore.developerContact;
+    expect(english).toContain('Verse Communications, Inc.');
+    expect(english).toContain('9450 SW Gemini Dr PMB 21667\nBeaverton, Oregon 97008-7105 US');
+    for (const locale of readdirSync(resolve(REPO_ROOT, 'src/lib/i18n/locales'))) {
+      const catalog = JSON.parse(readFileSync(resolve(REPO_ROOT, 'src/lib/i18n/locales', locale, 'common.json'), 'utf8'));
+      expect(catalog.termsPage.appleStore.developerContact, locale).toBe(english);
+    }
   });
 });
