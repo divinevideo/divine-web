@@ -16,8 +16,9 @@ const BENIGN_SUBTITLE_VTT_STATUS_CODES = new Set([404, 410, 422]);
 // removes it from the address bar, but the browser's navigation timing entry
 // keeps the address the page was opened with, and Sentry names page-load spans
 // and Replay entries from that entry.
-const SIGNIN_CODE_RE = /oauth(?:_|%5[Ff])confirm=[^&#\s"'<>]*/g;
-const SIGNIN_CODE_FILTERED = 'oauth_confirm=[Filtered]';
+const PARAMETER_NAME_RE = /(^|[?&#\s"'<>])([^?&#\s"'<>/=]+)=/g;
+const PARAMETER_VALUE_RE = /^[^&#\s"'<>]*/;
+const SIGNIN_CODE_FILTERED = '[Filtered]';
 // rrweb's custom event type, which carries Replay's breadcrumbs and
 // performance entries. Page content events are left alone: the page never
 // shows the code, and walking every DOM snapshot would slow every page.
@@ -122,7 +123,7 @@ function isPlainData(value: object): boolean {
 }
 
 /**
- * Replaces the value of every `oauth_confirm=` in the strings inside `value`,
+ * Replaces values whose decoded parameter name is `oauth_confirm` inside strings,
  * changing objects and arrays in place, and returns `value`. Only plain
  * objects and arrays are walked: what Sentry sends is plain data, while the
  * class instances it attaches (scopes, the client) are not sent.
@@ -131,9 +132,22 @@ export function scrubSignInCode<T>(value: T): T {
   return scrubSignInCodeData(value, new WeakSet<object>());
 }
 
+function scrubSignInCodeText(text: string): string {
+  let result = '';
+  let cursor = 0;
+  for (const match of text.matchAll(PARAMETER_NAME_RE)) {
+    if (match.index < cursor || !new URLSearchParams(`${match[2]}=`).has('oauth_confirm')) continue;
+    const valueStart = match.index + match[0].length;
+    const valueLength = text.slice(valueStart).match(PARAMETER_VALUE_RE)?.[0].length ?? 0;
+    result += text.slice(cursor, valueStart) + SIGNIN_CODE_FILTERED;
+    cursor = valueStart + valueLength;
+  }
+  return result + text.slice(cursor);
+}
+
 function scrubSignInCodeData<T>(value: T, seen: WeakSet<object>): T {
   if (typeof value === 'string') {
-    return value.replace(SIGNIN_CODE_RE, SIGNIN_CODE_FILTERED) as T;
+    return scrubSignInCodeText(value) as T;
   }
   if (typeof value !== 'object' || value === null || seen.has(value) || !isPlainData(value)) return value;
   seen.add(value);

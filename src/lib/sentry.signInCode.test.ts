@@ -61,6 +61,34 @@ describe('scrubSignInCode', () => {
     expect(scrubSignInCode(`${ORIGIN}/app/callback?${name}=${CODE}`)).not.toContain(CODE);
   });
 
+
+  it.each([
+    '%6Fauth_confirm',
+    'oauth_con%66irm',
+    '%6F%61%75%74%68%5F%63%6F%6E%66%69%72%6D',
+    '%6f%61%75%74%68%5f%63%6f%6e%66%69%72%6d',
+  ])('redacts the value for decoded parameter name %s without rewriting its spelling', (name) => {
+    const input = `${ORIGIN}/app/callback?redirect=%2Fa%20b&flag&${name}=${CODE}#keep=%2f`;
+    expect(scrubSignInCode(input)).toBe(`${ORIGIN}/app/callback?redirect=%2Fa%20b&flag&${name}=[Filtered]#keep=%2f`);
+  });
+
+  it('redacts canonical, duplicate and nested URL names while preserving punctuation and whitespace', () => {
+    const input = `url=${ORIGIN}/app/callback?oauth_confirm=${CODE}&keep=a=b#%6Fauth_confirm=%bad "oauth_confirm=${CODE}"
+<oauth_confirm=${CODE}>`;
+    expect(scrubSignInCode(input)).toBe(`url=${ORIGIN}/app/callback?oauth_confirm=[Filtered]&keep=a=b#%6Fauth_confirm=[Filtered] "oauth_confirm=[Filtered]"
+<oauth_confirm=[Filtered]>`);
+  });
+
+  it.each(['oauth%confirm', 'oauth_confirm%', 'oauth+confirm', 'prefixoauth_confirm', 'OAUTH_CONFIRM', '%256Fauth_confirm'])('leaves a different or malformed decoded name %s unchanged', (name) => {
+    const input = `${ORIGIN}/app/callback?${name}=ordinary-value&next=%bad`;
+    expect(scrubSignInCode(input)).toBe(input);
+  });
+
+  it('handles an empty value and malformed value encoding without decoding unrelated values', () => {
+    const input = '?oauth_confirm=&keep=%bad#%6Fauth_confirm=%E0%A4%A';
+    expect(scrubSignInCode(input)).toBe('?oauth_confirm=[Filtered]&keep=%bad#%6Fauth_confirm=[Filtered]');
+  });
+
   it('can be passed directly to Array.map', () => {
     const events = [{ url: OPENED_WITH_QUERY }, { url: OPENED_WITH_FRAGMENT }];
     expect(() => events.map(scrubSignInCode)).not.toThrow();
