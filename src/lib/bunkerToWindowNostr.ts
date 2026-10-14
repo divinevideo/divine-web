@@ -107,6 +107,15 @@ export async function createWindowNostrFromBunker(
   return connectSigner;
 }
 
+// The signer this module put on window.nostr, so an extension check can tell
+// the app's own signer apart from a browser extension.
+let injectedSigner: NostrSigner | undefined;
+
+/** True when window.nostr is the app's own injected signer, not an extension. */
+export function isAppInjectedWindowNostr(): boolean {
+  return injectedSigner !== undefined && window.nostr === injectedSigner;
+}
+
 /**
  * Inject a NostrSigner as window.nostr
  * @param signer - NostrSigner instance to inject
@@ -126,6 +135,7 @@ export function injectWindowNostr(signer: NostrSigner): void {
 
   // Inject the signer
   globalWindow.nostr = signer;
+  injectedSigner = signer;
 
   console.log('[injectWindowNostr] ✅ Injected window.nostr signer');
 
@@ -147,4 +157,5 @@ export function removeWindowNostr(): void {
     delete globalWindow.nostr;
     console.log('[removeWindowNostr] ✅ Removed window.nostr');
   }
+  injectedSigner = undefined;
 }
