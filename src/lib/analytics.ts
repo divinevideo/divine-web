@@ -17,7 +17,8 @@ import { onAnalyticsConsentChanged } from './cookieConsent';
 // empirically via divine-brain/sim/experiments/smoke-one-persona.ts
 // on 2026-05-08 (2 first-visit sessions polluted prod GA4 in a 32s
 // headless scroll). In production the flag is set only by
-// stripSignInCode, for a page view it removed a sign-in code from.
+// stripSignInCode, when it removes a sign-in code, and it stays set until
+// the page is reloaded or left.
 function isSuppressed(): boolean {
   if (typeof window === 'undefined') return false;
   return !!(window as unknown as { __DIVINE_ANALYTICS_DISABLED__?: boolean })

@@ -64,7 +64,7 @@ describe('stripSignInCode', () => {
     expect(window.__DIVINE_ANALYTICS_DISABLED__).toBeUndefined();
   });
 
-  it('turns analytics off for the page view when it removes a code', async () => {
+  it('turns analytics off when it removes a code', async () => {
     visit(`/app/callback?signin=abc#oauth_confirm=${CODE}`);
     await loadModule();
     expect(window.__DIVINE_ANALYTICS_DISABLED__).toBe(true);
@@ -104,6 +104,27 @@ describe('stripSignInCode', () => {
     expect(window.location.href).not.toContain(CODE);
     expect(window.__DIVINE_ANALYTICS_DISABLED__).toBe(true);
   });
+
+  it.each(['/%61pp/callback', '/app/%63allback', '/%41PP/Callback/'])(
+    'strips percent-encoded path %s, which the router decodes and matches, and keeps its spelling',
+    async (path) => {
+      visit(`${path}?signin=abc&oauth_confirm=${CODE}`);
+      await loadModule();
+      expect(window.location.pathname).toBe(path);
+      expect(window.location.search).toBe('?signin=abc');
+      expect(window.__DIVINE_ANALYTICS_DISABLED__).toBe(true);
+    },
+  );
+
+  it.each(['/app%2Fcallback', '/app/callback%2F', '/app/%E0%A4%A/callback', '/%61pp/callback/%'])(
+    'leaves path %s alone, as the router does not match it, without throwing',
+    async (path) => {
+      visit(`${path}?oauth_confirm=${CODE}`);
+      await expect(loadModule()).resolves.toBeDefined();
+      expect(window.location.href).toContain(CODE);
+      expect(window.__DIVINE_ANALYTICS_DISABLED__).toBeUndefined();
+    },
+  );
 
   it.each(['#section-2', '#/profile', '#next=%2Fa%20b&flag'])('preserves an unrelated fragment %s', async (hash) => {
     visit(`/app/callback?redirect=%2Fa%20b&flag&oauth_confirm=${CODE}${hash}`);
