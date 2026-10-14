@@ -65,7 +65,8 @@ through that so it keeps what it holds. The extension check
 (`useNip07Availability`) is shared by the whole app and looks again on focus, on
 tab switch, and when a component mounts, so a slow extension still signs the
 page in. It ignores the app's own hosted signer, which is also installed as
-`window.nostr`.
+`window.nostr` when no browser extension is there. The app never replaces or
+removes an extension's `window.nostr`, since extension logins sign through it.
 
 Profile metadata remains raw through the fetch layer because `name` is also used
 as a handle. Display surfaces resolve `display_name`, then `name`, then a

@@ -167,6 +167,8 @@ describe('hasNip07Provider', () => {
 
   afterEach(() => {
     removeWindowNostr();
+    // removeWindowNostr leaves a browser extension in place.
+    delete window.nostr;
   });
 
   it('finds a browser extension', async () => {
