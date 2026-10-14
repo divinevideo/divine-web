@@ -12,8 +12,15 @@ Output to `dist/`.
 ## Entry Point Flow
 
 ```
-index.html → src/main.tsx → src/App.tsx → src/AppRouter.tsx
+index.html → src/lib/stripSignInCode.ts → src/lib/hubSpotLoader.ts
+           → src/main.tsx → src/App.tsx → src/AppRouter.tsx
 ```
+
+The first module removes a callback sign-in code before HubSpot and app startup,
+without reserializing other query or fragment values. It suppresses analytics
+before attempting the history update, so a rejected update does not abort boot
+or enable analytics. Sentry also scrubs navigation timing URLs, which keep the
+original address after the history update.
 
 [`src/main.tsx`](./src/main.tsx) sets up root services (Sentry, i18n, etc),
 hydrates login from cross-subdomain cookies, registers the PWA service worker

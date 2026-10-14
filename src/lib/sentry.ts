@@ -12,6 +12,29 @@ import {
 
 const BENIGN_SUBTITLE_VTT_STATUS_CODES = new Set([404, 410, 422]);
 
+// A one-time sign-in code that /app/callback can be opened with. stripSignInCode
+// removes it from the address bar, but the browser's navigation timing entry
+// keeps the address the page was opened with, and Sentry names page-load spans
+// and Replay entries from that entry.
+// For this scrub, a name is a whole run of URL-unreserved characters plus
+// `%`, `*` and `+`, which is enough to spell any encoding of
+// `oauth_confirm`. Any other character (`?`, `&`, `(`, `:`, `=`, ...) ends
+// a name. The first group matches that character, or the start of the
+// text, so a match never begins inside a run: that keeps
+// `prefixoauth_confirm` apart from `oauth_confirm`, and keeps the scan
+// linear on a long run. The `=` after a name is checked with a lookahead
+// and not consumed, so it can also be the character before the next name,
+// as in `x=oauth_confirm=`.
+// There is no lookbehind: older Safari can't parse one, and a parse error
+// here would stop the app from booting.
+const PARAMETER_NAME_RE = /(^|[^A-Za-z0-9%._~*+-])([A-Za-z0-9%._~*+-]+)(?==)/g;
+const PARAMETER_VALUE_RE = /^[^&#\s"'<>]*/;
+const SIGNIN_CODE_FILTERED = '[Filtered]';
+// rrweb's custom event type, which carries Replay's breadcrumbs and
+// performance entries. Page content events are left alone: the page never
+// shows the code, and walking every DOM snapshot would slow every page.
+const REPLAY_CUSTOM_EVENT_TYPE = 5;
+
 function toObject(value: unknown): Record<string, unknown> | null {
   if (typeof value === 'object' && value !== null) {
     return value as Record<string, unknown>;
@@ -105,6 +128,52 @@ export function shouldDropBenignSubtitleVttEvent(event: unknown): boolean {
   return BENIGN_SUBTITLE_VTT_STATUS_CODES.has(statusCode);
 }
 
+function isPlainData(value: object): boolean {
+  const proto = Object.getPrototypeOf(value);
+  return Array.isArray(value) || proto === Object.prototype || proto === null;
+}
+
+/**
+ * Replaces values whose decoded parameter name is `oauth_confirm` inside strings,
+ * changing objects and arrays in place, and returns `value`. Only plain
+ * objects and arrays are walked: what Sentry sends is plain data, while the
+ * class instances it attaches (scopes, the client) are not sent.
+ */
+export function scrubSignInCode<T>(value: T): T {
+  return scrubSignInCodeData(value, new WeakSet<object>());
+}
+
+function scrubSignInCodeText(text: string): string {
+  let result = '';
+  let cursor = 0;
+  for (const match of text.matchAll(PARAMETER_NAME_RE)) {
+    const nameStart = match.index + match[1].length;
+    // A match inside a value already replaced would add a second [Filtered].
+    if (nameStart < cursor || !new URLSearchParams(`${match[2]}=`).has('oauth_confirm')) continue;
+    const valueStart = nameStart + match[2].length + 1;
+    const valueLength = text.slice(valueStart).match(PARAMETER_VALUE_RE)?.[0].length ?? 0;
+    result += text.slice(cursor, valueStart) + SIGNIN_CODE_FILTERED;
+    cursor = valueStart + valueLength;
+  }
+  return result + text.slice(cursor);
+}
+
+function scrubSignInCodeData<T>(value: T, seen: WeakSet<object>): T {
+  if (typeof value === 'string') {
+    return scrubSignInCodeText(value) as T;
+  }
+  if (typeof value !== 'object' || value === null || seen.has(value) || !isPlainData(value)) return value;
+  seen.add(value);
+  const record = value as Record<string, unknown>;
+  for (const key of Object.keys(record)) {
+    const descriptor = Object.getOwnPropertyDescriptor(record, key);
+    if (!descriptor?.writable) continue;
+    const scrubbed = scrubSignInCodeData(descriptor.value, seen);
+    if (scrubbed !== descriptor.value) record[key] = scrubbed;
+  }
+  return value;
+}
+
 /**
  * Initialize Sentry error tracking
  * Call this as early as possible in the app lifecycle
@@ -143,7 +212,8 @@ export function initializeSentry() {
         maskAllText: false,
         blockAllMedia: false,
         beforeAddRecordingEvent(event) {
-          return shouldDropKeyExportReplayEvent(event) ? null : event;
+          if (shouldDropKeyExportReplayEvent(event)) return null;
+          return event.type === REPLAY_CUSTOM_EVENT_TYPE ? scrubSignInCode(event) : event;
         },
       }),
       Sentry.httpClientIntegration({ failedRequestStatusCodes: [[400, 599]] }),
@@ -151,7 +221,18 @@ export function initializeSentry() {
     ],
 
     beforeBreadcrumb(breadcrumb) {
-      return shouldDropKeyExportBreadcrumb(breadcrumb) ? null : breadcrumb;
+      if (shouldDropKeyExportBreadcrumb(breadcrumb)) return null;
+      const data = breadcrumb.data ? { ...breadcrumb.data } : undefined;
+      if (data) {
+        for (const key of ['url', 'from', 'to']) {
+          if (typeof data[key] === 'string') data[key] = scrubSignInCode(data[key]);
+        }
+      }
+      return { ...breadcrumb, message: scrubSignInCode(breadcrumb.message), data };
+    },
+
+    beforeSendTransaction(event) {
+      return scrubSignInCode(event);
     },
 
     // Filter out noise - browser environment errors we can't fix
@@ -238,7 +319,7 @@ export function initializeSentry() {
         delete event.user.email;
         delete event.user.ip_address;
       }
-      return event;
+      return scrubSignInCode(event);
     },
   });
 

@@ -26,6 +26,14 @@ export function AppCallbackPage() {
   const [triedIntent, setTriedIntent] = useState(false);
   const { t } = useTranslation();
 
+  // Set by stripSignInCode before the app loaded.
+  const signInCodeStripped = typeof window !== 'undefined' && window.__DIVINE_SIGNIN_CODE_STRIPPED__ === true;
+  const signInCodeWarning = signInCodeStripped ? (
+    <p className="text-sm font-medium text-foreground" role="note">
+      {t('appCallbackPage.signInCodeWarning')}
+    </p>
+  ) : null;
+
   // On Android, attempt intent:// with fallback
   useEffect(() => {
     if (platform === 'android' && code && !triedIntent) {
@@ -45,6 +53,7 @@ export function AppCallbackPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
         <div className="text-center space-y-4 max-w-md">
+          {signInCodeWarning}
           <h1 className="text-2xl font-bold">{t('appCallbackPage.desktop.heading')}</h1>
           <p className="text-muted-foreground">
             {t('appCallbackPage.desktop.body1')}
@@ -82,6 +91,7 @@ export function AppCallbackPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       <div className="text-center space-y-4 max-w-md">
+        {signInCodeWarning}
         <h1 className="text-2xl font-bold">{t('appCallbackPage.mobile.heading')}</h1>
         <p className="text-muted-foreground">
           {t('appCallbackPage.mobile.body')}
