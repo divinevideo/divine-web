@@ -77,6 +77,7 @@ describe('useOptimisticLike', () => {
       likeCount: 3,
       repostCount: 0,
       viewCount: 10,
+      loopCount: 0,
       commentCount: 1,
       likes: [],
       reposts: [],
@@ -236,6 +237,7 @@ describe('useOptimisticLike', () => {
       tags: [
         ['e', VIDEO_ID],
         ['p', AUTHOR_PK],
+        ['k', '34236'],
       ],
     });
 
@@ -244,6 +246,36 @@ describe('useOptimisticLike', () => {
       likeEventId: 'relay-like-id',
     });
     expect(queryClient.getQueryData(mKey)).toMatchObject({ likeCount: 1 });
+  });
+
+  it('likes with the video coordinate so the reaction survives an edit', async () => {
+    const { Wrapper } = createHarness();
+
+    publishAsync.mockResolvedValueOnce({ id: 'relay-like-id' });
+
+    const { result } = renderHook(() => useOptimisticLike(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await result.current.toggleLike({
+        videoId: VIDEO_ID,
+        videoPubkey: AUTHOR_PK,
+        vineId: VINE_ID,
+        userPubkey: VIEWER_PK,
+        isCurrentlyLiked: false,
+        currentLikeEventId: null,
+      });
+    });
+
+    expect(publishAsync).toHaveBeenCalledWith({
+      kind: 7,
+      content: '+',
+      tags: [
+        ['e', VIDEO_ID],
+        ['a', `34236:${AUTHOR_PK}:${VINE_ID}`],
+        ['p', AUTHOR_PK],
+        ['k', '34236'],
+      ],
+    });
   });
 
   it('rolls back cache when publish fails', async () => {
@@ -255,6 +287,7 @@ describe('useOptimisticLike', () => {
       likeCount: 2,
       repostCount: 1,
       viewCount: 7,
+      loopCount: 0,
       commentCount: 0,
       likes: [],
       reposts: [],
@@ -303,6 +336,7 @@ describe('useOptimisticLike', () => {
       likeCount: 5,
       repostCount: 0,
       viewCount: 1,
+      loopCount: 0,
       commentCount: 0,
       likes: [],
       reposts: [],

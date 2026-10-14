@@ -1,38 +1,73 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NSecSigner, type NostrEvent, type NostrSigner } from '@nostrify/nostrify';
-import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
+import { generateSecretKey, getPublicKey, verifyEvent } from 'nostr-tools/pure';
+
+// fetchDmMessages builds its own NPool internally, so the relay is stubbed at
+// the module boundary. Everything inside — unwrapping, verification, NIP-44
+// decryption — stays real.
+const relayStub = vi.hoisted(() => ({
+  events: [] as unknown[],
+  // Every NRelay1 the pool opened, with the options it was constructed with.
+  // The `auth` option is the whole point of the NIP-42 wiring, so the stub has
+  // to expose it rather than swallow it.
+  opened: [] as { url: string; opts: { auth?: (challenge: string) => Promise<NostrEvent> } }[],
+}));
+
+vi.mock('@nostrify/nostrify', async () => {
+  const actual = await vi.importActual<typeof import('@nostrify/nostrify')>('@nostrify/nostrify');
+  return {
+    ...actual,
+    NRelay1: class {
+      constructor(url: string, opts: { auth?: (challenge: string) => Promise<NostrEvent> } = {}) {
+        relayStub.opened.push({ url, opts });
+      }
+    },
+    NPool: class {
+      private connections = new Map<string, { event(): Promise<void> }>();
+
+      constructor(private opts: { open(url: string): unknown }) {}
+
+      // The real NPool opens one relay per routed url, once, and caches it.
+      // Mirroring that is what makes the `open` factory — and therefore the
+      // `auth` option it builds — observable from a test.
+      relay(url: string) {
+        let connection = this.connections.get(url);
+        if (!connection) {
+          this.opts.open(url);
+          connection = { event: async () => {} };
+          this.connections.set(url, connection);
+        }
+        return connection;
+      }
+
+      async query(_filters: unknown, opts?: { relays?: string[] }) {
+        for (const url of opts?.relays ?? []) {
+          this.relay(url);
+        }
+        return relayStub.events;
+      }
+
+      async close() {}
+    },
+  };
+});
 
 import {
-  buildDmSharePayloadFromVideo,
-  buildDmShareQueryString,
+  buildDmRumor,
   createRecipientGiftWraps,
   createSelfGiftWrap,
   decodeConversationId,
   DM_GIFT_WRAP_KIND,
+  DM_RUMOR_KIND,
   encodeConversationId,
+  fetchDmMessages,
   getDmMessagePreview,
   groupDmConversations,
-  parseDmShareQuery,
+  makeDmAuthCallback,
   probeBunkerNip44,
+  publishDmMessages,
   unwrapDmGiftWrap,
 } from '@/lib/dm';
-import type { ParsedVideoData } from '@/types/video';
-
-function makeVideo(overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
-  return {
-    id: 'video-event-id',
-    pubkey: 'a'.repeat(64),
-    kind: 34236,
-    createdAt: 1,
-    content: '',
-    videoUrl: 'https://cdn.divine.video/videos/test.mp4',
-    hashtags: [],
-    vineId: 'stable-vine-id',
-    isVineMigrated: false,
-    reposts: [],
-    ...overrides,
-  };
-}
 
 describe('dm utilities', () => {
   it('round-trips conversation ids', () => {
@@ -50,16 +85,6 @@ describe('dm utilities', () => {
       'b'.repeat(64),
       'f'.repeat(64),
     ]);
-  });
-
-  it('round-trips share payloads through query params', () => {
-    const share = buildDmSharePayloadFromVideo(makeVideo({
-      title: 'Loop of the day',
-    }));
-
-    const parsedShare = parseDmShareQuery(new URLSearchParams(buildDmShareQueryString(share)));
-
-    expect(parsedShare).toEqual(share);
   });
 
   it('prefers share titles in conversation previews when there is no text body', () => {
@@ -133,13 +158,185 @@ describe('dm utilities', () => {
   });
 });
 
-// Note: real-crypto round-trip tests for these functions are blocked by
-// src/test/setup.ts overriding global TextEncoder with node:util's
-// TextEncoder, which produces a Uint8Array from a different realm than
-// @noble/hashes' instance check accepts. The failure-path tests below run
-// entirely on mock signers, so they're unaffected.
+describe('fetchDmMessages deduplication', () => {
+  it('renders one message when the same rumor arrives in two gift wraps', async () => {
+    // #578: NIP-59 mints a fresh ephemeral keypair per wrap, so re-publishing
+    // one message produces two kind-1059 events that share nothing on the
+    // outside. The rumor id is the only thing that identifies them as one
+    // message. Exercised against real NIP-44 encryption end to end.
+    const sender = createTestSigner();
+    const recipient = createTestSigner();
+
+    const rumor = buildDmRumor({
+      senderPubkey: sender.pubkey,
+      recipientPubkeys: [recipient.pubkey],
+      content: 'sent once, published twice',
+    });
+
+    const wraps = [
+      ...(await createRecipientGiftWraps({
+        signer: sender.signer,
+        senderPubkey: sender.pubkey,
+        recipientPubkeys: [recipient.pubkey],
+        content: rumor.content,
+        rumor,
+      })),
+      ...(await createRecipientGiftWraps({
+        signer: sender.signer,
+        senderPubkey: sender.pubkey,
+        recipientPubkeys: [recipient.pubkey],
+        content: rumor.content,
+        rumor,
+      })),
+    ];
+
+    expect(wraps).toHaveLength(2);
+    expect(wraps[0].id).not.toBe(wraps[1].id);
+    expect(wraps[0].pubkey).not.toBe(wraps[1].pubkey);
+
+    const result = await fetchWithStubbedRelay(wraps, recipient);
+
+    expect(result.fetchedCount).toBe(2);
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].rumorId).toBe(rumor.id);
+    expect(result.malformedCount).toBe(0);
+  });
+
+  it('keeps two distinct messages that happen to share their text', async () => {
+    // The collapse must key on identity, not content — sending "ok" twice on
+    // purpose is two messages.
+    const sender = createTestSigner();
+    const recipient = createTestSigner();
+
+    const wraps: NostrEvent[] = [];
+    for (const createdAt of [1_700_000_000, 1_700_000_060]) {
+      vi.spyOn(Date, 'now').mockReturnValue(createdAt * 1000);
+      wraps.push(...(await createRecipientGiftWraps({
+        signer: sender.signer,
+        senderPubkey: sender.pubkey,
+        recipientPubkeys: [recipient.pubkey],
+        content: 'ok',
+      })));
+    }
+    vi.restoreAllMocks();
+
+    const result = await fetchWithStubbedRelay(wraps, recipient);
+
+    expect(result.messages).toHaveLength(2);
+    expect(result.messages[0].rumorId).not.toBe(result.messages[1].rumorId);
+  });
+});
+
+describe('makeDmAuthCallback', () => {
+  const RELAY_URL = 'wss://relay.divine.video';
+  const CHALLENGE = 'server-challenge-string';
+
+  it('signs a verifiable kind-22242 AUTH event bound to the relay url and challenge', async () => {
+    // NIP-42: the recipient proves identity to the gated relay by returning a
+    // signed kind-22242 event carrying the relay url and the challenge. Without
+    // it the relay serves nothing for the kind-1059 inbox read.
+    const { signer, pubkey } = createTestSigner();
+
+    const authEvent = await makeDmAuthCallback(RELAY_URL, signer)(CHALLENGE);
+
+    expect(authEvent.kind).toBe(22242);
+    expect(authEvent.pubkey).toBe(pubkey);
+    expect(authEvent.content).toBe('');
+    expect(authEvent.tags).toEqual(
+      expect.arrayContaining([
+        ['relay', RELAY_URL],
+        ['challenge', CHALLENGE],
+      ]),
+    );
+    expect(verifyEvent(authEvent)).toBe(true);
+  });
+
+  it('rejects without throwing synchronously when there is no signer', async () => {
+    // NRelay1 runs the callback as `auth(challenge).then(...).catch(() => {})`,
+    // so a synchronous throw would escape its `.catch`. A logged-out pool must
+    // reject asynchronously, leaving the connection unauthenticated.
+    const settled = makeDmAuthCallback(RELAY_URL, undefined)(CHALLENGE);
+
+    expect(settled).toBeInstanceOf(Promise);
+    await expect(settled).rejects.toThrow(/without a signer/);
+  });
+});
+
+describe('DM relay pool NIP-42 wiring', () => {
+  const RELAY_URL = 'wss://relay.example';
+
+  it('gives the gift-wrap read connection an auth callback bound to the reader', async () => {
+    // The helper being correct in isolation proves nothing about the read
+    // path: the gate only lifts if the pool that issues the kind-1059 REQ is
+    // the one carrying the callback. Dropping `auth` from createRelayPool, or
+    // no longer threading the signer into it, must fail here.
+    const recipient = createTestSigner();
+    relayStub.opened = [];
+
+    await fetchWithStubbedRelay([], recipient);
+
+    const connection = relayStub.opened.find((relay) => relay.url === RELAY_URL);
+    expect(connection?.opts.auth).toBeTypeOf('function');
+
+    const authEvent = await connection!.opts.auth!('challenge-from-relay');
+
+    expect(authEvent.kind).toBe(22242);
+    expect(authEvent.pubkey).toBe(recipient.pubkey);
+    expect(authEvent.tags).toEqual(
+      expect.arrayContaining([
+        ['relay', RELAY_URL],
+        ['challenge', 'challenge-from-relay'],
+      ]),
+    );
+  });
+
+  it('leaves the publish connection unauthenticated so gift wraps stay anonymous', async () => {
+    // NIP-59 signs each wrap with a throwaway key precisely so the relay
+    // cannot tell who sent it. Authenticating the write connection would hand
+    // the relay the sender's real pubkey alongside the wrap and undo that, so
+    // the signer must not reach the publish pool.
+    relayStub.opened = [];
+
+    await publishDmMessages([RELAY_URL], [createDmTestWrap('a'.repeat(64))]);
+
+    const connection = relayStub.opened.find((relay) => relay.url === RELAY_URL);
+    expect(connection).toBeDefined();
+    await expect(connection!.opts.auth!('challenge-from-relay')).rejects.toThrow(
+      /without a signer/,
+    );
+  });
+});
 
 describe('createSelfGiftWrap', () => {
+  it('wraps the rumor it is given, so the self copy shares the recipient copy id', async () => {
+    // NIP-59: a single rumor may be wrapped and addressed for each recipient
+    // individually — including the author's own copy. Two rumors would leave
+    // the sender holding a different message from the one they sent.
+    const sender = createTestSigner();
+    const recipient = createTestSigner();
+
+    const rumor = buildDmRumor({
+      senderPubkey: sender.pubkey,
+      recipientPubkeys: [recipient.pubkey],
+      content: 'hi',
+    });
+
+    const selfWrap = await createSelfGiftWrap({
+      signer: sender.signer,
+      senderPubkey: sender.pubkey,
+      recipientPubkeys: [recipient.pubkey],
+      content: 'hi',
+      rumor,
+    });
+
+    expect(selfWrap).not.toBeNull();
+    const unwrapped = await unwrapDmGiftWrap(selfWrap!, sender.signer);
+    expect(unwrapped.ok).toBe(true);
+    if (unwrapped.ok) {
+      expect(unwrapped.rumor.id).toBe(rumor.id);
+    }
+  });
+
   it('returns null and warns when signer.nip44.encrypt rejects', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const cause = new Error('bunker rejected encrypt-to-self');
@@ -200,6 +397,73 @@ describe('createRecipientGiftWraps', () => {
       recipientPubkeys: [],
       content: 'hi',
     })).rejects.toThrow(/at least one recipient/);
+  });
+
+  it('re-wraps a supplied rumor instead of minting a new one', async () => {
+    // A retry hands back the first attempt's rumor. Its id is the only thing
+    // a receiver can dedupe on, so it must survive the round trip untouched.
+    const sender = createTestSigner();
+    const recipient = createTestSigner();
+
+    const rumor = buildDmRumor({
+      senderPubkey: sender.pubkey,
+      recipientPubkeys: [recipient.pubkey],
+      content: 'hi',
+    });
+
+    const [wrap] = await createRecipientGiftWraps({
+      signer: sender.signer,
+      senderPubkey: sender.pubkey,
+      recipientPubkeys: [recipient.pubkey],
+      content: 'hi',
+      rumor,
+    });
+
+    const unwrapped = await unwrapDmGiftWrap(wrap, recipient.signer);
+    expect(unwrapped.ok).toBe(true);
+    if (unwrapped.ok) {
+      expect(unwrapped.rumor).toEqual(rumor);
+    }
+  });
+});
+
+
+describe('buildDmRumor', () => {
+  const SENDER = 'a'.repeat(64);
+  const RECIPIENT = 'b'.repeat(64);
+
+  it('mints a different id once the clock advances', () => {
+    // This is why a retry cannot rebuild: created_at is the only varying
+    // input to the id hash, and a failed send burns the publish timeout
+    // before Retry is reachable.
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+    const first = buildDmRumor({ senderPubkey: SENDER, recipientPubkeys: [RECIPIENT], content: 'hi' });
+
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_011_000);
+    const second = buildDmRumor({ senderPubkey: SENDER, recipientPubkeys: [RECIPIENT], content: 'hi' });
+
+    expect(second.id).not.toBe(first.id);
+    expect(second.content).toBe(first.content);
+  });
+
+  it('tags the sender and every recipient as participants', () => {
+    const rumor = buildDmRumor({
+      senderPubkey: SENDER,
+      recipientPubkeys: [RECIPIENT, RECIPIENT, 'not-a-pubkey'],
+      content: 'hi',
+    });
+
+    expect(rumor.kind).toBe(DM_RUMOR_KIND);
+    expect(rumor.pubkey).toBe(SENDER);
+    expect(rumor.tags).toEqual([['p', SENDER], ['p', RECIPIENT]]);
+  });
+
+  it('throws when given no valid recipients', () => {
+    expect(() => buildDmRumor({
+      senderPubkey: SENDER,
+      recipientPubkeys: ['not-a-pubkey'],
+      content: 'hi',
+    })).toThrow(/at least one recipient/);
   });
 });
 
@@ -262,6 +526,22 @@ function createTestSigner(): { signer: NSecSigner; pubkey: string } {
   return { signer: new NSecSigner(sk), pubkey: getPublicKey(sk) };
 }
 
+async function fetchWithStubbedRelay(
+  wraps: NostrEvent[],
+  recipient: { signer: NSecSigner; pubkey: string },
+) {
+  relayStub.events = wraps;
+  try {
+    return await fetchDmMessages({
+      signer: recipient.signer,
+      currentUserPubkey: recipient.pubkey,
+      relayUrls: ['wss://relay.example'],
+    });
+  } finally {
+    relayStub.events = [];
+  }
+}
+
 function createDmTestWrap(recipientPubkey: string): NostrEvent {
   return {
     id: 'a'.repeat(64),
@@ -289,14 +569,6 @@ function createMockSigner(
 }
 
 describe('unwrapDmGiftWrap', () => {
-  // The happy-path round-trip (real NIP-44 encrypt → decrypt) is exercised in
-  // useDirectMessages.test.ts which mocks at the import boundary. Here we
-  // cannot run real nip44.v2 because src/test/setup.ts overrides global
-  // TextEncoder with node:util's TextEncoder, which produces a Uint8Array
-  // from a different realm than the @noble/hashes consumer expects, breaking
-  // its instance check. Failure-path tests below all run via mocked signers
-  // so they're unaffected.
-
   it('returns decrypt-failed when the signer.nip44.decrypt RPC throws', async () => {
     const recipient = createTestSigner();
     const wrap = createDmTestWrap(recipient.pubkey);

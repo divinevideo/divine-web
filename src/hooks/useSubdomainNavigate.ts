@@ -28,7 +28,11 @@ export function useSubdomainNavigate() {
       const { href, isExternal } = getSubdomainAwareUrl(pathOrDelta, ownerPubkey);
 
       if (isExternal) {
-        window.location.href = href;
+        if (navOptions.replace) {
+          window.location.replace(href);
+        } else {
+          window.location.href = href;
+        }
       } else {
         navigate(href, navOptions);
       }

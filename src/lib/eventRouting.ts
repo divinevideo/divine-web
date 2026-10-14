@@ -1,5 +1,6 @@
 import type { NostrEvent } from '@nostrify/nostrify';
 import { VIDEO_KINDS } from '@/types/video';
+import { isReservedListDTag, PEOPLE_LIST_KIND } from '@/lib/parsePeopleListFromEvent';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 
 const LIST_EVENT_KINDS = new Set([
@@ -17,6 +18,8 @@ const LIST_EVENT_KINDS = new Set([
 
 const NOTE_EVENT_KINDS = new Set([1, 1111]);
 
+export const VIDEO_LIST_EVENT_KIND = 30005;
+
 export function buildVideoPath(identifier: string): string {
   return `/video/${encodeURIComponent(identifier)}`;
 }
@@ -30,6 +33,10 @@ export function buildProfilePath(identifier: string): string {
 
 export function buildListPath(pubkey: string, listId: string): string {
   return `/list/${pubkey}/${encodeURIComponent(listId)}`;
+}
+
+export function buildPeopleListPath(pubkey: string, listId: string): string {
+  return `/people-lists/${pubkey}/${encodeURIComponent(listId)}`;
 }
 
 export function buildEventPath(eventId: string): string {
@@ -57,8 +64,12 @@ export function buildAddressableRoute(kind: number, pubkey: string, identifier: 
     return buildVideoPath(identifier);
   }
 
-  if (kind === 30005) {
+  if (kind === VIDEO_LIST_EVENT_KIND) {
     return buildListPath(pubkey, identifier);
+  }
+
+  if (kind === PEOPLE_LIST_KIND && !isReservedListDTag(identifier)) {
+    return buildPeopleListPath(pubkey, identifier);
   }
 
   return buildAddressableEventPath(kind, pubkey, identifier);
@@ -70,8 +81,12 @@ export function buildResolvedEventRoute(event: Pick<NostrEvent, 'id' | 'kind' | 
   }
 
   const dTag = getEventDTag(event);
-  if (event.kind === 30005 && dTag) {
+  if (dTag && event.kind === VIDEO_LIST_EVENT_KIND) {
     return buildListPath(event.pubkey, dTag);
+  }
+
+  if (dTag && event.kind === PEOPLE_LIST_KIND && !isReservedListDTag(dTag)) {
+    return buildPeopleListPath(event.pubkey, dTag);
   }
 
   return buildEventPath(event.id);

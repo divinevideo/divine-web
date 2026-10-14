@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateVideoList, type PlayOrder } from '@/hooks/useVideoLists';
 import { useNavigate } from 'react-router-dom';
+import { buildListPath } from '@/lib/eventRouting';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ import { Switch } from '@/components/ui/switch';
 import { CircleNotch as Loader2, List, X } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { slugifyListName } from '@/lib/listFormUtils';
 
 interface CreateListDialogProps {
   open: boolean;
@@ -75,7 +77,7 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
 
     setIsCreating(true);
     try {
-      const listId = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const listId = slugifyListName(name);
 
       await createList.mutateAsync({
         id: listId,
@@ -94,7 +96,7 @@ export function CreateListDialog({ open, onClose }: CreateListDialogProps) {
       });
 
       // Navigate to the new list
-      navigate(`/list/${user.pubkey}/${listId}`);
+      navigate(buildListPath(user.pubkey, listId));
       onClose();
     } catch {
       toast({

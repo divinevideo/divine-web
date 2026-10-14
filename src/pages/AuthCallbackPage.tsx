@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useDivineSession } from '@/hooks/useDivineSession';
-import { clearInviteHandoff } from '@/lib/authHandoff';
 import { exchangeDivineLoginCallback, parseDivineLoginCallback } from '@/lib/divineLogin';
 
 export default function AuthCallbackPage() {
@@ -32,8 +31,6 @@ export default function AuthCallbackPage() {
         if (result.token) {
           saveSession(result.token, null, false);
         }
-
-        clearInviteHandoff();
 
         if (!isCancelled) {
           navigate(result.returnPath || '/home', { replace: true });

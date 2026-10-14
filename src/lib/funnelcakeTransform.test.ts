@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { transformFunnelcakeVideo, transformToVideoPage } from './funnelcakeTransform';
+import { mergeVideoStats, parseFullEvent, transformFunnelcakeResponse, transformFunnelcakeVideo, transformToVideoPage } from './funnelcakeTransform';
 import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake';
+import type { ParsedVideoData } from '@/types/video';
 
 function makeRawVideo(overrides: Partial<FunnelcakeVideoRaw> = {}): FunnelcakeVideoRaw {
   return {
@@ -16,9 +17,20 @@ function makeRawVideo(overrides: Partial<FunnelcakeVideoRaw> = {}): FunnelcakeVi
   };
 }
 
+/**
+ * Unwrap a transform that is expected to succeed. The transform returns null for
+ * a row with no `d` tag; these cases all supply one, so unwrapping keeps the
+ * assertions flat. The guard itself is covered separately below.
+ */
+function transformOk(raw: FunnelcakeVideoRaw): ParsedVideoData {
+  const video = transformFunnelcakeVideo(raw);
+  if (!video) throw new Error('expected the row to transform');
+  return video;
+}
+
 describe('transformFunnelcakeVideo', () => {
   it('treats direct lookup videos with a platform tag as archived Vine imports', () => {
-    const video = transformFunnelcakeVideo(makeRawVideo({
+    const video = transformOk(makeRawVideo({
       tags: [
         ['platform', 'vine'],
         ['d', 'vine-id'],
@@ -33,7 +45,7 @@ describe('transformFunnelcakeVideo', () => {
   });
 
   it('prefers the Vine origin tag external id over the d tag', () => {
-    const video = transformFunnelcakeVideo(makeRawVideo({
+    const video = transformOk(makeRawVideo({
       d_tag: 'addressable-d-tag',
       tags: [
         ['origin', 'vine', 'origin-id', 'https://vine.co/v/origin-id'],
@@ -49,7 +61,7 @@ describe('transformFunnelcakeVideo', () => {
   });
 
   it('prefers archived Vine loop tags over current Divine loop fields', () => {
-    const video = transformFunnelcakeVideo(makeRawVideo({
+    const video = transformOk(makeRawVideo({
       platform: 'vine',
       loops: 28,
       content: 'Original stats: 296,752 loops - 5,753 likes',
@@ -63,8 +75,21 @@ describe('transformFunnelcakeVideo', () => {
     expect(video.loopCount).toBe(296752);
   });
 
+  it('preserves native Divine loop counts separately from view starts', () => {
+    const video = transformOk(makeRawVideo({
+      platform: '',
+      classic: false,
+      loops: 11,
+      views: 23,
+    }));
+
+    expect(video.isVineMigrated).toBe(false);
+    expect(video.loopCount).toBe(11);
+    expect(video.divineViewCount).toBe(23);
+  });
+
   it('preserves the age-restricted flag from the API payload', () => {
-    const video = transformFunnelcakeVideo(makeRawVideo({
+    const video = transformOk(makeRawVideo({
       age_restricted: true,
     }));
 
@@ -77,7 +102,7 @@ describe('transformFunnelcakeVideo', () => {
     // We sum them so the visible numbers reflect total activity (archive +
     // current), and native videos with no archive history still show real
     // current counts.
-    const native = transformFunnelcakeVideo(makeRawVideo({
+    const native = transformOk(makeRawVideo({
       embedded_likes: 0,
       embedded_comments: 0,
       embedded_reposts: 0,
@@ -90,7 +115,7 @@ describe('transformFunnelcakeVideo', () => {
     expect(native.commentCount).toBe(9);
     expect(native.repostCount).toBe(3);
 
-    const archived = transformFunnelcakeVideo(makeRawVideo({
+    const archived = transformOk(makeRawVideo({
       embedded_likes: 138577,
       embedded_comments: 3014,
       embedded_reposts: 37586,
@@ -109,12 +134,220 @@ describe('transformFunnelcakeVideo', () => {
   // verification dialog must lazy-fetch the single-video endpoint to recover
   // it. See VideoVerificationDetailsDialog.tsx.
   it('returns proofMode undefined when tags are absent (list endpoint shape)', () => {
-    const video = transformFunnelcakeVideo(makeRawVideo());
+    const video = transformOk(makeRawVideo());
     expect(video.proofMode).toBeUndefined();
   });
 
+  it('maps compact proof summary when list endpoint omits tags', () => {
+    const video = transformOk(makeRawVideo({
+      proof: {
+        status: 'present',
+        level: 'basic_proof',
+        checked_at: 1779494400,
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: true,
+          pgp_signature_present: true,
+          pgp_signature_valid: null,
+          device_attestation_present: false,
+          device_attestation_valid: null,
+          c2pa_manifest_present: false,
+          c2pa_manifest_valid: null,
+        },
+      },
+    }));
+
+    expect(video.proofMode?.level).toBe('basic_proof');
+    expect(video.proofMode?.manifest).toBe('summary:present');
+    expect(video.proofMode?.pgpFingerprint).toBe('summary:present');
+    expect(video.proofMode?.deviceAttestation).toBeUndefined();
+    expect(video.proofMode?.c2paManifestId).toBeUndefined();
+  });
+
+  it('uses compact proof summary when full event tags contain no proof data', () => {
+    const video = transformOk(makeRawVideo({
+      tags: [
+        ['d', 'vine-id-1'],
+        ['title', 'Plain tagged video'],
+      ],
+      proof: {
+        status: 'present',
+        level: 'basic_proof',
+        checked_at: 1779494400,
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: true,
+          pgp_signature_present: true,
+          pgp_signature_valid: null,
+        },
+      },
+    }));
+
+    expect(video.proofMode?.level).toBe('basic_proof');
+    expect(video.proofMode?.manifest).toBe('summary:present');
+    expect(video.proofMode?.pgpFingerprint).toBe('summary:present');
+  });
+
+  it('ignores invalid compact proof summaries', () => {
+    const video = transformOk(makeRawVideo({
+      proof: {
+        status: 'invalid',
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: false,
+          pgp_signature_present: true,
+          pgp_signature_valid: false,
+          device_attestation_present: true,
+          device_attestation_valid: false,
+          c2pa_manifest_present: true,
+          c2pa_manifest_valid: false,
+        },
+      },
+    }));
+
+    expect(video.proofMode).toBeUndefined();
+  });
+
+  it('defaults verified compact proof summaries to verified_web when level is missing', () => {
+    const video = transformOk(makeRawVideo({
+      proof: {
+        status: 'verified',
+        checked_at: 1779494400,
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: true,
+          pgp_signature_present: true,
+          pgp_signature_valid: true,
+          device_attestation_present: true,
+          device_attestation_valid: true,
+          c2pa_manifest_present: true,
+          c2pa_manifest_valid: true,
+        },
+      },
+    }));
+
+    expect(video.proofMode?.level).toBe('verified_web');
+    expect(video.proofMode?.manifest).toBe('summary:present');
+    expect(video.proofMode?.pgpFingerprint).toBe('summary:present');
+    expect(video.proofMode?.deviceAttestation).toBe('summary:present');
+    expect(video.proofMode?.c2paManifestId).toBe('summary:present');
+  });
+
+  it('caps verified_* summary levels to basic_proof when status is not verified', () => {
+    const present = transformOk(makeRawVideo({
+      proof: {
+        status: 'present',
+        level: 'verified_mobile',
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: true,
+        },
+      },
+    }));
+
+    expect(present.proofMode?.level).toBe('basic_proof');
+
+    const partial = transformOk(makeRawVideo({
+      proof: {
+        status: 'partial',
+        level: 'verified_web',
+        version: 1,
+        checks: {
+          pgp_signature_present: true,
+          pgp_signature_valid: null,
+        },
+      },
+    }));
+
+    expect(partial.proofMode?.level).toBe('basic_proof');
+  });
+
+  it('honors verified_* summary levels when status is verified', () => {
+    const video = transformOk(makeRawVideo({
+      proof: {
+        status: 'verified',
+        level: 'verified_mobile',
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: true,
+          device_attestation_present: true,
+          device_attestation_valid: true,
+        },
+      },
+    }));
+
+    expect(video.proofMode?.level).toBe('verified_mobile');
+  });
+
+  it('ignores verified summaries with no usable components', () => {
+    const video = transformOk(makeRawVideo({
+      proof: {
+        status: 'verified',
+        version: 1,
+        checks: {
+          proofmode_present: false,
+          proofmode_parse_ok: null,
+          pgp_signature_present: true,
+          pgp_signature_valid: false,
+          device_attestation_present: false,
+          device_attestation_valid: null,
+          c2pa_manifest_present: false,
+          c2pa_manifest_valid: null,
+        },
+      },
+    }));
+
+    expect(video.proofMode).toBeUndefined();
+  });
+
+  it('does not mark explicitly invalid proof components as present', () => {
+    const video = transformOk(makeRawVideo({
+      proof: {
+        status: 'present',
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: false,
+          pgp_signature_present: true,
+          pgp_signature_valid: false,
+          device_attestation_present: true,
+          device_attestation_valid: false,
+          c2pa_manifest_present: true,
+          c2pa_manifest_valid: false,
+        },
+      },
+    }));
+
+    expect(video.proofMode).toBeUndefined();
+  });
+
+  it('maps partial compact proof summaries only when a usable component is present', () => {
+    const video = transformOk(makeRawVideo({
+      proof: {
+        status: 'partial',
+        version: 1,
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: false,
+          c2pa_manifest_present: true,
+          c2pa_manifest_valid: null,
+        },
+      },
+    }));
+
+    expect(video.proofMode?.level).toBe('basic_proof');
+    expect(video.proofMode?.manifest).toBeUndefined();
+    expect(video.proofMode?.c2paManifestId).toBe('summary:present');
+  });
+
   it('extracts proofMode when verification tags are present (single-video shape)', () => {
-    const video = transformFunnelcakeVideo(makeRawVideo({
+    const video = transformOk(makeRawVideo({
       tags: [
         ['d', 'vine-id'],
         ['verification', 'verified_mobile'],
@@ -130,7 +363,7 @@ describe('transformFunnelcakeVideo', () => {
   });
 
   it('maps the raw Nostr content (description) to video.content, not the title', () => {
-    const video = transformFunnelcakeVideo(makeRawVideo({
+    const video = transformOk(makeRawVideo({
       title: 'First Divine Compilation 2026!',
       content: 'I just made the world’s first divine compilation.\n\nLink: https://youtu.be/abc',
     }));
@@ -140,13 +373,148 @@ describe('transformFunnelcakeVideo', () => {
   });
 
   it('leaves video.content empty when the API response has no content field', () => {
-    const video = transformFunnelcakeVideo(makeRawVideo({
+    const video = transformOk(makeRawVideo({
       title: 'A title with no description',
       content: undefined,
     }));
 
     expect(video.title).toBe('A title with no description');
     expect(video.content).toBe('');
+  });
+});
+
+describe('transformFunnelcakeVideo addressable coordinate guard', () => {
+  it('drops a row with no d tag, matching the relay parse path', () => {
+    // videoParser skips kind-34236 events with no d tag; every row here becomes
+    // a kind 34236, so a row with no d tag has no coordinate to be addressed by.
+    expect(transformFunnelcakeVideo(makeRawVideo({ d_tag: '' }))).toBeNull();
+  });
+
+  it('drops a row that omits d_tag entirely', () => {
+    expect(transformFunnelcakeVideo(makeRawVideo({ d_tag: undefined }))).toBeNull();
+  });
+
+  it('recovers the d tag from top-level tags when the row omits d_tag', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      d_tag: '',
+      tags: [['d', 'recovered-from-tags']],
+    }));
+
+    expect(video?.vineId).toBe('recovered-from-tags');
+  });
+
+  it('recovers the d tag from event_json when the row omits d_tag', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      d_tag: '',
+      event_json: JSON.stringify({ tags: [['d', 'recovered-from-event-json']] }),
+    }));
+
+    expect(video?.vineId).toBe('recovered-from-event-json');
+  });
+
+  it('keeps the top-level d_tag when both sources carry one', () => {
+    const video = transformFunnelcakeVideo(makeRawVideo({
+      d_tag: 'top-level',
+      tags: [['d', 'from-tags']],
+    }));
+
+    expect(video?.vineId).toBe('top-level');
+  });
+});
+
+describe('transformFunnelcakeResponse', () => {
+  it('drops coordinate-less rows instead of surfacing unaddressable videos', () => {
+    const videos = transformFunnelcakeResponse([
+      makeRawVideo({ id: 'has-d-tag', d_tag: 'vine-a' }),
+      makeRawVideo({ id: 'no-d-tag', d_tag: '' }),
+    ]);
+
+    expect(videos.map(v => v.id)).toEqual(['has-d-tag']);
+  });
+});
+
+describe('parseFullEvent', () => {
+  const verificationTags = [
+    ['d', 'vine-id'],
+    ['verification', 'verified_mobile'],
+  ];
+
+  const fullEventPayload = {
+    id: 'json-id',
+    pubkey: 'json-pubkey',
+    created_at: 1800000000,
+    kind: 34236,
+    tags: verificationTags,
+    content: 'from event_json',
+    sig: 'json-sig',
+  };
+
+  it('parses a string event_json payload', () => {
+    const event = parseFullEvent(
+      makeRawVideo({ event_json: JSON.stringify(fullEventPayload) }),
+      'video-1',
+      'pubkey-1',
+    );
+
+    expect(event).toEqual(fullEventPayload);
+  });
+
+  it('passes through an object event_json payload', () => {
+    const event = parseFullEvent(
+      makeRawVideo({ event_json: fullEventPayload }),
+      'video-1',
+      'pubkey-1',
+    );
+
+    expect(event).toEqual(fullEventPayload);
+  });
+
+  it('falls back to top-level tags when event_json is malformed', () => {
+    const event = parseFullEvent(
+      makeRawVideo({ event_json: '{not valid json', tags: verificationTags }),
+      'video-1',
+      'pubkey-1',
+    );
+
+    expect(event?.id).toBe('video-1');
+    expect(event?.pubkey).toBe('pubkey-1');
+    expect(event?.tags).toEqual(verificationTags);
+  });
+
+  it('returns undefined when event_json is malformed and no tags exist', () => {
+    const event = parseFullEvent(
+      makeRawVideo({ event_json: '{not valid json' }),
+      'video-1',
+      'pubkey-1',
+    );
+
+    expect(event).toBeUndefined();
+  });
+
+  it('defaults missing event fields from the raw payload', () => {
+    const event = parseFullEvent(
+      makeRawVideo({ event_json: { tags: verificationTags } }),
+      'video-1',
+      'pubkey-1',
+    );
+
+    expect(event).toEqual({
+      id: 'video-1',
+      pubkey: 'pubkey-1',
+      created_at: 1700000000,
+      kind: 34236,
+      tags: verificationTags,
+      content: 'Test content',
+      sig: '',
+    });
+  });
+
+  it('feeds event_json tags into proofMode extraction', () => {
+    const video = transformOk(makeRawVideo({
+      event_json: JSON.stringify(fullEventPayload),
+    }));
+
+    expect(video.proofMode?.level).toBe('verified_mobile');
   });
 });
 
@@ -160,6 +528,15 @@ function makeResponse(overrides: Partial<FunnelcakeResponse> = {}): FunnelcakeRe
 }
 
 describe('transformToVideoPage', () => {
+  it('normalizes bare edge-injected video arrays', () => {
+    const page = transformToVideoPage([makeRawVideo()]);
+
+    expect(page.videos).toHaveLength(1);
+    expect(page.videos[0]?.id).toBe('video-1');
+    expect(page.hasMore).toBe(false);
+    expect(page.nextCursor).toBeUndefined();
+  });
+
   describe('cursor type (recommendations)', () => {
     it('returns raw cursor string when cursorType is cursor', () => {
       const page = transformToVideoPage(makeResponse({ next_cursor: 'opaque-cursor-xyz' }), 'cursor');
@@ -197,11 +574,72 @@ describe('transformToVideoPage', () => {
     });
   });
 
+  // divine-web#380: infinite scroll re-arms only when its `dataLength` moves,
+  // and `videos` has already lost the rows that duplicated within the page and
+  // any that `transformFunnelcakeResponse` had to drop. The count the feed
+  // paginates on should not depend on how many rows survived that, so the row
+  // count the API returned travels alongside the parsed list.
+  describe('fetchedRows', () => {
+    it('reports the rows the API returned, not the parsed ones', () => {
+      const duplicate = makeRawVideo();
+      const page = transformToVideoPage(makeResponse({ videos: [duplicate, duplicate] }));
+
+      expect(page.videos).toHaveLength(1);
+      expect(page.fetchedRows).toBe(2);
+    });
+
+    it('counts bare edge-injected arrays too', () => {
+      expect(transformToVideoPage([makeRawVideo()]).fetchedRows).toBe(1);
+    });
+
+    it('is 0 when the response carries no videos array', () => {
+      expect(transformToVideoPage(makeResponse({ videos: undefined })).fetchedRows).toBe(0);
+    });
+  });
+
   it('stops pagination when has_more is false', () => {
     const page = transformToVideoPage(makeResponse({ has_more: false }));
     expect(page.hasMore).toBe(false);
     expect(page.nextCursor).toBeUndefined();
     expect(page.offset).toBeUndefined();
     expect(page.rawCursor).toBeUndefined();
+  });
+});
+
+describe('transformFunnelcakeVideo sha256', () => {
+  const urlHash = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+  const bodyHash = 'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+
+  it('prefers a well-formed backend hash over the URL-derived one', () => {
+    expect(transformOk(makeRawVideo({ sha256: bodyHash })).sha256).toBe(bodyHash);
+    expect(transformOk(makeRawVideo({ sha256: bodyHash.toUpperCase() })).sha256).toBe(bodyHash);
+  });
+
+  it('falls back to the URL when the backend hash is malformed', () => {
+    // A truthy non-hash must not shadow the derivation: moderation lookups
+    // return null for anything that is not 64 hex, so the age-gate check
+    // would silently no-op.
+    expect(transformOk(makeRawVideo({ sha256: 'not-a-hash' })).sha256).toBe(urlHash);
+    expect(transformOk(makeRawVideo({ sha256: bodyHash.slice(0, 63) })).sha256).toBe(urlHash);
+    expect(transformOk(makeRawVideo({ sha256: '  ' })).sha256).toBe(urlHash);
+  });
+
+  it('still derives from the URL when the backend sends no hash', () => {
+    expect(transformOk(makeRawVideo()).sha256).toBe(urlHash);
+  });
+});
+
+describe('mergeVideoStats', () => {
+  it('refreshes native Divine loop counts from stats', () => {
+    const video = transformOk(makeRawVideo({
+      platform: '',
+      classic: false,
+      loops: 2,
+      views: 7,
+    }));
+
+    const merged = mergeVideoStats(video, { loops: 11 });
+
+    expect(merged.loopCount).toBe(11);
   });
 });

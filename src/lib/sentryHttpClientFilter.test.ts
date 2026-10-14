@@ -1,5 +1,114 @@
 import { describe, expect, it } from 'vitest';
-import { shouldDropHandledMediaHttpClientEvent } from '@/lib/sentryHttpClientFilter';
+import {
+  shouldDropHandledKeyExportHttpClientEvent,
+  shouldDropKeyExportBreadcrumb,
+  shouldDropKeyExportReplayEvent,
+  shouldDropFunnelcakeHttpClientEvent,
+  shouldDropHandledMediaHttpClientEvent,
+} from '@/lib/sentryHttpClientFilter';
+
+describe('shouldDropHandledKeyExportHttpClientEvent', () => {
+  it.each([401, 403, 404, 429])('drops handled key-export status %s', (statusCode) => {
+    const event = createHttpClientEvent({
+      url: 'https://login.divine.video/api/user/export-key',
+      statusCode,
+    });
+
+    expect(shouldDropHandledKeyExportHttpClientEvent(event)).toBe(true);
+  });
+
+  it('keeps server failures from the key-export endpoint', () => {
+    const event = createHttpClientEvent({
+      url: 'https://login.divine.video/api/user/export-key',
+      statusCode: 503,
+    });
+
+    expect(shouldDropHandledKeyExportHttpClientEvent(event)).toBe(false);
+  });
+
+  it('keeps failures from other login endpoints', () => {
+    const event = createHttpClientEvent({
+      url: 'https://login.divine.video/api/user/change-key',
+      statusCode: 403,
+    });
+
+    expect(shouldDropHandledKeyExportHttpClientEvent(event)).toBe(false);
+  });
+});
+
+describe('shouldDropKeyExportBreadcrumb', () => {
+  it.each(['fetch', 'xhr'])('drops key-export %s breadcrumbs', (category) => {
+    expect(shouldDropKeyExportBreadcrumb({
+      category,
+      type: 'http',
+      data: {
+        url: 'https://login.divine.video/api/user/export-key',
+        status_code: 403,
+      },
+    })).toBe(true);
+  });
+
+  it('keeps breadcrumbs for other login endpoints', () => {
+    expect(shouldDropKeyExportBreadcrumb({
+      category: 'fetch',
+      type: 'http',
+      data: { url: 'https://login.divine.video/api/user/account' },
+    })).toBe(false);
+  });
+
+  it('drops the exact key-export URL even when the breadcrumb shape changes', () => {
+    expect(shouldDropKeyExportBreadcrumb({
+      category: 'request',
+      data: { url: 'https://login.divine.video/api/user/export-key' },
+    })).toBe(true);
+  });
+});
+
+describe('shouldDropKeyExportReplayEvent', () => {
+  it.each(['resource.fetch', 'resource.xhr'])('drops key-export %s spans', (op) => {
+    const event = {
+      data: {
+        tag: 'performanceSpan',
+        payload: {
+          op,
+          description: 'https://login.divine.video/api/user/export-key',
+          data: { statusCode: 403, request: { size: 52 } },
+        },
+      },
+    };
+
+    expect(shouldDropKeyExportReplayEvent(event)).toBe(true);
+  });
+
+  it('keeps other replay network spans', () => {
+    const event = {
+      data: {
+        tag: 'performanceSpan',
+        payload: {
+          op: 'resource.fetch',
+          description: 'https://login.divine.video/api/user/account',
+          data: { statusCode: 403 },
+        },
+      },
+    };
+
+    expect(shouldDropKeyExportReplayEvent(event)).toBe(false);
+  });
+
+  it('keeps non-network replay events', () => {
+    const event = {
+      data: {
+        tag: 'breadcrumb',
+        payload: {
+          op: 'resource.fetch',
+          description: 'https://login.divine.video/api/user/export-key',
+        },
+      },
+    };
+
+    expect(shouldDropKeyExportReplayEvent(event)).toBe(false);
+  });
+});
 
 interface TestEventOptions {
   url?: string;
@@ -134,5 +243,131 @@ describe('shouldDropHandledMediaHttpClientEvent', () => {
     });
 
     expect(shouldDropHandledMediaHttpClientEvent(event)).toBe(false);
+  });
+});
+
+describe('shouldDropFunnelcakeHttpClientEvent', () => {
+  it('keeps list feed failures without a replacement fallback report', () => {
+    const event = createHttpClientEvent({
+      url: 'https://api.divine.video/api/videos?sort=trending',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
+  it('drops single-video lookup failures that have a VideoPage fallback report', () => {
+    const event = createHttpClientEvent({
+      url: `https://api.divine.video/api/videos/${'a'.repeat(64)}`,
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(true);
+  });
+
+  it('drops user profile failures that have hook fallback reports', () => {
+    const event = createHttpClientEvent({
+      url: `https://api.divine.video/api/users/${'a'.repeat(64)}`,
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(true);
+  });
+
+  it('drops bulk user failures that have a hook fallback report', () => {
+    const event = createHttpClientEvent({
+      url: 'https://api.divine.video/api/users/bulk',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(true);
+  });
+
+  it('keeps leaderboard failures without a replacement fallback report', () => {
+    const event = createHttpClientEvent({
+      url: 'https://api.divine.video/api/leaderboard/creators?period=alltime&limit=500',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
+  it('drops failures on the staging Funnelcake API host', () => {
+    const event = createHttpClientEvent({
+      url: 'https://api.staging.divine.video/api/search/profiles?q=jack',
+      statusCode: 502,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(true);
+  });
+
+  it('drops failures on the relay backup /api/ path', () => {
+    const event = createHttpClientEvent({
+      url: 'https://relay.divine.video/api/search/profiles?q=jack',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(true);
+  });
+
+  it('keeps notification failures without a replacement fallback report', () => {
+    const event = createHttpClientEvent({
+      url: `https://relay.divine.video/api/users/${'a'.repeat(64)}/notifications`,
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
+  it('keeps platform stats failures without a replacement fallback report', () => {
+    const event = createHttpClientEvent({
+      url: 'https://api.divine.video/api/stats',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
+  it('keeps relay failures outside the /api/ path', () => {
+    const event = createHttpClientEvent({
+      url: 'https://relay.divine.video/health',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
+  it('keeps http client failures on unrelated hosts', () => {
+    const event = createHttpClientEvent({
+      url: 'https://media.divine.video/43debb/hls/master.m3u8',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
+  it('keeps non-http-client events that mention the Funnelcake host', () => {
+    const event = {
+      request: { url: 'https://api.divine.video/api/videos' },
+      exception: {
+        values: [
+          {
+            value: 'Funnelcake fallback to WebSocket in useAuthor: Funnelcake API error: 500',
+            mechanism: { type: 'generic' },
+          },
+        ],
+      },
+    };
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
+  });
+
+  it('keeps events with invalid URLs', () => {
+    const event = createHttpClientEvent({
+      url: 'not-a-valid-url',
+      statusCode: 500,
+    });
+
+    expect(shouldDropFunnelcakeHttpClientEvent(event)).toBe(false);
   });
 });

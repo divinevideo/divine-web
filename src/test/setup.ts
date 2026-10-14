@@ -1,6 +1,16 @@
 import '@testing-library/jest-dom';
-import { TextDecoder, TextEncoder } from 'node:util';
+import { TextDecoder, TextEncoder as NodeTextEncoder } from 'node:util';
 import { vi } from 'vitest';
+
+// node:util's TextEncoder returns a Uint8Array from Node's realm, which
+// @noble/hashes rejects on its `instanceof Uint8Array` check — that is what
+// blocked every real-crypto round trip in this suite. Re-wrap the output in a
+// same-realm Uint8Array so nostr-tools' signing and NIP-44 paths are testable.
+class TextEncoder extends NodeTextEncoder {
+  encode(input?: string): Uint8Array {
+    return Uint8Array.from(super.encode(input));
+  }
+}
 
 Object.defineProperty(global, 'TextEncoder', {
   writable: true,
@@ -77,6 +87,22 @@ Object.defineProperty(window, 'matchMedia', {
 Object.defineProperty(window, 'scrollTo', {
   writable: true,
   value: vi.fn(),
+});
+
+// Mock localStorage (jsdom requires a URL to expose localStorage; provide a
+// minimal in-memory implementation so providers like NostrLoginProvider work
+// in unit tests without a real browser origin).
+const _localStorageMap = new Map<string, string>();
+Object.defineProperty(window, 'localStorage', {
+  configurable: true,
+  value: {
+    getItem: (key: string) => _localStorageMap.get(key) ?? null,
+    setItem: (key: string, value: string) => { _localStorageMap.set(key, value); },
+    removeItem: (key: string) => { _localStorageMap.delete(key); },
+    clear: () => { _localStorageMap.clear(); },
+    key: (index: number) => Array.from(_localStorageMap.keys())[index] ?? null,
+    get length() { return _localStorageMap.size; },
+  } satisfies Storage,
 });
 
 // Mock IntersectionObserver

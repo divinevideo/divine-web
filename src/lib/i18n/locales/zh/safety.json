@@ -1,0 +1,20 @@
+{
+  "title": "安全标准",
+  "updated": "最后更新：2026年3月30日",
+  "sections": {
+    "overview": "1. 概述",
+    "definitions": "2. 定义",
+    "prohibited": "3. 禁止内容与行为",
+    "childSafety": "4. 儿童安全",
+    "matureContent": "5. 限制级内容",
+    "integrity": "6. 平台完整性与滥用",
+    "enforcement": "7. 执行",
+    "moderation": "8. 审核方式",
+    "reporting": "9. 举报",
+    "userControls": "10. 用户控制",
+    "decentralization": "11. 去中心化的局限",
+    "automated": "12. 自动化决策",
+    "appeals": "13. 申诉",
+    "updates": "14. 更新"
+  }
+}

@@ -1,4 +1,4 @@
-# URL Guide for Linking to diVine
+# URL Guide for Linking to Divine
 
 This guide explains how to create links to videos, users, and content on divine.video.
 
@@ -59,11 +59,20 @@ https://divine.video/u/{identifier}
 
 Supports:
 - **Vine User IDs**: 15-20 digit numeric strings (e.g., `1080167736266633216`)
-- **NIP-05 identifiers**: Coming soon (e.g., `username@domain.com`)
+- **Bare NIP-05 local part on the default apex**: e.g. `jacky` resolves to
+  `_@jacky.divine.video` (and `jacky@divine.video`) — the same profile as
+  visiting `https://jacky.divine.video`.
+- **Explicit NIP-05 segments**: `_@x.divine.video` or `x.divine.video` for
+  the default apex, `_@x.dvine.video` or `x.dvine.video` for the alternate
+  apex, and any third-party `local.domain` for external NIP-05s.
 
-**Example:**
+**Examples:**
 ```
-https://divine.video/u/1080167736266633216
+https://divine.video/u/1080167736266633216     # Vine user ID
+https://divine.video/u/jacky                   # bare local part on the default apex
+https://divine.video/u/jacky.divine.video      # explicit default apex
+https://divine.video/u/jacky.dvine.video       # explicit alternate apex
+https://divine.video/u/alice.primal.net        # third-party NIP-05
 ```
 
 ### Using nprofile (Nostr Profile)
@@ -144,8 +153,8 @@ View all lists for the logged-in user (requires login):
 https://divine.video/lists
 ```
 
-### Specific List
-View a specific list's videos (requires login):
+### Specific Video List
+View a specific NIP-51 kind `30005` video list:
 ```
 https://divine.video/list/{pubkey}/{listId}
 ```
@@ -153,6 +162,17 @@ https://divine.video/list/{pubkey}/{listId}
 **Example:**
 ```
 https://divine.video/list/abc123.../my-favorites
+```
+
+### Specific People List
+View a specific NIP-51 kind `30000` people list:
+```
+https://divine.video/people-lists/{pubkey}/{listId}
+```
+
+**Example:**
+```
+https://divine.video/people-lists/abc123.../friends
 ```
 
 ## Nostr Integration
@@ -192,23 +212,23 @@ const hashtagUrl = `https://divine.video/hashtag/${tag}`;
 ```html
 <!-- Video link -->
 <a href="https://divine.video/video/a1b2c3d4e5f6789...">
-  Watch this video on diVine
+  Watch this video on Divine
 </a>
 
 <!-- Profile link -->
 <a href="https://divine.video/profile/npub1abc123...">
-  View profile on diVine
+  View profile on Divine
 </a>
 
 <!-- Hashtag link -->
 <a href="https://divine.video/hashtag/comedy">
-  #comedy videos on diVine
+  #comedy videos on Divine
 </a>
 ```
 
 ### Markdown
 ```markdown
-[Watch on diVine](https://divine.video/video/a1b2c3d4e5f6789...)
+[Watch on Divine](https://divine.video/video/a1b2c3d4e5f6789...)
 
 [View profile](https://divine.video/profile/npub1abc123...)
 
@@ -241,11 +261,12 @@ All video and profile URLs include Open Graph and Twitter Card metadata for rich
 - Profile pages: `/profile/{npub}`, `/u/{userId}`
 - Video pages: `/video/{id}`
 - Search: `/search`
+- List detail: `/list/{pubkey}/{listId}`, `/people-lists/{pubkey}/{listId}`
 - All informational pages: `/about`, `/faq`, `/privacy`, etc.
 
 ### Login-Required Routes
 - Home feed: `/home`
-- Lists: `/lists`, `/list/{pubkey}/{listId}`
+- Own list gallery: `/lists`
 - Moderation settings: `/settings/moderation`
 
 ## Best Practices
@@ -268,7 +289,6 @@ All video and profile URLs include Open Graph and Twitter Card metadata for rich
 
 Planned URL features:
 - Full `note` / `nevent` / `naddr` support for video links
-- NIP-05 username lookups in `/u/` route
 - Relay hint support in video URLs
 - Deep linking with video timestamps
 

@@ -1,14 +1,15 @@
-// ABOUTME: Notifications page showing social interactions (likes, comments, follows, reposts, zaps)
-// ABOUTME: Simple list with infinite scroll, marks all as read on page open
+// ABOUTME: Notifications page showing social interactions (likes, comments, follows, reposts)
+// ABOUTME: Infinite list that marks All-tab visits read after a successful load
 
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bell } from '@phosphor-icons/react';
-import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotifications';
-import { NotificationItem } from '@/components/NotificationItem';
+import { useHydratedNotifications } from '@/hooks/useHydratedNotifications';
+import { useMarkNotificationsRead } from '@/hooks/useNotifications';
+import { VideoNotificationRow, ActorNotificationRow } from '@/components/notifications/NotificationRows';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { Notification, NotificationCategory } from '@/types/notification';
+import type { NotificationItem, NotificationCategory } from '@/types/notification';
 
 const NOTIFICATION_TAB_VALUES: NotificationCategory[] = [
   'all',
@@ -17,7 +18,6 @@ const NOTIFICATION_TAB_VALUES: NotificationCategory[] = [
   'comments',
   'follows',
   'reposts',
-  'zaps',
 ];
 
 export default function NotificationsPage() {
@@ -54,66 +54,82 @@ export default function NotificationsPage() {
       title: t('notificationsPage.empty.reposts.title'),
       description: t('notificationsPage.empty.reposts.description'),
     },
-    zaps: {
-      title: t('notificationsPage.empty.zaps.title'),
-      description: t('notificationsPage.empty.zaps.description'),
-    },
   };
+
   const {
-    data,
+    items,
     isLoading,
+    isSuccess,
     isError,
     error,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useNotifications({ category });
+  } = useHydratedNotifications({ category });
 
-  const markRead = useMarkNotificationsRead();
-  const hasCapturedInitialUnread = useRef(false);
+  // Destructured because useMutation returns a fresh object every render, so
+  // depending on the whole result re-ran the effect below on every render.
+  const { mutate: markAllRead } = useMarkNotificationsRead();
+  const hasMarkedRead = useRef(false);
   const [initialUnreadIds, setInitialUnreadIds] = useState<Set<string>>(() => new Set());
 
-  // Flatten all pages into a single array of notifications
-  const notifications: Notification[] = useMemo(
-    () => data?.pages.flatMap((p) => p.notifications) ?? [],
-    [data?.pages],
-  );
+  useEffect(() => {
+    if (category !== 'all') return;
+    if (!isSuccess) return;
+    if (hasMarkedRead.current) return;
+
+    hasMarkedRead.current = true;
+    markAllRead(undefined);
+  }, [category, isSuccess, markAllRead]);
+
+  // Keep a snapshot of unread rawIds so the list can still show what was new
+  // when the user arrived, even after optimistic updates flip everything to
+  // read in the cache. The snapshot accumulates across pages: under infinite
+  // scroll a row that is still unread when page 2 arrives was also unread when
+  // the user landed, so it belongs under "New".
+  useEffect(() => {
+    if (category !== 'all') return;
+    const unreadIds = items
+      .filter((n) => !n.isRead)
+      .flatMap((n) => n.rawIds);
+
+    if (unreadIds.length > 0) {
+      setInitialUnreadIds((prev) => {
+        const next = new Set(prev);
+        let added = false;
+        for (const id of unreadIds) {
+          if (!next.has(id)) {
+            next.add(id);
+            added = true;
+          }
+        }
+        return added ? next : prev;
+      });
+    }
+  }, [category, items]);
 
   const newNotifications = useMemo(
-    () => notifications.filter((notification) => initialUnreadIds.has(notification.id)),
-    [notifications, initialUnreadIds],
+    () => items.filter((n) => n.rawIds.some((id) => initialUnreadIds.has(id))),
+    [items, initialUnreadIds],
   );
 
   const earlierNotifications = useMemo(
-    () => notifications.filter((notification) => !initialUnreadIds.has(notification.id)),
-    [notifications, initialUnreadIds],
+    () => items.filter((n) => !n.rawIds.some((id) => initialUnreadIds.has(id))),
+    [items, initialUnreadIds],
   );
-
-  // Mark all as read on page open (once, when first page loads).
-  // Keep a snapshot of initially unread rows so the list can still show
-  // what was new when the user arrived, even after optimistic updates flip
-  // everything to read in the cache.
-  useEffect(() => {
-    if (category !== 'all') return;
-    if (hasCapturedInitialUnread.current) return;
-    if (notifications.length === 0) return;
-
-    const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
-    hasCapturedInitialUnread.current = true;
-
-    if (unreadIds.length === 0) return;
-
-    setInitialUnreadIds(new Set(unreadIds));
-    markRead.mutate(undefined);
-  }, [category, notifications, markRead]);
 
   const emptyState = EMPTY_STATE_COPY[category];
 
-  const renderNotifications = (items: Notification[]) => (
+  const renderNotificationRow = (notification: NotificationItem) =>
+    notification.kind === 'video' ? (
+      <VideoNotificationRow key={notification.id} notification={notification} />
+    ) : (
+      <ActorNotificationRow key={notification.id} notification={notification} />
+    );
+
+  const renderNotifications = (notifs: NotificationItem[]) => (
     <div className="divide-y divide-border">
-      {items.map((notification) => (
-        <NotificationItem key={notification.id} notification={notification} />
-      ))}
+      {notifs.map(renderNotificationRow)}
     </div>
   );
 
@@ -184,7 +200,7 @@ export default function NotificationsPage() {
       )}
 
       {/* Empty state */}
-      {!isLoading && !isError && notifications.length === 0 && (
+      {!isLoading && !isError && items.length === 0 && (
         <div className="text-center py-16">
           <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-lg font-medium mb-1">{emptyState.title}</p>
@@ -193,7 +209,7 @@ export default function NotificationsPage() {
       )}
 
       {/* Notification list */}
-      {notifications.length > 0 && (
+      {items.length > 0 && (
         category === 'all' && initialUnreadIds.size > 0 ? (
           <div className="space-y-6">
             {newNotifications.length > 0 && (
@@ -214,7 +230,7 @@ export default function NotificationsPage() {
             )}
           </div>
         ) : (
-          renderNotifications(notifications)
+          renderNotifications(items)
         )
       )}
 

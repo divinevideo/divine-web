@@ -1,0 +1,378 @@
+// ABOUTME: Grouped notification row components for the new video-grouping notifications UI
+// ABOUTME: Renders VideoNotificationRow (like/comment/repost) and ActorNotificationRow (follow)
+
+import { useTranslation } from 'react-i18next';
+import { Heart, Repeat, ChatCircle, UserPlus } from '@phosphor-icons/react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { BrandLogo } from '@/components/brand/BrandLogo';
+import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { buildVideoPath } from '@/lib/eventRouting';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { formatRelativeTime } from '@/lib/notificationTransform';
+import { cn } from '@/lib/utils';
+import type { VideoNotification, ActorNotification, ActorInfo } from '@/types/notification';
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/** Up to 3 overlapping 28×28 avatars + +N overflow circle. */
+function NotificationAvatarStack({
+  actors,
+  totalCount,
+  onAvatarClick,
+}: {
+  actors: ActorInfo[];
+  totalCount: number;
+  onAvatarClick: (actor: ActorInfo) => void;
+}) {
+  const { t } = useTranslation('common');
+  const visible = actors.slice(0, 3);
+  const overflow = totalCount - actors.length;
+
+  return (
+    <div className="flex items-center">
+      {visible.map((actor, index) => (
+        <button
+          key={actor.pubkey}
+          type="button"
+          aria-label={t('notificationsPage.a11y.viewProfile', { name: actor.displayName })}
+          onClick={() => onAvatarClick(actor)}
+          className={cn(
+            'relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+            // Logical margin: the stack lays out right-to-left under dir="rtl",
+            // where a negative left margin pulls avatars apart instead of
+            // overlapping them.
+            index > 0 && '-ms-2',
+          )}
+          style={{ zIndex: visible.length - index }}
+        >
+          <Avatar size="xs" className="h-7 w-7 rounded-full">
+            <AvatarImage src={actor.avatarUrl} alt={actor.displayName} />
+            <AvatarFallback>{actor.displayName[0]?.toUpperCase() ?? '?'}</AvatarFallback>
+          </Avatar>
+        </button>
+      ))}
+      {overflow > 0 && (
+        <span className="-ms-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-background bg-muted text-[10px] font-semibold text-muted-foreground">
+          +{overflow}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 32×32 colored circle with a Phosphor icon.
+ *
+ * The icon sits on a 15% tint of its own hue, so the surface luminance tracks
+ * the theme and no single shade clears the WCAG 1.4.11 3:1 floor in both. Each
+ * icon therefore takes a light-theme shade and a dark-theme one; measured
+ * against the tint over --background, worst case (hover, muted/50):
+ *
+ *   like     red-600 / red-400        3.63 : 5.06
+ *   repost   green-700 / green-400    4.05 : 6.80
+ *   comment  blue-600 / blue-400      3.98 : 5.12
+ *   follow   violet-600 / violet-400  4.33 : 5.00
+ */
+function NotificationTypeIconChip({
+  type,
+  isRead,
+}: {
+  type: VideoNotification['type'] | 'follow';
+  isRead: boolean;
+}) {
+  const weight = isRead ? 'bold' : 'fill';
+
+  switch (type) {
+    // A like on your comment is still a like, so it keeps the heart chip; the
+    // message copy is what distinguishes it from a like on your video.
+    case 'like':
+    case 'commentLike':
+      return (
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/15">
+          <Heart className="h-4 w-4 text-red-600 dark:text-red-400" weight={weight} />
+        </span>
+      );
+    case 'repost':
+      return (
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/15">
+          <Repeat className="h-4 w-4 text-green-700 dark:text-green-400" weight={weight} />
+        </span>
+      );
+    case 'comment':
+      return (
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500/15">
+          <ChatCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" weight={weight} />
+        </span>
+      );
+    case 'follow':
+      return (
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-500/15">
+          <UserPlus className="h-4 w-4 text-violet-600 dark:text-violet-400" weight={weight} />
+        </span>
+      );
+  }
+}
+
+/** 72×72 thumbnail with placeholder when thumbnailUrl is missing. */
+/**
+ * Unread state otherwise reaches the DOM only as a background tint and a
+ * heavier icon weight, neither of which carries into an accessible name. The
+ * New/Earlier headings cover some of this, but they render only on the `all`
+ * tab, so every other tab exposed no unread state at all.
+ */
+function UnreadMarker({ isRead }: { isRead: boolean }) {
+  const { t } = useTranslation();
+
+  if (isRead) return null;
+
+  return <span className="sr-only">{t('notificationsPage.a11y.unread')}</span>;
+}
+
+function NotificationVideoThumbnail({
+  thumbnailUrl,
+  title,
+  onClick,
+}: {
+  thumbnailUrl?: string;
+  title: string;
+  onClick: () => void;
+}) {
+  const { t } = useTranslation('common');
+
+  return (
+    <button
+      type="button"
+      aria-label={t('notificationsPage.a11y.openVideo', { title })}
+      onClick={onClick}
+      className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[14px] border-2 border-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    >
+      {thumbnailUrl ? (
+        <img
+          src={thumbnailUrl}
+          alt=""
+          width={72}
+          height={72}
+          loading="lazy"
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <span
+          className="flex h-full w-full items-center justify-center bg-muted"
+        >
+          <BrandLogo className="text-[10px] text-muted-foreground dark:text-muted-foreground" />
+        </span>
+      )}
+    </button>
+  );
+}
+
+type TFunction = ReturnType<typeof useTranslation>['t'];
+
+/**
+ * Message keys come in two shapes so translators get a whole sentence rather
+ * than a verb fragment the JSX concatenates onto a bare title. Languages that
+ * put the verb last (ja, ko, tr) cannot reorder a fragment.
+ */
+function getVerbKey(type: VideoNotification['type'], hasTitle: boolean): string {
+  switch (type) {
+    case 'like':
+      return hasTitle
+        ? 'notificationsPage.message.likedTitled'
+        : 'notificationsPage.message.liked';
+    case 'commentLike':
+      return hasTitle
+        ? 'notificationsPage.message.likedCommentTitled'
+        : 'notificationsPage.message.likedComment';
+    case 'comment':
+      return hasTitle
+        ? 'notificationsPage.message.commentedTitled'
+        : 'notificationsPage.message.commented';
+    case 'repost':
+      return hasTitle
+        ? 'notificationsPage.message.repostedTitled'
+        : 'notificationsPage.message.reposted';
+  }
+}
+
+interface MessageParts {
+  firstName: string;
+  othersText: string | null;
+  /** Complete sentence: either "liked <title>" or "liked your video". */
+  messageText: string;
+  /** Accessible name for the thumbnail. */
+  titleText: string;
+}
+
+function formatGroupedMessage(notification: VideoNotification, t: TFunction): MessageParts {
+  const firstName = notification.actors[0]?.displayName ?? '';
+  const othersCount = notification.totalCount - 1;
+  const othersText =
+    othersCount > 0
+      ? t('notificationsPage.message.andOthers', { count: othersCount })
+      : null;
+  const videoTitle = notification.videoTitle?.trim();
+  const titleText = videoTitle || t('notificationsPage.video.untitled');
+  const messageText = t(getVerbKey(notification.type, Boolean(videoTitle)), {
+    title: videoTitle,
+  });
+
+  return { firstName, othersText, messageText, titleText };
+}
+
+// ---------------------------------------------------------------------------
+// Public row components
+// ---------------------------------------------------------------------------
+
+export function VideoNotificationRow({
+  notification,
+}: {
+  notification: VideoNotification;
+}): JSX.Element {
+  const { t } = useTranslation('common');
+  const navigate = useSubdomainNavigate();
+
+  const { firstName, othersText, messageText, titleText } = formatGroupedMessage(notification, t);
+  const showInlineTimestamp = notification.type !== 'comment' || !notification.commentText;
+
+  const handleVideoActivate = () => {
+    // d-tags are author-chosen strings, so the identifier has to be encoded.
+    navigate(buildVideoPath(notification.videoEventId));
+  };
+
+  const handleAvatarClick = (actor: ActorInfo) => {
+    navigate(
+      buildProfileLinkPath({ pubkey: actor.pubkey, nip05: actor.nip05, fallbackRoute: 'profile' }),
+    );
+  };
+
+  return (
+    <div
+      className={cn(
+        'flex w-full items-start gap-3 p-3 transition-colors hover:bg-muted/50',
+        !notification.isRead && 'bg-muted/30',
+      )}
+    >
+      <UnreadMarker isRead={notification.isRead} />
+
+      {/* Leading type icon chip */}
+      <NotificationTypeIconChip type={notification.type} isRead={notification.isRead} />
+
+      {/* Middle: avatar stack + message */}
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <NotificationAvatarStack
+          actors={notification.actors}
+          totalCount={notification.totalCount}
+          onAvatarClick={(actor) => {
+            handleAvatarClick(actor);
+          }}
+        />
+
+        {/* Message text — timestamp inlined at end (omitted for comment rows; see quote box below) */}
+        <button
+          type="button"
+          onClick={handleVideoActivate}
+          className="line-clamp-3 w-full break-words text-left text-sm leading-snug focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <span className="font-semibold">{firstName}</span>
+          {othersText && (
+            <>
+              {' '}
+              <span className="text-muted-foreground">{othersText}</span>
+            </>
+          )}
+          {' '}
+          <span className="text-muted-foreground">{messageText}</span>
+          {showInlineTimestamp && (
+            <>
+              {' · '}
+              <span
+                data-testid="notification-timestamp"
+                className="text-xs text-muted-foreground"
+              >
+                {formatRelativeTime(notification.timestamp)}
+              </span>
+            </>
+          )}
+        </button>
+
+        {/* Comment quote — timestamp lives inside the quote box for comment rows */}
+        {notification.type === 'comment' && notification.commentText && (
+          <p className="mt-0.5 line-clamp-2 rounded bg-muted/50 px-2 py-1 text-xs text-muted-foreground">
+            {notification.commentText}
+            {' · '}
+            <span data-testid="notification-timestamp">
+              {formatRelativeTime(notification.timestamp)}
+            </span>
+          </p>
+        )}
+      </div>
+
+      {/* Right: thumbnail */}
+      <NotificationVideoThumbnail
+        thumbnailUrl={notification.videoThumbnailUrl}
+        title={titleText}
+        onClick={handleVideoActivate}
+      />
+    </div>
+  );
+}
+
+export function ActorNotificationRow({
+  notification,
+}: {
+  notification: ActorNotification;
+}): JSX.Element {
+  const { t } = useTranslation('common');
+  const navigate = useSubdomainNavigate();
+
+  const { actor } = notification;
+  const verbText = t('notificationsPage.message.followed');
+  const timeText = formatRelativeTime(notification.timestamp);
+
+  const handleRowActivate = () => {
+    navigate(
+      buildProfileLinkPath({ pubkey: actor.pubkey, nip05: actor.nip05, fallbackRoute: 'profile' }),
+    );
+  };
+
+  return (
+    <div
+      className={cn(
+        'flex w-full items-center gap-3 p-3 transition-colors hover:bg-muted/50',
+        !notification.isRead && 'bg-muted/30',
+      )}
+    >
+      <UnreadMarker isRead={notification.isRead} />
+
+      {/* Leading type icon chip */}
+      <NotificationTypeIconChip type="follow" isRead={notification.isRead} />
+
+      {/* Single avatar */}
+      <button
+        type="button"
+        aria-label={t('notificationsPage.a11y.viewProfile', { name: actor.displayName })}
+        onClick={handleRowActivate}
+        className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        <Avatar size="xs" className="h-7 w-7 rounded-full">
+          <AvatarImage src={actor.avatarUrl} alt={actor.displayName} />
+          <AvatarFallback>{actor.displayName[0]?.toUpperCase() ?? '?'}</AvatarFallback>
+        </Avatar>
+      </button>
+
+      {/* Message text */}
+      <button
+        type="button"
+        onClick={handleRowActivate}
+        className="flex-1 text-left text-sm leading-snug focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        <span className="font-semibold">{actor.displayName}</span>{' '}
+        <span className="text-muted-foreground">{verbText}</span>
+        {' · '}
+        <span className="text-xs text-muted-foreground">{timeText}</span>
+      </button>
+    </div>
+  );
+}

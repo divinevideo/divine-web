@@ -4,14 +4,18 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { getFunnelcakeBaseUrl } from '@/config/api';
+import { FEED_PAGE_SIZE } from '@/config/feed';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import type { ParsedVideoData } from '@/types/video';
 import type { FunnelcakeFetchOptions } from '@/types/funnelcake';
-import { fetchVideos, fetchVideosV2, searchVideos, fetchUserVideos, fetchUserFeed, fetchRecommendations } from '@/lib/funnelcakeClient';
+import { fetchVideos, fetchVideosV2, searchVideos, fetchUserVideos, fetchUserFeed, fetchRecommendations, normalizeVideoArrayResponse } from '@/lib/funnelcakeClient';
 import { enrichAgeRestrictedVideos } from '@/lib/ageRestrictedVideos';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import { debugLog } from '@/lib/debug';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
+import { videoAddress } from '@/lib/videoAddress';
+
+const EDGE_INJECTED_FEED_LIMIT = 10;
 
 export type FunnelcakeFeedType = 'trending' | 'recent' | 'classics' | 'hashtag' | 'profile' | 'home' | 'recommendations' | 'category' | 'popular';
 export type FunnelcakeSortMode = 'trending' | 'recent' | 'loops' | 'engagement' | 'classic' | 'watching';
@@ -34,6 +38,13 @@ interface UseInfiniteVideosFunnelcakeOptions {
 
 interface FunnelcakeVideoPage {
   videos: ParsedVideoData[];
+  /**
+   * Rows this page fetched, as the API returned them. Required, not optional:
+   * infinite scroll paginates on this (divine-web#380), and `countFetchedVideos`
+   * falls back to `videos.length` when it is absent, so an optional field would
+   * let a dropped assignment revert the count to the parsed length silently.
+   */
+  fetchedRows: number;
   nextCursor: number | undefined;
   offset?: number;
   /** Opaque cursor string for recommendations pagination */
@@ -43,16 +54,12 @@ interface FunnelcakeVideoPage {
   mode?: 'recommendations' | 'popular';
 }
 
-function getVideoKey(video: Pick<ParsedVideoData, 'pubkey' | 'kind' | 'vineId' | 'id'>): string {
-  return `${video.pubkey}:${video.kind}:${video.vineId || video.id}`;
-}
-
 function getUniqueVideoCount(pages: FunnelcakeVideoPage[]): number {
   const seenKeys = new Set<string>();
 
   for (const page of pages) {
     for (const video of page.videos) {
-      seenKeys.add(getVideoKey(video));
+      seenKeys.add(videoAddress(video));
     }
   }
 
@@ -198,7 +205,7 @@ export function useInfiniteVideosFunnelcake({
   hashtag,
   category,
   pubkey,
-  pageSize = 12,
+  pageSize = FEED_PAGE_SIZE,
   enabled = true,
   randomizeWithinTop,
 }: UseInfiniteVideosFunnelcakeOptions) {
@@ -232,22 +239,51 @@ export function useInfiniteVideosFunnelcake({
         const edgeData = window.__DIVINE_FEED__;
         delete window.__DIVINE_FEED__; // Consume once
         delete window.__DIVINE_FEED_TYPE__;
-        debugLog(`[useInfiniteVideosFunnelcake] Using edge-injected ${feedType} feed data`);
 
-        const page = transformToVideoPage(edgeData);
-        performanceMonitor.recordFeedLoad({
-          feedType: 'funnelcake-trending',
-          queryTime: 0,
-          parseTime: performance.now() - totalStart,
-          totalTime: performance.now() - totalStart,
-          videoCount: page.videos.length,
-          sortMode,
-        });
-        return {
-          videos: page.videos,
-          nextCursor: page.nextCursor,
-          offset: page.offset,
-        };
+        // Injected trending/popular pages paginate with the v2 opaque cursor,
+        // matching the cursorType used for network fetches of the same feed.
+        const edgeCursorType =
+          feedType === 'recommendations' || feedType === 'trending' || feedType === 'popular'
+            ? 'cursor'
+            : 'timestamp';
+
+        // The worker may inject a bare v1 array. For v1-paginated feeds, wrap it
+        // with a synthesized cursor (same rules as fetchVideos) so scrolling
+        // continues past the injected page. Opaque-cursor (v2) feeds can't
+        // synthesize a valid cursor from an array, so those render as a single
+        // page — the worker injects a v2 envelope for them instead.
+        const edgePayload =
+          Array.isArray(edgeData) && edgeCursorType === 'timestamp'
+            ? normalizeVideoArrayResponse(edgeData, {
+                sort: feedType === 'classics' ? 'loops' : 'recent',
+                limit: EDGE_INJECTED_FEED_LIMIT,
+              })
+            : edgeData;
+        const page = transformToVideoPage(edgePayload, edgeCursorType);
+
+        // An empty or unparseable injected payload must never become the first
+        // page (it would render the empty state and stop pagination) — fall
+        // through to a normal network fetch instead.
+        if (page.videos.length > 0) {
+          debugLog(`[useInfiniteVideosFunnelcake] Using edge-injected ${feedType} feed data`);
+          performanceMonitor.recordFeedLoad({
+            feedType: `funnelcake-${feedType}`,
+            queryTime: 0,
+            parseTime: performance.now() - totalStart,
+            totalTime: performance.now() - totalStart,
+            videoCount: page.videos.length,
+            sortMode,
+          });
+          return {
+            videos: page.videos,
+            fetchedRows: page.fetchedRows,
+            nextCursor: page.nextCursor,
+            offset: page.offset,
+            recommendationsCursor: feedType === 'recommendations' ? page.rawCursor : undefined,
+            v2Cursor: feedType === 'trending' || feedType === 'popular' ? page.rawCursor : undefined,
+          };
+        }
+        debugLog(`[useInfiniteVideosFunnelcake] Edge-injected ${feedType} feed empty or unparseable; fetching from network`);
       }
 
       // Handle pagination cursor
@@ -296,6 +332,13 @@ export function useInfiniteVideosFunnelcake({
               ...options,
               tag: hashtag.toLowerCase(),
             });
+            if (sortMode === 'watching' && response.videos.length === 0) {
+              response = await searchVideos(effectiveApiUrl, {
+                ...options,
+                sort: 'loops',
+                tag: hashtag.toLowerCase(),
+              });
+            }
             break;
 
           case 'profile':
@@ -306,7 +349,7 @@ export function useInfiniteVideosFunnelcake({
           case 'home':
             if (!user?.pubkey) {
               debugLog('[useInfiniteVideosFunnelcake] No user logged in for home feed');
-              return { videos: [], nextCursor: undefined };
+              return { videos: [], fetchedRows: 0, nextCursor: undefined };
             }
             response = await fetchUserFeed(effectiveApiUrl, {
               ...options,
@@ -317,7 +360,7 @@ export function useInfiniteVideosFunnelcake({
           case 'recommendations': {
             if (!user?.pubkey) {
               debugLog('[useInfiniteVideosFunnelcake] No user logged in for recommendations feed');
-              return { videos: [], nextCursor: undefined };
+              return { videos: [], fetchedRows: 0, nextCursor: undefined };
             }
             if (isPopularFallback) {
               responseMode = 'popular';
@@ -382,7 +425,7 @@ export function useInfiniteVideosFunnelcake({
 
       if (feedType === 'recommendations' && responseMode === 'recommendations' && isRecommendationsCursorParam) {
         const seenKeys = new Set(pageParam.seenVideoKeys);
-        const hasNewVideos = page.videos.some(video => !seenKeys.has(getVideoKey(video)));
+        const hasNewVideos = page.videos.some(video => !seenKeys.has(videoAddress(video)));
 
         if (!hasNewVideos) {
           responseMode = 'popular';
@@ -429,6 +472,7 @@ export function useInfiniteVideosFunnelcake({
 
       return {
         videos: enrichedVideos,
+        fetchedRows: page.fetchedRows,
         nextCursor: page.nextCursor,
         offset: page.offset,
         recommendationsCursor: responseMode === 'recommendations' ? page.rawCursor : undefined,
@@ -455,7 +499,7 @@ export function useInfiniteVideosFunnelcake({
           return {
             mode: 'recommendations' as const,
             cursor: lastPage.recommendationsCursor,
-            seenVideoKeys: allPages.flatMap(page => page.videos.map(getVideoKey)),
+            seenVideoKeys: allPages.flatMap(page => page.videos.map(videoAddress)),
             popularOffset: getUniqueVideoCount(allPages),
           };
         }
@@ -467,7 +511,7 @@ export function useInfiniteVideosFunnelcake({
       }
       // Trending uses opaque v2 cursors — pass through as a string page param
       if (feedType === 'trending' || feedType === 'popular') {
-        return lastPage.v2Cursor;
+        return lastPage.videos.length > 0 ? lastPage.v2Cursor : undefined;
       }
       // Use offset for sorted pagination, timestamp for chronological
       if (lastPage.offset !== undefined) {

@@ -1,18 +1,24 @@
 // ABOUTME: Unified video provider hook that selects between Funnelcake and WebSocket
 // ABOUTME: Uses an explicit support matrix so unsupported feeds never collapse into generic queries
 
+import { useMemo } from 'react';
 import { useAppContext } from '@/hooks/useAppContext';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { useInfiniteVideos } from '@/hooks/useInfiniteVideos';
 import { useResolvedRelayCapabilities } from '@/hooks/useRelayCapabilities';
 import { useInfiniteVideosFunnelcake, type FunnelcakeFeedType, type FunnelcakeSortMode, type PopularPeriod, type PopularSource } from '@/hooks/useInfiniteVideosFunnelcake';
+import { useFeaturedTabVideos } from '@/hooks/useFeaturedTabVideos';
+import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
+import { FEED_PAGE_SIZE } from '@/config/feed';
+import { filterBlockedVideoPages } from '@/lib/blocklistFilter';
+import { countFetchedVideos } from '@/lib/feedPagination';
 import { hasFunnelcake, getFunnelcakeUrl } from '@/config/relays';
 import { debugLog } from '@/lib/debug';
 import type { RelayCapabilities } from '@/lib/relayCapabilities';
 import type { SortMode } from '@/types/nostr';
 
 // Feed types that can be provided
-export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category' | 'popular';
+export type VideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category' | 'popular' | 'featured';
 type WebsocketVideoFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent';
 const CLASSICS_RANDOMIZATION_WINDOW = 120;
 
@@ -23,6 +29,7 @@ interface UseVideoProviderOptions {
   popularPeriod?: PopularPeriod;
   hashtag?: string;
   category?: string;
+  featuredTabId?: string;
   pubkey?: string;
   pageSize?: number;
   enabled?: boolean;
@@ -35,6 +42,13 @@ interface VideoProviderResult {
   isLoading: boolean;
   error: Error | null;
   refetch: () => void;
+  /**
+   * Rows fetched across every loaded page, as the API returned them — before
+   * transform failures, dedup, and block filtering take any of them out.
+   * Infinite-scroll triggers must key off this rather than the rendered length,
+   * which can stay flat when a page collapses and would stall pagination.
+   */
+  fetchedCount: number;
   // Additional metadata
   dataSource: 'funnelcake' | 'websocket';
   apiUrl?: string;
@@ -59,6 +73,7 @@ function canServeFeedViaFunnelcake(feedType: VideoFeedType): boolean {
     case 'foryou':
     case 'category':
     case 'popular':
+    case 'featured':
       return true;
   }
 }
@@ -139,6 +154,7 @@ export function canServeFeedViaWebsocket(
     case 'foryou':
     case 'category':
     case 'popular':
+    case 'featured':
       return false;
 
     case 'discovery':
@@ -218,8 +234,9 @@ export function useVideoProvider({
   popularPeriod,
   hashtag,
   category,
+  featuredTabId,
   pubkey,
-  pageSize = 12,
+  pageSize = FEED_PAGE_SIZE,
   enabled = true,
 }: UseVideoProviderOptions): VideoProviderResult {
   const { config } = useAppContext();
@@ -234,6 +251,7 @@ export function useVideoProvider({
   });
 
   const shouldUseFunnelcake = decision.dataSource === 'funnelcake';
+  const isFeaturedFeed = feedType === 'featured';
 
   debugLog(`[useVideoProvider] Feed: ${feedType}, Relay: ${relayUrl}, Source: ${decision.dataSource}, Reason: ${decision.reason}`);
 
@@ -248,14 +266,22 @@ export function useVideoProvider({
     category,
     pubkey,
     pageSize,
-    enabled: enabled && shouldUseFunnelcake,
+    enabled: enabled && shouldUseFunnelcake && !isFeaturedFeed,
     // Keep Classics in a low, stable offset window.
     // Higher offsets on loops+classic queries are currently prone to backend timeouts.
     randomizeWithinTop: feedType === 'classics' ? CLASSICS_RANDOMIZATION_WINDOW : undefined,
   });
 
+  const featuredQuery = useFeaturedTabVideos({
+    configId: featuredTabId,
+    apiUrl: decision.apiUrl,
+    pageSize,
+    enabled: enabled && shouldUseFunnelcake && isFeaturedFeed && !!featuredTabId,
+  });
+
   const shouldEnableWebsocket =
     enabled &&
+    !isFeaturedFeed &&
     !!decision.websocketFeedType &&
     (!shouldUseFunnelcake || !!funnelcakeQuery.error);
 
@@ -268,16 +294,31 @@ export function useVideoProvider({
     enabled: shouldEnableWebsocket,
   });
 
-  const usingWebsocketFallback = shouldUseFunnelcake && !!funnelcakeQuery.error && !!decision.websocketFeedType;
+  const usingWebsocketFallback = shouldUseFunnelcake && !!funnelcakeQuery.error && !!decision.websocketFeedType && !isFeaturedFeed;
   const activeQuery = usingWebsocketFallback
     ? websocketQuery
-    : (shouldUseFunnelcake ? funnelcakeQuery : websocketQuery);
+    : (isFeaturedFeed ? featuredQuery : (shouldUseFunnelcake ? funnelcakeQuery : websocketQuery));
   const activeDataSource = usingWebsocketFallback
     ? 'websocket'
     : (shouldUseFunnelcake ? 'funnelcake' : 'websocket');
 
+  // Per-viewer block/mute filtering (divine-web#399). Funnelcake REST applies
+  // platform moderation only, so blocked/muted authors are dropped here at the
+  // hook boundary — every feed surface (hashtag/discovery/profile/home)
+  // inherits it. Pagination cursors are unaffected: they derive from the
+  // unfiltered pages inside the underlying query hooks.
+  const blockedPubkeys = useFeedBlocklist();
+  const rawData = activeQuery.data;
+  const filteredData = useMemo(
+    () => filterBlockedVideoPages(rawData, blockedPubkeys),
+    [rawData, blockedPubkeys]
+  );
+  // Counted from the unfiltered pages on purpose (divine-web#380).
+  const fetchedCount = useMemo(() => countFetchedVideos(rawData?.pages), [rawData]);
+
   return {
-    data: activeQuery.data,
+    data: filteredData,
+    fetchedCount,
     fetchNextPage: activeQuery.fetchNextPage,
     hasNextPage: activeQuery.hasNextPage,
     isLoading: activeQuery.isLoading,

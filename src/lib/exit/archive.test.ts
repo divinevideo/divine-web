@@ -1,0 +1,348 @@
+import { describe, expect, it } from "vitest";
+
+import { fixtureMediaHash, fixturePubkey, makeFixtureEvent, unsupportedModeration } from "./__fixtures__/exportFixtures";
+import { buildArchiveFiles, completeArchiveMedia, discoverMediaReferences, serializeArchiveFiles } from "./archive";
+
+describe("archive builder", () => {
+  it("preserves raw events and writes manifest metadata", () => {
+    const event = makeFixtureEvent();
+    const archive = buildArchiveFiles({
+      events: [event],
+      pubkey: fixturePubkey,
+      sourceEndpoint: "https://api.divine.video",
+      pageCount: 1,
+      failures: [],
+      moderation: unsupportedModeration,
+      generatedAt: new Date("2026-08-12T21:00:00Z")
+    });
+
+    expect(archive["events.json"]).toEqual([event]);
+    expect(archive["manifest.json"]).toEqual({
+      pubkey: fixturePubkey,
+      generated_at: "2026-08-12T21:00:00.000Z",
+      event_count: 1,
+      source_name: "Divine relay",
+      source_endpoint: "https://api.divine.video",
+      page_count: 1,
+      failures: [],
+      moderation: {
+        annotations: [],
+        annotations_status: "unsupported",
+        invalid_annotation_count: 0,
+        orphan_annotation_count: 0,
+        conflicting_annotation_count: 0
+      }
+    });
+  });
+
+  it("adds moderation metadata without changing the serialized signed events", () => {
+    const event = makeFixtureEvent();
+    const withoutMetadata = buildArchiveFiles({
+      events: [event], pubkey: fixturePubkey, sourceEndpoint: "https://api.divine.video", pageCount: 1,
+      failures: [], moderation: unsupportedModeration
+    });
+    const withMetadata = buildArchiveFiles({
+      events: [event],
+      pubkey: fixturePubkey,
+      sourceEndpoint: "https://api.divine.video",
+      pageCount: 1,
+      failures: [],
+      moderation: {
+        annotations: [{ eventId: event.id, status: "banned" }],
+        annotationsStatus: "complete",
+        invalidAnnotationCount: 0,
+        orphanAnnotationCount: 0,
+        conflictingAnnotationCount: 0,
+        withheld: { kind: "known", count: 2 }
+      }
+    });
+
+    expect(serializeArchiveFiles(withMetadata)["events.json"]).toBe(serializeArchiveFiles(withoutMetadata)["events.json"]);
+    expect(withMetadata["manifest.json"].moderation).toEqual({
+      annotations: [{ event_id: event.id, status: "banned" }],
+      annotations_status: "complete",
+      invalid_annotation_count: 0,
+      orphan_annotation_count: 0,
+      conflicting_annotation_count: 0,
+      withheld: { complete: true, count: 2 }
+    });
+  });
+
+  it("records snapshot provenance without changing the archive model", () => {
+    const snapshot = {
+      enforcement_id: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      enforced_at: "2026-08-01T12:00:00Z",
+      expires_at: "2026-08-31T12:01:00Z",
+    };
+    const archive = buildArchiveFiles({
+      events: [makeFixtureEvent()],
+      pubkey: fixturePubkey,
+      sourceEndpoint: "https://api.divine.video",
+      sourceName: "Divine pre-ban snapshot",
+      pageCount: 1,
+      failures: [],
+      snapshot,
+    });
+
+    expect(archive["manifest.json"]).toMatchObject({
+      source_name: "Divine pre-ban snapshot",
+      snapshot,
+    });
+  });
+
+  it("discovers media URLs and hashes from tags", () => {
+    const references = discoverMediaReferences([
+      makeFixtureEvent(),
+      makeFixtureEvent({
+        id: "2222222222222222222222222222222222222222222222222222222222222222",
+        tags: [
+          [
+            "imeta",
+            "url https://media.divine.video/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.mp4",
+            "x eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          ]
+        ]
+      })
+    ]);
+
+    expect(references).toEqual([
+      {
+        event_id: "1111111111111111111111111111111111111111111111111111111111111111",
+        tag: "url",
+        url: `https://media.divine.video/${fixtureMediaHash}.mp4`,
+        sha256: fixtureMediaHash
+      },
+      {
+        event_id: "2222222222222222222222222222222222222222222222222222222222222222",
+        tag: "imeta",
+        url: "https://media.divine.video/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.mp4",
+        sha256: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      }
+    ]);
+  });
+
+  it("discovers picture and banner URLs from profile metadata", () => {
+    const pictureHash = "e".repeat(64);
+    const bannerHash = "f".repeat(64);
+    const profile = makeFixtureEvent({
+      kind: 0,
+      tags: [],
+      content: JSON.stringify({
+        picture: `https://cdn.divine.video/${pictureHash}.jpg`,
+        banner: `https://media.divine.video/${bannerHash}`,
+      }),
+    });
+
+    expect(discoverMediaReferences([profile])).toEqual([
+      {
+        event_id: profile.id,
+        tag: "picture",
+        url: `https://cdn.divine.video/${pictureHash}.jpg`,
+        sha256: pictureHash,
+      },
+      {
+        event_id: profile.id,
+        tag: "banner",
+        url: `https://media.divine.video/${bannerHash}`,
+        sha256: bannerHash,
+      },
+    ]);
+  });
+
+  it("keeps hashless profile media and ignores invalid metadata values", () => {
+    const profile = makeFixtureEvent({
+      kind: 0,
+      tags: [],
+      content: JSON.stringify({
+        picture: "https://cdn.divine.video/avatar/current.jpg",
+        banner: 42,
+      }),
+    });
+    const malformed = makeFixtureEvent({ kind: 0, tags: [], content: "{" });
+
+    expect(discoverMediaReferences([profile, malformed])).toEqual([
+      {
+        event_id: profile.id,
+        tag: "picture",
+        url: "https://cdn.divine.video/avatar/current.jpg",
+        sha256: null,
+      },
+    ]);
+  });
+
+  it("ignores a non-URL banner such as a theme color", () => {
+    const profile = makeFixtureEvent({
+      kind: 0,
+      tags: [],
+      content: JSON.stringify({
+        picture: "https://cdn.divine.video/avatar/current.jpg",
+        banner: "0x27c58b",
+      }),
+    });
+
+    expect(discoverMediaReferences([profile])).toEqual([
+      {
+        event_id: profile.id,
+        tag: "picture",
+        url: "https://cdn.divine.video/avatar/current.jpg",
+        sha256: null,
+      },
+    ]);
+  });
+
+  it("uses a sibling x tag when the URL does not carry a hash", () => {
+    const hash = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const references = discoverMediaReferences([
+      makeFixtureEvent({
+        tags: [
+          ["url", "https://cdn.example.com/video.mp4"],
+          ["x", hash]
+        ]
+      })
+    ]);
+
+    expect(references).toEqual([
+      {
+        event_id: "1111111111111111111111111111111111111111111111111111111111111111",
+        tag: "url",
+        url: "https://cdn.example.com/video.mp4",
+        sha256: hash
+      }
+    ]);
+  });
+
+  it("does not apply a sibling x hash to thumb or image URLs", () => {
+    const videoHash = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const thumbHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const references = discoverMediaReferences([
+      makeFixtureEvent({
+        tags: [
+          ["url", "https://cdn.example.com/video.mp4"],
+          ["thumb", `https://media.divine.video/${thumbHash}.jpg`],
+          ["x", videoHash]
+        ]
+      })
+    ]);
+
+    expect(references).toEqual([
+      {
+        event_id: "1111111111111111111111111111111111111111111111111111111111111111",
+        tag: "url",
+        url: "https://cdn.example.com/video.mp4",
+        sha256: videoHash
+      },
+      {
+        event_id: "1111111111111111111111111111111111111111111111111111111111111111",
+        tag: "thumb",
+        url: `https://media.divine.video/${thumbHash}.jpg`,
+        sha256: thumbHash
+      }
+    ]);
+  });
+
+  it("does not apply an imeta x hash to a sibling image URL", () => {
+    const videoHash = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const imageHash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const references = discoverMediaReferences([
+      makeFixtureEvent({
+        tags: [
+          [
+            "imeta",
+            "url https://cdn.example.com/video.mp4",
+            `image https://media.divine.video/${imageHash}.jpg`,
+            `x ${videoHash}`
+          ]
+        ]
+      })
+    ]);
+
+    expect(references).toEqual([
+      {
+        event_id: "1111111111111111111111111111111111111111111111111111111111111111",
+        tag: "imeta",
+        url: "https://cdn.example.com/video.mp4",
+        sha256: videoHash
+      },
+      {
+        event_id: "1111111111111111111111111111111111111111111111111111111111111111",
+        tag: "imeta",
+        url: `https://media.divine.video/${imageHash}.jpg`,
+        sha256: imageHash
+      }
+    ]);
+  });
+
+  it("discovers media in pair-form imeta tags", () => {
+    const hash = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const references = discoverMediaReferences([
+      makeFixtureEvent({
+        tags: [
+          ["imeta", "url", "https://cdn.example.com/video.mp4", "x", hash]
+        ]
+      })
+    ]);
+
+    expect(references).toEqual([
+      {
+        event_id: "1111111111111111111111111111111111111111111111111111111111111111",
+        tag: "imeta",
+        url: "https://cdn.example.com/video.mp4",
+        sha256: hash
+      }
+    ]);
+  });
+
+  it("serializes the three archive files", () => {
+    const archive = buildArchiveFiles({
+      events: [makeFixtureEvent()],
+      pubkey: fixturePubkey,
+      sourceEndpoint: "https://api.divine.video",
+      pageCount: 1,
+      failures: [],
+      moderation: unsupportedModeration,
+      generatedAt: new Date("2026-08-12T21:00:00Z")
+    });
+
+    expect(Object.keys(serializeArchiveFiles(archive))).toEqual(["events.json", "manifest.json", "media.json"]);
+  });
+
+  it("merges per-reference results, summarizes blobs, and certifies only trusted paths", () => {
+    const archive = buildArchiveFiles({
+      events: [makeFixtureEvent()], pubkey: fixturePubkey, sourceEndpoint: "https://api.divine.video",
+      pageCount: 1, failures: [], moderation: unsupportedModeration,
+      generatedAt: new Date("2026-08-12T21:00:00Z"),
+    });
+    const reference = archive["media.json"][0];
+    const completed = completeArchiveMedia(archive, [
+      { references: [reference], source_url: reference.url, expected_sha256: fixtureMediaHash,
+        computed_sha256: fixtureMediaHash, byte_size: 5, content_type: "video/mp4",
+        archive_path: `media/${fixtureMediaHash}.mp4`, verification: "verified" },
+      { references: [{ ...reference, url: "https://example.com/wrong" }], source_url: "https://example.com/wrong",
+        expected_sha256: fixtureMediaHash, computed_sha256: "e".repeat(64), byte_size: 4, content_type: "video/mp4",
+        archive_path: `media/mismatched/${fixtureMediaHash}.mp4`, verification: "hash-mismatch" },
+    ]);
+    expect(completed["manifest.json"].media).toEqual({
+      media_total: 2, media_verified: 1, media_unverified: 0, media_mismatched: 1, media_failed: 0,
+    });
+    expect(completed["media.json"]).toHaveLength(2);
+    expect(completed["media-checksums.txt"]).toBe(`${fixtureMediaHash}  media/${fixtureMediaHash}.mp4\n`);
+    expect(completed["media-failures.txt"]).toContain("hash-mismatch\thttps://example.com/wrong");
+  });
+
+  it("omits empty checksums and records failed downloads in a readable report", () => {
+    const archive = buildArchiveFiles({
+      events: [makeFixtureEvent()], pubkey: fixturePubkey, sourceEndpoint: "https://api.divine.video",
+      pageCount: 1, failures: [], generatedAt: new Date("2026-08-12T21:00:00Z"),
+    });
+    const reference = archive["media.json"][0];
+    const completed = completeArchiveMedia(archive, [{
+      references: [reference], source_url: reference.url, expected_sha256: fixtureMediaHash,
+      computed_sha256: null, byte_size: null, content_type: null, archive_path: null,
+      verification: "failed", failure_reason: `${reference.url}: HTTP 503`,
+    }]);
+    const serialized = serializeArchiveFiles(completed);
+
+    expect(serialized).not.toHaveProperty("media-checksums.txt");
+    expect(serialized["media-failures.txt"]).toBe(`failed\t${reference.url}\t${reference.url}: HTTP 503\n`);
+  });
+});

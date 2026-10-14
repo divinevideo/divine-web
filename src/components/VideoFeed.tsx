@@ -10,6 +10,7 @@ import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import { VideoGrid } from '@/components/VideoGrid';
 import { AddToListDialog } from '@/components/AddToListDialog';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
+import { FEED_PAGE_SIZE } from '@/config/feed';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { useContentModeration } from '@/hooks/useModeration';
 import { useFeedPerformanceInstrumentation } from '@/hooks/useFeedPerformanceInstrumentation';
@@ -28,13 +29,15 @@ import { useVideoPrefetch } from '@/hooks/useVideoPrefetch';
 import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
 import { buildCompilationPlaybackUrl } from '@/lib/compilationPlayback';
 import type { PopularPeriod, PopularSource } from '@/hooks/useInfiniteVideosFunnelcake';
+import { trackEvent } from '@/lib/analytics';
 
 type ViewMode = 'feed' | 'grid';
 
 interface VideoFeedProps {
-  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category' | 'popular';
+  feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'foryou' | 'category' | 'popular' | 'featured';
   hashtag?: string;
   category?: string;
+  featuredTabId?: string;
   pubkey?: string;
   limit?: number;
   sortMode?: SortMode; // NIP-50 sort mode (hot, top, rising, controversial)
@@ -59,8 +62,9 @@ export function VideoFeed({
   feedType = 'discovery',
   hashtag,
   category,
+  featuredTabId,
   pubkey,
-  limit = 12, // Smaller first page improves initial paint on REST-backed feeds
+  limit = FEED_PAGE_SIZE, // Smaller first page improves initial paint on REST-backed feeds
   sortMode,
   popularSource,
   popularPeriod,
@@ -77,7 +81,11 @@ export function VideoFeed({
   const location = useLocation();
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const [showListDialog, setShowListDialog] = useState<{ videoId: string; videoPubkey: string } | null>(null);
+  const [hasFirstPlayback, setHasFirstPlayback] = useState(false);
   const mountTimeRef = useRef<number | null>(null);
+  // The impression effect re-runs on every appended page; this keeps the
+  // featured-tab event to one per feed mount, like trackInitialRender.
+  const featuredImpressionSentRef = useRef<string | null>(null);
 
   const { checkContent } = useContentModeration();
   const navigate = useSubdomainNavigate();
@@ -91,11 +99,13 @@ export function VideoFeed({
     isLoading,
     error,
     refetch,
+    fetchedCount,
     dataSource,
   } = useVideoProvider({
     feedType,
     hashtag,
     category,
+    featuredTabId,
     pubkey,
     pageSize: limit,
     sortMode,
@@ -167,8 +177,20 @@ export function VideoFeed({
         renderedVideos: filteredVideos.length,
         totalVideos: allVideos.length,
       });
+
+      if (
+        feedType === 'featured' &&
+        featuredTabId &&
+        featuredImpressionSentRef.current !== featuredTabId
+      ) {
+        featuredImpressionSentRef.current = featuredTabId;
+        trackEvent('featured_tab_video_impression', {
+          featured_tab_id: featuredTabId,
+          rendered_videos: filteredVideos.length,
+        });
+      }
     }
-  }, [allVideos.length, filteredVideos.length, isLoading, trackInitialRender]);
+  }, [allVideos.length, featuredTabId, feedType, filteredVideos.length, isLoading, trackInitialRender]);
 
   // Track perceived first-render time for the Recent feed
   useEffect(() => {
@@ -205,9 +227,9 @@ export function VideoFeed({
   // Prefetch all authors in a single query
   useBatchedAuthors(authorPubkeys);
 
-  // Prefetch next 2-3 video URLs while current video plays
+  // Prefetch upcoming media after the first video is actually playing.
   const { activeVideoId } = useVideoPlayback();
-  useVideoPrefetch(activeVideoId, filteredVideos);
+  useVideoPrefetch(activeVideoId, filteredVideos, { prefetchVideos: hasFirstPlayback });
 
   // Auto-navigate to discovery if home feed is empty
   useEffect(() => {
@@ -296,6 +318,7 @@ export function VideoFeed({
   }, [filteredVideos, enterFullscreen]);
 
   const handlePlaybackStarted = useCallback((video: ParsedVideoData) => {
+    setHasFirstPlayback(true);
     trackFirstPlayback({
       renderedVideos: filteredVideos.length,
       totalVideos: allVideos.length,
@@ -457,7 +480,7 @@ export function VideoFeed({
       >
         {compilationLauncher}
         <InfiniteScroll
-          dataLength={filteredVideos.length}
+          dataLength={fetchedCount}
           next={fetchNextPage}
           hasMore={hasNextPage ?? false}
           loader={
@@ -483,6 +506,7 @@ export function VideoFeed({
               source: feedType,
               hashtag,
               pubkey,
+              featuredTabId,
             }}
           />
         </InfiniteScroll>
@@ -511,7 +535,7 @@ export function VideoFeed({
     >
       {compilationLauncher}
       <InfiniteScroll
-        dataLength={filteredVideos.length}
+        dataLength={fetchedCount}
         next={fetchNextPage}
         hasMore={hasNextPage ?? false}
         loader={
@@ -548,6 +572,7 @@ export function VideoFeed({
                 source: feedType,
                 hashtag,
                 pubkey,
+                featuredTabId,
               }}
             />
           ))}

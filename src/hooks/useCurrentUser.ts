@@ -1,9 +1,9 @@
 import { type NLoginType, NUser, useNostrLogin } from '@nostrify/react/login';
-import { useNostr } from '@nostrify/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NostrSigner } from '@nostrify/nostrify';
 import { DivineJWTSigner } from '@/lib/DivineJWTSigner';
 import { createUserFromLogin, getSafeUserSigner } from '@/lib/nostrLogin';
+import { releaseBunkerSignersExcept } from '@/lib/bunkerSignerRegistry';
 import { selectCurrentUsers, isJwtResolving } from '@/lib/selectCurrentUsers';
 
 import { useAuthor } from './useAuthor.ts';
@@ -13,6 +13,14 @@ import { useNip07Availability } from './useNip07Availability';
 type CurrentUser = {
   pubkey: string;
   signer?: NostrSigner;
+  /**
+   * How this account signs. Present on every manual login (`NUser` carries it);
+   * absent on the hosted-JWT user, which has no `NLoginType` behind it. Callers
+   * that need "is this key held locally" must read this rather than testing the
+   * signer's class: the login dependency bundles its own copy of the signer
+   * package, so `instanceof` compares against a different constructor.
+   */
+  method?: NUser['method'];
 };
 
 // The result of resolving a hosted-JWT signer, tagged with the token it belongs
@@ -23,23 +31,17 @@ type JwtResolution =
   | { token: string; error: true };
 
 export function useCurrentUser() {
-  const { nostr } = useNostr();
   const { logins } = useNostrLogin();
-  const { getValidToken } = useDivineSession();
+  const { getValidToken, isExpired } = useDivineSession();
   const token = getValidToken();
   const [jwtResolution, setJwtResolution] = useState<JwtResolution>();
-  const hasExtensionLogin = useMemo(() => (
-    logins.some((login) => login.type === 'extension')
-  ), [logins]);
-  const { isAvailable: isNip07Available, isRestoring: isNip07Restoring } = useNip07Availability(hasExtensionLogin);
-  const isAuthRestoring = hasExtensionLogin && isNip07Restoring;
   const jwtSigner = useMemo(() => (
     token ? new DivineJWTSigner({ token }) : null
   ), [token]);
 
   const loginToUser = useCallback((login: NLoginType): NUser  => {
-    return createUserFromLogin(login, nostr);
-  }, [nostr]);
+    return createUserFromLogin(login);
+  }, []);
 
   useEffect(() => {
     let isCancelled = false;
@@ -76,12 +78,25 @@ export function useCurrentUser() {
   const jwtError =
     !!jwtResolution && jwtResolution.token === token && 'error' in jwtResolution;
 
+  const hasExtensionLogin = logins.some((login) => login.type === 'extension');
+  const { isAvailable: isNip07Available, isRestoring: isAuthRestoring } = useNip07Availability(hasExtensionLogin);
+
+  const loginIds = logins.map((login) => login.id).join(';');
+
+  // A removed login's signer is the last thing holding its sockets open.
+  // Reconciling against the surviving ids covers every logout path, including
+  // account switching and a login dropped as invalid.
+  useEffect(() => {
+    releaseBunkerSignersExcept(loginIds ? loginIds.split(';') : []);
+  }, [loginIds]);
+
   const manualUsers = useMemo(() => {
     const users: CurrentUser[] = [];
 
     for (const login of logins) {
+      // Keep the stored account visible only during the bounded injection wait.
       if (login.type === 'extension' && !isNip07Available) {
-        users.push({ pubkey: login.pubkey });
+        if (isAuthRestoring) users.push({ pubkey: login.pubkey });
         continue;
       }
 
@@ -94,7 +109,7 @@ export function useCurrentUser() {
     }
 
     return users;
-  }, [isNip07Available, logins, loginToUser]);
+  }, [logins, loginToUser, isNip07Available, isAuthRestoring]);
 
   const jwtUser = useMemo<CurrentUser | undefined>(() => {
     if (!jwtSigner || !jwtPubkey) {
@@ -121,11 +136,15 @@ export function useCurrentUser() {
   const user = users[0];
   const signer = useMemo(() => getSafeUserSigner(user), [user]);
   const author = useAuthor(user?.pubkey);
+  const isHostedAccount = !!user?.pubkey && user.pubkey === jwtPubkey;
+  const hostedToken = !isExpired && isHostedAccount ? token : null;
 
   return {
     user,
     users,
     signer,
+    hostedToken,
+    isHostedAccount,
     isResolvingJwt,
     isAuthRestoring,
     ...author.data,

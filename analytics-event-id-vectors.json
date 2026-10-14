@@ -1,0 +1,28 @@
+{
+  "algorithm": "sha256-rfc8785-v1",
+  "vectors": [
+    {
+      "name": "content_impression_recorded_web",
+      "event_without_id": {
+        "schema_version": 2,
+        "occurred_at": "2026-08-20T00:00:00Z",
+        "anonymous_id": "22222222-2222-4222-8222-222222222222",
+        "session_id": "33333333-3333-4333-8333-333333333333",
+        "source": "web",
+        "platform": "web",
+        "release": "2026.08.20",
+        "consent_category": "product_analytics",
+        "event_name": "content_impression_recorded",
+        "properties": {
+          "content_id": "4444444444444444444444444444444444444444444444444444444444444444",
+          "surface": "feed",
+          "position": 3,
+          "visible_ms": 1500
+        }
+      },
+      "alternate_order_json": "{\"source\":\"web\",\"session_id\":\"33333333-3333-4333-8333-333333333333\",\"schema_version\":2,\"release\":\"2026.08.20\",\"properties\":{\"visible_ms\":1500,\"surface\":\"feed\",\"position\":3,\"content_id\":\"4444444444444444444444444444444444444444444444444444444444444444\"},\"platform\":\"web\",\"occurred_at\":\"2026-08-20T00:00:00Z\",\"event_name\":\"content_impression_recorded\",\"consent_category\":\"product_analytics\",\"anonymous_id\":\"22222222-2222-4222-8222-222222222222\"}",
+      "canonical_json": "{\"anonymous_id\":\"22222222-2222-4222-8222-222222222222\",\"consent_category\":\"product_analytics\",\"event_name\":\"content_impression_recorded\",\"occurred_at\":\"2026-08-20T00:00:00Z\",\"platform\":\"web\",\"properties\":{\"content_id\":\"4444444444444444444444444444444444444444444444444444444444444444\",\"position\":3,\"surface\":\"feed\",\"visible_ms\":1500},\"release\":\"2026.08.20\",\"schema_version\":2,\"session_id\":\"33333333-3333-4333-8333-333333333333\",\"source\":\"web\"}",
+      "expected_event_id": "0592b5a4908ee37cc24348ca8292152498e7caed970c043526051818c15b22cd"
+    }
+  ]
+}

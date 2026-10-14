@@ -34,6 +34,28 @@
     box-shadow: 2px 2px 0 0 hsl(var(--brand-dark-green));
   }
 
+  /*
+    Dark mode redraws the sticker's ink in off-white. `--background`, `--card`
+    and the landing page's dark sections all resolve to the same 158 67% 8% as
+    `--brand-dark-green`, so the border and the offset shadow above were being
+    painted in the exact colour of the surface behind them: both disappeared and
+    the button flattened into a plain green rectangle with no sticker read at
+    all. Off-white is the ink `--foreground` already switches to in dark mode.
+
+    Every offset state is restated, not just the resting one — fixing the border
+    alone would leave a hover and press nobody can see.
+  */
+  .dark .brand-sticker {
+    border-color: hsl(var(--brand-off-white));
+    box-shadow: 4px 4px 0 0 hsl(var(--brand-off-white));
+  }
+  .dark .brand-sticker:hover {
+    box-shadow: 6px 6px 0 0 hsl(var(--brand-off-white));
+  }
+  .dark .brand-sticker:active {
+    box-shadow: 2px 2px 0 0 hsl(var(--brand-off-white));
+  }
+
   /* Card: thick border + optional accent shadow via composition */
   .brand-card {
     border: 2px solid hsl(var(--brand-dark-green));

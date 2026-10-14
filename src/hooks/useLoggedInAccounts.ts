@@ -3,7 +3,7 @@ import { useNostrLogin } from '@nostrify/react/login';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { NSchema as n, NostrEvent, NostrMetadata } from '@nostrify/nostrify';
-import { createUserFromLogin } from '@/lib/nostrLogin';
+import { canCreateUserFromLogin } from '@/lib/nostrLogin';
 import { useCurrentUser } from './useCurrentUser';
 import { useDivineSession } from './useDivineSession';
 import { useNip07Availability } from './useNip07Availability';
@@ -21,24 +21,20 @@ export function useLoggedInAccounts() {
   const { getValidToken } = useDivineSession();
   const { metadata, user } = useCurrentUser();
   const token = getValidToken();
-  const hasExtensionLogin = useMemo(() => (
-    logins.some((login) => login.type === 'extension')
-  ), [logins]);
-  const { isAvailable: isNip07Available } = useNip07Availability(hasExtensionLogin);
+  const hasExtensionLogin = logins.some((login) => login.type === 'extension');
+  const { isAvailable: isNip07Available, isRestoring: isAuthRestoring } = useNip07Availability(hasExtensionLogin);
   const activeLogins = useMemo(
     () => logins.filter((login) => {
+      // Keep the stored account visible only during the bounded injection wait.
       if (login.type === 'extension' && !isNip07Available) {
-        return Boolean(login.pubkey);
+        return isAuthRestoring && Boolean(login.pubkey);
       }
 
-      try {
-        createUserFromLogin(login, nostr);
-        return true;
-      } catch {
-        return false;
-      }
+      // Validity check only — the built user was always discarded here, and
+      // for a bunker login building one opens a connection.
+      return canCreateUserFromLogin(login);
     }),
-    [isNip07Available, logins, nostr],
+    [logins, isNip07Available, isAuthRestoring],
   );
 
   const jwtCurrentUser = useMemo<Account | undefined>(() => {

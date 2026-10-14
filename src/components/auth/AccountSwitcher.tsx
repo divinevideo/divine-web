@@ -1,7 +1,7 @@
 // NOTE: This file is stable and usually should not be modified.
 // It is important that all functionality in this file is preserved, and should only be modified if explicitly requested.
 
-import { CaretDown as ChevronDown, SignOut as LogOut, User as UserIcon, UserPlus, User, Gear as Settings, LinkSimple as Link2 } from '@phosphor-icons/react';
+import { CaretDown as ChevronDown, SignOut as LogOut, User as UserIcon, UserPlus, User, Gear as Settings, LinkSimple as Link2, CloudArrowUp as Server, Export } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
@@ -19,11 +19,13 @@ import { useNostrLogin } from '@nostrify/react/login';
 import { useLoggedInAccounts, type Account } from '@/hooks/useLoggedInAccounts';
 import { useDivineSession } from '@/hooks/useDivineSession';
 import { clearLoginCookie, clearJwtCookie } from '@/lib/crossSubdomainAuth';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
-import { getActiveLocalNsecLogin } from '@/lib/localNsecAccount';
+import { getLocalNsecLogin } from '@/lib/localNsecAccount';
 import { OVERLAY_LAYERS } from '@/lib/overlayLayers';
+import { API_CONFIG } from '@/config/api';
 import { RelaySelector } from '@/components/RelaySelector';
+import { AccountSupporterStatus } from '@/components/AccountSupporterStatus';
 import { LocalNsecBanner } from './LocalNsecBanner';
 
 interface AccountSwitcherProps {
@@ -36,19 +38,30 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const { currentUser, otherUsers, setLogin, removeLogin } = useLoggedInAccounts();
   const { clearSession } = useDivineSession();
   const navigate = useNavigate();
-  const localNsecLogin = getActiveLocalNsecLogin(logins);
 
   if (!currentUser) return null;
+
+  const localNsecLogin = getLocalNsecLogin(logins, currentUser.pubkey);
 
   const isJwtCurrentUser = currentUser.id.startsWith('jwt:');
 
   const getDisplayName = (account: Account): string => {
-    return account.metadata.name ?? genUserName(account.pubkey);
+    return resolveDisplayName(account.metadata, account.pubkey);
   }
 
   const handleMyProfileClick = () => {
     const npub = nip19.npubEncode(currentUser.pubkey);
     navigate(`/profile/${npub}`);
+  };
+
+  const handleAccountPortabilityClick = () => {
+    const url = API_CONFIG.accountPortability.url;
+    if (url.startsWith('/')) {
+      navigate(url);
+      return;
+    }
+
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleLogout = () => {
@@ -64,6 +77,10 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
 
   return (
     <div className='account-switcher w-full min-w-0 max-w-full space-y-3'>
+      {/* #182: the banner gates itself for protected minors. It must render
+          unconditionally here so a restricted flip keeps it mounted (rendering
+          null) and its command-boundary re-checks stay live; a gate at this
+          level would unmount it mid-flight (dcadenas review on #476). */}
       {localNsecLogin ? <LocalNsecBanner nsec={localNsecLogin.data.nsec} /> : null}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
@@ -74,6 +91,7 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
             </Avatar>
             <div className='hidden min-w-0 flex-1 truncate text-left md:block'>
               <p className='font-medium text-sm truncate'>{getDisplayName(currentUser)}</p>
+              <AccountSupporterStatus />
             </div>
             <ChevronDown className='w-4 h-4 text-muted-foreground' />
           </button>
@@ -99,6 +117,23 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
           >
             <Link2 className='w-4 h-4' />
             <span>{t('accountSwitcher.linkedAccounts')}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => navigate('/settings/relays')}
+            className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+          >
+            <Server className='w-4 h-4' />
+            <span>{t('accountSwitcher.relays', 'Relays')}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={handleAccountPortabilityClick}
+            className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+          >
+            <Export className='w-4 h-4' />
+            <span>{t('accountSwitcher.accountPortability', 'Move your account')}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate('/supporters')} className='flex items-center gap-2 cursor-pointer p-2 rounded-md'>
+            <span>{t('supporters.title')}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>{t('accountSwitcher.switchRelay')}</DropdownMenuLabel>

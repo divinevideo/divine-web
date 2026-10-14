@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { nip19 } from 'nostr-tools';
 
 import { initializeI18n } from '@/lib/i18n';
 import ModerationSettingsPage from './ModerationSettingsPage';
@@ -10,10 +11,24 @@ const {
   mockToast,
   mockNostrQuery,
   mockInvalidateQueries,
+  mockMuteList,
+  mockBlockedPubkeys,
+  mockMute,
+  mockUnmute,
 } = vi.hoisted(() => ({
   mockToast: vi.fn(),
   mockNostrQuery: vi.fn(),
   mockInvalidateQueries: vi.fn(),
+  mockMuteList: [] as Array<{
+    type: string;
+    value: string;
+    reason?: string;
+    createdAt: number;
+    origin?: 'web' | 'unknown';
+  }>,
+  mockBlockedPubkeys: new Set<string>(),
+  mockMute: vi.fn(),
+  mockUnmute: vi.fn(),
 }));
 
 vi.mock('@/hooks/useCurrentUser', () => ({
@@ -24,19 +39,28 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 
 vi.mock('@/hooks/useModeration', () => ({
   useMuteList: () => ({
-    data: [],
+    data: mockMuteList,
     isLoading: false,
   }),
   useMuteItem: () => ({
-    mutateAsync: vi.fn(),
+    mutateAsync: mockMute,
     isPending: false,
   }),
   useUnmuteItem: () => ({
-    mutateAsync: vi.fn(),
+    mutateAsync: mockUnmute,
     isPending: false,
   }),
   useReportHistory: () => ({
     data: [],
+  }),
+  MUTE_LIST_KIND: 10000,
+}));
+
+vi.mock('@/hooks/useBlockList', () => ({
+  useBlockedPubkeys: () => mockBlockedPubkeys,
+  useUnblockUser: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
   }),
 }));
 
@@ -162,6 +186,8 @@ function renderPage() {
 describe('ModerationSettingsPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    mockMuteList.length = 0;
+    mockBlockedPubkeys.clear();
     installLocalStorageMock();
     localStorage.clear();
     mockNostrQuery.mockResolvedValue([]);
@@ -193,5 +219,75 @@ describe('ModerationSettingsPage', () => {
 
     expect(screen.getByText('https://api.staging.divine.video')).toBeInTheDocument();
     expect(mockInvalidateQueries).toHaveBeenCalled();
+  });
+
+  it('splits explicit blocked users out of the muted users card', async () => {
+    mockMuteList.push(
+      { type: 'p', value: 'a'.repeat(64), createdAt: 1 },
+      { type: 'p', value: 'b'.repeat(64), createdAt: 1 },
+    );
+    mockBlockedPubkeys.add('a'.repeat(64));
+
+    renderPage();
+
+    expect(screen.getByRole('heading', { name: /blocked users \(1\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /muted users \(1\)/i })).toBeInTheDocument();
+  });
+
+  it('groups the remaining mutes by local provenance', async () => {
+    mockMuteList.push(
+      { type: 'p', value: 'a'.repeat(64), createdAt: 1, origin: 'web' },
+      { type: 'p', value: 'b'.repeat(64), createdAt: 1, origin: 'unknown' },
+      { type: 'p', value: 'c'.repeat(64), createdAt: 1, origin: 'unknown' },
+    );
+
+    renderPage();
+
+    expect(screen.getByRole('heading', { name: /muted here \(1\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /muted or blocked elsewhere \(2\)/i })).toBeInTheDocument();
+  });
+
+  it('requires confirmation before lifting a mute of unknown origin', async () => {
+    mockMuteList.push({ type: 'p', value: 'b'.repeat(64), createdAt: 1, origin: 'unknown' });
+
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /review/i }));
+
+    expect(await screen.findByText(/may be a Block set in the Divine app/i)).toBeInTheDocument();
+    expect(mockUnmute).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /lift it/i }));
+
+    await waitFor(() => {
+      expect(mockUnmute).toHaveBeenCalledWith({ type: 'p', value: 'b'.repeat(64) });
+    });
+  });
+
+  it('still confirms before lifting a mute web authored itself', async () => {
+    mockMuteList.push({ type: 'p', value: 'a'.repeat(64), createdAt: 1, origin: 'web' });
+
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /review/i }));
+
+    expect(await screen.findByText(/This mute was added from web/i)).toBeInTheDocument();
+    expect(mockUnmute).not.toHaveBeenCalled();
+  });
+
+  it('explains why the current user cannot mute themselves', async () => {
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText(/npub or pubkey/i), {
+      target: { value: nip19.npubEncode('f'.repeat(64)) },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /add to mute list/i }));
+
+    expect(mockToast).toHaveBeenCalledWith({
+      title: 'Error',
+      description: 'You can’t mute yourself.',
+      variant: 'destructive',
+    });
+    expect(mockMute).not.toHaveBeenCalled();
   });
 });

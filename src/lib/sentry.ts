@@ -2,7 +2,13 @@
 // ABOUTME: Provides crash reporting with stack traces, issue grouping, and performance metrics
 
 import * as Sentry from '@sentry/react';
-import { shouldDropHandledMediaHttpClientEvent } from '@/lib/sentryHttpClientFilter';
+import {
+  shouldDropHandledKeyExportHttpClientEvent,
+  shouldDropKeyExportBreadcrumb,
+  shouldDropKeyExportReplayEvent,
+  shouldDropFunnelcakeHttpClientEvent,
+  shouldDropHandledMediaHttpClientEvent,
+} from '@/lib/sentryHttpClientFilter';
 
 const BENIGN_SUBTITLE_VTT_STATUS_CODES = new Set([404, 410, 422]);
 
@@ -136,10 +142,17 @@ export function initializeSentry() {
       Sentry.replayIntegration({
         maskAllText: false,
         blockAllMedia: false,
+        beforeAddRecordingEvent(event) {
+          return shouldDropKeyExportReplayEvent(event) ? null : event;
+        },
       }),
       Sentry.httpClientIntegration({ failedRequestStatusCodes: [[400, 599]] }),
       Sentry.captureConsoleIntegration({ levels: ['error', 'warn'] }),
     ],
+
+    beforeBreadcrumb(breadcrumb) {
+      return shouldDropKeyExportBreadcrumb(breadcrumb) ? null : breadcrumb;
+    },
 
     // Filter out noise - browser environment errors we can't fix
     ignoreErrors: [
@@ -201,7 +214,17 @@ export function initializeSentry() {
 
     // Don't send PII
     beforeSend(event) {
+      if (shouldDropHandledKeyExportHttpClientEvent(event)) {
+        return null;
+      }
+
       if (shouldDropHandledMediaHttpClientEvent(event)) {
+        return null;
+      }
+
+      // Funnelcake REST failures are reported once as FunnelcakeFallbackError;
+      // drop the duplicate raw HTTP Client Error (#459)
+      if (shouldDropFunnelcakeHttpClientEvent(event)) {
         return null;
       }
 

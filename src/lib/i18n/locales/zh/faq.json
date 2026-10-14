@@ -1,0 +1,12 @@
+{
+  "title": "常见问题",
+  "subtitle": "关于 Divine，你想知道的都在这儿",
+  "sections": {
+    "gettingStarted": "新手入门",
+    "accounts": "账号与登录",
+    "posting": "发布与内容",
+    "privacySafety": "隐私与安全",
+    "features": "功能与互动",
+    "technical": "技术问题"
+  }
+}

@@ -5,6 +5,7 @@ import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Play } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { SmartLink } from '@/components/SmartLink';
 import { cn } from '@/lib/utils';
 import { useAdultVerification, checkMediaAuth } from '@/hooks/useAdultVerification';
 import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
@@ -19,6 +20,14 @@ interface ThumbnailPlayerProps {
   className?: string;
   /** Whether the source video is age-restricted; gates whether to attach auth on the thumbnail fetch. */
   ageRestricted?: boolean;
+  /**
+   * When set, the thumbnail renders a real anchor (stretched over the media)
+   * pointing at this route so middle-click / right-click → open in new tab work.
+   * Plain left-clicks still use SPA navigation via SmartLink.
+   */
+  linkTo?: string;
+  /** Content owner pubkey passed to SmartLink for subdomain-aware routing. */
+  linkOwnerPubkey?: string | null;
   onClick?: () => void;
   onPlayButtonClick?: () => void;
   onError?: () => void;
@@ -32,6 +41,8 @@ export function ThumbnailPlayer({
   duration: _duration,
   className,
   ageRestricted,
+  linkTo,
+  linkOwnerPubkey,
   onClick,
   onPlayButtonClick,
   onError,
@@ -183,13 +194,29 @@ export function ThumbnailPlayer({
         </div>
       )}
 
+      {/* Stretched link — real anchor so middle-click / open-in-new-tab work.
+          Sits above the media but below the play button (which stays outside
+          the anchor to avoid nested-interactive markup). */}
+      {linkTo && !requiresAuth && (
+        <SmartLink
+          to={linkTo}
+          ownerPubkey={linkOwnerPubkey}
+          className="absolute inset-0 z-10"
+          aria-label={t('thumbnailPlayer.openVideo')}
+          data-testid="thumbnail-link"
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+        />
+      )}
+
       {/* Play button overlay - only show when not showing auth overlay */}
       {!requiresAuth && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
           <Button
             variant="ghost"
             size="icon"
-            className="w-16 h-16 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm"
+            className="w-16 h-16 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm pointer-events-auto"
             data-testid="thumbnail-play-button"
             aria-label={t('thumbnailPlayer.playVideo')}
             onClick={(event) => {

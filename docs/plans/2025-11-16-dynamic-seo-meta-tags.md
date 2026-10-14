@@ -73,11 +73,7 @@ git commit -m "feat: add dynamic SEO meta tags to VideoPage
 
 Add Open Graph and Twitter Card meta tags that update when video data
 loads. Uses video title, content, and thumbnail for social sharing
-previews.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+previews."
 ```
 
 ---
@@ -148,11 +144,7 @@ git commit -m "feat: add dynamic SEO meta tags to ProfilePage
 
 Add Open Graph and Twitter Card meta tags that update when profile data
 loads. Uses user's display name, bio, and avatar for social sharing
-previews.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+previews."
 ```
 
 ---
@@ -221,11 +213,7 @@ git add src/pages/HashtagPage.tsx
 git commit -m "feat: add dynamic SEO meta tags to HashtagPage
 
 Add Open Graph and Twitter Card meta tags that update when hashtag data
-loads. Uses hashtag name and video count for social sharing previews.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+loads. Uses hashtag name and video count for social sharing previews."
 ```
 
 ---
@@ -313,11 +301,7 @@ Expected: Bundle sizes similar to before (no significant increase)
 If any cleanup or adjustments were needed:
 ```bash
 git add .
-git commit -m "chore: cleanup after SEO meta tags implementation
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+git commit -m "chore: cleanup after SEO meta tags implementation"
 ```
 
 ---

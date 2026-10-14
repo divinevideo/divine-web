@@ -8,8 +8,9 @@ import type { ParsedVideoData } from '@/types/video';
 import { API_CONFIG } from '@/config/api';
 import { fetchUserProfile, fetchUserLoopStats } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
-import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import type { ProfileStats } from '@/lib/profileStats';
+import { countContactListFollows } from '@/lib/contactListSelection';
 
 /**
  * Fetch comprehensive profile statistics for a user
@@ -91,6 +92,11 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
 
           reportFallback('REST returned no profile');
         } catch (err) {
+          // Cancelled queries are not failures — surface the abort to
+          // React Query without reporting or falling back (#459)
+          if (isAbortError(err)) {
+            throw err;
+          }
           debugLog(`[useProfileStats] REST API failed, falling back to WebSocket:`, err);
           reportFallback(err instanceof Error ? err.message : String(err));
           // Fall through to WebSocket fallback
@@ -155,9 +161,7 @@ export function useProfileStats(pubkey: string, videos?: ParsedVideoData[]) {
         const latestContactList = userContactList
           .sort((a, b) => b.created_at - a.created_at)[0];
 
-        const followingCount = latestContactList
-          ? latestContactList.tags.filter(tag => tag[0] === 'p').length
-          : 0;
+        const followingCount = countContactListFollows(latestContactList ?? null);
 
         // Calculate joined date (earliest video or contact list)
         let joinedDate: Date | null = null;

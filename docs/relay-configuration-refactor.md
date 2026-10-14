@@ -128,22 +128,22 @@ export const getRelays = () => {
 };
 ```
 
-### Relay Health Monitoring
-```typescript
-interface RelayConfig {
-  url: string;
-  name: string;
-  healthCheck?: () => Promise<boolean>;
-  lastChecked?: Date;
-  status?: 'online' | 'offline' | 'slow';
-}
-```
+### Relay Health Monitoring ✅ Shipped
+Per-relay telemetry, score, and adaptive `pickTopN` routing live in
+`src/lib/relayHealth.ts`. See `docs/relay-health.md` for the score
+function, sticky routing rules, and debug surface.
 
-### User-Configurable Relays
-Allow users to add/remove/reorder relays in settings UI.
+### User-Configurable Relays ✅ Shipped
+Users can toggle preset relays on/off and add custom relay URLs from
+**Settings → Relays** (`/settings/relays`). State is persisted in the
+existing `nostr:app-config` localStorage key as `disabledPresetUrls`
+and `customRelayUrls`.
 
 ### Relay Capabilities Detection
 Automatically detect NIP-50, NIP-96, Blossom support via NIP-11.
+(The optimistic capability table in `src/lib/relayCapabilities.ts`
+and the live NIP-11 probe partially cover this; full Blossom / NIP-96
+detection is still future work.)
 
 ## Migration Notes
 

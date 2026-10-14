@@ -1,12 +1,16 @@
 import { NPool, NRelay1, type NostrEvent, type NostrFilter, type NostrSigner } from '@nostrify/nostrify';
 import { bytesToHex } from '@noble/hashes/utils';
 import { sha256 } from '@noble/hashes/sha256';
-import { finalizeEvent, generateSecretKey, nip44, verifyEvent } from 'nostr-tools';
+import { finalizeEvent, generateSecretKey, nip42, nip44, verifyEvent } from 'nostr-tools';
 
 import { PRESET_RELAYS, PROFILE_RELAYS, getRelayUrls } from '@/config/relays';
-import { getVideoShareUrl } from '@/lib/shareUtils';
+import { DIVINE_MODERATION_PUBKEY } from '@/lib/officialAccounts';
+import {
+  REMOTE_RELAY_HINT_CAP,
+  admitRelayUrls,
+  admitRemoteSuppliedRelays,
+} from '@/lib/relayUrlPolicy';
 import { getApexShareUrl } from '@/lib/subdomainLinks';
-import type { ParsedVideoData } from '@/types/video';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 
 export const DM_GIFT_WRAP_KIND = 1059;
@@ -14,7 +18,12 @@ export const DM_SEAL_KIND = 13;
 export const DM_RUMOR_KIND = 14;
 export const DM_RELAY_LIST_KIND = 10050;
 
-export const DIVINE_SUPPORT_PUBKEY = '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+// The "Message Support" destination. Points at the pinned Divine Moderation
+// account (moderation@divine.video) — a NIP-05-verified, minorContactable
+// official identity — NOT an unverifiable personal key. This is what lets a
+// protected minor's support message through the #176 send gate + inbound filter.
+// Single-sourced from officialAccounts so the two can't drift.
+export const DIVINE_SUPPORT_PUBKEY = DIVINE_MODERATION_PUBKEY;
 
 const TWO_DAYS_IN_SECONDS = 2 * 24 * 60 * 60;
 const PUBKEY_PATTERN = /^[a-f0-9]{64}$/;
@@ -54,7 +63,7 @@ export interface DmConversation {
   unreadCount: number;
 }
 
-interface DmRumorEvent {
+export interface DmRumorEvent {
   id: string;
   pubkey: string;
   kind: number;
@@ -63,12 +72,20 @@ interface DmRumorEvent {
   content: string;
 }
 
-export interface CreateDmGiftWrapsInput {
-  signer: NostrSigner;
+export interface BuildDmRumorInput {
   senderPubkey: string;
   recipientPubkeys: string[];
   content: string;
   additionalTags?: string[][];
+}
+
+export interface CreateDmGiftWrapsInput extends BuildDmRumorInput {
+  signer: NostrSigner;
+  /**
+   * Rumor to wrap. Omit to mint a fresh one. Pass the rumor from a previous
+   * attempt to re-wrap the same message — see `buildDmRumor` (#578).
+   */
+  rumor?: DmRumorEvent;
 }
 
 export interface FetchDmMessagesInput {
@@ -127,12 +144,15 @@ function randomNow(): number {
 }
 
 function normalizeRelayUrls(relayUrls: string[]): string[] {
-  return [...new Set(
-    relayUrls
-      .map((relayUrl) => relayUrl.trim())
-      .filter(Boolean)
-      .filter((relayUrl) => relayUrl.startsWith('ws://') || relayUrl.startsWith('wss://')),
-  )];
+  return admitRelayUrls(relayUrls);
+}
+
+function warnRejectedDmRelay(relayUrl: string, reason: string): void {
+  console.warn(`[DM] Rejected remote relay URL "${relayUrl}": ${reason}`);
+}
+
+function warnTruncatedDmRelayList(droppedCount: number): void {
+  console.warn(`[DM] Truncated remote relay list by ${droppedCount} entries`);
 }
 
 function isPubkey(value: string): boolean {
@@ -175,15 +195,48 @@ function getDirectMessageRelayUrls(): string[] {
   ]);
 }
 
-function createRelayPool(relayUrls: string[]): NPool<NRelay1> {
+/**
+ * Build the `auth` callback an {@link NRelay1} uses to answer a relay's
+ * NIP-42 AUTH challenge with a signed kind-22242 event.
+ *
+ * The Divine relay gates kind-1059 (NIP-17 gift wrap) reads to the
+ * authenticated recipient: until the connection answers the challenge, the
+ * relay returns nothing for the inbox query. With a single default relay and
+ * no EOSE, that read then hangs to its abort timeout and surfaces as a
+ * permanently empty inbox — so signing the challenge is what lets a recipient
+ * read their own gift wraps at all.
+ *
+ * When no signer is available (logged-out) the callback rejects: there is no
+ * identity to authenticate with, so the connection stays unauthenticated
+ * rather than sending a bogus AUTH. NRelay1 runs this as
+ * `auth(challenge).then(...).catch(() => {})`, so the rejection is swallowed
+ * and a missing signer degrades to "unauthenticated", never an uncaught error.
+ */
+export function makeDmAuthCallback(
+  relayUrl: string,
+  signer: NostrSigner | undefined,
+): (challenge: string) => Promise<NostrEvent> {
+  return async (challenge: string) => {
+    if (!signer) {
+      throw new Error('[DM] Cannot answer a NIP-42 AUTH challenge without a signer');
+    }
+    return signer.signEvent(nip42.makeAuthEvent(relayUrl, challenge));
+  };
+}
+
+function createRelayPool(relayUrls: string[], signer?: NostrSigner): NPool<NRelay1> {
   return new NPool({
-    open: (url) => new NRelay1(url, { idleTimeout: false }),
+    open: (url) =>
+      new NRelay1(url, {
+        idleTimeout: false,
+        auth: makeDmAuthCallback(url, signer),
+      }),
     reqRouter: (filters) => new Map(relayUrls.map((url) => [url, filters])),
     eventRouter: () => relayUrls,
   });
 }
 
-function isRumorEvent(value: unknown): value is DmRumorEvent {
+export function isRumorEvent(value: unknown): value is DmRumorEvent {
   if (!value || typeof value !== 'object') return false;
 
   const rumor = value as Partial<DmRumorEvent>;
@@ -270,6 +323,7 @@ async function publishEventToAllRelays(
 async function queryPreferredRelayMap(
   relayUrls: string[],
   authors: string[],
+  relayTrust: 'self' | 'remote',
   signal?: AbortSignal,
 ): Promise<Record<string, string[]>> {
   if (!authors.length || !relayUrls.length) {
@@ -298,11 +352,16 @@ async function queryPreferredRelayMap(
 
     return Object.fromEntries(
       [...newestEvents.entries()].map(([pubkey, event]) => {
-        const urls = normalizeRelayUrls(
-          event.tags
-            .filter((tag) => (tag[0] === 'r' || tag[0] === 'relay') && typeof tag[1] === 'string')
-            .map((tag) => tag[1]),
-        );
+        const relayTags = event.tags
+          .filter((tag) => (tag[0] === 'r' || tag[0] === 'relay') && typeof tag[1] === 'string')
+          .map((tag) => tag[1]);
+        const urls = relayTrust === 'remote'
+          ? admitRemoteSuppliedRelays(relayTags, {
+              cap: REMOTE_RELAY_HINT_CAP,
+              onRejected: warnRejectedDmRelay,
+              onTruncated: warnTruncatedDmRelayList,
+            })
+          : normalizeRelayUrls(relayTags);
         return [pubkey, urls];
       }),
     );
@@ -370,6 +429,33 @@ function createWrapEvent(seal: NostrEvent, targetPubkey: string): NostrEvent {
 }
 
 /**
+ * Build the kind-14 rumor for a NIP-17 send.
+ *
+ * The rumor id is a message's only stable identity: NIP-59 mints a fresh
+ * ephemeral keypair per gift wrap and randomizes the wrap/seal `created_at`,
+ * and NIP-44 v2 randomizes the nonce, so nothing in the outer layers repeats
+ * between two wraps of the same message. Callers that may send a message more
+ * than once — a retry, or the recipient copy plus the self copy — must mint
+ * the rumor once here and hand it to both wrap builders, or each attempt
+ * delivers a message the receiver cannot recognize as a duplicate (#578).
+ *
+ * NIP-59: "If a rumor is intended for more than one party, or if the author
+ * wants to retain an encrypted copy, a single rumor may be wrapped and
+ * addressed for each recipient individually."
+ */
+export function buildDmRumor(input: BuildDmRumorInput): DmRumorEvent {
+  const { senderPubkey, recipientPubkeys, content, additionalTags = [] } = input;
+  const recipients = recipientPubkeys.filter(isPubkey);
+
+  if (!recipients.length) {
+    throw new Error('Direct messages require at least one recipient');
+  }
+
+  const allParticipants = [...new Set([senderPubkey, ...recipients])];
+  return createRumorEvent(senderPubkey, allParticipants, content, additionalTags);
+}
+
+/**
  * Create gift wraps targeted at the recipients of a NIP-17 DM.
  *
  * Throws on any failure. This is the primary path: if it can't produce
@@ -380,17 +466,21 @@ function createWrapEvent(seal: NostrEvent, targetPubkey: string): NostrEvent {
  * use this function for the self copy — a self-wrap failure must not
  * abort delivery to the actual recipients (mirrors the pattern in
  * mobile/packages/dm_repository/lib/src/nip17_message_service.dart).
+ *
+ * INVARIANT (#176): the only caller is `useDmSend`, which runs the
+ * protected-minor send gate (`assertMinorDmRecipientsAllowed`) BEFORE this. Any
+ * new caller MUST gate first — this builder does not, so a bypass here would
+ * let a protected minor DM a non-approved account.
  */
 export async function createRecipientGiftWraps(input: CreateDmGiftWrapsInput): Promise<NostrEvent[]> {
-  const { signer, senderPubkey, recipientPubkeys, content, additionalTags = [] } = input;
+  const { signer, recipientPubkeys } = input;
   const recipients = recipientPubkeys.filter(isPubkey);
 
   if (!recipients.length) {
     throw new Error('Direct messages require at least one recipient');
   }
 
-  const allParticipants = [...new Set([senderPubkey, ...recipients])];
-  const rumor = createRumorEvent(senderPubkey, allParticipants, content, additionalTags);
+  const rumor = input.rumor ?? buildDmRumor(input);
 
   const wraps: NostrEvent[] = [];
   for (const recipient of recipients) {
@@ -409,13 +499,15 @@ export async function createRecipientGiftWraps(input: CreateDmGiftWrapsInput): P
  * throw on null; the recipient delivery has already happened (or failed
  * loudly via `createRecipientGiftWraps`), and the self copy is purely a
  * recovery path.
+ *
+ * Pass the same `rumor` handed to `createRecipientGiftWraps` so both copies
+ * of a message share one id — otherwise the sender's recovered copy is a
+ * different message from the one the recipient holds (#578).
  */
 export async function createSelfGiftWrap(input: CreateDmGiftWrapsInput): Promise<NostrEvent | null> {
   try {
-    const { signer, senderPubkey, recipientPubkeys, content, additionalTags = [] } = input;
-    const recipients = recipientPubkeys.filter(isPubkey);
-    const allParticipants = [...new Set([senderPubkey, ...recipients])];
-    const rumor = createRumorEvent(senderPubkey, allParticipants, content, additionalTags);
+    const { signer, senderPubkey } = input;
+    const rumor = input.rumor ?? buildDmRumor(input);
     const seal = await createSealEvent(signer, senderPubkey, rumor);
     return createWrapEvent(seal, senderPubkey);
   } catch (cause) {
@@ -495,9 +587,8 @@ export async function unwrapDmGiftWrap(
     return { ok: false, reason: 'malformed' };
   }
   // TODO(#321): split attestation/hash mismatch into its own
-  // `DmUnwrapResult.code` discriminator (mirroring `InviteApiError.code`
-  // in `src/lib/inviteApi.ts:21-31`). Forgery-adjacent signals deserve to
-  // be distinguishable from bare decode failures for telemetry.
+  // `DmUnwrapResult.code` discriminator. Forgery-adjacent signals deserve
+  // to be distinguishable from bare decode failures for telemetry.
   if (seal.pubkey !== rumor.pubkey) {
     return { ok: false, reason: 'malformed' };
   }
@@ -541,7 +632,7 @@ export async function fetchDmMessages(input: FetchDmMessagesInput): Promise<Fetc
     return { messages: [], fetchedCount: 0, decryptFailures: 0, malformedCount: 0 };
   }
 
-  const pool = createRelayPool(normalizedRelays);
+  const pool = createRelayPool(normalizedRelays, signer);
 
   try {
     const events = await pool.query(
@@ -561,6 +652,7 @@ export async function fetchDmMessages(input: FetchDmMessagesInput): Promise<Fetc
     );
 
     const messages: DmMessage[] = [];
+    const seenRumorIds = new Set<string>();
     let decryptFailures = 0;
     let malformedCount = 0;
 
@@ -568,8 +660,21 @@ export async function fetchDmMessages(input: FetchDmMessagesInput): Promise<Fetc
       const outcome = outcomes[i];
       if (outcome.ok) {
         const built = buildMessageFromRumor(events[i], outcome.rumor, currentUserPubkey);
-        if (built) messages.push(built);
-        else malformedCount++;
+        if (!built) {
+          malformedCount++;
+          continue;
+        }
+
+        // Collapse on the rumor id, not the wrap id. NIP-59 mints a fresh
+        // ephemeral keypair per gift wrap and randomizes the wrap/seal
+        // created_at, and NIP-44 randomizes the nonce, so two wraps of one
+        // message share nothing on the outside — keying the list on wrapId
+        // renders a re-published message twice (#578). This holds against
+        // any source of a duplicate wrap, not only this client's retries.
+        if (seenRumorIds.has(built.rumorId)) continue;
+        seenRumorIds.add(built.rumorId);
+
+        messages.push(built);
       } else if (outcome.reason === 'decrypt-failed') {
         decryptFailures++;
       } else {
@@ -627,7 +732,7 @@ export async function resolveDmReadRelays(input: ResolveDmRelaysInput): Promise<
     : [];
 
   const preferredRelayMap = currentUserPubkey
-    ? await queryPreferredRelayMap(fallbackRelays, [currentUserPubkey], signal).catch(() => ({}))
+    ? await queryPreferredRelayMap(fallbackRelays, [currentUserPubkey], 'self', signal).catch(() => ({}))
     : {};
 
   return normalizeRelayUrls([
@@ -652,7 +757,7 @@ export async function resolveDmWriteRelays(input: ResolveDmRelaysInput): Promise
       )
     : [];
 
-  const preferredRelayMap = await queryPreferredRelayMap(fallbackRelays, recipientPubkeys, signal).catch(() => ({}));
+  const preferredRelayMap = await queryPreferredRelayMap(fallbackRelays, recipientPubkeys, 'remote', signal).catch(() => ({}));
 
   return normalizeRelayUrls([
     ...fallbackRelays,
@@ -682,7 +787,7 @@ export function calculateUnsignedEventHash(
     event.content,
   ]);
 
-  return bytesToHex(sha256(Uint8Array.from(new TextEncoder().encode(serializedEvent))));
+  return bytesToHex(sha256(new TextEncoder().encode(serializedEvent)));
 }
 
 export function decodeConversationId(conversationId: string): string[] {
@@ -715,48 +820,6 @@ export function getDmMessagePreview(message: DmMessage): string {
   return 'Sent a message';
 }
 
-interface BuildOptimisticDmMessageInput {
-  currentUserPubkey: string;
-  participantPubkeys: string[];
-  content: string;
-  share?: DmSharePayload;
-  wraps: NostrEvent[];
-  createdAt?: number;
-}
-
-export function buildOptimisticDmMessage(input: BuildOptimisticDmMessageInput): DmMessage | null {
-  const {
-    currentUserPubkey,
-    participantPubkeys,
-    content,
-    share,
-    wraps,
-    createdAt = Math.round(Date.now() / 1000),
-  } = input;
-
-  const peerPubkeys = [...new Set(participantPubkeys.filter((pubkey) => pubkey !== currentUserPubkey))].sort();
-  if (!peerPubkeys.length) {
-    return null;
-  }
-
-  const participantList = [...new Set([currentUserPubkey, ...peerPubkeys])].sort();
-  const selfWrap = wraps.find((wrap) => wrap.tags.some((tag) => tag[0] === 'p' && tag[1] === currentUserPubkey));
-  const wrapId = selfWrap?.id || `optimistic:${currentUserPubkey}:${peerPubkeys.join(',')}:${createdAt}`;
-
-  return {
-    conversationId: encodeConversationId(peerPubkeys),
-    wrapId,
-    rumorId: wrapId,
-    senderPubkey: currentUserPubkey,
-    participantPubkeys: participantList,
-    peerPubkeys,
-    content,
-    createdAt,
-    isOutgoing: true,
-    share,
-  };
-}
-
 export function groupDmConversations(
   messages: DmMessage[],
   readState: Record<string, number>,
@@ -786,64 +849,4 @@ export function groupDmConversations(
       } satisfies DmConversation;
     })
     .sort((a, b) => b.lastMessage.createdAt - a.lastMessage.createdAt);
-}
-
-export function buildDmSharePayloadFromVideo(video: ParsedVideoData): DmSharePayload {
-  return {
-    url: getVideoShareUrl(video),
-    title: video.title,
-    videoId: video.id,
-    videoPubkey: video.pubkey,
-    vineId: video.vineId || undefined,
-  };
-}
-
-export function buildDmShareTags(share?: DmSharePayload): string[][] {
-  if (!share) {
-    return [];
-  }
-
-  const tags: string[][] = [['r', share.url]];
-
-  if (share.title) {
-    tags.push(['title', share.title]);
-  }
-
-  if (share.vineId && share.videoPubkey) {
-    tags.push(['a', `${SHORT_VIDEO_KIND}:${share.videoPubkey}:${share.vineId}`]);
-  } else if (share.videoId) {
-    tags.push(['e', share.videoId]);
-  }
-
-  return tags;
-}
-
-export function buildDmShareQueryString(share?: DmSharePayload): string {
-  if (!share) {
-    return '';
-  }
-
-  const params = new URLSearchParams({ shareUrl: share.url });
-
-  if (share.title) params.set('shareTitle', share.title);
-  if (share.videoId) params.set('shareVideoId', share.videoId);
-  if (share.videoPubkey) params.set('shareVideoPubkey', share.videoPubkey);
-  if (share.vineId) params.set('shareVineId', share.vineId);
-
-  return params.toString();
-}
-
-export function parseDmShareQuery(searchParams: URLSearchParams): DmSharePayload | undefined {
-  const url = searchParams.get('shareUrl');
-  if (!url) {
-    return undefined;
-  }
-
-  return {
-    url,
-    title: searchParams.get('shareTitle') || undefined,
-    videoId: searchParams.get('shareVideoId') || undefined,
-    videoPubkey: searchParams.get('shareVideoPubkey') || undefined,
-    vineId: searchParams.get('shareVineId') || undefined,
-  };
 }

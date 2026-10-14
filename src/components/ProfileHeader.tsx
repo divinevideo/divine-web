@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { linkifyProfileBioText, normalizeExternalUrl } from '@/lib/profileBioLinkify';
+import { OwnSupporterRecognition, PublicSupporterRecognition } from '@/components/SupporterRecognition';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -16,19 +17,31 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserPlus, UserCheck, CheckCircle, PencilSimple as Pencil, Copy, DotsThreeVertical as MoreVertical, Flag, Play, Repeat, CircleNotch as Loader2, XCircle, LinkSimple as Link2, Code, Rss } from '@phosphor-icons/react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { UserPlus, UserCheck, CheckCircle, PencilSimple as Pencil, Copy, DotsThreeVertical as MoreVertical, Flag, Play, Repeat, CircleNotch as Loader2, XCircle, LinkSimple as Link2, Code, Rss, Prohibit } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
+import { useDmComposeGuard } from '@/hooks/useDmComposeGuard';
 import { ReportContentDialog } from '@/components/ReportContentDialog';
 import { UserListDialog } from '@/components/UserListDialog';
 import { LinkedAccounts } from '@/components/LinkedAccounts';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { useFollowers, getAllFollowerPubkeys } from '@/hooks/useFollowers';
-import { useFollowing } from '@/hooks/useFollowing';
+import { getAllFollowingPubkeys, useFollowing } from '@/hooks/useFollowing';
 import { useBadges } from '@/hooks/useBadges';
 import { useDmCapability } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
+import { useBlockedPubkeys, useBlockUser, useUnblockUser } from '@/hooks/useBlockList';
 import { ProfileBadges } from '@/components/ProfileBadges';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { genUserName } from '@/lib/genUserName';
@@ -103,14 +116,26 @@ export function ProfileHeader({
   const subdomainNavigate = useSubdomainNavigate();
   const rssFeedAvailable = useRssFeedAvailable();
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [showUnblockDialog, setShowUnblockDialog] = useState(false);
   const [userListDialog, setUserListDialog] = useState<'followers' | 'following' | null>(null);
+  const [userListSearch, setUserListSearch] = useState('');
   const { canUseDirectMessages } = useDmCapability();
+  // Hide every non-Support compose affordance. Support still flows through the
+  // protected-minor approval check inside the compose guard.
+  const { isComposeBlocked } = useDmComposeGuard();
 
   // Fetch followers/following when dialog is open
-  const followersQuery = useFollowers(userListDialog === 'followers' ? pubkey : '');
-  const followingQuery = useFollowing(userListDialog === 'following' ? pubkey : '');
+  const followersQuery = useFollowers(
+    userListDialog === 'followers' ? pubkey : '',
+    userListDialog === 'followers' ? userListSearch : '',
+  );
+  const followingQuery = useFollowing(
+    userListDialog === 'following' ? pubkey : '',
+    userListDialog === 'following' ? userListSearch : '',
+  );
   const followerPubkeys = getAllFollowerPubkeys(followersQuery.data);
-  const followingPubkeys = followingQuery.data?.pubkeys ?? [];
+  const followingPubkeys = getAllFollowingPubkeys(followingQuery.data);
 
   // Fetch NIP-58 badges
   const badgesQuery = useBadges(pubkey);
@@ -132,9 +157,52 @@ export function ProfileHeader({
   const website = metadata?.website;
   const websiteHref = normalizeExternalUrl(website);
   const websiteLabel = website?.trim();
+  const blockedPubkeys = useBlockedPubkeys();
+  const isBlocked = blockedPubkeys.has(pubkey);
+  const blockUser = useBlockUser();
+  const unblockUser = useUnblockUser();
+  const isBlockPending = blockUser.isPending || unblockUser.isPending;
 
   const handleFollowClick = () => {
+    if (isBlocked) {
+      setShowUnblockDialog(true);
+      return;
+    }
     onFollowToggle(!isFollowing);
+  };
+
+  const handleBlock = async () => {
+    try {
+      await blockUser.mutateAsync({ targetPubkey: pubkey });
+      setShowBlockDialog(false);
+      toast({
+        title: t('profileHeader.blockedTitle'),
+        description: t('profileHeader.blockedDescription'),
+      });
+    } catch {
+      toast({
+        title: t('moderationSettings.toastErrorTitle'),
+        description: t('profileHeader.blockFailedDescription'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUnblock = async () => {
+    try {
+      await unblockUser.mutateAsync({ targetPubkey: pubkey });
+      setShowUnblockDialog(false);
+      toast({
+        title: t('profileHeader.unblockedTitle'),
+        description: t('profileHeader.unblockedDescription'),
+      });
+    } catch {
+      toast({
+        title: t('moderationSettings.toastErrorTitle'),
+        description: t('moderationSettings.toastUnblockFailed'),
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleCopyNpub = async () => {
@@ -196,6 +264,7 @@ export function ProfileHeader({
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
+                {isOwnProfile ? <OwnSupporterRecognition /> : <PublicSupporterRecognition pubkey={pubkey} />}
                 {/* Show NIP-05 with visual feedback based on validation state */}
                 {nip05 ? (
                   <div className="flex items-center gap-1 justify-center sm:justify-start">
@@ -319,7 +388,7 @@ export function ProfileHeader({
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" data-testid="own-profile-menu-button">
+                <Button variant="outline" size="sm" aria-label="More profile actions" data-testid="own-profile-menu-button">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -335,12 +404,17 @@ export function ProfileHeader({
           <div className="flex-shrink-0 self-center sm:self-start flex gap-2">
             <Button
               onClick={handleFollowClick}
-              variant={isFollowing ? "outline" : "sticker"}
+              variant={isFollowing || isBlocked ? "outline" : "sticker"}
               size="sm"
               className="min-w-[100px]"
               data-testid="follow-button"
             >
-              {isFollowing ? (
+              {isBlocked ? (
+                <>
+                  <Prohibit className="w-4 h-4 mr-2" />
+                  {t('profileHeader.unblockUser')}
+                </>
+              ) : isFollowing ? (
                 <>
                   <UserCheck className="w-4 h-4 mr-2" weight="fill" />
                   {t('profileHeader.following')}
@@ -352,7 +426,7 @@ export function ProfileHeader({
                 </>
               )}
             </Button>
-            {canUseDirectMessages && (
+            {canUseDirectMessages && !isComposeBlocked(pubkey) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -363,7 +437,7 @@ export function ProfileHeader({
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" data-testid="profile-menu-button">
+                <Button variant="outline" size="sm" aria-label="More profile actions" data-testid="profile-menu-button">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -371,6 +445,13 @@ export function ProfileHeader({
                 <DropdownMenuItem onClick={() => navigate(`/get-embed?npub=${nip19.npubEncode(pubkey)}`)}>
                   <Code className="h-4 w-4 mr-2" />
                   {t('profileHeader.getEmbedCode')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => isBlocked ? setShowUnblockDialog(true) : setShowBlockDialog(true)}
+                  disabled={isBlockPending}
+                >
+                  <Prohibit className="h-4 w-4 mr-2" />
+                  {isBlocked ? t('profileHeader.unblockUser') : t('profileHeader.blockUser')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
                   <Flag className="h-4 w-4 mr-2" />
@@ -395,26 +476,9 @@ export function ProfileHeader({
 
       {/* Stats Section */}
       <div
-        className="grid grid-cols-2 sm:grid-cols-5 gap-4 py-4 border-t"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-t"
         data-testid="profile-stats"
       >
-        {/* Videos Count */}
-        <div className="text-center">
-          {stats ? (
-            <>
-              <div className="text-xl sm:text-2xl font-bold text-foreground">
-                {formatNumber(stats.videosCount)}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">{t('profileHeader.videos')}</div>
-            </>
-          ) : (
-            <>
-              <Skeleton className="h-6 w-12 mx-auto mb-1" data-testid="stat-skeleton-videos" />
-              <div className="text-xs sm:text-sm text-muted-foreground">{t('profileHeader.videos')}</div>
-            </>
-          )}
-        </div>
-
         {/* Followers Count */}
         <div className="text-center">
           {stats ? (
@@ -475,7 +539,7 @@ export function ProfileHeader({
         </div>
 
         {/* Joined Date / Classic Viner Status */}
-        <div className="text-center col-span-2 sm:col-span-1">
+        <div className="text-center">
           {stats ? (
             stats.joinedDateLoading ? (
               <Skeleton className="h-4 w-20 mx-auto" data-testid="stat-skeleton-joined" />
@@ -540,6 +604,44 @@ export function ProfileHeader({
         />
       )}
 
+      <AlertDialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('profileHeader.blockDialogTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('profileHeader.blockDialogDescription', { name: displayName })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBlockPending}>
+              {t('profileHeader.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleBlock} disabled={isBlockPending}>
+              {t('profileHeader.blockUser')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showUnblockDialog} onOpenChange={setShowUnblockDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('profileHeader.unblockDialogTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('profileHeader.unblockDialogDescription', { name: displayName })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBlockPending}>
+              {t('profileHeader.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleUnblock} disabled={isBlockPending}>
+              {t('profileHeader.unblockUser')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Followers / Following Dialog */}
       <UserListDialog
         open={userListDialog === 'followers'}
@@ -549,13 +651,23 @@ export function ProfileHeader({
         isLoading={followersQuery.isLoading || followersQuery.isFetchingNextPage}
         hasMore={followersQuery.hasNextPage ?? false}
         onLoadMore={() => followersQuery.fetchNextPage()}
+        searchQuery={userListSearch}
+        onSearchQueryChange={setUserListSearch}
+        isSearchError={followersQuery.isError}
+        emptyMessage={t('userList.noFollowers')}
       />
       <UserListDialog
         open={userListDialog === 'following'}
         onOpenChange={(open) => !open && setUserListDialog(null)}
         title={t('profileHeader.followingDialogTitle')}
         pubkeys={followingPubkeys}
-        isLoading={followingQuery.isLoading}
+        isLoading={followingQuery.isLoading || followingQuery.isFetchingNextPage}
+        hasMore={followingQuery.hasNextPage ?? false}
+        onLoadMore={() => followingQuery.fetchNextPage()}
+        searchQuery={userListSearch}
+        onSearchQueryChange={setUserListSearch}
+        isSearchError={followingQuery.isError}
+        emptyMessage={t('userList.noFollowing')}
       />
     </div>
   );

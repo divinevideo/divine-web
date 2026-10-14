@@ -1,0 +1,211 @@
+// ABOUTME: Tests for public people-list relay queries
+
+import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import type { NostrEvent } from '@nostrify/nostrify';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mockNostrQuery = vi.fn();
+const mockAppConfig = vi.hoisted(() => ({
+  relayUrl: 'wss://relay.divine.video',
+  relayUrls: ['wss://relay.divine.video'],
+  customRelayUrls: [] as string[],
+  disabledPresetUrls: [] as string[],
+}));
+
+vi.mock('@nostrify/react', () => ({
+  useNostr: () => ({ nostr: { query: mockNostrQuery } }),
+}));
+
+vi.mock('@/hooks/useAppContext', () => ({
+  useAppContext: () => ({
+    config: mockAppConfig,
+  }),
+}));
+
+const OWNER = 'a'.repeat(64);
+const MEMBER = 'b'.repeat(64);
+
+function peopleListEvent(overrides: Partial<NostrEvent> = {}): NostrEvent {
+  return {
+    id: 'c'.repeat(64),
+    pubkey: OWNER,
+    kind: 30000,
+    created_at: 100,
+    tags: [['d', 'friends'], ['title', 'Friends'], ['p', MEMBER]],
+    content: '',
+    sig: 'd'.repeat(128),
+    ...overrides,
+  };
+}
+
+function createWrapper() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return React.createElement(QueryClientProvider, { client }, children);
+  };
+}
+
+describe('people list hooks', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAppConfig.relayUrl = 'wss://relay.divine.video';
+    mockAppConfig.relayUrls = ['wss://relay.divine.video'];
+    mockAppConfig.customRelayUrls = [];
+    mockAppConfig.disabledPresetUrls = [];
+    mockNostrQuery.mockResolvedValue([]);
+  });
+
+  it('queries and deduplicates a profile’s public kind 30000 lists', async () => {
+    mockNostrQuery.mockResolvedValue([
+      peopleListEvent({ created_at: 10, tags: [['d', 'friends'], ['title', 'Old']] }),
+      peopleListEvent({ created_at: 20, tags: [['d', 'friends'], ['title', 'New']] }),
+      peopleListEvent({ created_at: 30, tags: [['d', 'block'], ['p', MEMBER]] }),
+      peopleListEvent({ created_at: 40, tags: [['d', 'mute'], ['title', 'Muted'], ['p', MEMBER]] }),
+    ]);
+    const { usePeopleLists } = await import('./usePeopleLists');
+
+    const { result } = renderHook(() => usePeopleLists(OWNER), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockNostrQuery).toHaveBeenCalledWith(
+      [{ kinds: [30000], authors: [OWNER], limit: 100 }],
+      { signal: expect.any(AbortSignal) },
+    );
+    expect(result.current.data?.map((list) => list.name)).toEqual(['New']);
+  });
+
+  it('does not query without an owner pubkey', async () => {
+    const { usePeopleLists } = await import('./usePeopleLists');
+    const { result } = renderHook(() => usePeopleLists(undefined), { wrapper: createWrapper() });
+
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(mockNostrQuery).not.toHaveBeenCalled();
+  });
+
+  it('queries an exact owner-aware people list and keeps the newest version', async () => {
+    mockNostrQuery.mockResolvedValue([
+      peopleListEvent({ created_at: 10, tags: [['d', 'friends'], ['title', 'Old']] }),
+      peopleListEvent({ created_at: 20, tags: [['d', 'friends'], ['title', 'New']] }),
+    ]);
+    const { usePeopleList } = await import('./usePeopleLists');
+
+    const { result } = renderHook(() => usePeopleList(OWNER, 'friends'), {
+      wrapper: createWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockNostrQuery).toHaveBeenCalledWith(
+      [{ kinds: [30000], authors: [OWNER], '#d': ['friends'], limit: 10 }],
+      {
+        signal: expect.any(AbortSignal),
+        relays: expect.arrayContaining(['wss://relay.divine.video']),
+      },
+    );
+    expect(result.current.data?.name).toBe('New');
+  });
+
+  it('queries exact people lists through relay hints', async () => {
+    mockNostrQuery.mockResolvedValue([peopleListEvent()]);
+    const { usePeopleList } = await import('./usePeopleLists');
+
+    const { result } = renderHook(
+      () => usePeopleList(OWNER, 'friends', { relayHints: ['wss://relay.example'] }),
+      { wrapper: createWrapper() },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockNostrQuery).toHaveBeenCalledWith(
+      [{ kinds: [30000], authors: [OWNER], '#d': ['friends'], limit: 10 }],
+      {
+        signal: expect.any(AbortSignal),
+        relays: expect.arrayContaining(['wss://relay.divine.video', 'wss://relay.example']),
+      },
+    );
+  });
+
+  it('uses custom relays and skips disabled app-chosen relays for exact people-list lookups', async () => {
+    mockAppConfig.relayUrls = ['wss://relay.divine.video', 'wss://relay.damus.io'];
+    mockAppConfig.customRelayUrls = ['wss://custom.example'];
+    mockAppConfig.disabledPresetUrls = ['wss://relay.damus.io'];
+    mockNostrQuery.mockResolvedValue([peopleListEvent()]);
+    const { usePeopleList } = await import('./usePeopleLists');
+
+    const { result } = renderHook(() => usePeopleList(OWNER, 'friends'), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockNostrQuery).toHaveBeenCalledWith(
+      [{ kinds: [30000], authors: [OWNER], '#d': ['friends'], limit: 10 }],
+      {
+        signal: expect.any(AbortSignal),
+        relays: expect.arrayContaining(['wss://relay.divine.video', 'wss://custom.example']),
+      },
+    );
+    const relays = mockNostrQuery.mock.calls[0]?.[1]?.relays;
+    expect(relays).not.toContain('wss://relay.damus.io');
+  });
+
+  it('keeps relay-hinted people-list lookups in distinct cache entries', async () => {
+    mockNostrQuery
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([peopleListEvent({ tags: [['d', 'friends'], ['title', 'Hinted'], ['p', MEMBER]] })]);
+    const { usePeopleList } = await import('./usePeopleLists');
+    const wrapper = createWrapper();
+    const { result, rerender } = renderHook(
+      ({ relayHints }) => usePeopleList(OWNER, 'friends', { relayHints }),
+      {
+        wrapper,
+        initialProps: { relayHints: [] as string[] },
+      },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    rerender({ relayHints: ['wss://relay.example'] });
+    await waitFor(() => expect(result.current.data?.name).toBe('Hinted'));
+
+    expect(mockNostrQuery).toHaveBeenCalledTimes(2);
+  });
+
+  it('shares a cache entry across reordered relay hints', async () => {
+    mockNostrQuery.mockResolvedValue([peopleListEvent()]);
+    const { usePeopleList } = await import('./usePeopleLists');
+    const wrapper = createWrapper();
+    const { result, rerender } = renderHook(
+      ({ relayHints }) => usePeopleList(OWNER, 'friends', { relayHints }),
+      {
+        wrapper,
+        initialProps: { relayHints: ['wss://a.example', 'wss://b.example'] },
+      },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    rerender({ relayHints: ['wss://b.example', 'wss://a.example'] });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Same hint set in a different order must reuse the cache, not refetch.
+    expect(mockNostrQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it('shares a cache entry when raw hints resolve to the same relay set', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockNostrQuery.mockResolvedValue([peopleListEvent()]);
+    const { usePeopleList } = await import('./usePeopleLists');
+    const wrapper = createWrapper();
+    const { result, rerender } = renderHook(
+      ({ relayHints }) => usePeopleList(OWNER, 'friends', { relayHints }),
+      {
+        wrapper,
+        initialProps: { relayHints: ['wss://relay.example'] },
+      },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    rerender({ relayHints: ['wss://relay.example', 'ws://rejected.example'] });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockNostrQuery).toHaveBeenCalledTimes(1);
+  });
+});

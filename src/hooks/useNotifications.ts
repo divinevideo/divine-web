@@ -12,10 +12,11 @@ const NOTIFICATIONS_PAGE_SIZE = 30;
 
 const CATEGORY_TYPES: Partial<Record<NotificationCategory, NotificationApiType[]>> = {
   likes: ['reaction'],
-  comments: ['reply'],
+  // The backend splits threaded replies (`reply`) from top-level comments on
+  // your video (`comment`). The Comments tab wants both.
+  comments: ['reply', 'comment'],
   follows: ['follow'],
   reposts: ['repost'],
-  zaps: ['zap'],
 };
 
 function resolveNotificationQueryFilters(category: NotificationCategory) {
@@ -120,13 +121,17 @@ export function useMarkNotificationsRead() {
       await queryClient.cancelQueries({ queryKey: ['notifications', pubkey] });
       await queryClient.cancelQueries({ queryKey: ['notifications-unread-count', pubkey] });
 
-      // Snapshot previous values for potential rollback
-      const previousNotifications = queryClient.getQueryData(['notifications', pubkey]);
-      const previousCount = queryClient.getQueryData(['notifications-unread-count', pubkey]);
+      // No rollback snapshot is taken: there is no onError handler by design
+      // (see the note above onSettled), so a snapshot would be captured into
+      // the mutation context and never read.
 
       // Optimistic update: mark notifications as read in cache
-      queryClient.setQueryData(
-        ['notifications', pubkey],
+      // The list is cached per category (['notifications', pubkey, category]),
+      // so an exact-key write against ['notifications', pubkey] matches
+      // nothing. Use the prefix-matching variant or the optimistic update is a
+      // silent no-op and every remount re-issues mark-all-read.
+      queryClient.setQueriesData(
+        { queryKey: ['notifications', pubkey] },
         (old: { pages: NotificationsResponse[]; pageParams: unknown[] } | undefined) => {
           if (!old) return old;
           const idsSet = notificationIds ? new Set(notificationIds) : null;
@@ -155,13 +160,13 @@ export function useMarkNotificationsRead() {
         );
       }
 
-      return { previousNotifications, previousCount };
     },
 
     // On server error, don't revert (per plan: server will sync on next refresh)
     onSettled: () => {
       // Refetch in background to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['notifications-unread-count', pubkey] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', pubkey] });
     },
   });
 }

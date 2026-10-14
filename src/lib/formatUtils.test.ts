@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatClassicVineViewBreakdown } from './formatUtils';
+import { formatClassicVineViewBreakdown, formatLoopCount } from './formatUtils';
 
 describe('formatClassicVineViewBreakdown', () => {
   it('returns null when there are no archived Vine loops', () => {
@@ -21,5 +21,12 @@ describe('formatClassicVineViewBreakdown', () => {
   it('handles singular loop labels and ignores negative new-view deltas', () => {
     expect(formatClassicVineViewBreakdown(2, 1)).toBe('1 Loop');
     expect(formatClassicVineViewBreakdown(90, 100)).toBe('100 Loops');
+  });
+});
+
+describe('formatLoopCount', () => {
+  it('formats native playback totals as loops', () => {
+    expect(formatLoopCount(1)).toBe('1 Loop');
+    expect(formatLoopCount(31)).toBe('31 Loops');
   });
 });

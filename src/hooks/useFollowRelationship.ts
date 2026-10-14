@@ -7,15 +7,29 @@ import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { followListCache } from '@/lib/followListCache';
+import {
+  countContactListFollows,
+  selectContactListForPublish,
+} from '@/lib/contactListSelection';
 import { debugLog } from '@/lib/debug';
+import { latestEvent } from '@/lib/nostrEvents';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { PRIMARY_RELAY } from '@/config/relays';
+import { getExplicitBlockedPubkeys, readBlockProvenance } from '@/lib/moderationProvenance';
+import { MUTE_LIST_KIND } from '@/types/moderation';
 
 /** Thrown when a follow request races with stale UI state. */
 export class FollowRaceError extends Error {
   constructor() {
     super('Already following this user');
     this.name = 'FollowRaceError';
+  }
+}
+
+export class ContactListUnavailableError extends Error {
+  constructor() {
+    super('Could not load your existing follow list. Please try again in a moment.');
+    this.name = 'ContactListUnavailableError';
   }
 }
 
@@ -34,6 +48,98 @@ interface FollowUserParams {
 interface UnfollowUserParams {
   targetPubkey: string;
   currentContactList: NostrEvent | null;
+}
+
+type NostrClient = ReturnType<typeof useNostr>['nostr'];
+
+export async function fetchAndSelectContactList(
+  nostr: NostrClient,
+  userPubkey: string,
+  currentContactList: NostrEvent | null,
+  logPrefix: string
+): Promise<NostrEvent | null> {
+  let relayQuerySucceeded = false;
+
+  try {
+    const signal = AbortSignal.timeout(5000);
+    const relayEvents: NostrEvent[] = [];
+    for await (const message of nostr.req(
+      [{ kinds: [3], authors: [userPubkey], limit: 1 }],
+      { signal, relays: [PRIMARY_RELAY.url] },
+    )) {
+      if (message[0] === 'EVENT') {
+        relayEvents.push(message[2]);
+      } else if (message[0] === 'EOSE') {
+        relayQuerySucceeded = true;
+        break;
+      } else if (message[0] === 'CLOSED') {
+        break;
+      }
+    }
+
+    relayQuerySucceeded &&= !signal.aborted;
+    if (!relayQuerySucceeded) {
+      throw new ContactListUnavailableError();
+    }
+
+    const relayContactList = latestEvent(
+      relayEvents.filter((event: NostrEvent) => event.kind === 3),
+    );
+
+    const selection = selectContactListForPublish(currentContactList, relayContactList);
+    let source = 'passed';
+    if (selection.chosen === null) {
+      source = 'none';
+    } else if (selection.chosen === relayContactList) {
+      source = 'relay';
+    }
+
+    debugLog(
+      `[${logPrefix}] Using ${source} contact list:`,
+      selection.reason,
+      '(relay had',
+      countContactListFollows(relayContactList),
+      'follows, passed had',
+      countContactListFollows(currentContactList),
+      ')'
+    );
+
+    return selection.chosen;
+  } catch (error) {
+    if (error instanceof ContactListUnavailableError) {
+      throw error;
+    }
+
+    debugLog(`[${logPrefix}] Failed to fetch latest Kind 3 from relay:`, error);
+    throw new ContactListUnavailableError();
+  }
+}
+
+function filterExplicitBlockedContactTags(tags: string[][], blockedPubkeys: ReadonlySet<string>): string[][] {
+  if (blockedPubkeys.size === 0) return tags;
+  return tags.filter(tag => !(tag[0] === 'p' && tag[1] && blockedPubkeys.has(tag[1])));
+}
+
+async function fetchExplicitBlockedPubkeysForPublish(
+  nostr: NostrClient,
+  userPubkey: string,
+): Promise<Set<string>> {
+  // Explicit blocks are the intersection of local provenance and the mute list,
+  // so with no local block provenance the result is always empty. Skip the
+  // mute-list round-trip that every follow/unfollow would otherwise incur.
+  if (readBlockProvenance(userPubkey).size === 0) return new Set();
+
+  const signal = AbortSignal.timeout(5000);
+  const events = await nostr.query([{
+    kinds: [MUTE_LIST_KIND],
+    authors: [userPubkey],
+    limit: 1,
+  }], { signal });
+  const latestMuteList = latestEvent(events.filter(event => event.kind === MUTE_LIST_KIND));
+  const mutedPubkeys = latestMuteList?.tags
+    .filter(tag => tag[0] === 'p' && tag[1])
+    .map(tag => tag[1]) ?? [];
+  return getExplicitBlockedPubkeys(userPubkey, mutedPubkeys);
 }
 
 /**
@@ -141,48 +247,12 @@ export function useFollowUser() {
     mutationFn: async ({ targetPubkey, currentContactList, targetDisplayName }: FollowUserParams) => {
       if (!user?.pubkey) throw new Error('No current user');
 
-      // CRITICAL: Always fetch the latest Kind 3 from the relay before publishing.
-      // The passed currentContactList may be stale or null if the UI query hasn't
-      // loaded yet (race condition on fresh sessions / mobile browsers).
-      let bestContactList = currentContactList;
-      let relayQuerySucceeded = false;
-
-      try {
-        const relayEvents = await nostr.query([
-          { kinds: [3], authors: [user.pubkey], limit: 1 },
-        ], { signal: AbortSignal.timeout(5000) });
-
-        relayQuerySucceeded = true;
-
-        const relayContactList = relayEvents
-          .filter((e: NostrEvent) => e.kind === 3)
-          .sort((a: NostrEvent, b: NostrEvent) => b.created_at - a.created_at)[0] || null;
-
-        if (relayContactList) {
-          const relayFollowCount = relayContactList.tags.filter((t: string[]) => t[0] === 'p').length;
-          const passedFollowCount = currentContactList?.tags.filter((t: string[]) => t[0] === 'p').length ?? 0;
-
-          // Use whichever has more follows to prevent data loss
-          if (relayFollowCount >= passedFollowCount) {
-            bestContactList = relayContactList;
-            debugLog('[useFollowUser] Using relay contact list:', relayFollowCount, 'follows (passed had', passedFollowCount, ')');
-          } else {
-            debugLog('[useFollowUser] Using passed contact list:', passedFollowCount, 'follows (relay had', relayFollowCount, ')');
-          }
-        }
-      } catch (error) {
-        debugLog('[useFollowUser] Failed to fetch latest Kind 3 from relay, using passed contact list:', error);
-      }
-
-      // If relay query failed and we have no cached list, refuse to publish
-      // to prevent creating a Kind 3 with only 1 follow that overwrites an existing list.
-      // But if the relay query succeeded and returned nothing, this user has genuinely
-      // never followed anyone — allow creating their first Kind 3.
-      if (!bestContactList && !relayQuerySucceeded) {
-        throw new Error(
-          'Could not load your existing follow list. Please try again in a moment.'
-        );
-      }
+      const bestContactList = await fetchAndSelectContactList(
+        nostr,
+        user.pubkey,
+        currentContactList,
+        'useFollowUser'
+      );
 
       const currentTags = bestContactList?.tags ?? [];
 
@@ -195,7 +265,9 @@ export function useFollowUser() {
       // Add new follow tag
       // Format: ['p', pubkey, relayUrl, petname]
       const newFollowTag = ['p', targetPubkey, '', targetDisplayName || ''];
-      const updatedTags = [...currentTags, newFollowTag];
+      const explicitBlocked = await fetchExplicitBlockedPubkeysForPublish(nostr, user.pubkey);
+      explicitBlocked.delete(targetPubkey);
+      const updatedTags = filterExplicitBlockedContactTags([...currentTags, newFollowTag], explicitBlocked);
 
       // Preserve relay information from existing contact list or use default
       const relayContent = bestContactList?.content || JSON.stringify({
@@ -249,35 +321,18 @@ export function useUnfollowUser() {
     mutationFn: async ({ targetPubkey, currentContactList }: UnfollowUserParams) => {
       if (!user?.pubkey) throw new Error('No current user');
 
-      // Fetch latest Kind 3 from relay, same as useFollowUser
-      let bestContactList = currentContactList;
-
-      try {
-        const relayEvents = await nostr.query([
-          { kinds: [3], authors: [user.pubkey], limit: 1 },
-        ], { signal: AbortSignal.timeout(5000) });
-
-        const relayContactList = relayEvents
-          .filter((e: NostrEvent) => e.kind === 3)
-          .sort((a: NostrEvent, b: NostrEvent) => b.created_at - a.created_at)[0] || null;
-
-        if (relayContactList) {
-          const relayFollowCount = relayContactList.tags.filter((t: string[]) => t[0] === 'p').length;
-          const passedFollowCount = currentContactList?.tags.filter((t: string[]) => t[0] === 'p').length ?? 0;
-
-          if (relayFollowCount >= passedFollowCount) {
-            bestContactList = relayContactList;
-            debugLog('[useUnfollowUser] Using relay contact list:', relayFollowCount, 'follows');
-          }
-        }
-      } catch (error) {
-        debugLog('[useUnfollowUser] Failed to fetch latest Kind 3, using passed contact list:', error);
-      }
+      const bestContactList = await fetchAndSelectContactList(
+        nostr,
+        user.pubkey,
+        currentContactList,
+        'useUnfollowUser'
+      );
 
       if (!bestContactList) throw new Error('No contact list to update');
 
       // Remove the target user from tags
-      const updatedTags = bestContactList.tags.filter(tag =>
+      const explicitBlocked = await fetchExplicitBlockedPubkeysForPublish(nostr, user.pubkey);
+      const updatedTags = filterExplicitBlockedContactTags(bestContactList.tags, explicitBlocked).filter(tag =>
         !(tag[0] === 'p' && tag[1] === targetPubkey)
       );
 

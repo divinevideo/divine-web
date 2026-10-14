@@ -2,8 +2,8 @@
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
 import { Link, useLocation } from 'react-router-dom';
-import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp } from '@phosphor-icons/react';
-import { useEffect, useState } from 'react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp, Handshake, Heart, Trophy } from '@phosphor-icons/react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
 import { nip19 } from 'nostr-tools';
@@ -27,7 +27,8 @@ import { usePlatformStats } from '@/hooks/usePlatformStats';
 import { LanguageMenu } from '@/components/LanguageMenu';
 import { SocialLinks } from '@/components/SocialLinks';
 import { getTranslatedCategoryLabel } from '@/lib/constants/categories';
-import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
+import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
+import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -74,11 +75,18 @@ export function AppSidebar({ className }: { className?: string }) {
   const [rssOpen, setRssOpen] = useState(false);
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
-  const [appStoreUrl, setAppStoreUrl] = useState<string | null>(null);
   const { data: categories } = useCategories();
-  const classicVinesRecovered = platformStats?.vine_videos?.toLocaleString();
+  // Funnelcake answers 200 with vine_videos: 0 when its count query fails, so a
+  // zero means the total is unknown. Show nothing rather than "0 Vines recovered".
+  const vineVideos = platformStats?.vine_videos;
+  const classicVinesRecovered = vineVideos ? vineVideos.toLocaleString() : undefined;
 
-  const isActive = (path: string) => location.pathname === path;
+  // Prerendered routes are served from a directory (dist/services/index.html),
+  // and Cloudflare Pages 308-redirects /services to /services/. Match the
+  // trailing-slash form too so a direct hit highlights the same nav item that
+  // an in-app navigation does.
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname === `${path}/`;
   const isDiscoveryActive = () =>
     location.pathname === '/discovery' || location.pathname.startsWith('/discovery/');
   const isPopularActive = () => location.pathname === '/popular';
@@ -93,28 +101,6 @@ export function AppSidebar({ className }: { className?: string }) {
   const profilePath = user?.pubkey
     ? `/profile/${nip19.npubEncode(user.pubkey)}`
     : null;
-
-  useEffect(() => {
-    const country = getPreferredAppStoreCountry();
-    let cancelled = false;
-
-    if (!country) {
-      setAppStoreUrl(null);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    lookupAppStoreUrl(country).then((url) => {
-      if (!cancelled) {
-        setAppStoreUrl(url);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <aside
@@ -142,21 +128,19 @@ export function AppSidebar({ className }: { className?: string }) {
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {/* App Store Badges */}
         <div className="flex flex-col gap-2 px-5 pb-2">
-          {appStoreUrl && (
-            <a
-              href={appStoreUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Download Divine on the App Store"
-              className="block transition-opacity hover:opacity-80"
-            >
-              <img
-                src="/store-badges/app-store-badge.svg"
-                alt="Download on the App Store"
-                className="h-10 w-auto"
-              />
-            </a>
-          )}
+          <a
+            href={APP_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Download Divine on the App Store"
+            className="block transition-opacity hover:opacity-80"
+          >
+            <img
+              src="/store-badges/app-store-badge.svg"
+              alt="Download on the App Store"
+              className="h-10 w-auto"
+            />
+          </a>
           <a
             href={PLAY_STORE_URL}
             target="_blank"
@@ -174,6 +158,13 @@ export function AppSidebar({ className }: { className?: string }) {
 
         {/* Main Navigation */}
         <nav className="flex flex-col gap-0.5 px-3 pt-2">
+          <NavItem
+            icon={<Heart className="h-[18px] w-[18px]" weight={isActive('/supporters') ? 'fill' : 'bold'} />}
+            label={t('supporters.title')}
+            onClick={() => navigate('/supporters')}
+            isActive={isActive('/supporters')}
+          />
+
           <NavItem
             icon={<Search className="h-[18px] w-[18px]" weight={isActive('/search') ? 'fill' : 'bold'} />}
             label={t('nav.search')}
@@ -204,6 +195,20 @@ export function AppSidebar({ className }: { className?: string }) {
             isActive={isPopularActive()}
           />
 
+          <NavItem
+            icon={<Trophy className="h-[18px] w-[18px]" weight={isActive('/leaderboard') ? 'fill' : 'bold'} />}
+            label={t('leaderboardPage.heading')}
+            onClick={() => navigate('/leaderboard')}
+            isActive={isActive('/leaderboard')}
+          />
+
+          <NavItem
+            icon={<LayoutGrid className="h-[18px] w-[18px]" weight={isActive('/services') ? 'fill' : 'bold'} />}
+            label={t('nav.services')}
+            onClick={() => navigate('/services')}
+            isActive={isActive('/services')}
+          />
+
           {user && canUseDirectMessages && (
             <NavItem
               icon={
@@ -216,8 +221,8 @@ export function AppSidebar({ className }: { className?: string }) {
                   )}
                 </div>
               }
-              label={t('nav.messages')}
-              onClick={() => navigate('/messages')}
+              label={t('support.messageSupportTitle')}
+              onClick={() => navigate(getSupportDmConversationPath())}
               isActive={isMessagesActive()}
             />
           )}
@@ -237,6 +242,15 @@ export function AppSidebar({ className }: { className?: string }) {
               label={t('nav.notifications')}
               onClick={() => navigate('/notifications')}
               isActive={isActive('/notifications')}
+            />
+          )}
+
+          {user && (
+            <NavItem
+              icon={<Handshake className="h-[18px] w-[18px]" weight={location.pathname === '/collabs' || location.pathname.startsWith('/collabs/') ? 'fill' : 'bold'} />}
+              label="Collabs"
+              onClick={() => navigate('/collabs')}
+              isActive={location.pathname === '/collabs' || location.pathname.startsWith('/collabs/')}
             />
           )}
 
@@ -465,6 +479,12 @@ export function AppSidebar({ className }: { className?: string }) {
                 {t('menu.mediaResources')}
               </a>
               <Link
+                to="/services"
+                className="transition-colors hover:text-primary"
+              >
+                {t('nav.services')}
+              </Link>
+              <Link
                 to="/merch"
                 className="transition-colors hover:text-primary"
               >
@@ -519,6 +539,18 @@ export function AppSidebar({ className }: { className?: string }) {
                 className="transition-colors hover:text-primary"
               >
                 {t('menu.kidsPolicy')}
+              </button>
+              <button
+                onClick={() => navigate('/exit')}
+                className="transition-colors hover:text-primary"
+              >
+                {t('menu.accountPortability')}
+              </button>
+              <button
+                onClick={() => navigate('/delete-account')}
+                className="transition-colors hover:text-primary"
+              >
+                {t('menu.deleteAccount')}
               </button>
               <button
                 onClick={() => navigate('/dmca')}

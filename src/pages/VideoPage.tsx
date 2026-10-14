@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { VideoCard } from '@/components/VideoCard';
-import { useVideoNavigation, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
+import { buildVideoNavigationUrl, parseVideoNavigationContext, useVideoNavigation, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useVideoByIdFunnelcake } from '@/hooks/useVideoByIdFunnelcake';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useBatchedVideoInteractions } from '@/hooks/useBatchedVideoInteractions';
@@ -22,49 +22,65 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { buildListPath, buildPeopleListPath } from '@/lib/eventRouting';
 import { debugLog } from '@/lib/debug';
+import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { buildVideoLikeTags } from '@/lib/buildVideoLikeTags';
 import type { ParsedVideoData, UserInteractions } from '@/types/video';
+
+function getNavigationIndex(video: ParsedVideoData, fallbackIndex: number): number {
+  const navigationIndex = (video as ParsedVideoData & { navigationIndex?: unknown }).navigationIndex;
+  return typeof navigationIndex === 'number' ? navigationIndex : fallbackIndex;
+}
 
 export function VideoPage() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useSubdomainNavigate();
 
   // Parse navigation context from URL params
   const context: VideoNavigationContext | null = useMemo(() => {
-    const source = searchParams.get('source') as VideoNavigationContext['source'];
-    if (!source) return null;
-
-    return {
-      source,
-      hashtag: searchParams.get('hashtag') || undefined,
-      pubkey: searchParams.get('pubkey') || undefined,
-      query: searchParams.get('q') || undefined,
-      sortMode: searchParams.get('sort') as VideoNavigationContext['sortMode'],
-      currentIndex: searchParams.get('index') ? parseInt(searchParams.get('index')!) : undefined,
-    };
+    return parseVideoNavigationContext(searchParams);
   }, [searchParams]);
+  const profileContextPubkey = context?.source === 'profile' ? context.pubkey : undefined;
 
   // Fast video loading via Funnelcake REST API
   const {
     video: funnelcakeVideo,
     videos: funnelcakeVideos,
+    featuredNavigationState,
+    featuredTab,
     windowOffset: funnelcakeWindowOffset,
+    fetchedCount: funnelcakeFetchedCount,
+    hasNextPage: funnelcakeHasNextPage,
+    isFetchingNextPage: isFetchingNextFunnelcakePage,
+    fetchNextPage: fetchNextFunnelcakePage,
     isLoading: funnelcakeLoading,
     error: funnelcakeError,
   } = useVideoByIdFunnelcake({
     videoId: id || '',
-    pubkey: context?.pubkey,
-    hashtag: context?.hashtag,
-    query: context?.query,
+    pubkey: profileContextPubkey,
+    hashtag: context?.source === 'hashtag' ? context.hashtag : undefined,
+    query: context?.source === 'search' ? context.query : undefined,
+    featuredTabId: context?.source === 'featured' ? context.featuredTabId : undefined,
     sortMode: context?.sortMode,
     currentIndex: context?.currentIndex,
     enabled: !!id,
   });
 
-  const shouldEnableWebsocketNavigation = !!id && !funnelcakeLoading && !funnelcakeVideo;
+  const isFeaturedTabUnavailable = featuredNavigationState === 'tab-unavailable';
+  const isFeaturedTargetOutOfRange = featuredNavigationState === 'target-out-of-range';
+  const effectiveNavigationContext: VideoNavigationContext | null = useMemo(
+    () => isFeaturedTabUnavailable ? { source: 'trending' } : context,
+    [context, isFeaturedTabUnavailable]
+  );
+  const shouldEnableWebsocketNavigation = !!id && !funnelcakeLoading && (
+    !funnelcakeVideo ||
+    (isFeaturedTabUnavailable && !funnelcakeVideos)
+  );
 
   // Fallback to WebSocket-based navigation (slower but handles all cases)
   const {
@@ -76,7 +92,10 @@ export function VideoPage() {
     goToNext: _wsGoToNext,
     goToPrevious: _wsGoToPrevious,
     isLoading: wsLoading,
-  } = useVideoNavigation(id || '', { enabled: shouldEnableWebsocketNavigation });
+  } = useVideoNavigation(id || '', {
+    enabled: shouldEnableWebsocketNavigation,
+    context: effectiveNavigationContext,
+  });
 
   // ALWAYS prefer Funnelcake REST API first - it's much faster
   // Loop counts are parsed from content field by funnelcakeTransform
@@ -92,46 +111,80 @@ export function VideoPage() {
   }, [videos, id]);
   const navigationIndexBase = videos === funnelcakeVideos ? funnelcakeWindowOffset : 0;
 
-  const hasNext = currentIndex >= 0 && currentIndex < (videos?.length || 0) - 1;
+  const isUsingFunnelcakeVideos = videos === funnelcakeVideos;
+  const hasNextLoaded = currentIndex >= 0 && currentIndex < (videos?.length || 0) - 1;
+  const hasNext = hasNextLoaded || (isUsingFunnelcakeVideos && currentIndex >= 0 && funnelcakeHasNextPage);
   const hasPrevious = currentIndex > 0;
+  const nextNavigationInFlightRef = useRef(false);
 
   // Build navigation URL
   const buildNavigationUrl = useCallback((video: ParsedVideoData, index: number) => {
-    if (!context) return `/video/${video.id}`;
+    if (!effectiveNavigationContext) return `/video/${video.id}`;
 
-    const params = new URLSearchParams({
-      source: context.source,
-      index: index.toString(),
-    });
+    return buildVideoNavigationUrl(video.id, effectiveNavigationContext, index);
+  }, [effectiveNavigationContext]);
 
-    if (context.hashtag) params.set('hashtag', context.hashtag);
-    if (context.pubkey) params.set('pubkey', context.pubkey);
-    if (context.query) params.set('q', context.query);
-    if (context.sortMode) params.set('sort', context.sortMode);
+  const goToNext = useCallback(async () => {
+    if (!hasNext || !videos || nextNavigationInFlightRef.current) return;
+    let nextVideos = videos;
 
-    return `/video/${video.id}?${params.toString()}`;
-  }, [context]);
+    if (!hasNextLoaded && isUsingFunnelcakeVideos && funnelcakeHasNextPage) {
+      // The next video isn't loaded yet. If a scroll-triggered fetch is already
+      // loading it, let that finish rather than starting a second fetch. When the
+      // next video is already loaded we fall through and navigate immediately,
+      // even while a background page fetch is in flight.
+      if (isFetchingNextFunnelcakePage) return;
+      nextNavigationInFlightRef.current = true;
+      try {
+        nextVideos = await fetchNextFunnelcakePage() ?? videos;
+      } catch {
+        nextVideos = videos;
+      } finally {
+        nextNavigationInFlightRef.current = false;
+      }
+    }
 
-  const goToNext = useCallback(() => {
-    if (!hasNext || !videos) return;
-    const nextVideo = videos[currentIndex + 1];
-    navigate(buildNavigationUrl(nextVideo, navigationIndexBase + currentIndex + 1));
-  }, [hasNext, videos, currentIndex, navigate, buildNavigationUrl, navigationIndexBase]);
+    const nextVideo = nextVideos[currentIndex + 1];
+    if (!nextVideo) {
+      toast({
+        title: t('videoPage.errorTitle'),
+        description: t('videoPage.nextVideoUnavailableDescription'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    navigate(buildNavigationUrl(nextVideo, getNavigationIndex(nextVideo, navigationIndexBase + currentIndex + 1)));
+  }, [
+    hasNext,
+    videos,
+    hasNextLoaded,
+    isUsingFunnelcakeVideos,
+    funnelcakeHasNextPage,
+    fetchNextFunnelcakePage,
+    isFetchingNextFunnelcakePage,
+    currentIndex,
+    navigate,
+    buildNavigationUrl,
+    navigationIndexBase,
+    toast,
+    t,
+  ]);
 
   const goToPrevious = useCallback(() => {
     if (!hasPrevious || !videos) return;
     const prevVideo = videos[currentIndex - 1];
-    navigate(buildNavigationUrl(prevVideo, navigationIndexBase + currentIndex - 1));
+    navigate(buildNavigationUrl(prevVideo, getNavigationIndex(prevVideo, navigationIndexBase + currentIndex - 1)));
   }, [hasPrevious, videos, currentIndex, navigate, buildNavigationUrl, navigationIndexBase]);
 
   // Get author data for profile context
   // Prefer cached author name from video/Funnelcake, then fetched profile, then generated fallback
-  const authorData = useAuthor(context?.pubkey || '', {
+  const authorData = useAuthor(profileContextPubkey || '', {
     initialName: currentVideo?.authorName,
     initialAvatar: currentVideo?.authorAvatar,
   });
-  const authorName = context?.pubkey
-    ? (authorData.data?.metadata?.display_name || authorData.data?.metadata?.name || currentVideo?.authorName || genUserName(context.pubkey))
+  const authorName = profileContextPubkey
+    ? (authorData.data?.metadata?.display_name || authorData.data?.metadata?.name || currentVideo?.authorName || genUserName(profileContextPubkey))
     : null;
 
   // Progressive rendering: only render a window of videos, expand on scroll
@@ -152,10 +205,40 @@ export function VideoPage() {
   }, [videos, maxRendered]);
 
   const hasMoreToShow = maxRendered < (videos?.length || 0);
+  const hasMoreFeedVideos = hasMoreToShow || (isUsingFunnelcakeVideos && funnelcakeHasNextPage);
+  // InfiniteScroll only calls next when dataLength grows. The unfiltered fetched
+  // count keeps it moving after a fully filtered page; visibleVideos controls UI.
+  const scrollDataLength = isUsingFunnelcakeVideos
+    ? funnelcakeFetchedCount + visibleVideos.length
+    : visibleVideos.length;
 
-  const showMoreVideos = useCallback(() => {
-    setMaxRendered(prev => Math.min(prev + LOAD_MORE_COUNT, videos?.length || 0));
-  }, [videos?.length]);
+  const showMoreVideos = useCallback(async () => {
+    if (hasMoreToShow) {
+      setMaxRendered(prev => Math.min(prev + LOAD_MORE_COUNT, videos?.length || 0));
+      return;
+    }
+
+    if (isUsingFunnelcakeVideos && funnelcakeHasNextPage && !isFetchingNextFunnelcakePage) {
+      try {
+        await fetchNextFunnelcakePage();
+      } catch {
+        toast({
+          title: t('videoPage.errorTitle'),
+          description: t('videoPage.loadMoreUnavailableDescription'),
+          variant: 'destructive',
+        });
+      }
+    }
+  }, [
+    fetchNextFunnelcakePage,
+    funnelcakeHasNextPage,
+    hasMoreToShow,
+    isFetchingNextFunnelcakePage,
+    isUsingFunnelcakeVideos,
+    toast,
+    t,
+    videos?.length,
+  ]);
 
   const fallbackReportKeyRef = useRef<string | null>(null);
 
@@ -166,7 +249,7 @@ export function VideoPage() {
     if (!usingWebsocketFallback) return;
 
     const reason = funnelcakeError?.message || 'REST returned no matching video';
-    const fallbackKey = `VideoPage|${id}|${context?.pubkey ?? ''}|${context?.hashtag ?? ''}|${reason}`;
+    const fallbackKey = `VideoPage|${id}|${profileContextPubkey ?? ''}|${context?.hashtag ?? ''}|${reason}`;
 
     if (fallbackReportKeyRef.current === fallbackKey) {
       return;
@@ -179,13 +262,13 @@ export function VideoPage() {
       dedupeKey: fallbackKey,
       context: {
         videoId: id,
-        pubkey: context?.pubkey,
+        pubkey: profileContextPubkey,
         hashtag: context?.hashtag,
       },
     });
   }, [
     context?.hashtag,
-    context?.pubkey,
+    profileContextPubkey,
     funnelcakeError?.message,
     funnelcakeLoading,
     funnelcakeVideo,
@@ -214,7 +297,6 @@ export function VideoPage() {
     videosForInteractions,
     user?.pubkey
   );
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { mutateAsync: publishEvent } = useNostrPublish();
   const { mutateAsync: repostVideo, isPending: isReposting } = useRepostVideo();
@@ -271,24 +353,40 @@ export function VideoPage() {
 
   // Navigation back to source
   const handleGoBack = useCallback(() => {
-    if (context?.source === 'hashtag' && context.hashtag) {
-      navigate(`/hashtag/${context.hashtag}`);
-    } else if (context?.source === 'profile' && context.pubkey) {
+    // Both featured branches read the *effective* context: once navigation has
+    // fallen back off an unavailable tab, `featuredTab` holds whichever tab is
+    // eligible now, which is by definition not the one the link came from.
+    // Matching on the raw context there would send a link labelled "Trending"
+    // to some unrelated featured tab.
+    if (isFeaturedTargetOutOfRange && featuredTab?.slug) {
+      navigate(`/discovery/${featuredTab.slug}`);
+    } else if (effectiveNavigationContext?.source === 'featured' && featuredTab?.slug) {
+      navigate(`/discovery/${featuredTab.slug}`);
+    } else if (effectiveNavigationContext?.source === 'hashtag' && effectiveNavigationContext.hashtag) {
+      navigate(`/hashtag/${effectiveNavigationContext.hashtag}`);
+    } else if (effectiveNavigationContext?.source === 'profile' && effectiveNavigationContext.pubkey) {
       navigate(buildProfileLinkPath({
-        pubkey: context.pubkey,
+        pubkey: effectiveNavigationContext.pubkey,
         fallbackRoute: 'profile',
-      }), { ownerPubkey: context.pubkey });
-    } else if (context?.source === 'search') {
+      }), { ownerPubkey: effectiveNavigationContext.pubkey });
+    } else if (effectiveNavigationContext?.source === 'search') {
       const params = new URLSearchParams();
-      if (context.query) params.set('q', context.query);
+      if (effectiveNavigationContext.query) params.set('q', effectiveNavigationContext.query);
       params.set('filter', 'videos');
-      if (context.sortMode) params.set('sort', context.sortMode);
+      if (effectiveNavigationContext.sortMode) params.set('sort', effectiveNavigationContext.sortMode);
       const target = params.toString() ? `/search?${params.toString()}` : '/search';
       navigate(target);
+    } else if (effectiveNavigationContext?.source === 'people-list' && effectiveNavigationContext.pubkey && effectiveNavigationContext.listId) {
+      navigate(buildPeopleListPath(effectiveNavigationContext.pubkey, effectiveNavigationContext.listId));
+    } else if (effectiveNavigationContext?.source === 'video-list' && effectiveNavigationContext.pubkey && effectiveNavigationContext.listId) {
+      navigate(
+        buildListPath(effectiveNavigationContext.pubkey, effectiveNavigationContext.listId),
+        { ownerPubkey: effectiveNavigationContext.pubkey },
+      );
     } else {
       navigate(-1); // Browser back
     }
-  }, [context, navigate]);
+  }, [effectiveNavigationContext, featuredTab?.slug, isFeaturedTargetOutOfRange, navigate]);
 
   // Social interaction handlers (same as VideoFeed)
   const handleLike = useCallback(async (video: ParsedVideoData) => {
@@ -302,10 +400,11 @@ export function VideoPage() {
       await publishEvent({
         kind: 7, // Reaction event
         content: '+', // Positive reaction
-        tags: [
-          ['e', video.id], // Reference to the video event
-          ['p', video.pubkey], // Reference to the video author
-        ],
+        tags: buildVideoLikeTags({
+          videoId: video.id,
+          videoPubkey: video.pubkey,
+          vineId: video.vineId,
+        }),
       });
 
       toast({
@@ -456,7 +555,21 @@ export function VideoPage() {
     const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, {
       enabled: true,
     });
-    const divineViewCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+    const loopCount = video.isVineMigrated
+      ? (video.loopCount ?? 0)
+      : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
+    const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+    const displayCount = getVisiblePlaybackCount({
+      isVineMigrated: video.isVineMigrated,
+      loopCount,
+      viewStartCount,
+    });
+    const videoForCard = useMemo(
+      () => loopCount !== (video.loopCount ?? 0)
+        ? { ...video, loopCount }
+        : video,
+      [loopCount, video]
+    );
 
     const handleVideoLike = async () => {
       if (userInteractions?.hasLiked) {
@@ -484,7 +597,7 @@ export function VideoPage() {
 
     return (
       <VideoCard
-        video={video}
+        video={videoForCard}
         className="max-w-xl mx-auto"
         layout="vertical"
         onLike={handleVideoLike}
@@ -496,9 +609,9 @@ export function VideoPage() {
         likeCount={video.likeCount ?? 0}
         repostCount={video.repostCount ?? 0}
         commentCount={video.commentCount ?? 0}
-        viewCount={(video.loopCount ?? 0) + divineViewCount}
+        viewCount={displayCount}
         showComments={showCommentsForVideo === video.id}
-        navigationContext={context || undefined}
+        navigationContext={effectiveNavigationContext || undefined}
       />
     );
   }
@@ -577,23 +690,32 @@ export function VideoPage() {
               onClick={handleGoBack}
               className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2 text-sm font-medium"
             >
-              {context.source === 'hashtag' && context.hashtag && (
+              {effectiveNavigationContext?.source === 'hashtag' && effectiveNavigationContext.hashtag && (
                 <>
                   <Hash className="h-4 w-4" />
-                  #{context.hashtag}
+                  #{effectiveNavigationContext.hashtag}
                 </>
               )}
-              {context.source === 'profile' && (
+              {effectiveNavigationContext?.source === 'profile' && (
                 <>
                   <User className="h-4 w-4" />
                   {t('videoPage.loadingVideos')}
                 </>
               )}
-              {context.source === 'search' && (
-                <span>{context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}</span>
+              {effectiveNavigationContext?.source === 'search' && (
+                <span>{effectiveNavigationContext.query ? t('videoPage.searchPrefix', { query: effectiveNavigationContext.query }) : t('videoPage.searchResults')}</span>
               )}
-              {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
-                <span className="capitalize">{context.source}</span>
+              {effectiveNavigationContext?.source === 'people-list' && (
+                <span>People list</span>
+              )}
+              {effectiveNavigationContext?.source === 'featured' && (
+                <span>{featuredTab?.label ?? t('videoPage.featuredVideos')}</span>
+              )}
+              {effectiveNavigationContext?.source === 'video-list' && (
+                <span>{effectiveNavigationContext.listName || t('listDetailPage.videoList')}</span>
+              )}
+              {(effectiveNavigationContext?.source === 'discovery' || effectiveNavigationContext?.source === 'trending' || effectiveNavigationContext?.source === 'home') && (
+                <span className="capitalize">{effectiveNavigationContext.source}</span>
               )}
             </button>
             <Button
@@ -638,23 +760,32 @@ export function VideoPage() {
               onClick={handleGoBack}
               className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2 text-sm font-medium"
             >
-              {context.source === 'hashtag' && context.hashtag && (
+              {effectiveNavigationContext?.source === 'hashtag' && effectiveNavigationContext.hashtag && (
                 <>
                   <Hash className="h-4 w-4" />
-                  #{context.hashtag}
+                  #{effectiveNavigationContext.hashtag}
                 </>
               )}
-              {context.source === 'profile' && authorName && (
+              {effectiveNavigationContext?.source === 'profile' && authorName && (
                 <>
                   <User className="h-4 w-4" />
                   {t('videoPage.authorVideos', { name: authorName })}
                 </>
               )}
-              {context.source === 'search' && (
-                <span>{context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}</span>
+              {effectiveNavigationContext?.source === 'search' && (
+                <span>{effectiveNavigationContext.query ? t('videoPage.searchPrefix', { query: effectiveNavigationContext.query }) : t('videoPage.searchResults')}</span>
               )}
-              {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
-                <span className="capitalize">{context.source}</span>
+              {effectiveNavigationContext?.source === 'people-list' && (
+                <span>People list</span>
+              )}
+              {effectiveNavigationContext?.source === 'featured' && (
+                <span>{featuredTab?.label ?? t('videoPage.featuredVideos')}</span>
+              )}
+              {effectiveNavigationContext?.source === 'video-list' && (
+                <span>{effectiveNavigationContext.listName || t('listDetailPage.videoList')}</span>
+              )}
+              {(effectiveNavigationContext?.source === 'discovery' || effectiveNavigationContext?.source === 'trending' || effectiveNavigationContext?.source === 'home') && (
+                <span className="capitalize">{effectiveNavigationContext.source}</span>
               )}
             </button>
             <Button
@@ -668,11 +799,17 @@ export function VideoPage() {
           </div>
         </div>
 
+        {isFeaturedTabUnavailable && (
+          <p className="mb-4 text-center text-sm text-muted-foreground">
+            {t('videoPage.featuredTabWrappedDescription')}
+          </p>
+        )}
+
         {/* Scrollable video feed - progressive rendering */}
         <InfiniteScroll
-          dataLength={visibleVideos.length}
+          dataLength={scrollDataLength}
           next={showMoreVideos}
-          hasMore={hasMoreToShow}
+          hasMore={hasMoreFeedVideos}
           loader={
             <div className="h-16 flex items-center justify-center">
               <div className="flex items-center gap-3">
@@ -680,6 +817,13 @@ export function VideoPage() {
                 <span className="text-sm text-muted-foreground">{t('videoPage.loadingMore')}</span>
               </div>
             </div>
+          }
+          endMessage={
+            (videos?.length ?? 0) > 10 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                {t('videoPage.allCaughtUp')}
+              </p>
+            ) : null
           }
           className="space-y-6 max-w-xl mx-auto"
         >
@@ -727,16 +871,16 @@ export function VideoPage() {
       {context && (
         <div className="mb-4">
           <div className="text-center text-sm">
-            {context.source === 'hashtag' && context.hashtag && (
+            {effectiveNavigationContext?.source === 'hashtag' && effectiveNavigationContext.hashtag && (
               <button
                 onClick={handleGoBack}
                 className="text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1 text-xs"
               >
                 <Hash className="h-3 w-3" />
-                #{context.hashtag}
+                #{effectiveNavigationContext.hashtag}
               </button>
             )}
-            {context.source === 'profile' && authorName && (
+            {effectiveNavigationContext?.source === 'profile' && authorName && (
               <button
                 onClick={handleGoBack}
                 className="text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1 text-xs"
@@ -745,23 +889,58 @@ export function VideoPage() {
                 {authorName}
               </button>
             )}
-            {context.source === 'search' && (
+            {effectiveNavigationContext?.source === 'search' && (
               <button
                 onClick={handleGoBack}
                 className="text-muted-foreground hover:text-primary transition-colors text-xs"
               >
-                {context.query ? t('videoPage.searchPrefix', { query: context.query }) : t('videoPage.searchResults')}
+                {effectiveNavigationContext.query ? t('videoPage.searchPrefix', { query: effectiveNavigationContext.query }) : t('videoPage.searchResults')}
               </button>
             )}
-            {(context.source === 'discovery' || context.source === 'trending' || context.source === 'home') && (
+            {effectiveNavigationContext?.source === 'people-list' && (
               <button
                 onClick={handleGoBack}
                 className="text-muted-foreground hover:text-primary transition-colors text-xs"
               >
-                {context.source}
+                People list
+              </button>
+            )}
+            {effectiveNavigationContext?.source === 'featured' && (
+              <button
+                onClick={handleGoBack}
+                className="text-muted-foreground hover:text-primary transition-colors text-xs"
+              >
+                {featuredTab?.label ?? t('videoPage.featuredVideos')}
+              </button>
+            )}
+            {effectiveNavigationContext?.source === 'video-list' && (
+              <button
+                onClick={handleGoBack}
+                className="text-muted-foreground hover:text-primary transition-colors text-xs"
+              >
+                {effectiveNavigationContext.listName || t('listDetailPage.videoList')}
+              </button>
+            )}
+            {(effectiveNavigationContext?.source === 'discovery' || effectiveNavigationContext?.source === 'trending' || effectiveNavigationContext?.source === 'home') && (
+              <button
+                onClick={handleGoBack}
+                className="text-muted-foreground hover:text-primary transition-colors text-xs"
+              >
+                {effectiveNavigationContext.source}
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {isFeaturedTargetOutOfRange && featuredTab && (
+        <div className="mb-4 text-center space-y-3">
+          <p className="text-sm text-muted-foreground">
+            {t('videoPage.featuredNavigationEndedDescription')}
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={handleGoBack}>
+            {t('videoPage.backToFeaturedTab', { label: featuredTab.label })}
+          </Button>
         </div>
       )}
 

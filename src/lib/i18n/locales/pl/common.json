@@ -8,8 +8,8 @@
     "home": "Strona glowna",
     "discover": "Odkrywaj",
     "popular": "Popular",
+    "services": "Services",
     "search": "Szukaj",
-    "messages": "Wiadomosci",
     "notifications": "Powiadomienia",
     "profile": "Profil",
     "analytics": "Analityka"
@@ -30,7 +30,9 @@
     "help": "Pomoc",
     "merch": "Merch",
     "familyResources": "Zasoby dla rodzin",
-    "kidsPolicy": "Polityka dla dzieci"
+    "kidsPolicy": "Polityka dla dzieci",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Tryb jasny",
@@ -68,6 +70,8 @@
     "classic": "Klasyczne",
     "hot": "Gorace",
     "new": "Nowe",
+    "featured": "Polecane",
+    "sponsoredBy": "Sponsorowane przez <bdi>{{sponsorName}}</bdi>",
     "tags": "Tagi",
     "verifiedOnly": "Stworzone przez ludzi",
     "verifiedOnlyHint": "Pokazuje tylko filmy z weryfikacja ProofMode",
@@ -101,19 +105,6 @@
     "reply": "Odpowiedz",
     "comment": "Komentarz"
   },
-  "messages": {
-    "badge": "Wiadomosci",
-    "title": "Wiadomosci bezposrednie",
-    "subtitle": "Porozmawiaj z supportem, wyslij vines prywatnie albo kontynuuj rozmowe z osobami, ktore obserwujesz.",
-    "searchPlaceholder": "Znajdz osoby, do ktorych chcesz napisac",
-    "newMessage": "Nowa wiadomosc",
-    "readyToShare": "Gotowe do prywatnego udostepnienia.",
-    "shareWithTitle": "Twoja nastepna wiadomosc bedzie zawierac “{{title}}”.",
-    "shareWithLink": "Twoja nastepna wiadomosc bedzie zawierac link do vine.",
-    "signerUnsupported": "Twoj obecny signer pozwala sie zalogowac, ale nie udostepnia jeszcze szyfrowania NIP-44. Przelacz sie na nsec, bunker lub inny signer obslugujacy NIP-44, aby korzystac z wiadomosci bezposrednich w sieci.",
-    "supportBadge": "Wsparcie",
-    "supportSummary": "Zapytaj o bledy, moderacje lub problemy z kontem."
-  },
   "support": {
     "title": "Wsparcie",
     "subtitle": "Potrzebujesz pomocy? Jestesmy tutaj, aby pomoc.",
@@ -134,6 +125,19 @@
     "communityDescription": "Dolacz do dyskusji spolecznosci i polacz sie z innymi uzytkownikami Divine na Nostr.",
     "communityBody": "Divine jest zbudowane na Nostr, zdecentralizowanym protokole spolecznosciowym. Znajdz nas w swoim ulubionym kliencie Nostr."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Nie znaleziono tagu",
     "notFoundDescription": "Nie mozna znalezc podanego tagu.",
@@ -146,7 +150,9 @@
     "emptyState": "Obecnie brak dostepnych kategorii.",
     "metaTitle": "Przegladaj kategorie - Divine",
     "metaDescription": "Przegladaj kategorie wideo w Divine - komedia, muzyka, taniec, zwierzeta, sport, jedzenie i wiecej.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} film",
+    "videoCount_two": "{{count}} videos",
     "videoCount_few": "{{count}} filmy",
     "videoCount_many": "{{count}} filmow",
     "videoCount_other": "{{count}} filmu"
@@ -186,7 +192,6 @@
       "pinToProfile": "Przypnij do profilu",
       "deleteVideo": "Usuń wideo",
       "reportVideo": "Zgłoś wideo",
-      "sendViaMessage": "Wyślij wiadomością",
       "reportUser": "Zgłoś użytkownika",
       "muteUser": "Wycisz {{name}}",
       "viewSource": "Zobacz źródło"
@@ -388,7 +393,6 @@
     "message": "Wiadomość",
     "reportUser": "Zgłoś użytkownika",
     "subscribeRss": "Subskrybuj kanał RSS",
-    "videos": "Wideo",
     "followers": "Obserwujący",
     "followingStat": "Obserwowani",
     "followingDialogTitle": "Obserwowani",
@@ -397,17 +401,26 @@
     "originalVineLoops": "Oryginalne pętle Vine",
     "classicVines": "Klasyczne Vine'y",
     "classicVineStatsCaption": "Statystyki z oryginalnej platformy Vine (2013-2017)",
-    "legacySocialLabel": "{{label}}: {{handle}}"
+    "legacySocialLabel": "{{label}}: {{handle}}",
+    "blockUser": "Zablokuj użytkownika",
+    "unblockUser": "Odblokuj użytkownika",
+    "blockDialogTitle": "Zablokować tego użytkownika?",
+    "blockDialogDescription": "{{name}} zostanie usunięty z Twojej publicznej listy obserwowanych, a jego filmy nie będą pojawiać się w Twoich feedach.",
+    "unblockDialogTitle": "Odblokować tego użytkownika?",
+    "unblockDialogDescription": "To ponownie pokaże filmy użytkownika {{name}}, ale nie zacznie go znowu obserwować.",
+    "blockedTitle": "Zablokowano.",
+    "blockedDescription": "Nie ma go już na Twojej liście obserwowanych ani w feedach.",
+    "unblockedTitle": "Odblokowano.",
+    "unblockedDescription": "Jego filmy mogą znowu się pojawiać. Nie obserwujesz go.",
+    "cancel": "Anuluj",
+    "blockFailedDescription": "Nie udało się zablokować. Spróbuj jeszcze raz."
   },
   "loginDialog": {
     "title": "Zaloguj się do Divine",
     "heading": "Wskakuj.",
-    "subtitleRegister": "Masz zaproszenie? Załóż konto.",
     "subtitleSignIn": "Zaloguj się na login.divine.video swoim kontem.",
     "tabRegister": "Rejestracja",
     "tabSignIn": "Zaloguj się",
-    "checkingInvite": "Sprawdzamy status zaproszenia...",
-    "inviteUnavailable": "Rejestracja przez zaproszenie chwilowo niedostępna. Możesz zalogować się w sąsiedniej zakładce.",
     "tabExtension": "Rozszerzenie",
     "tabExtensionShort": "Rozsz",
     "tabKey": "Klucz",
@@ -425,8 +438,9 @@
     "bunkerLabel": "URI Bunker",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Zaloguj przez Bunker",
+    "bunkerAuthPrompt": "Twój podpisujący czeka na zatwierdzenie. Próbowaliśmy otworzyć jego stronę, ale przeglądarka to zablokowała — otwórz ją tutaj:",
+    "bunkerAuthLink": "Zatwierdź w podpisującym",
     "connecting": "Łączenie...",
-    "errorInviteServiceUnavailable": "Usługa zaproszeń niedostępna",
     "errorExtensionNotFound": "Nie znaleziono rozszerzenia Nostr. Zainstaluj rozszerzenie NIP-07.",
     "errorExtensionLoginFailed": "Logowanie rozszerzeniem się nie udało",
     "errorKeyLoginFailed": "Nie udało się zalogować tym kluczem. Sprawdź, czy jest poprawny.",
@@ -438,19 +452,22 @@
     "errorFileEmpty": "Nie udało się odczytać zawartości pliku.",
     "errorFileNoValidKey": "Plik nie zawiera prawidłowego klucza prywatnego.",
     "errorFileReadFailed": "Nie udało się odczytać pliku.",
-    "errorInviteValidationFailed": "Nie można zweryfikować kodu zaproszenia",
-    "errorInviteCodeUsed": "Ten kod zaproszenia został już użyty",
     "errorSignInStartFailed": "Nie można rozpocząć logowania",
-    "errorWaitlistJoinFailed": "Nie można dołączyć do listy oczekujących"
+    "subtitleCreate": "Skonfiguruj konto Divine.",
+    "createAccountButton": "Utwórz konto",
+    "creatingAccount": "Konfigurowanie konta...",
+    "errorSignUpStartFailed": "Nie można rozpocząć rejestracji"
   },
   "accountSwitcher": {
     "myProfile": "Mój profil",
     "settings": "Ustawienia",
     "linkedAccounts": "Połączone konta",
+    "relays": "Relays",
     "switchRelay": "Zmień relay",
     "switchAccount": "Zmień konto",
     "addAnotherAccount": "Dodaj kolejne konto",
-    "logOut": "Wyloguj się"
+    "logOut": "Wyloguj się",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "Zgłoś wideo",
@@ -518,6 +535,7 @@
     "signInButton": "Zaloguj się"
   },
   "badgeDetailModal": {
+    "description": "Cała historia tej odznaki — kto ją przyznał i kiedy.",
     "title": "Szczegóły odznaki",
     "officialBadge": "✦ Oficjalna odznaka Divine",
     "issuedBy": "Wydane przez",
@@ -582,6 +600,20 @@
     "mutedKeywordsTitle_one": "Wyciszone słowa kluczowe ({{count}})",
     "mutedKeywordsTitle_other": "Wyciszone słowa kluczowe ({{count}})",
     "noMutedUsers": "Nikogo nie wyciszasz. Spokój.",
+    "mutedHereTitle_one": "Wyciszony tutaj ({{count}})",
+    "mutedHereTitle_other": "Wyciszeni tutaj ({{count}})",
+    "mutedHereDescription": "Te wyciszenia dodano z webu. Usunięcie jednego zdejmuje tylko to wyciszenie.",
+    "mutedElsewhereTitle_one": "Wyciszony lub zablokowany gdzie indziej ({{count}})",
+    "mutedElsewhereTitle_other": "Wyciszeni lub zablokowani gdzie indziej ({{count}})",
+    "mutedElsewhereDescription": "Pochodzą z innego klienta lub urządzenia. Niektóre mogą być blokadami z aplikacji Divine.",
+    "noWebMutedUsers": "Nie ma jeszcze wyciszeń z webu.",
+    "noUnknownMutedUsers": "Na razie nic z innych klientów.",
+    "reviewBeforeUnmute": "Sprawdź",
+    "confirmUnmuteTitle": "Zdjąć to wyciszenie?",
+    "confirmUnmuteDescription": "Ten wpis może być blokadą ustawioną w aplikacji Divine. Zdjęcie go tutaj usuwa ten p-tag wszędzie tam, gdzie synchronizuje się Twoja lista kind 10000.",
+    "confirmWebUnmuteDescription": "To wyciszenie dodano z webu. Sprawdź je przed usunięciem, na wypadek gdyby inny klient polegał teraz na tym samym p-tag.",
+    "confirmUnmuteCancel": "Zostaw",
+    "confirmUnmuteAction": "Zdejmij",
     "noMutedHashtags": "Żadnych wyciszonych hashtagów.",
     "noMutedKeywords": "Brak wyciszonych słów. Twój feed jest surowy.",
     "reportHistoryTitle": "Historia zgłoszeń",
@@ -593,6 +625,7 @@
     "toastErrorTitle": "Błąd",
     "toastErrorEnterValue": "Wpisz wartość do wyciszenia",
     "toastErrorInvalidNpub": "Nieprawidłowy format npub",
+    "toastErrorMuteYourself": "Nie możesz wyciszyć siebie.",
     "toastMutedTitle": "Wyciszone",
     "toastMutedDescription": "Dodano do listy wyciszeń",
     "toastMuteFailed": "Wyciszenie się nie udało. Spróbuj jeszcze raz.",
@@ -600,7 +633,31 @@
     "toastUnmutedDescription": "Usunięto z listy wyciszeń",
     "toastUnmuteFailed": "Nie udało się zdjąć wyciszenia. Spróbuj jeszcze raz.",
     "toastFunnelcakeUpdatedTitle": "Zaktualizowano API Funnelcake",
-    "toastFunnelcakeUpdatedDescription": "Używamy {{url}} do przyszłych odczytów REST."
+    "toastFunnelcakeUpdatedDescription": "Używamy {{url}} do przyszłych odczytów REST.",
+    "unblock": "Odblokuj",
+    "statusUsersBlockedSuffix": "zablokowanych użytkowników",
+    "blockedUsersTitle_one": "Zablokowany użytkownik ({{count}})",
+    "blockedUsersTitle_other": "Zablokowani użytkownicy ({{count}})",
+    "blockedUsersDescription": "Zablokowani użytkownicy są usuwani z Twojej publicznej listy obserwowanych. Odblokowanie ponownie pokazuje ich filmy, ale nie zaczyna ich znowu obserwować.",
+    "mutedUsersDescription": "Wyciszeni użytkownicy pozostają ukryci w Twoich feedach bez zmiany tego, kogo obserwujesz.",
+    "noBlockedUsers": "Brak zablokowanych użytkowników.",
+    "toastUnblockedTitle": "Odblokowano",
+    "toastUnblockedDescription": "Usunięto z zablokowanych użytkowników. Jego filmy mogą znowu się pojawiać.",
+    "toastUnblockFailed": "Nie udało się odblokować. Spróbuj jeszcze raz.",
+    "mutedHereTitle_few": "Wyciszeni tutaj ({{count}})",
+    "mutedHereTitle_many": "Wyciszeni tutaj ({{count}})",
+    "mutedElsewhereTitle_few": "Wyciszeni lub zablokowani gdzie indziej ({{count}})",
+    "mutedElsewhereTitle_many": "Wyciszeni lub zablokowani gdzie indziej ({{count}})",
+    "blockedUsersTitle_few": "Zablokowani użytkownicy ({{count}})",
+    "blockedUsersTitle_many": "Zablokowani użytkownicy ({{count}})",
+    "mutedUsersTitle_few": "Wyciszeni użytkownicy ({{count}})",
+    "mutedUsersTitle_many": "Wyciszeni użytkownicy ({{count}})",
+    "mutedHashtagsTitle_few": "Wyciszone hashtagi ({{count}})",
+    "mutedHashtagsTitle_many": "Wyciszone hashtagi ({{count}})",
+    "mutedKeywordsTitle_few": "Wyciszone słowa kluczowe ({{count}})",
+    "mutedKeywordsTitle_many": "Wyciszone słowa kluczowe ({{count}})",
+    "reportHistoryDescription_few": "Zgłoszone przez Ciebie treści ({{count}})",
+    "reportHistoryDescription_many": "Zgłoszone przez Ciebie treści ({{count}})"
   },
   "linkedAccountsSettings": {
     "copy": "Kopiuj",
@@ -647,10 +704,13 @@
       "mastodon": "Opublikuj toota z poniższym tekstem, potem wklej ID posta z URL.",
       "telegram": "Wyślij wiadomość na publicznym kanale/grupie z poniższym tekstem, potem wklej ścieżkę wiadomości (np. nazwakanalu/123).",
       "bluesky": "Opublikuj post na Bluesky z poniższym tekstem, potem wklej record key (rkey) z URL posta.",
-      "discord": "Stwórz serwer Discord z npub w nazwie lub opisie, potem stwórz stałe zaproszenie i wklej kod zaproszenia."
+      "discord": "Opublikuj wiadomość z poniższym tekstem, potem kliknij ją prawym przyciskiem myszy i wybierz „Kopiuj link z wiadomością”. Zaproszenie na serwer nie dowodzi, kto jest właścicielem konta. Wpisz swoją nazwę użytkownika Discord — tę z profilu, nie wyświetlaną nazwę."
     },
     "toastErrorTitle": "Błąd",
     "toastEnterProof": "Wpisz URL lub ID dowodu",
+    "toastInvalidDiscordLink": "Wklej link do wiadomości na Discordzie: kliknij swoją wiadomość prawym przyciskiem myszy i wybierz „Kopiuj link z wiadomością”.",
+    "discordUsernameLabel": "Twoja nazwa użytkownika Discord",
+    "discordUsernamePlaceholder": "nazwauzytkownika",
     "toastCannotDetermineUsername": "Nie udało się ustalić nazwy użytkownika z URL",
     "toastVerifiedTitle": "Zweryfikowane!",
     "toastLinkedTitle": "Podłączone",
@@ -812,6 +872,8 @@
     "seoDescription": "Obejrzyj to wideo na Divine",
     "seoDescriptionWithAuthor": "Obejrzyj to wideo od {{name}} na Divine",
     "errorTitle": "Błąd",
+    "nextVideoUnavailableDescription": "Nie udalo sie wczytac nastepnego filmu. Sprobowac ponownie?",
+    "loadMoreUnavailableDescription": "Couldn't load more videos. Try again?",
     "likedTitle": "Polubione!",
     "likedDescription": "Twoja reakcja została opublikowana",
     "likeFailedDescription": "Nie udało się polubić wideo",
@@ -833,7 +895,12 @@
     "searchPrefix": "Szukaj: {{query}}",
     "searchResults": "Wyniki wyszukiwania",
     "authorVideos": "Wideo od {{name}}",
+    "featuredVideos": "Polecane wideo",
+    "featuredTabWrappedDescription": "Ta polecana zakładka się skończyła. Oto Popularne.",
+    "featuredNavigationEndedDescription": "To wideo wciąż tu jest, ale nie mieści się już we wczytanym fragmencie zakładki.",
+    "backToFeaturedTab": "Wróć do {{label}}",
     "loadingMore": "Ładowanie kolejnych wideo...",
+    "allCaughtUp": "That's the whole haul.",
     "previousVideoAria": "Poprzednie wideo",
     "nextVideoAria": "Następne wideo",
     "previousArrow": "← poprzednie",
@@ -905,8 +972,10 @@
     "notFoundTitle": "Nie znaleziono listy",
     "notFoundDescription": "Ta lista mogła zostać usunięta albo nigdy nie istniała",
     "browseLists": "Przeglądaj listy",
-    "backToLists": "Wróć do list",
-    "listCreator": "Twórca listy",
+    "backToCreatorLists": "Wszystkie listy użytkownika {{name}}",
+    "videoList": "Lista filmów",
+    "untitledVideoList": "Lista filmów bez tytułu",
+    "byCreator": "Autor: {{name}}",
     "videoCount_one": "{{count}} wideo",
     "videoCount_other": "{{count}} wideo",
     "collaborative": "Wspólna",
@@ -933,18 +1002,15 @@
     "retry": "Spróbuj ponownie",
     "peopleCount_one": "{{count}} osoba",
     "peopleCount_other": "{{count}} osób",
-    "notFoundTitle": "Nie znaleziono rozmowy",
-    "notFoundDescription": "Wróć do skrzynki i zacznij nową wiadomość.",
-    "backToInbox": "Wróć do skrzynki",
     "dmUnavailableTitle": "Wiadomości prywatne niedostępne",
     "dmUnavailableDescription": "Ten podpisywacz może cię uwierzytelnić, ale nie udostępnia metod szyfrowania NIP-44 wymaganych do prywatnych wiadomości.",
+    "backToSupport": "Wróć do pomocy",
     "noMessages": "Jeszcze żadnych wiadomości",
     "noMessagesHint": "Wyślij pierwszą wiadomość, żeby zacząć rozmowę.",
-    "readyToShare": "Gotowe do udostępnienia",
-    "placeholderShare": "Dodaj opcjonalną notkę...",
     "placeholderMessage": "Napisz wiadomość..."
   },
   "videoCommentsModal": {
+    "description": "Zobacz, co mówią inni, i dodaj własny komentarz.",
     "title": "Komentarze",
     "loading": "Ładowanie komentarzy...",
     "emptyMessage": "Jeszcze żadnych komentarzy",
@@ -962,7 +1028,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Podgląd wideo",
     "thumbnailAlt": "Miniatura wideo",
-    "playVideo": "Odtwórz wideo"
+    "playVideo": "Odtwórz wideo",
+    "openVideo": "Otwórz wideo"
   },
   "hashtagExplorer": {
     "heading": "Eksplorator hashtagów",
@@ -1038,8 +1105,7 @@
       "likes": "Polubienia",
       "comments": "Komentarze",
       "follows": "Obserwujący",
-      "reposts": "Udostępnienia",
-      "zaps": "Zapy"
+      "reposts": "Udostępnienia"
     },
     "empty": {
       "all": {
@@ -1065,16 +1131,35 @@
       "reposts": {
         "title": "Brak powiadomień o udostępnieniach.",
         "description": "Udostępnienia twoich filmów pojawią się tutaj."
-      },
-      "zaps": {
-        "title": "Brak powiadomień o zapach.",
-        "description": "Zapy do twoich filmów pojawią się tutaj."
       }
     },
     "errorTitle": "Nie udało się załadować powiadomień",
     "errorFallback": "Spróbuj ponownie później",
     "sectionNew": "Nowe",
-    "sectionEarlier": "Wcześniejsze"
+    "sectionEarlier": "Wcześniejsze",
+    "message": {
+      "liked": "polubił(a) twój film",
+      "commented": "skomentował(a) twój film",
+      "reposted": "udostępnił(a) twój film",
+      "followed": "zaczął(a) cię obserwować",
+      "likedTitled": "polubił(a) {{title}}",
+      "commentedTitled": "skomentował(a) {{title}}",
+      "repostedTitled": "udostępnił(a) {{title}}",
+      "andOthers_one": "i {{count}} inna osoba",
+      "andOthers_few": "i {{count}} inne osoby",
+      "andOthers_many": "i {{count}} innych osób",
+      "andOthers_other": "i {{count}} innych osób",
+      "likedComment": "polubił(a) Twój komentarz",
+      "likedCommentTitled": "polubił(a) Twój komentarz pod {{title}}"
+    },
+    "video": {
+      "untitled": "twój film"
+    },
+    "a11y": {
+      "openVideo": "Otwórz {{title}}",
+      "viewProfile": "Profil {{name}}",
+      "unread": "Nieprzeczytane"
+    }
   },
   "getEmbedPage": {
     "title": "Osadź widget Divine",
@@ -1142,7 +1227,7 @@
   "trendingPage": {
     "heading": "Na czasie",
     "subheading": "Sprawdź, co jest popularne w społeczności",
-    "rssTitle": "DiVine - Na czasie",
+    "rssTitle": "Divine - Na czasie",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1203,7 +1288,7 @@
     "notFoundDescription": {
       "vine": "Ten użytkownik Vine mógł jeszcze nie zostać zaimportowany do sieci Nostr.",
       "nip05": "Sprawdź, czy identyfikator NIP-05 jest poprawny.",
-      "legacy": "Ta nazwa użytkownika nie pasuje do starego profilu Vine ani uchwytu OpenVine."
+      "legacy": "Ta nazwa użytkownika nie pasuje do żadnego znanego profilu."
     }
   },
   "atUsernamePage": {
@@ -1299,14 +1384,11 @@
   "pwaInstallPrompt": {
     "close": "Zamknij",
     "getDivine": "Pobierz Divine",
-    "installDivineWeb": "Zainstaluj Divine Web",
     "descriptionNative": "Zainstaluj natywną apkę dla najlepszego doświadczenia z Divine",
-    "descriptionWeb": "Zainstaluj naszą apkę dla lepszego doświadczenia",
     "appStore": "App Store",
     "appStoreAria": "Pobierz Divine z App Store",
     "googlePlay": "Google Play",
     "googlePlayAria": "Pobierz Divine z Google Play",
-    "install": "Zainstaluj",
     "notNow": "Nie teraz"
   },
   "relaySelector": {
@@ -1331,7 +1413,6 @@
     "muteErrorDescription": "Nie udało się zapisać wyciszenia. Spróbuj jeszcze raz?",
     "deleteVideo": "Usuń film",
     "reportVideo": "Zgłoś film",
-    "sendViaMessage": "Wyślij wiadomością",
     "reportUser": "Zgłoś użytkownika",
     "muteUser": "Wycisz {{name}}",
     "viewSource": "Zobacz źródło",
@@ -1395,23 +1476,6 @@
     "confirm": "Usuń komentarz",
     "deleting": "Usuwanie..."
   },
-  "inviteCodeForm": {
-    "label": "Kod zaproszenia",
-    "placeholder": "Wklej swój kod zaproszenia",
-    "checking": "Sprawdzanie...",
-    "continue": "Dalej",
-    "joinWaitlist": "Nie masz zaproszenia? Zapisz się na listę oczekujących."
-  },
-  "invitesLandingPage": {
-    "seoTitle": "Dołącz do diVine z kodem zaproszenia {{code}}",
-    "seoTitleDefault": "Dołącz do diVine",
-    "seoDescription": "Masz zaproszenie! Użyj kodu {{code}}, aby dołączyć do diVine.",
-    "seoDescriptionDefault": "Użyj kodu zaproszenia, aby dołączyć do diVine i zacząć udostępniać wideo.",
-    "heading": "Masz zaproszenie!",
-    "subheading": "Wpisz kod zaproszenia, aby dołączyć do diVine",
-    "alreadyHaveAccount": "Masz już konto?",
-    "signIn": "Zaloguj się"
-  },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
     "defaultDescription": "Kulisy startu Divine",
@@ -1420,5 +1484,99 @@
     "podcastEpisode": "Odcinek podcastu",
     "openInApplePodcasts": "Otwórz w Apple Podcasts",
     "playEpisode": "Odtwórz odcinek"
+  },
+  "listsPage": {
+    "createList": "Utwórz listę",
+    "createFirstList": "Utwórz swoją pierwszą listę",
+    "createVideoList": "Lista wideo",
+    "createPeopleList": "Lista osób"
+  },
+  "createPeopleListDialog": {
+    "title": "Utwórz listę osób",
+    "description": "Zbierz ludzi w jednym miejscu i oglądaj ich najnowsze loopy.",
+    "nameLabel": "Nazwa listy *",
+    "namePlaceholder": "Ulubieni twórcy",
+    "descriptionLabel": "Opis",
+    "descriptionPlaceholder": "Osoby, których loopów nigdy nie przegapiasz...",
+    "imageLabel": "Adres URL okładki",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Najpierw nadaj jej nazwę.",
+    "reservedName": "Ta nazwa jest zarezerwowana dla listy systemowej.",
+    "imageInvalid": "Użyj pełnego adresu URL obrazu.",
+    "cancelButton": "Anuluj",
+    "creatingButton": "Tworzenie...",
+    "createButton": "Utwórz listę",
+    "createdTitle": "Lista osób utworzona.",
+    "createdDescription": "„{{name}}” jest gotowa.",
+    "failedTitle": "Nie wyszło.",
+    "failedDescription": "Tworzenie listy osób się zacięło. Spróbujesz jeszcze raz?"
+  },
+  "editPeopleListDialog": {
+    "title": "Edytuj listę osób",
+    "description": "Zaktualizuj nazwę, opis lub okładkę tej listy.",
+    "nameLabel": "Nazwa listy *",
+    "namePlaceholder": "Ulubieni twórcy",
+    "descriptionLabel": "Opis",
+    "descriptionPlaceholder": "Osoby, których loopów nigdy nie przegapiasz...",
+    "imageLabel": "Adres URL okładki",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Najpierw nadaj jej nazwę.",
+    "imageInvalid": "Użyj pełnego adresu URL obrazu.",
+    "cancelButton": "Anuluj",
+    "savingButton": "Zapisywanie...",
+    "saveButton": "Zapisz",
+    "savedTitle": "Zapisano.",
+    "savedDescription": "„{{name}}” zaktualizowana.",
+    "failedTitle": "Nie zapisano.",
+    "failedDescription": "Aktualizacja listy osób się zacięła. Spróbujesz jeszcze raz?"
+  },
+  "deleteListDialog": {
+    "title": "Usunąć listę?",
+    "videosDescription": "Spowoduje to wysłanie żądania usunięcia listy „{{name}}”. Filmy z listy pozostaną nienaruszone.",
+    "peopleDescription": "Spowoduje to wysłanie żądania usunięcia listy „{{name}}”. Osoby z listy pozostaną nienaruszone.",
+    "noteLabel": "Uwaga:",
+    "relayNote": "Ta akcja wysyła żądanie usunięcia do przekaźników. Większość je uszanuje, ale usunięcie nie jest gwarantowane wszędzie.",
+    "cancelButton": "Anuluj",
+    "deletingButton": "Usuwanie...",
+    "deleteButton": "Usuń listę"
+  },
+  "peopleListDetailPage": {
+    "editList": "Edytuj",
+    "delete": "Usuń",
+    "share": "Udostępnij",
+    "deletedTitle": "Lista osób usunięta.",
+    "deletedDescription": "„{{name}}” została usunięta.",
+    "deleteFailedTitle": "Nie udało się usunąć.",
+    "deleteFailedDescription": "Usuwanie listy osób się zacięło. Spróbujesz jeszcze raz?"
+  },
+  "userList": {
+    "searchPlaceholder": "Szukaj po nazwie",
+    "noMatches": "Nikt tu nie pasuje. Spróbuj innej nazwy?",
+    "searchHint": "Wpisz co najmniej 2 litery lub cyfry.",
+    "searchUnavailable": "Wyszukiwanie teraz nie działa. Spróbować ponownie?",
+    "noFollowers": "Brak obserwujących.",
+    "noFollowing": "Jeszcze nikogo nie obserwuje."
+  },
+  "supporters": {
+    "chip": "Wspierający",
+    "title": "Wspierający Divine",
+    "intro": "Pomóż zachować niezależność Divine i przestrzeń dla ludzi, otwartą dla wszystkich.",
+    "membership": "Twoja subskrypcja wspierającego",
+    "thankYou": "Dziękujemy za wspieranie Divine.",
+    "thanksDetail": "Twoje wsparcie pomaga zachować to miejsce dla ludzi. Cieszymy się, że tu jesteś.",
+    "showChip": "Pokaż odznakę wspierającego na moim profilu",
+    "privacy": "Twoja subskrypcja jest domyślnie prywatna. Włącz tę opcję, aby pokazać odznakę publicznie. Możesz to zmienić w każdej chwili.",
+    "check": "Sprawdź status wspierającego",
+    "checking": "Sprawdzanie statusu…",
+    "checkHint": "Już wspierasz? Sprawdź subskrypcję tego konta. Narzędzie do podpisywania może poprosić o zgodę.",
+    "checkError": "Nie udało się sprawdzić twojego statusu. Spróbuj ponownie.",
+    "unknown": "Twój status wspierającego nie został jeszcze potwierdzony. Sprawdź ponownie przed kolejnym zakupem.",
+    "saveError": "Nie udało się zapisać ustawienia widoczności. Spróbuj ponownie.",
+    "purchaseInstructions": "Zostań wspierającym w aplikacji mobilnej Divine: zaloguj się na to samo konto i otwórz sekcję wspierających w ustawieniach. Zakup już zrobiony? Przywróć go w aplikacji, a następnie sprawdź status tutaj.",
+    "getApp": "Pobierz aplikację, aby wspierać",
+    "verificationPrerequisite": "Zostań wspierającym, aby ubiegać się o weryfikację",
+    "verificationNext": "Następny krok: weryfikacja",
+    "verificationDetail": "Subskrypcja wspierającego jest wymagana do złożenia wniosku o weryfikację. Nie potwierdza tożsamości ani nie gwarantuje zatwierdzenia. Możesz połączyć istniejące konta, aby udostępnić dowody tożsamości.",
+    "linkAccounts": "Przejdź do połączonych kont"
   }
 }

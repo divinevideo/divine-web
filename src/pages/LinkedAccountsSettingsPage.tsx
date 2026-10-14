@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { LinkSimple as Link2, Plus, Trash as Trash2, PencilSimple as Pencil, CheckCircle as CheckCircle2, Warning as AlertTriangle, CircleNotch as Loader2, ArrowSquareOut as ExternalLink, GithubLogo as Github, ChatCircle as MessageCircle, At as AtSign, Shield, Copy, Check, X, ArrowLeft } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
+import { isDiscordMessageLink } from '@/lib/discordProof';
 
 // X/Twitter icon (simple)
 function XIcon({ className }: { className?: string }) {
@@ -79,7 +80,7 @@ const PROOF_PLACEHOLDERS: Record<string, string> = {
   mastodon: 'https://mastodon.social/@you/123456789',
   telegram: 'https://t.me/channelname/123',
   bluesky: 'https://bsky.app/profile/you/post/abc123',
-  discord: 'https://discord.gg/AbCdEf',
+  discord: 'https://discord.com/channels/.../.../...',
   youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
   tiktok: 'https://www.tiktok.com/@you/video/123456789',
 };
@@ -125,11 +126,10 @@ function extractFromUrl(platform: string, input: string): { identity?: string; p
         }
         return { proof: url.pathname.slice(1) || trimmed };
       case 'discord':
-        // https://discord.gg/CODE → identity=CODE (invite), proof=CODE
-        {
-          const code = parts.pop() || trimmed;
-          return { identity: code, proof: code };
-        }
+        // The proof is the message link, whole. Popping the last segment made
+        // identity and proof both the message id, so the username became a
+        // snowflake the verifier's author check could never match.
+        return { proof: trimmed };
       case 'youtube': {
         // https://www.youtube.com/@channel or /channel/UC... + proof from watch/shorts URLs
         const watchId = url.searchParams.get('v');
@@ -173,7 +173,7 @@ const PROOF_INSTRUCTIONS: Record<string, string> = {
   mastodon: 'Post a toot containing the text below, then paste the Post ID from the URL.',
   telegram: 'Send a message in a public channel/group containing the text below, then paste the message path (e.g. channelname/123).',
   bluesky: 'Post on Bluesky containing the text below, then paste the record key (rkey) from the post URL.',
-  discord: 'Create a Discord server with your npub in the server name or description, then create a permanent invite link and paste the invite code.',
+  discord: 'Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name.',
   youtube: 'Create a public YouTube proof post (video/community/description containing the text below), then paste the proof URL.',
   tiktok: 'Create a TikTok post containing the text below, then paste the post URL.',
 };
@@ -405,8 +405,26 @@ export default function LinkedAccountsSettingsPage() {
     try {
       const extracted = extractFromUrl(platform, proof);
       const cleanProof = extracted.proof;
-      // Use extracted identity, or state identity, or fall back to proof itself for Telegram/Discord
-      const cleanIdentity = extracted.identity || identity.trim() || cleanProof;
+
+      // Refuse anything that is not a message link — an invite, a DM link, a
+      // channel link, a look-alike host — rather than publishing it as a proof
+      // that can never verify.
+      if (platform === 'discord' && !isDiscordMessageLink(cleanProof)) {
+        toast({
+          title: t('linkedAccountsSettings.toastErrorTitle'),
+          description: t('linkedAccountsSettings.toastInvalidDiscordLink'),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Use extracted identity, or the typed one, or fall back to the proof
+      // itself for platforms whose proof doubles as the handle. Never fall back
+      // where the handle has to be typed: the whole message URL would land in
+      // the identity slot and the verifier could never match it.
+      const cleanIdentity = extracted.identity
+        || identity.trim()
+        || (platform === 'discord' ? '' : cleanProof);
       if (!cleanIdentity) {
         toast({ title: t('linkedAccountsSettings.toastErrorTitle'), description: t('linkedAccountsSettings.toastCannotDetermineUsername'), variant: 'destructive' });
         return;
@@ -612,6 +630,20 @@ export default function LinkedAccountsSettingsPage() {
             </CardContent>
           </Card>
 
+          {/* The handle, where the proof link cannot carry it */}
+          {platform === 'discord' && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                {t('linkedAccountsSettings.discordUsernameLabel')}
+              </Label>
+              <Input
+                placeholder={t('linkedAccountsSettings.discordUsernamePlaceholder')}
+                value={identity}
+                onChange={(e) => setIdentity(e.target.value)}
+              />
+            </div>
+          )}
+
           {/* Step 2: Paste proof link */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">{t('linkedAccountsSettings.step2Title')}</Label>
@@ -628,7 +660,7 @@ export default function LinkedAccountsSettingsPage() {
                 }
               }}
             />
-            {identity && (
+            {identity && platform !== 'discord' && (
               <p className="text-xs text-green-600">
                 {t('linkedAccountsSettings.detectedLabel')} <span className="font-medium">{identity}</span>
               </p>
@@ -644,7 +676,11 @@ export default function LinkedAccountsSettingsPage() {
             )}
             <Button
               onClick={handleAdd}
-              disabled={!proof.trim() || addIdentity.isPending}
+              disabled={
+                !proof.trim()
+                || (platform === 'discord' && !identity.trim())
+                || addIdentity.isPending
+              }
               className="w-full"
             >
               {addIdentity.isPending ? (

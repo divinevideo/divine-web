@@ -1,6 +1,12 @@
 // ABOUTME: Centralized relay configuration for the entire application
 // ABOUTME: Single source of truth for all relay URLs and their purposes
 
+import {
+  REMOTE_RELAY_HINT_CAP,
+  admitRelayUrls,
+  admitRemoteSuppliedRelays,
+} from '@/lib/relayUrlPolicy';
+
 /**
  * Relay configuration with metadata
  */
@@ -89,16 +95,19 @@ export const PROFILE_RELAYS: RelayConfig[] = [
     purpose: 'profile',
   },
   {
-    url: 'wss://relay.ditto.pub',
-    name: 'Ditto',
-    purpose: 'profile',
-  },
-  {
     url: 'wss://relay.primal.net',
     name: 'Primal',
     purpose: 'profile',
   },
 ];
+
+/**
+ * Public metadata relays where other clients can discover account-move pointers.
+ * Divine remains included so clients that know the old home can find the new one,
+ * but a pointer that reaches only Divine has not been discovered by anyone else,
+ * so `pointerPublishTargets` does not count it toward automatic discovery.
+ */
+export const DISCOVERY_POINTER_RELAYS: readonly RelayConfig[] = PROFILE_RELAYS;
 
 /**
  * Relays available in the UI relay picker
@@ -111,15 +120,6 @@ export const PRESET_RELAYS: RelayConfig[] = [
     capabilities: { nip50: true, funnelcake: true },
   },
   {
-    url: 'wss://relay.divine.video',
-    name: 'Divine',
-    capabilities: { nip50: true, funnelcake: true },
-  },
-  {
-    url: 'wss://relay.ditto.pub',
-    name: 'Ditto',
-  },
-  {
     url: 'wss://relay.damus.io',
     name: 'Damus',
   },
@@ -130,7 +130,7 @@ export const PRESET_RELAYS: RelayConfig[] = [
 ];
 
 /**
- * Relays used for NIP-58 badge queries (kinds 30009, 8, 30008)
+ * Relays used for NIP-58 badge queries (kinds 30009, 8, 10008, 30008)
  * Badge events may not be accepted by all relays, so we query a broad set.
  * Includes Divine relay (once kinds are allowlisted) plus public relays.
  */
@@ -179,11 +179,6 @@ export const EVENT_LOOKUP_RELAYS: RelayConfig[] = [
     purpose: 'backup',
   },
   {
-    url: 'wss://relay.ditto.pub',
-    name: 'Ditto',
-    purpose: 'backup',
-  },
-  {
     url: 'wss://nos.lol',
     name: 'nos.lol',
     purpose: 'backup',
@@ -202,21 +197,37 @@ export const getRelayUrls = (relays: RelayConfig[]): string[] =>
   relays.map(r => r.url);
 
 function dedupeRelayUrls(urls: Array<string | null | undefined>): string[] {
-  return [...new Set(
-    urls
-      .map(url => url?.trim())
-      .filter((url): url is string => Boolean(url))
-  )];
+  return admitRelayUrls(urls.filter((url): url is string => Boolean(url)));
+}
+
+function warnRejectedRelayHint(relayUrl: string, reason: string): void {
+  console.warn(`[Relay] Rejected remote relay hint "${relayUrl}": ${reason}`);
+}
+
+function warnTruncatedRelayHints(droppedCount: number): void {
+  console.warn(`[Relay] Truncated remote relay hints by ${droppedCount} entries`);
 }
 
 export function getEventLookupRelayUrls(options?: {
   configuredRelayUrls?: string[];
   relayHints?: string[];
+  disabledRelayUrls?: string[];
 }): string[] {
+  const disabledRelays = new Set(options?.disabledRelayUrls ?? []);
+  const configuredRelayUrls = (options?.configuredRelayUrls ?? [])
+    .filter((url) => !disabledRelays.has(url));
+  const relayHints = admitRemoteSuppliedRelays(options?.relayHints ?? [], {
+    cap: REMOTE_RELAY_HINT_CAP,
+    onRejected: warnRejectedRelayHint,
+    onTruncated: warnTruncatedRelayHints,
+  }).sort();
+  const lookupRelayUrls = getRelayUrls(EVENT_LOOKUP_RELAYS)
+    .filter((url) => !disabledRelays.has(url));
+
   return dedupeRelayUrls([
-    ...(options?.configuredRelayUrls ?? []),
-    ...(options?.relayHints ?? []),
-    ...getRelayUrls(EVENT_LOOKUP_RELAYS),
+    ...configuredRelayUrls,
+    ...relayHints,
+    ...lookupRelayUrls,
   ]);
 }
 

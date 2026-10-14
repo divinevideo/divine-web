@@ -1,14 +1,21 @@
 name: Bug Report
 description: Report a bug or regression in divine-web.
-title: "fix: "
+title: "fix(): "
 labels:
   - bug
+assignees:
+  - NotThatKindOfDrLiz
 body:
   - type: textarea
     id: summary
     attributes:
       label: Summary
-      description: What is broken? Avoid naming corporate partners, customers, or other sensitive external brands; use generic descriptors unless explicitly approved.
+      description: >-
+        What is broken? Replace the title placeholder with a specific scope:
+        `fix(scope): subject`, for example `fix(search): avoid duplicate
+        fallback requests`. Avoid naming corporate partners, customers, or other
+        sensitive external brands; use generic descriptors unless explicitly
+        approved.
       placeholder: Briefly describe the bug.
     validations:
       required: true
@@ -41,7 +48,7 @@ body:
     id: regression
     attributes:
       label: Regression Notes
-      description: If known, note whether this worked before and what changed.
+      description: If known, note whether this worked before and what changed. If another PR blocks this issue, write `blocked on #123`, `blocked by #123`, or `blocked by PR #123`.
       placeholder: Optional context about when the regression started.
   - type: textarea
     id: screenshots

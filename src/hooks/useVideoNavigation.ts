@@ -4,13 +4,22 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCallback, useMemo } from 'react';
 import { useVideoEvents } from './useVideoEvents';
+import { usePeopleList } from '@/hooks/usePeopleLists';
+import { usePeopleListVideos } from '@/hooks/usePeopleListVideos';
+import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
+import { filterBlockedVideos } from '@/lib/blocklistFilter';
 import type { ParsedVideoData } from '@/types/video';
 import type { SortMode } from '@/types/nostr';
 
+type WebSocketFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'category';
+
 export interface VideoNavigationContext {
-  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'popular' | 'recent' | 'classics' | 'foryou' | 'category' | 'search';
+  source: 'hashtag' | 'profile' | 'discovery' | 'home' | 'trending' | 'popular' | 'recent' | 'classics' | 'foryou' | 'category' | 'search' | 'people-list' | 'video-list' | 'featured';
   hashtag?: string;
   pubkey?: string;
+  listId?: string;
+  featuredTabId?: string;
+  listName?: string;
   query?: string;
   sortMode?: SortMode | 'relevance';
   currentIndex?: number;
@@ -29,37 +38,59 @@ interface VideoNavigationHook {
 
 interface UseVideoNavigationOptions {
   enabled?: boolean;
+  context?: VideoNavigationContext | null;
 }
 
 export function useVideoNavigation(videoId: string, options: UseVideoNavigationOptions = {}): VideoNavigationHook {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { enabled = true } = options;
+  const { enabled = true, context: contextOverride } = options;
 
   // Parse navigation context from URL params
-  const context: VideoNavigationContext | null = useMemo(() => {
-    const source = searchParams.get('source') as VideoNavigationContext['source'];
-    if (!source) return null;
-
-    return {
-      source,
-      hashtag: searchParams.get('hashtag') || undefined,
-      pubkey: searchParams.get('pubkey') || undefined,
-      query: searchParams.get('q') || undefined,
-      sortMode: searchParams.get('sort') as VideoNavigationContext['sortMode'],
-      currentIndex: searchParams.get('index') ? parseInt(searchParams.get('index')!) : undefined,
-    };
+  const parsedContext: VideoNavigationContext | null = useMemo(() => {
+    return parseVideoNavigationContext(searchParams);
   }, [searchParams]);
+  const context = contextOverride === undefined ? parsedContext : contextOverride;
+
+  const isPeopleListContext = context?.source === 'people-list';
+  const isVideoListContext = context?.source === 'video-list';
+  const peopleListQuery = usePeopleList(
+    isPeopleListContext ? context.pubkey : undefined,
+    isPeopleListContext ? context.listId : undefined,
+  );
+  const peopleListVideosQuery = usePeopleListVideos(
+    isPeopleListContext ? peopleListQuery.data?.memberPubkeys ?? [] : [],
+    { enabled: enabled && isPeopleListContext && Boolean(peopleListQuery.data) },
+  );
+  const peopleListVideos = useMemo(
+    () => peopleListVideosQuery.data?.pages.flatMap((page) => page.videos),
+    [peopleListVideosQuery.data],
+  );
 
   // Fetch videos based on context
   // Map 'foryou' to 'trending' for WebSocket fallback (foryou only works via Funnelcake API)
-  const feedTypeForWebSocket = context?.source === 'foryou' || context?.source === 'popular'
-    ? 'trending'
-    : context?.source === 'search'
-      ? 'discovery'
-      : context?.source;
-  const { data: videos, isLoading } = useVideoEvents(
-    context ? {
+  const feedTypeForWebSocket: WebSocketFeedType | undefined = (() => {
+    if (!context) return undefined;
+    if (isPeopleListContext || isVideoListContext) return 'discovery';
+    if (context.source === 'foryou' || context.source === 'popular') return 'trending';
+    if (context.source === 'search') return 'discovery';
+    if (
+      context.source === 'hashtag' ||
+      context.source === 'profile' ||
+      context.source === 'discovery' ||
+      context.source === 'home' ||
+      context.source === 'trending' ||
+      context.source === 'recent' ||
+      context.source === 'classics' ||
+      context.source === 'category'
+    ) {
+      return context.source;
+    }
+    return 'discovery';
+  })();
+  const blockedPubkeys = useFeedBlocklist();
+  const { data: feedVideos, isLoading: feedVideosLoading } = useVideoEvents(
+    context && !isPeopleListContext && !isVideoListContext ? {
       feedType: feedTypeForWebSocket,
       hashtag: context.hashtag,
       pubkey: context.pubkey,
@@ -69,9 +100,17 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
       filter: { ids: [videoId] },
       limit: 1,
       feedType: 'discovery',
-      enabled,
+      enabled: enabled && !isPeopleListContext,
     }
   );
+  const filteredFeedVideos = useMemo(
+    () => feedVideos ? filterBlockedVideos(feedVideos, blockedPubkeys) : feedVideos,
+    [feedVideos, blockedPubkeys]
+  );
+  const videos = isPeopleListContext ? peopleListVideos : filteredFeedVideos;
+  const isLoading = isPeopleListContext
+    ? peopleListQuery.isLoading || peopleListVideosQuery.isLoading
+    : feedVideosLoading;
 
   // Find current video and its index
   const { currentVideo, currentIndex } = useMemo(() => {
@@ -91,17 +130,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
   const buildNavigationUrl = useCallback((video: ParsedVideoData, index: number) => {
     if (!context) return `/video/${video.id}`;
 
-    const params = new URLSearchParams({
-      source: context.source,
-      index: index.toString(),
-    });
-
-    if (context.hashtag) params.set('hashtag', context.hashtag);
-    if (context.pubkey) params.set('pubkey', context.pubkey);
-    if (context.query) params.set('q', context.query);
-    if (context.sortMode) params.set('sort', context.sortMode);
-
-    return `/video/${video.id}?${params.toString()}`;
+    return buildVideoNavigationUrl(video.id, context, index);
   }, [context]);
 
   const goToNext = useCallback(() => {
@@ -128,6 +157,27 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
   };
 }
 
+export function parseVideoNavigationContext(searchParams: URLSearchParams): VideoNavigationContext | null {
+  const source = searchParams.get('source') as VideoNavigationContext['source'];
+  if (!source) return null;
+
+  const rawIndex = searchParams.get('index');
+  const sortMode = searchParams.get('sort') as VideoNavigationContext['sortMode'] | null;
+  const currentIndex = rawIndex ? parseInt(rawIndex, 10) : undefined;
+
+  return {
+    source,
+    hashtag: searchParams.get('hashtag') || undefined,
+    pubkey: searchParams.get('pubkey') || undefined,
+    listId: searchParams.get('listId') || undefined,
+    listName: searchParams.get('listName') || undefined,
+    featuredTabId: searchParams.get('featuredTabId') || undefined,
+    query: searchParams.get('q') || undefined,
+    sortMode: sortMode || undefined,
+    currentIndex: Number.isFinite(currentIndex) ? currentIndex : undefined,
+  };
+}
+
 // Helper function to build navigation URL from context
 export function buildVideoNavigationUrl(
   videoId: string,
@@ -140,6 +190,9 @@ export function buildVideoNavigationUrl(
 
   if (context.hashtag) params.set('hashtag', context.hashtag);
   if (context.pubkey) params.set('pubkey', context.pubkey);
+  if (context.listId) params.set('listId', context.listId);
+  if (context.featuredTabId) params.set('featuredTabId', context.featuredTabId);
+  if (context.listName) params.set('listName', context.listName);
   if (context.query) params.set('q', context.query);
   if (context.sortMode) params.set('sort', context.sortMode);
   if (index !== undefined) params.set('index', index.toString());

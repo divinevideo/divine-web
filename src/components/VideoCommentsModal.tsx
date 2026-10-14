@@ -2,7 +2,7 @@
 // ABOUTME: Uses CommentsSection for NIP-22 comments
 
 import { useTranslation } from 'react-i18next';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CommentsSection } from '@/components/comments/CommentsSection';
 import { cn } from '@/lib/utils';
 import type { ParsedVideoData } from '@/types/video';
@@ -61,6 +61,9 @@ export function VideoCommentsModal({
           <DialogTitle className="text-lg font-semibold">
             {video.title || t('videoCommentsModal.title')}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t('videoCommentsModal.description')}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Just Comments - No Video */}

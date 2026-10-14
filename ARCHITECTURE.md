@@ -35,6 +35,7 @@ src/
   types/         shared TypeScript definitions
   config/        relay lists and app configuration
   data/          static data files
+  generated/     vendored generated code, never hand-edited
   styles/        global stylesheets
   test/          test setup (setup.ts) and utilities
 ```
@@ -52,6 +53,35 @@ contexts (`AppContext`, `VideoPlaybackContext`, `FullscreenFeedContext`,
 and subscriptions against Nostr relays. Auth uses `@divinevideo/login` with
 `NostrLoginProvider`, hydrated from cross-subdomain cookies.
 
+Profile metadata remains raw through the fetch layer because `name` is also used
+as a handle. Display surfaces resolve `display_name`, then `name`, then a
+deterministic fallback through [`resolveDisplayName`](./src/lib/resolveDisplayName.ts);
+handle surfaces deliberately keep their separate `name`-only fallback.
+
+`VideoPlaybackContext` keeps viewport activation separate from an explicit user
+pause. A paused active video stays paused through overlays, rerenders, and mute
+changes; moving another video into the active position clears the pause so feed
+autoplay resumes when the user scrolls back.
+
+### Notification Read Marker
+
+Web and mobile both write the same Funnelcake per-pubkey notification read
+marker through `POST /api/users/{pubkey}/notifications/read` with an empty body.
+On web, [`src/pages/NotificationsPage.tsx`](./src/pages/NotificationsPage.tsx)
+marks the All tab read once per page mount after the notifications query
+successfully loads, even when the fetched list is empty or already read. Filtered
+tabs do not mark read.
+
+Web deliberately does not mark read on `refetchOnWindowFocus`. Mobile marks
+after an explicit unfiltered pull-to-refresh, but excludes app resume; the web
+window-focus refetch maps to app resume, not to that deliberate refresh gesture.
+
+Until Funnelcake supports bounded read-marker writes (divine-funnelcake #938),
+the empty-body request advances the marker to server time. That can cover
+notifications whose source events existed before the request but whose inbox
+rows had not materialized yet. Web accepts that tradeoff only for the
+once-per-mount All-tab write.
+
 ## Routing
 
 Client-side SPA routing via react-router-dom v6.
@@ -60,6 +90,33 @@ routing resolves user profiles (e.g., `alice.divine.video/`) by reading the
 subdomain and loading the corresponding Nostr profile. Static hosts use
 `404.html` (copied from [`index.html`](./index.html) during build) as a
 catch-all fallback.
+The public `/download` marketing route detects the visitor's mobile platform
+in the browser and presents the matching app-store link without automatically
+redirecting; unknown and desktop platforms receive every store choice.
+The retired `/discovery/new` chronological feed redirects to
+`/discovery/hot`; Discovery does not expose or mount an all-new-video feed.
+Retired `/invite/:code` links discard the obsolete code and redirect signed-out
+visitors to ordinary registration; signed-in visitors return to `/home`.
+`/discovery/:tab` accepts the built-in Discovery tabs plus the currently
+eligible server-configured featured tab slug, when Funnelcake serves one.
+Public profiles expose a compact mixed NIP-51 list shelf and a filterable
+`/profile/:npub/lists` gallery. Kind `30005` video sets and kind `30000`
+people sets use separate owner-aware detail routes: `/list/:pubkey/:listId`
+for video lists and `/people-lists/:pubkey/:listId` for people lists. Keeping
+people lists outside `/list/*` preserves compatibility with installed mobile
+apps, which claim `/list/*` for video-list deep links. Kind `30000` is not
+uniformly a people set: reserved system lists such as mute, block, DM-contact,
+hidden, and deny lists also use kind `30000` events. Their normalized d-tags
+are rejected by
+[`parsePeopleListFromEvent`](./src/lib/parsePeopleListFromEvent.ts), so the
+route builders in [`src/lib/eventRouting.ts`](./src/lib/eventRouting.ts) leave
+them on the generic event route rather than sending them to a detail page that
+cannot render them. Divine clients no longer author `d=block` kind `30000`
+lists; web reads that list only for legacy compatibility with pre-retirement
+accounts and older or non-Divine clients.
+People-list detail routes preserve `?relays=` hints from NIP-19 addresses and
+generic event redirects so lists published only to non-default relays can still
+be resolved.
 
 ## Styling
 
@@ -83,6 +140,42 @@ Dev server runs on port 8080 with CORS proxies for `/cdn-proxy`
 Configuration lives in [`vite.config.ts`](./vite.config.ts). Deploy targets are
 `nostr-deploy-cli` or Cloudflare Pages (`wrangler pages deploy`).
 
+## Edge Shell And The Content-Security-Policy
+
+On Fastly, some routes are not served from
+[`index.html`](./index.html) at all. The Compute worker in
+[`compute-js/`](./compute-js) renders its own HTML document from
+[`compute-js/src/templates/shell.js`](./compute-js/src/templates/shell.js) —
+identifiable by the `x-divine-edge: template` response header — and that shell
+boots the same SPA bundle. `/` and `/discovery/hot` go through it today;
+[`compute-js/src/index.js`](./compute-js/src/index.js) can route more.
+Templates with a distinct crawler response vary by both the original host and
+user agent so one response cannot replace the other in the edge cache. Bare
+vanity-subdomain profiles vary only by original host because crawlers and
+browsers receive the same HTML there.
+
+The CSP therefore exists as **two copies**: the meta tag in `index.html` and
+`SHELL_CSP` in `shell.js`. They must stay byte-identical. A directive present
+in one and not the other makes a feature work on some routes and fail silently
+on others, with no server-side error — the failure surfaces only as a blocked
+request in the visitor's console.
+
+- `index.html` is the source of truth. Edit it, then copy the same string into
+  `SHELL_CSP`.
+- [`tests/csp-single-source.test.ts`](./tests/csp-single-source.test.ts) fails
+  the build if they diverge.
+- [`scripts/verify-live-bundle.mjs`](./scripts/verify-live-bundle.mjs) checks
+  the policy the edge actually serves after deploy, because the two halves ship
+  separately: `fastly:deploy` publishes the Wasm worker carrying `SHELL_CSP`,
+  `fastly:publish` pushes `index.html` to the KV store. Run **both**.
+
+Note the app-shell CSP is meta-only — the shell routes carry no CSP response
+header, so `report-uri` and `report-to` are ignored and violations are never
+reported back. (The embed routes are the exception: they are separate static documents, and
+the worker sets a `frame-ancestors *` response header on them — the `/embed`
+widget via [`compute-js/src/embedWidget.js`](./compute-js/src/embedWidget.js),
+the `/embed/:id` oEmbed player inline in `index.js`.)
+
 ## Key Dependencies
 
 `@nostrify/nostrify` and `@nostrify/react` provide the Nostr protocol client
@@ -90,12 +183,111 @@ and React bindings. `@divinevideo/login` handles authentication.
 `@tanstack/react-query` manages server state. `react-router-dom` handles
 client-side routing. `@radix-ui/*` provides headless UI primitives.
 `react-hook-form`, `@hookform/resolvers`, and `zod` handle forms and
-validation. `i18next` and `react-i18next` power internationalization across 16
+validation. `i18next` and `react-i18next` power internationalization across 20
 locales. `@fontsource-variable/inter` supplies typography.
 `@phosphor-icons/react` is the icon library (migrated from lucide-react).
 `hls.js` handles HLS video playback. `@sentry/react` tracks errors.
 `@unhead/react` manages the document head. `sonner` and `vaul` provide toast
 and drawer UI. `vite-plugin-pwa` generates the PWA service worker.
+
+### Account Archive Export
+
+The `/exit/start` flow reads raw signed events through the owner-export API and
+builds archive metadata in `src/lib/exit/`. Its media option writes a store-only
+Zip64 archive directly to a user-selected file, downloads one unique blob at a
+time, verifies advertised SHA-256 hashes, and records partial failures without
+changing signed events. Bare media requests follow content-delivery redirects,
+while requests carrying viewer authorization refuse redirects and are retried
+only for the exact `https://media.divine.video` origin; third-party media
+requests remain bare. The completed archive omits an empty checksum file, adds
+a readable failure report for downloads and quarantined hash mismatches, and
+keeps the final on-screen result aligned with the media actually saved. Media
+discovery reads URL-bearing event tags plus the `picture` and `banner` fields in
+kind-0 profile metadata.
+
+The same page shows the signed-in account's full npub and separates hosted,
+local-nsec, and external-signer key ownership. Hosted accounts may export their
+nsec through Keycast's password-confirmed `/api/user/export-key` endpoint. The
+secret exists only in transient component state, is cleared on hide or account
+change, and is never added to the archive. Keycast remains authoritative for
+raw-key policy: a policy denial changes only the key section and leaves every
+other portability step available.
+
+The same page can lazily check for a private pre-ban snapshot and redeem it with
+the signed-in owner's NIP-98 proof. Snapshot status and redemption keep their
+lifecycle validation and HTTP error classification in
+[`banSnapshotClient.ts`](./src/lib/exit/banSnapshotClient.ts); ordinary and
+snapshot exports share only signed GET transport, event-envelope validation,
+and the bounded cursor walk. Every page URL is completed before signing so the
+NIP-98 `u` tag includes the enforcement id and opaque cursor. Recovered events
+enter the existing archive, media verification, mirror, and republish pipeline.
+The manifest records snapshot provenance, while partial pages remain usable if
+the snapshot expires or becomes unavailable during retrieval.
+
+Additive moderation annotations are accumulated across pages, while the
+withheld-event acknowledgement is accepted only from the terminal page. The
+manifest records supported, incomplete, and unsupported metadata distinctly;
+`events.json` keeps the bare signed events unchanged.
+
+After an archive is built, the same page can mirror its unique source blobs to a
+custom HTTPS Blossom destination with BUD-04 `PUT /mirror`. Destination URLs
+normalize to the domain root because BUD-01 serves every Blossom endpoint there.
+The first eligible
+copy is the destination capability canary, kind-24242 upload authorization is
+scoped to one advertised hash, and later file failures do not stop the remaining
+copies. Hashless profile images are read through a five-megabyte streaming cap,
+hashed in the browser, and sent through BUD-02 `PUT /upload`; other hashless
+media and generated HLS manifests are skipped. Source-advertised hashes,
+browser-computed upload hashes, descriptor hashes, and redirect-aware `HEAD`
+readback results remain distinct. Confirmed copy results also establish
+the delivery origins used by republish summaries. Those origins come from the
+destination-provided copy descriptor because Blossom servers may deliver through
+a separate CDN; HTTPS and readback are validated, but ownership by the typed
+destination is not independently established. The summary therefore trusts the
+chosen destination's reported delivery origin. An unconfirmed result for a
+specific URL remains conservative even when another copy confirms that origin.
+
+After mirroring finishes, the page can republish durable public events to one
+custom `wss://` relay. Migration writes use a standalone authenticated relay
+session instead of the app's `NPool`; the same session primitive also publishes
+the discovery pointers described below. Only media with a confirmed destination
+result is rewritten, while already-hosted destination URLs affect reporting
+without changing or re-signing the exported event.
+Changed replaceable and addressable events are re-signed with the move run's
+timestamp, falling back to one second past the original when that original is
+already newer. The migrated copy therefore supersedes the old media references
+deterministically, and a later move run supersedes an earlier one. Other changed
+events keep their original timestamp.
+Referenced owner events are prepared first so `e`, `E`, and `q` tags keep
+pointing at valid event IDs, and unchanged events retain their original ID and
+signature.
+Encrypted messages, ephemeral or authentication events, deletion requests,
+and vanish requests are skipped. Relay refusals remain per-event results and
+do not stop unrelated publishes.
+
+The moving flow also states the boundary of that rewrite: copies already held
+by independent relays are not updated or removed, and their original media
+links may continue loading files from Divine.
+
+Before preparing the event graph, the move flow reads the destination's NIP-11
+`created_at_lower_limit`. When the relay does not declare one, the flow assumes
+the common three-year admission window. NIP-71 videos older than that window
+are re-signed with the current event timestamp before references are rewritten;
+their original publication time remains in `published_at`. This age rule covers
+video kinds only: no other kind is given video-specific metadata or re-dated to
+satisfy a relay's age policy.
+
+Once at least one event is present at the destination relay, the page can publish
+destination-only discovery metadata: a NIP-65 kind-10002 relay list and a BUD-03
+kind-10063 Blossom server list. Each pointer is signed once, then published to
+the destination and the public metadata relays that other clients query. Divine's
+own relay is one of those publication targets so an app that knows the old home
+can follow the move, but it never counts toward discovery: the UI reports success
+only when a metadata relay outside Divine accepts the pointer. Replacement
+timestamps explicitly exceed the owner's archived pointer, and a pointer that
+would require more than one second of future clock skew blocks that publication
+rather than relying on relay tie-breaking or guessing the destination's clock
+policy.
 
 ## Linting
 
@@ -129,3 +321,127 @@ Nostr relays are configured in [`src/config/relays.ts`](./src/config/relays.ts).
 Firebase Analytics runs behind GDPR cookie consent. Sentry handles error
 tracking. Media assets come from cdn.divine.video. Content moderation uses
 moderation-api.divine.video. HubSpot provides the cookie consent banner.
+
+### Product Analytics Contract
+
+The cross-platform product-event vocabulary lives in the `divine-context`
+repository and is generated from `analytics/event-contract.yaml` there. This
+repository vendors the TypeScript output at
+[`src/generated/productAnalytics.ts`](./src/generated/productAnalytics.ts) and
+pins it in [`analytics-contract.lock`](./analytics-contract.lock), which records
+the source-contract commit, generated-artifact commit, schema version, and
+SHA-256 values for both the vendored manifest and artifact.
+
+Do not hand-edit the vendored file. To take a new version, regenerate it
+upstream, copy both the artifact and `analytics-contract.manifest.json` here,
+and update the lock from that manifest.
+`npm run analytics:contract:check` verifies the pin, and
+`scripts/check-analytics-contract.test.mjs` runs the same check under
+`npm run test`.
+
+Product analytics remains off in normal production and preview builds. An
+operator can use the existing Funnelcake API setting to select staging on a
+`*.pages.dev` preview; that explicit combination turns product analytics on for
+the staging test without reserving a `*.divine.video` hostname. Selecting
+staging on a Divine user-facing domain does not turn collection on.
+
+The web app currently produces five of the seven version-two events:
+`landing_viewed`, `registration_started`, `navigation_context_recorded`,
+`content_impression_recorded`, and `playback_session_recorded`. It does not
+produce `onboarding_step_recorded` because web registration hands off to the
+hosted login service, which owns onboarding, and it does not produce
+`experiment_exposure` because the web app has no experiment assignment system
+or exposure point yet.
+
+`registration_started` means that the person deliberately reached the
+registration surface: an explicit signup link may open it directly, or a
+person in the sign-in dialog may choose the Register tab. Merely opening a
+sign-in prompt does not count. For `content_impression_recorded`, `visible_ms`
+is the uninterrupted visible time that qualified the impression (normally
+about 1,000 ms on both web and mobile), not the video's total visible dwell
+time. Playback dwell is recorded separately by `playback_session_recorded`.
+
+Anonymous acquisition events use the anonymous endpoint. User activity uses a
+NIP-98-signed request whose body and signature identify the account to
+Funnelcake, even though the event itself has no public-key field. The browser
+install and session identifiers are both replaced, and the pending queue is
+cleared, on login, logout, account switch, or analytics-consent withdrawal.
+This deliberately prevents Funnelcake from joining pre-login activity or two
+accounts through a shared browser identifier. Re-consent starts a new browser
+and session identity.
+
+The browser queue is bounded and best effort. IndexedDB is preferred, with an
+in-memory copy retained when a write fails. A permanent rejection of a
+multi-event request is retried one event at a time so a malformed event cannot
+delete valid neighbors. Numeric producer values are clamped to the shared
+contract ranges before hashing and enqueueing. The contract lock also pins the
+cross-language event-ID fixture, so its canonicalization vectors cannot drift
+independently of the generated schema.
+
+### Relay Routing
+
+[`src/lib/relayRouting.ts`](./src/lib/relayRouting.ts) defines the
+`reqRouter` and `eventRouter` factories used by
+[`src/components/NostrProvider.tsx`](./src/components/NostrProvider.tsx).
+Reads split filters into profile (kinds 0/3/10011), badge
+(8/30008/30009), and other groups; each group is fanned out to its
+relay set. Writes fan out to the primary relay plus `PROFILE_RELAYS`
+for kind 0/3/10011, list kinds 30000/30001/30005, and NIP-09 deletion
+requests whose `k` tag targets one of those list kinds. Other writes use
+`PRESET_RELAYS` (capped at 5). **Mute lists (kind 10000) are write-restricted to
+`{primary} ∪ PROFILE_RELAYS`** so the write set is aligned with the
+read set and a user's populated list on a public relay is not
+clobbered by a web-side write that the web read path would never see.
+
+## Moderation Provenance
+
+The kind 10000 mute list is a flat set of p-tags, so web cannot tell an
+ordinary mute from a Block the Divine app set. Two local stores in
+[`src/lib/moderationProvenance.ts`](./src/lib/moderationProvenance.ts) fill that
+gap, both keyed by the signed-in viewer and read only for that viewer's own
+list:
+
+- **Block and web-mute provenance** — which p-tags web itself added, and which
+  of those were Blocks. `useMuteList` labels each user entry `web` or `unknown`;
+  [`src/pages/ModerationSettingsPage.tsx`](./src/pages/ModerationSettingsPage.tsx)
+  groups them accordingly and confirms every unmute, because an `unknown` entry
+  may be state another client still depends on. Provenance is a UI signal, not
+  an authorization boundary — the relay list stays authoritative.
+- **Remembered own list snapshot** — the newest kind 10000 web has seen or
+  published. A relay that misses the list or answers with an older copy would
+  otherwise make the next publish drop entries the user still has muted, so the
+  snapshot wins whenever its `created_at` is newer. The newest copy always
+  wins, so another client's legitimate removal is never resurrected.
+
+Mutations additionally refuse to publish unless the relay read reached EOSE
+(`MuteListUnavailableError`), so an unestablished read is never mistaken for an
+empty list.
+
+### Supporter membership
+
+The public `/supporters` page explains membership and points purchases and
+restores to the mobile app. `useSupporter` reads private account state from
+`/v1/me` on the supporters service with NIP-98 authentication; recognition
+changes sign all three preference fields in a PATCH to `/v1/me/recognition`.
+The host comes from `API_CONFIG.supportersService`, which defaults to
+`https://supporters.divine.video` and is overridable with
+`VITE_SUPPORTERS_SERVICE_URL` so a preview or staging build can be pointed away
+from live membership data. Every request carries a timeout signal.
+Hosted and local-key accounts refresh on window focus. External signers require
+an explicit status check so ordinary browsing cannot trigger a signing prompt.
+Private queries are keyed by account, held only in memory, and discarded when
+unobserved. Failed and unknown reads never become an inactive membership.
+
+Owners see a private Supporter chip and thanks even when recognition is hidden.
+Other profile visitors read only `/v1/public/supporters?pubkeys=<full-hex-key>`;
+only active, explicitly visible supporters receive a public chip. Membership
+never creates an identity proof or changes the linked-account proof workflow.
+
+## Extension Login Restoration
+
+Stored NIP-07 extension accounts retain a pubkey-only placeholder while the
+provider injects, for at most 30 seconds. Protected routes stay mounted during
+this window. After the deadline, unavailable accounts no longer count as logged
+in and polling stops. Focus, pageshow, and visibility events can still recover
+a provider that appears later. Hosted JWT selection and bunker signer cleanup
+remain independent of this extension wait.

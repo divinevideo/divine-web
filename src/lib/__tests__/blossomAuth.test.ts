@@ -1,5 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createBlossomGetAuthHeader } from '@/lib/blossomAuth';
+import { createBlossomGetAuthHeader, createBlossomUploadAuthHeader } from '@/lib/blossomAuth';
+
+function decodeToken(header: string) {
+  const token = header.slice('Nostr '.length);
+  const padded = token.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(token.length / 4) * 4, '=');
+  const bytes = Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function expectBase64Url(header: string) {
+  expect(header.slice('Nostr '.length)).not.toMatch(/[+/=]/);
+}
 
 function makeSigner() {
   return {
@@ -21,7 +32,7 @@ describe('createBlossomGetAuthHeader', () => {
     const header = await createBlossomGetAuthHeader(signer, HASH);
 
     expect(header).toMatch(/^Nostr /);
-    const payload = JSON.parse(atob(header!.slice('Nostr '.length)));
+    const payload = decodeToken(header!);
     expect(payload.kind).toBe(24242);
     expect(payload.content).toBe('Get blob');
     const tagMap = new Map(payload.tags.map((t: string[]) => [t[0], t[1]]));
@@ -40,5 +51,27 @@ describe('createBlossomGetAuthHeader', () => {
 
     const header = await createBlossomGetAuthHeader(signer, HASH);
     expect(header).toBeNull();
+  });
+});
+
+describe('createBlossomUploadAuthHeader', () => {
+  const HASH = 'b'.repeat(64);
+
+  it('signs a hash-bound kind 24242 upload event', async () => {
+    const signer = makeSigner();
+    const header = await createBlossomUploadAuthHeader(signer, HASH);
+
+    expectBase64Url(header);
+    const payload = decodeToken(header);
+    expect(payload).toMatchObject({ kind: 24242, content: 'Upload blob' });
+    expect(payload.tags).toContainEqual(['t', 'upload']);
+    expect(payload.tags).toContainEqual(['x', HASH]);
+  });
+
+  it('surfaces signing failures to the mirror flow', async () => {
+    const signer = makeSigner();
+    signer.signEvent.mockRejectedValueOnce(new Error('signing denied'));
+
+    await expect(createBlossomUploadAuthHeader(signer, HASH)).rejects.toThrow('signing denied');
   });
 });

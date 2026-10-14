@@ -6,7 +6,7 @@
 // ESM imports are hoisted above this code, but no import touches location.hash —
 // the router only runs when React mounts, so sessionStorage is set in time.
 if (window.location.hash === '#signup' || window.location.hash === '#login') {
-  sessionStorage.setItem('openInviteAuth', '1');
+  sessionStorage.setItem('openSignup', '1');
   history.replaceState(null, '', window.location.pathname + window.location.search);
 }
 
@@ -26,6 +26,7 @@ import { cleanupServiceWorkersAndCaches } from '@/lib/serviceWorkerCleanup';
 // Import polyfills first
 import './lib/polyfills.ts';
 
+// Start lazy locale loading early; React still waits for the same promise below.
 initializeI18n();
 
 // Initialize cookie consent listener (must be before analytics)

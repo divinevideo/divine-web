@@ -2,7 +2,7 @@
 // ABOUTME: Defines interfaces for KPI summaries, per-video performance, and aggregated data
 
 /**
- * Per-video performance metrics for the analytics dashboard
+ * Per-video performance row in the "Top videos" list.
  */
 export interface VideoPerformance {
   eventId: string;
@@ -19,7 +19,8 @@ export interface VideoPerformance {
 }
 
 /**
- * Aggregated KPI summary across all (or filtered) videos
+ * Aggregated KPI summary across the creator's full catalogue (server-computed,
+ * not capped by frontend pagination).
  */
 export interface CreatorKPIs {
   totalVideos: number;
@@ -32,12 +33,18 @@ export interface CreatorKPIs {
 }
 
 /**
- * Full analytics data returned by the useCreatorAnalytics hook
+ * Supported analytics windows. Mirrors the backend's accepted values.
+ */
+export type CreatorAnalyticsWindow = '7d' | '28d' | '30d' | '90d' | 'all';
+
+/**
+ * Full analytics data returned by the useCreatorAnalytics hook.
  */
 export interface CreatorAnalyticsData {
   kpis: CreatorKPIs;
   topVideos: VideoPerformance[];
   followerCount: number;
   followingCount: number;
+  window: CreatorAnalyticsWindow;
   fetchedAt: Date;
 }

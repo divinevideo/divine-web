@@ -3,16 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { DownloadSimple as Download, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { getPreferredAppStoreCountry, lookupAppStoreUrl, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
-
-interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: string[];
-  readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed';
-    platform: string;
-  }>;
-  prompt(): Promise<void>;
-}
+import { APP_STORE_URL, detectMobilePlatform, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 
 interface NavigatorWithStandalone extends Navigator {
   standalone?: boolean;
@@ -21,14 +12,14 @@ interface NavigatorWithStandalone extends Navigator {
 export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {}) {
   const { t } = useTranslation();
   const location = useLocation();
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
+  const [platform] = useState(() => detectMobilePlatform(window.navigator.userAgent));
   const [isStandalone, setIsStandalone] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [hasLeftLanding, setHasLeftLanding] = useState(false);
-  const [appStoreUrl, setAppStoreUrl] = useState<string | null>(null);
+
+  const showAppStore = platform !== 'android';
+  const showGooglePlay = platform !== 'ios';
 
   // Track when user leaves the landing page
   useEffect(() => {
@@ -65,56 +56,10 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
 
     checkStandalone();
 
-    // Check if iOS
-    const checkIOS = () => {
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-      setIsIOS(isIOSDevice);
-      setIsAndroid(/android/.test(userAgent));
-    };
-
-    checkIOS();
-
-    // Listen for the beforeinstallprompt event
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-
     return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
       window.removeEventListener('resize', handleResize);
     };
   }, []);
-
-  useEffect(() => {
-    if (!isMobile || isAndroid) {
-      setAppStoreUrl(null);
-      return;
-    }
-
-    const country = getPreferredAppStoreCountry();
-    let cancelled = false;
-
-    if (!country) {
-      setAppStoreUrl(null);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    lookupAppStoreUrl(country).then((url) => {
-      if (!cancelled) {
-        setAppStoreUrl(url);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isAndroid, isMobile]);
 
   // Show prompt after user has been on a non-landing page for 10 seconds
   useEffect(() => {
@@ -124,33 +69,13 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
     const timer = setTimeout(() => {
       // Check if user hasn't dismissed this before
       const dismissed = localStorage.getItem('pwa-install-dismissed');
-      if (!dismissed && (appStoreUrl || !isIOS || deferredPrompt)) {
+      if (!dismissed) {
         setShowPrompt(true);
       }
     }, delayMs); // Show after 10 seconds on non-landing page
 
     return () => clearTimeout(timer);
-  }, [appStoreUrl, hasLeftLanding, location.pathname, deferredPrompt, isIOS, delayMs]);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    // Show the install prompt
-    deferredPrompt.prompt();
-
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      console.log('[PWA] User accepted the install prompt');
-    } else {
-      console.log('[PWA] User dismissed the install prompt');
-    }
-
-    // Clear the deferredPrompt
-    setDeferredPrompt(null);
-    setShowPrompt(false);
-  };
+  }, [hasLeftLanding, location.pathname, delayMs]);
 
   const handleDismiss = () => {
     setShowPrompt(false);
@@ -162,9 +87,6 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
   if (isStandalone || !isMobile) {
     return null;
   }
-
-  const showGooglePlay = !isIOS;
-  const hasNativeStoreAction = Boolean(appStoreUrl || showGooglePlay);
 
   if (!showPrompt) {
     return null;
@@ -187,39 +109,33 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
 
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground mb-1">
-            {hasNativeStoreAction ? t('pwaInstallPrompt.getDivine') : t('pwaInstallPrompt.installDivineWeb')}
+            {t('pwaInstallPrompt.getDivine')}
           </h3>
           <p className="text-sm text-muted-foreground mb-3">
-            {hasNativeStoreAction
-              ? t('pwaInstallPrompt.descriptionNative')
-              : t('pwaInstallPrompt.descriptionWeb')}
+            {t('pwaInstallPrompt.descriptionNative')}
           </p>
 
+          {/*
+            flex-1 without min-w-0: the buttons share the row when the labels
+            fit and the row wraps when they do not. With min-w-0 they shrank
+            under their own `whitespace-nowrap` text instead, spilling the label
+            outside the pill.
+          */}
           <div className="flex flex-wrap gap-2">
-            {appStoreUrl && (
-              <Button asChild size="sm" className="flex-1 min-w-0">
-                <a href={appStoreUrl} target="_blank" rel="noopener noreferrer" aria-label={t('pwaInstallPrompt.appStoreAria')}>
+            {showAppStore && (
+              <Button asChild size="sm" className="flex-1">
+                <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" aria-label={t('pwaInstallPrompt.appStoreAria')}>
                   <Download className="h-4 w-4 mr-2" />
                   {t('pwaInstallPrompt.appStore')}
                 </a>
               </Button>
             )}
             {showGooglePlay && (
-              <Button asChild size="sm" className="flex-1 min-w-0">
+              <Button asChild size="sm" className="flex-1">
                 <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" aria-label={t('pwaInstallPrompt.googlePlayAria')}>
                   <Download className="h-4 w-4 mr-2" />
                   {t('pwaInstallPrompt.googlePlay')}
                 </a>
-              </Button>
-            )}
-            {!hasNativeStoreAction && deferredPrompt && (
-              <Button
-                onClick={handleInstallClick}
-                size="sm"
-                className="flex-1"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {t('pwaInstallPrompt.install')}
               </Button>
             )}
             <Button

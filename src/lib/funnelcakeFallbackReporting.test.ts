@@ -64,6 +64,37 @@ describe('reportFunnelcakeFallback', () => {
     );
   });
 
+  it('silently skips reporting when the underlying error is an AbortError', async () => {
+    const { reportFunnelcakeFallback } = await import('./funnelcakeFallbackReporting');
+    const analytics = await import('@/lib/analytics');
+    const sentry = await import('@/lib/sentry');
+
+    reportFunnelcakeFallback({
+      source: 'useSearchUsers',
+      apiUrl: 'https://api.divine.video',
+      reason: 'signal is aborted without reason',
+      error: new DOMException('signal is aborted without reason', 'AbortError'),
+    });
+
+    expect(sentry.addBreadcrumb).not.toHaveBeenCalled();
+    expect(sentry.captureNonFatalError).not.toHaveBeenCalled();
+    expect(analytics.trackNonFatalError).not.toHaveBeenCalled();
+  });
+
+  it('still reports genuine errors passed via the error option', async () => {
+    const { reportFunnelcakeFallback } = await import('./funnelcakeFallbackReporting');
+    const sentry = await import('@/lib/sentry');
+
+    reportFunnelcakeFallback({
+      source: 'useSearchUsers',
+      apiUrl: 'https://api.divine.video',
+      reason: 'Funnelcake API error: 500 Internal Server Error',
+      error: new Error('Funnelcake API error: 500 Internal Server Error'),
+    });
+
+    expect(sentry.captureNonFatalError).toHaveBeenCalledTimes(1);
+  });
+
   it('deduplicates repeated reports within the window', async () => {
     const { reportFunnelcakeFallback } = await import('./funnelcakeFallbackReporting');
     const analytics = await import('@/lib/analytics');
@@ -81,5 +112,31 @@ describe('reportFunnelcakeFallback', () => {
     });
 
     expect(analytics.trackNonFatalError).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('isAbortError', () => {
+  it('detects DOMException AbortError', async () => {
+    const { isAbortError } = await import('./funnelcakeFallbackReporting');
+    expect(isAbortError(new DOMException('signal is aborted without reason', 'AbortError'))).toBe(true);
+  });
+
+  it('detects plain errors renamed to AbortError', async () => {
+    const { isAbortError } = await import('./funnelcakeFallbackReporting');
+    const error = new Error('The user aborted a request.');
+    error.name = 'AbortError';
+    expect(isAbortError(error)).toBe(true);
+  });
+
+  it('does not flag timeouts as aborts', async () => {
+    const { isAbortError } = await import('./funnelcakeFallbackReporting');
+    expect(isAbortError(new DOMException('signal timed out', 'TimeoutError'))).toBe(false);
+  });
+
+  it('does not flag ordinary errors or non-errors', async () => {
+    const { isAbortError } = await import('./funnelcakeFallbackReporting');
+    expect(isAbortError(new Error('Funnelcake API error: 500'))).toBe(false);
+    expect(isAbortError('AbortError')).toBe(false);
+    expect(isAbortError(undefined)).toBe(false);
   });
 });

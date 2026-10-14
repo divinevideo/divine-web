@@ -1,65 +1,203 @@
 // ABOUTME: Pure transform functions for notification API responses
-// ABOUTME: Maps raw Funnelcake notification data to app-level Notification types
+// ABOUTME: Maps raw Funnelcake notification data to app-level RawNotification types
 
 import type {
-  Notification,
   NotificationType,
   NotificationsResponse,
   RawApiNotification,
+  RawNotification,
   RawNotificationsApiResponse,
 } from '@/types/notification';
 
 /**
  * Map the API notification_type string to our app NotificationType.
+ *
+ * The endpoint emits `reaction`, `reply`, `repost`, `mention`, `comment`,
+ * `follow`, `zap`, and `list_add`. We render four of them:
+ *
+ * - `reply` and `comment` are both comments to the reader. The backend splits
+ *   them (top-level comment vs threaded reply); the UI deliberately renders one
+ *   row type for both. The response does carry a `reply_context` that could
+ *   distinguish them, but we neither model nor read it today.
+ *
+ * `reaction` covers every kind 7, including a like on *your comment* on someone
+ * else's video, and the backend resolves that row's root to the video. Mapping
+ * all of them to `like` put "liked your video" over a video that was not yours
+ * and merged the row into that video's like bucket. `target_comment_id` is what
+ * separates the two, so a reaction carrying one becomes `commentLike`, which
+ * has its own copy and its own bucket.
+ *
+ * Only `reaction` branches on it: `comment` and `reply` set the same field to
+ * mark the comment to scroll to, which says nothing about what was reacted to.
+ * - `mention` is the materializer's catch-all for any source kind it does not
+ *   recognise, so it has no single truthful verb. Relabelling it as a like put
+ *   false statements on screen and inflated like counts, because grouping
+ *   buckets on target + type. It is dropped until it has a real render path.
+ * - `zap` is hidden by product decision; `list_add` has no row design yet.
  */
-export function mapNotificationType(apiType: string): NotificationType {
+export function mapNotificationType(
+  apiType: string,
+  options?: { hasTargetComment?: boolean },
+): NotificationType | null {
   switch (apiType) {
     case 'reaction':
-      return 'like';
+      return options?.hasTargetComment ? 'commentLike' : 'like';
     case 'reply':
+    case 'comment':
       return 'comment';
     case 'follow':
       return 'follow';
     case 'repost':
       return 'repost';
-    case 'zap':
-      return 'zap';
     default:
-      return 'like'; // Fallback for unknown types
+      return null;
   }
 }
 
+/** `kind:pubkey:d-tag`, e.g. `34236:<64-hex>:my-vine`. */
+const ADDRESSABLE_COORDINATE = /^\d+:[0-9a-f]{64}:/i;
+
 /**
- * Transform a single raw API notification to app Notification type.
+ * Reduce an identifier to something the app can actually resolve.
+ *
+ * `/api/videos/{id}` documents exactly two accepted forms — a 64-char event id
+ * or a d-tag — and `/video/:id` resolves through it. A full `kind:pubkey:d-tag`
+ * coordinate is neither: the single lookup 404s and `/api/videos/bulk` returns
+ * 500 for the whole batch, so one addressable row would strand every thumbnail
+ * on the page. The d-tag suffix does resolve, so that is what we keep.
  */
-export function transformNotification(raw: RawApiNotification): Notification {
-  const type = mapNotificationType(raw.notification_type);
+function toResolvableIdentifier(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+
+  const coordinate = ADDRESSABLE_COORDINATE.exec(value);
+  // d-tags may themselves contain ':', so keep everything after kind:pubkey.
+  return (coordinate ? value.slice(coordinate[0].length) : value) || undefined;
+}
+
+/**
+ * Resolve the event this notification points at.
+ *
+ * `root_event_id` is the API's designated navigation target: for kind 1111
+ * comments and replies it is the NIP-22 uppercase `E` tag (the video), whereas
+ * `referenced_event_id` is the lowercase `e` (the parent comment). Reposts
+ * published with only an `a` tag — which is what divine-web itself publishes —
+ * have no 64-char event id at all, so we fall back to the d-tag the response
+ * carries alongside the coordinate.
+ */
+function resolveTargetEventId(raw: RawApiNotification): string | undefined {
+  return (
+    toResolvableIdentifier(raw.root_event_id) ??
+    toResolvableIdentifier(raw.referenced_event_id) ??
+    toResolvableIdentifier(raw.root_d_tag) ??
+    toResolvableIdentifier(raw.referenced_d_tag) ??
+    toResolvableIdentifier(raw.referenced_video?.d_tag) ??
+    toResolvableIdentifier(raw.root_addressable_id)
+  );
+}
+
+/**
+ * Resolve the identity used to group rows about the same video.
+ *
+ * `resolveTargetEventId` answers "what can we fetch and navigate to", and its
+ * answer legitimately differs per row: divine-web publishes reposts with only an
+ * `a` tag, so those resolve to a d-tag, while divine-mobile adds an `e` tag and
+ * those resolve to a hex event id. Keying buckets on that value splits a single
+ * video into two rows the moment it is reposted from both clients.
+ *
+ * `root_addressable_id` is derived from the `a` tag (or the resolved event) in
+ * both shapes, so it is identical across them and is the stable identity. It is
+ * deliberately *not* used for fetching — see `toResolvableIdentifier`.
+ */
+function resolveGroupingKey(raw: RawApiNotification): string | undefined {
+  return raw.root_addressable_id || undefined;
+}
+
+function resolveActorProfile(raw: RawApiNotification): RawNotification['actorProfile'] {
+  const profile = raw.source_profile;
+  if (!profile) return undefined;
 
   return {
-    id: raw.id,
+    displayName: profile.display_name ?? undefined,
+    avatarUrl: profile.picture ?? undefined,
+    nip05: profile.nip05 ?? undefined,
+  };
+}
+
+function resolveVideoMeta(raw: RawApiNotification): RawNotification['videoMeta'] {
+  const video = raw.referenced_video;
+  const title = video?.title ?? raw.referenced_event_title ?? undefined;
+  const thumbnailUrl = video?.thumbnail ?? undefined;
+
+  if (!title && !thumbnailUrl) return undefined;
+
+  return { title, thumbnailUrl };
+}
+
+/**
+ * Transform a single raw API notification to app RawNotification type.
+ * Returns null when:
+ * - the type maps to null (mention, zap, list_add, unknown)
+ * - type is not 'follow' and no target event can be resolved
+ */
+export function transformNotification(raw: RawApiNotification): RawNotification | null {
+  const type = mapNotificationType(raw.notification_type, {
+    hasTargetComment: Boolean(raw.target_comment_id),
+  });
+
+  if (type === null) {
+    return null;
+  }
+
+  const targetEventId = resolveTargetEventId(raw);
+
+  if (type !== 'follow' && !targetEventId) {
+    return null;
+  }
+
+  return {
+    // The response carries no `id`; source_event_id is the stable identity.
+    id: raw.source_event_id,
     type,
     actorPubkey: raw.source_pubkey,
     timestamp: raw.created_at,
-    isRead: raw.read,
-    targetEventId: raw.referenced_event_id,
+    // `read` arrives as `true`/`false` from the serializer even though the
+    // schema declares an integer. Coerce rather than pass through: isRead is a
+    // boolean and grouping copies it straight onto ActorNotification, so an
+    // uncoerced value reaches the UI union as whatever the wire happened to say.
+    isRead: Boolean(raw.read),
+    targetEventId,
+    groupingKey: resolveGroupingKey(raw) ?? targetEventId,
     sourceEventId: raw.source_event_id,
     sourceKind: raw.source_kind,
-    commentText: type === 'comment' ? raw.content : undefined,
+    commentText:
+      type === 'comment' ? raw.comment_content ?? raw.content ?? undefined : undefined,
+    targetCommentId: raw.target_comment_id ?? undefined,
+    actorProfile: resolveActorProfile(raw),
+    videoMeta: resolveVideoMeta(raw),
   };
 }
 
 /**
  * Deduplicate follow notifications — keep only the most recent per actor.
- * The API may return multiple follow events from the same user (e.g. unfollow/refollow).
+ * Sorts newest-first before deduping so behavior does not depend on API order.
  */
-export function deduplicateFollows(notifications: Notification[]): Notification[] {
+export function deduplicateFollows(notifications: RawNotification[]): RawNotification[] {
+  // Sort newest-first so the first occurrence we encounter per actor is always the newest
+  const sorted = [...notifications].sort((a, b) => b.timestamp - a.timestamp);
+
   const seenFollows = new Set<string>();
-  return notifications.filter((n) => {
-    if (n.type !== 'follow') return true;
-    if (seenFollows.has(n.actorPubkey)) return false;
-    seenFollows.add(n.actorPubkey);
-    return true;
-  });
+  const result: RawNotification[] = [];
+
+  for (const n of sorted) {
+    if (n.type !== 'follow') {
+      result.push(n);
+    } else if (!seenFollows.has(n.actorPubkey)) {
+      seenFollows.add(n.actorPubkey);
+      result.push(n);
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -68,41 +206,16 @@ export function deduplicateFollows(notifications: Notification[]): Notification[
 export function transformNotificationsResponse(
   raw: RawNotificationsApiResponse,
 ): NotificationsResponse {
-  const all = (raw.notifications ?? []).map(transformNotification);
+  const transformed = (raw.notifications ?? [])
+    .map(transformNotification)
+    .filter((n): n is RawNotification => n !== null);
+
   return {
-    notifications: deduplicateFollows(all),
+    notifications: deduplicateFollows(transformed),
     unreadCount: raw.unread_count ?? 0,
     nextCursor: raw.next_cursor,
     hasMore: raw.has_more ?? false,
   };
-}
-
-/**
- * Generate a human-readable notification message.
- *
- * @param type - The notification type
- * @param actorName - Display name of the actor (optional)
- */
-export function generateNotificationMessage(
-  type: NotificationType,
-  actorName?: string,
-): string {
-  const name = actorName || 'Someone';
-
-  switch (type) {
-    case 'like':
-      return `${name} liked your video`;
-    case 'comment':
-      return `${name} commented on your video`;
-    case 'follow':
-      return `${name} started following you`;
-    case 'repost':
-      return `${name} reposted your video`;
-    case 'zap':
-      return `${name} zapped your video`;
-    default:
-      return `${name} interacted with your content`;
-  }
 }
 
 /**

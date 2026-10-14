@@ -1,0 +1,104 @@
+name: Semantic Issue Title
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  semantic-issue-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check issue title
+        id: check-title
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          pattern='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)\([[:alnum:]_$./* -]+\)!?: .+'
+          placeholder_scope='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)\(scope\)!?: .+'
+          if [[ "$ISSUE_TITLE" =~ $pattern && ! "$ISSUE_TITLE" =~ $placeholder_scope ]]; then
+            echo "valid=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "valid=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Comment on invalid title
+        if: steps.check-title.outputs.valid == 'false'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const marker = '<!-- semantic-issue-title -->';
+            const body = [
+              marker,
+              'This issue title needs `type(scope): subject`.',
+              '',
+              'Allowed types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.',
+              '',
+              'Examples:',
+              '- `fix(search): avoid duplicate fallback requests`',
+              '- `docs(readme): clarify deploy commands`',
+            ].join('\n');
+
+            const issue_number = context.payload.issue.number;
+            const { owner, repo } = context.repo;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find((comment) =>
+              comment.user.type === 'Bot' && comment.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
+
+      - name: Remove resolved title comment
+        if: steps.check-title.outputs.valid == 'true'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const marker = '<!-- semantic-issue-title -->';
+            const issue_number = context.payload.issue.number;
+            const { owner, repo } = context.repo;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find((comment) =>
+              comment.user.type === 'Bot' && comment.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.deleteComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+              });
+            }
+
+      - name: Fail invalid title
+        if: steps.check-title.outputs.valid == 'false'
+        run: |
+          echo "Issue title must use: type(scope): subject"
+          echo "Allowed types: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test"
+          echo "Example: fix(search): avoid duplicate fallback requests"
+          exit 1

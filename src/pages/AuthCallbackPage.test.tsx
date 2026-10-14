@@ -7,13 +7,11 @@ import { initializeI18n } from '@/lib/i18n';
 
 const {
   mockBunker,
-  mockClearInviteHandoff,
   mockExchangeDivineLoginCallback,
   mockSaveBunkerUrl,
   mockSaveSession,
 } = vi.hoisted(() => ({
   mockBunker: vi.fn<(...args: unknown[]) => Promise<void>>(),
-  mockClearInviteHandoff: vi.fn(),
   mockExchangeDivineLoginCallback: vi.fn(),
   mockSaveBunkerUrl: vi.fn(),
   mockSaveSession: vi.fn(),
@@ -30,10 +28,6 @@ vi.mock('@/hooks/useDivineSession', () => ({
     saveBunkerUrl: mockSaveBunkerUrl,
     saveSession: mockSaveSession,
   }),
-}));
-
-vi.mock('@/lib/authHandoff', () => ({
-  clearInviteHandoff: mockClearInviteHandoff,
 }));
 
 vi.mock('@/lib/divineLogin', () => ({
@@ -89,7 +83,6 @@ describe('AuthCallbackPage', () => {
       expect(mockSaveSession).toHaveBeenCalledWith('jwt-token', null, false);
       expect(mockSaveBunkerUrl).not.toHaveBeenCalled();
       expect(mockBunker).not.toHaveBeenCalled();
-      expect(mockClearInviteHandoff).toHaveBeenCalled();
     });
 
     await screen.findByText('Home Route');

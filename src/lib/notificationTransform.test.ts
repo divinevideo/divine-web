@@ -7,10 +7,12 @@ import {
   transformNotification,
   transformNotificationsResponse,
   deduplicateFollows,
-  generateNotificationMessage,
   formatRelativeTime,
 } from './notificationTransform';
-import type { RawApiNotification, RawNotificationsApiResponse, Notification, NotificationType } from '@/types/notification';
+import type { RawApiNotification, RawNotificationsApiResponse, RawNotification } from '@/types/notification';
+
+/** Coordinates only parse as coordinates with a full-length pubkey. */
+const AUTHOR_PUBKEY = '076c979382b90f5d3a2b21f95e1ee86b6033f14c92e79b7fad3fe1f1073f4886';
 
 describe('notificationTransform', () => {
   describe('mapNotificationType', () => {
@@ -30,39 +32,88 @@ describe('notificationTransform', () => {
       expect(mapNotificationType('repost')).toBe('repost');
     });
 
-    it('maps "zap" to "zap"', () => {
-      expect(mapNotificationType('zap')).toBe('zap');
+    it('returns null for "zap"', () => {
+      expect(mapNotificationType('zap')).toBeNull();
     });
 
-    it('falls back to "like" for unknown types', () => {
-      expect(mapNotificationType('unknown')).toBe('like');
+    it('returns null for unknown types', () => {
+      expect(mapNotificationType('unknown')).toBeNull();
+      expect(mapNotificationType('')).toBeNull();
+    });
+
+    it('maps "comment" to "comment"', () => {
+      // Funnelcake emits `comment` for top-level comments on your video and
+      // `reply` for threaded replies. Both are comments to the reader.
+      expect(mapNotificationType('comment')).toBe('comment');
+    });
+
+    it('returns null for "mention"', () => {
+      // `mention` is the materializer's catch-all for any source kind it does
+      // not recognise, so it cannot be relabelled as a like without putting
+      // false statements on screen and inflating like counts.
+      expect(mapNotificationType('mention')).toBeNull();
+    });
+
+    it('returns null for "list_add"', () => {
+      expect(mapNotificationType('list_add')).toBeNull();
+    });
+
+    it('maps a "reaction" carrying a target comment to "commentLike"', () => {
+      // The backend emits `reaction` for every kind 7 and resolves the row's
+      // root to the video, so a like on your comment under someone else's video
+      // otherwise reads "liked your video" over a video that is not yours.
+      expect(mapNotificationType('reaction', { hasTargetComment: true })).toBe('commentLike');
+      expect(mapNotificationType('reaction', { hasTargetComment: false })).toBe('like');
+    });
+
+    it('does not reroute comments and replies that carry a target comment', () => {
+      // `target_comment_id` is set for `comment` and `reply` too, where it is
+      // the anchor to scroll to rather than the thing being reacted to.
+      expect(mapNotificationType('comment', { hasTargetComment: true })).toBe('comment');
+      expect(mapNotificationType('reply', { hasTargetComment: true })).toBe('comment');
     });
   });
 
   describe('transformNotification', () => {
     const raw: RawApiNotification = {
-      id: 'notif-123',
       source_pubkey: 'abc123',
       source_event_id: 'event-456',
       source_kind: 7,
       referenced_event_id: 'video-789',
+      root_event_id: 'video-789',
       notification_type: 'reaction',
       created_at: 1700000000,
-      read: false,
+      read: 0,
       content: '+',
     };
 
     it('transforms a reaction notification', () => {
       const result = transformNotification(raw);
-      expect(result.id).toBe('notif-123');
-      expect(result.type).toBe('like');
-      expect(result.actorPubkey).toBe('abc123');
-      expect(result.timestamp).toBe(1700000000);
-      expect(result.isRead).toBe(false);
-      expect(result.targetEventId).toBe('video-789');
-      expect(result.sourceEventId).toBe('event-456');
-      expect(result.sourceKind).toBe(7);
-      expect(result.commentText).toBeUndefined();
+      expect(result).not.toBeNull();
+      // The response carries no `id` field; the source event id is the stable
+      // per-notification identity.
+      expect(result!.id).toBe('event-456');
+      expect(result!.type).toBe('like');
+      expect(result!.actorPubkey).toBe('abc123');
+      expect(result!.timestamp).toBe(1700000000);
+      expect(result!.isRead).toBe(false);
+      expect(result!.targetEventId).toBe('video-789');
+      expect(result!.sourceEventId).toBe('event-456');
+      expect(result!.sourceKind).toBe(7);
+      expect(result!.commentText).toBeUndefined();
+    });
+
+    it('coerces the read flag to a real boolean whichever shape it arrives in', () => {
+      // The schema declares an integer but the serializer emits a bool, so both
+      // shapes have to land on a boolean. Passing either through leaves
+      // ActorNotification.isRead holding whatever the wire said, which is only
+      // invisible because 0/1 happen to be falsy and truthy.
+      expect(transformNotification({ ...raw, read: 1 })!.isRead).toBe(true);
+      expect(transformNotification({ ...raw, read: 0 })!.isRead).toBe(false);
+      expect(transformNotification({ ...raw, read: true })!.isRead).toBe(true);
+      expect(transformNotification({ ...raw, read: false })!.isRead).toBe(false);
+      expect(typeof transformNotification({ ...raw, read: 1 })!.isRead).toBe('boolean');
+      expect(typeof transformNotification({ ...raw, read: true })!.isRead).toBe('boolean');
     });
 
     it('includes commentText for reply notifications', () => {
@@ -73,13 +124,268 @@ describe('notificationTransform', () => {
         content: 'Great video!',
       };
       const result = transformNotification(reply);
-      expect(result.type).toBe('comment');
-      expect(result.commentText).toBe('Great video!');
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('comment');
+      expect(result!.commentText).toBe('Great video!');
     });
 
     it('does not include commentText for non-reply types', () => {
       const result = transformNotification(raw);
-      expect(result.commentText).toBeUndefined();
+      expect(result!.commentText).toBeUndefined();
+    });
+
+    it('returns null for zap notifications', () => {
+      const zap: RawApiNotification = {
+        ...raw,
+        notification_type: 'zap',
+      };
+      expect(transformNotification(zap)).toBeNull();
+    });
+
+    it('returns null for unknown notification types', () => {
+      const unknown: RawApiNotification = {
+        ...raw,
+        notification_type: 'unknown_type',
+      };
+      expect(transformNotification(unknown)).toBeNull();
+    });
+
+    it('drops mention notifications rather than relabelling them as likes', () => {
+      const mention: RawApiNotification = {
+        ...raw,
+        notification_type: 'mention',
+        source_kind: 1,
+      };
+
+      expect(transformNotification(mention)).toBeNull();
+    });
+
+    it('transforms a top-level comment notification', () => {
+      const comment: RawApiNotification = {
+        ...raw,
+        notification_type: 'comment',
+        source_kind: 1111,
+        comment_content: 'First!',
+        target_comment_id: 'event-456',
+      };
+
+      const result = transformNotification(comment);
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('comment');
+      expect(result!.commentText).toBe('First!');
+      expect(result!.targetCommentId).toBe('event-456');
+    });
+
+    it('prefers comment_content over content for comment text', () => {
+      const comment: RawApiNotification = {
+        ...raw,
+        notification_type: 'comment',
+        source_kind: 1111,
+        content: 'raw content',
+        comment_content: 'rendered comment',
+      };
+
+      expect(transformNotification(comment)!.commentText).toBe('rendered comment');
+    });
+
+    it('navigates replies to the root video, not the parent comment', () => {
+      // NIP-22 puts the parent comment in lowercase `e` and the video in
+      // uppercase `E`. referenced_event_id is the parent, so grouping and
+      // navigation must use root_event_id.
+      const reply: RawApiNotification = {
+        ...raw,
+        notification_type: 'reply',
+        source_kind: 1111,
+        referenced_event_id: 'parent-comment-id',
+        root_event_id: 'video-789',
+        comment_content: 'agreed',
+      };
+
+      const result = transformNotification(reply);
+      expect(result!.targetEventId).toBe('video-789');
+    });
+
+    it('routes a reaction carrying target_comment_id to commentLike', () => {
+      // mapNotificationType is unit-tested directly, but nothing exercised the
+      // call site that supplies its options. Drop the argument there and every
+      // like on a comment silently reverts to "liked your video".
+      const likeOnComment: RawApiNotification = {
+        ...raw,
+        notification_type: 'reaction',
+        target_comment_id: 'comment-123',
+      };
+
+      expect(transformNotification(likeOnComment)!.type).toBe('commentLike');
+      expect(transformNotification({ ...raw, target_comment_id: null })!.type).toBe('like');
+    });
+
+    it('takes the grouping key from root_addressable_id', () => {
+      // resolveGroupingKey is what keeps one video's rows in one bucket when
+      // clients tag their reposts differently. Without this the field falls
+      // back to targetEventId and the cross-client split returns unnoticed.
+      const coordinate = `34236:${AUTHOR_PUBKEY}:vine-id`;
+      const withCoordinate: RawApiNotification = {
+        ...raw,
+        root_addressable_id: coordinate,
+      };
+
+      expect(transformNotification(withCoordinate)!.groupingKey).toBe(coordinate);
+      // Absent the coordinate, identity falls back to the resolvable id.
+      expect(transformNotification({ ...raw, root_addressable_id: null })!.groupingKey).toBe(
+        'video-789',
+      );
+    });
+
+    it('keeps an addressable-only repost, targeting its d-tag', () => {
+      // divine-web publishes kind-16 reposts with an `a` tag and no `e` tag,
+      // so the backend has no 64-char referenced_event_id to report. The row
+      // must still resolve: /api/videos/{id} takes an event id or a d-tag.
+      const repost: RawApiNotification = {
+        ...raw,
+        notification_type: 'repost',
+        source_kind: 16,
+        referenced_event_id: '',
+        root_event_id: null,
+        root_d_tag: 'vine-id',
+        root_addressable_id: `34236:${AUTHOR_PUBKEY}:vine-id`,
+      };
+
+      const result = transformNotification(repost);
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('repost');
+      expect(result!.targetEventId).toBe('vine-id');
+    });
+
+    it('strips the kind:pubkey prefix when only the coordinate is available', () => {
+      // /api/videos/bulk answers 500 for a whole batch containing a
+      // kind:pubkey:d-tag coordinate, and /api/videos/{coordinate} 404s.
+      const repost: RawApiNotification = {
+        ...raw,
+        notification_type: 'repost',
+        source_kind: 16,
+        referenced_event_id: '',
+        root_event_id: null,
+        root_d_tag: null,
+        referenced_d_tag: null,
+        root_addressable_id: `34236:${AUTHOR_PUBKEY}:vine-id`,
+      };
+
+      expect(transformNotification(repost)!.targetEventId).toBe('vine-id');
+    });
+
+    it('keeps colons that belong to the d-tag itself', () => {
+      const repost: RawApiNotification = {
+        ...raw,
+        notification_type: 'repost',
+        source_kind: 16,
+        referenced_event_id: '',
+        root_event_id: null,
+        root_addressable_id: `34236:${AUTHOR_PUBKEY}:vine:2015:07`,
+      };
+
+      expect(transformNotification(repost)!.targetEventId).toBe('vine:2015:07');
+    });
+
+    it('falls back to the embedded video d-tag before the coordinate', () => {
+      const repost: RawApiNotification = {
+        ...raw,
+        notification_type: 'repost',
+        source_kind: 16,
+        referenced_event_id: '',
+        root_event_id: null,
+        referenced_video: { title: 'Sunset Loop', thumbnail: null, d_tag: 'vine-id' },
+        root_addressable_id: `34236:${AUTHOR_PUBKEY}:stale-coordinate`,
+      };
+
+      expect(transformNotification(repost)!.targetEventId).toBe('vine-id');
+    });
+
+    it('carries the embedded source profile and video metadata forward', () => {
+      const withEmbeds: RawApiNotification = {
+        ...raw,
+        source_profile: {
+          display_name: 'Alice',
+          picture: 'https://cdn.example/a.png',
+          nip05: 'alice@divine.video',
+        },
+        referenced_video: {
+          title: 'Sunset Loop',
+          thumbnail: 'https://cdn.example/t.jpg',
+          d_tag: 'vine-id',
+          blurhash: 'LKO2',
+        },
+      };
+
+      const result = transformNotification(withEmbeds);
+      expect(result!.actorProfile).toEqual({
+        displayName: 'Alice',
+        avatarUrl: 'https://cdn.example/a.png',
+        nip05: 'alice@divine.video',
+      });
+      expect(result!.videoMeta).toEqual({
+        title: 'Sunset Loop',
+        thumbnailUrl: 'https://cdn.example/t.jpg',
+      });
+    });
+
+    it('falls back to referenced_event_title when referenced_video is absent', () => {
+      const titled: RawApiNotification = {
+        ...raw,
+        referenced_event_title: 'Sunset Loop',
+      };
+
+      expect(transformNotification(titled)!.videoMeta).toEqual({
+        title: 'Sunset Loop',
+        thumbnailUrl: undefined,
+      });
+    });
+
+    it('returns null for like without referenced_event_id', () => {
+      const noRef: RawApiNotification = {
+        ...raw,
+        notification_type: 'reaction',
+        referenced_event_id: undefined,
+        root_event_id: null,
+      };
+      expect(transformNotification(noRef)).toBeNull();
+    });
+
+    it('returns null for comment without referenced_event_id', () => {
+      const noRef: RawApiNotification = {
+        ...raw,
+        notification_type: 'reply',
+        referenced_event_id: undefined,
+        root_event_id: null,
+        content: 'hello',
+      };
+      expect(transformNotification(noRef)).toBeNull();
+    });
+
+    it('returns null for repost without referenced_event_id', () => {
+      const noRef: RawApiNotification = {
+        ...raw,
+        notification_type: 'repost',
+        referenced_event_id: undefined,
+        root_event_id: null,
+        root_addressable_id: null,
+      };
+      expect(transformNotification(noRef)).toBeNull();
+    });
+
+    it('preserves follow rows without referenced_event_id', () => {
+      const follow: RawApiNotification = {
+        source_pubkey: 'follower-pk',
+        source_event_id: 'follow-event',
+        source_kind: 3,
+        notification_type: 'follow',
+        created_at: 1700000000,
+        read: 0,
+        // no referenced_event_id
+      };
+      const result = transformNotification(follow);
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('follow');
+      expect(result!.targetEventId).toBeUndefined();
     });
   });
 
@@ -88,22 +394,21 @@ describe('notificationTransform', () => {
       const raw: RawNotificationsApiResponse = {
         notifications: [
           {
-            id: 'n1',
             source_pubkey: 'pk1',
             source_event_id: 'e1',
             source_kind: 7,
+            referenced_event_id: 'video-1',
             notification_type: 'reaction',
             created_at: 1700000000,
-            read: false,
+            read: 0,
           },
           {
-            id: 'n2',
             source_pubkey: 'pk2',
             source_event_id: 'e2',
             source_kind: 3,
             notification_type: 'follow',
             created_at: 1700000001,
-            read: true,
+            read: 1,
           },
         ],
         unread_count: 5,
@@ -113,8 +418,9 @@ describe('notificationTransform', () => {
 
       const result = transformNotificationsResponse(raw);
       expect(result.notifications).toHaveLength(2);
-      expect(result.notifications[0].type).toBe('like');
-      expect(result.notifications[1].type).toBe('follow');
+      // deduplicateFollows sorts newest-first, so follow (ts=1700000001) comes before like (ts=1700000000)
+      expect(result.notifications[0].type).toBe('follow');
+      expect(result.notifications[1].type).toBe('like');
       expect(result.unreadCount).toBe(5);
       expect(result.nextCursor).toBe('cursor-abc');
       expect(result.hasMore).toBe(true);
@@ -133,10 +439,89 @@ describe('notificationTransform', () => {
       expect(result.hasMore).toBe(false);
       expect(result.nextCursor).toBeUndefined();
     });
+
+    it('omits zap notifications from the response', () => {
+      const raw: RawNotificationsApiResponse = {
+        notifications: [
+          {
+            source_pubkey: 'pk1',
+            source_event_id: 'e1',
+            source_kind: 9,
+            referenced_event_id: 'video-1',
+            notification_type: 'zap',
+            created_at: 1700000000,
+            read: 0,
+          },
+          {
+            source_pubkey: 'pk2',
+            source_event_id: 'e2',
+            source_kind: 7,
+            referenced_event_id: 'video-1',
+            notification_type: 'reaction',
+            created_at: 1700000001,
+            read: 0,
+          },
+        ],
+        unread_count: 2,
+        has_more: false,
+      };
+      const result = transformNotificationsResponse(raw);
+      expect(result.notifications).toHaveLength(1);
+      expect(result.notifications[0].type).toBe('like');
+    });
+
+    it('omits unknown notification types from the response', () => {
+      const raw: RawNotificationsApiResponse = {
+        notifications: [
+          {
+            source_pubkey: 'pk1',
+            source_event_id: 'e1',
+            source_kind: 0,
+            referenced_event_id: 'video-1',
+            notification_type: 'some_future_type',
+            created_at: 1700000000,
+            read: 0,
+          },
+        ],
+        unread_count: 0,
+        has_more: false,
+      };
+      const result = transformNotificationsResponse(raw);
+      expect(result.notifications).toHaveLength(0);
+    });
+
+    it('omits like/comment/repost rows without referenced_event_id', () => {
+      const raw: RawNotificationsApiResponse = {
+        notifications: [
+          {
+            source_pubkey: 'pk1',
+            source_event_id: 'e1',
+            source_kind: 7,
+            // no referenced_event_id
+            notification_type: 'reaction',
+            created_at: 1700000000,
+            read: 0,
+          },
+          {
+            source_pubkey: 'pk2',
+            source_event_id: 'e2',
+            source_kind: 3,
+            notification_type: 'follow',
+            created_at: 1700000001,
+            read: 0,
+          },
+        ],
+        unread_count: 0,
+        has_more: false,
+      };
+      const result = transformNotificationsResponse(raw);
+      expect(result.notifications).toHaveLength(1);
+      expect(result.notifications[0].type).toBe('follow');
+    });
   });
 
   describe('deduplicateFollows', () => {
-    const makeNotif = (overrides: Partial<Notification> & { id: string; type: NotificationType; actorPubkey: string }): Notification => ({
+    const makeNotif = (overrides: Partial<RawNotification> & { id: string; type: 'like' | 'comment' | 'follow' | 'repost'; actorPubkey: string }): RawNotification => ({
       timestamp: 1700000000,
       isRead: false,
       sourceEventId: 'se1',
@@ -144,16 +529,28 @@ describe('notificationTransform', () => {
       ...overrides,
     });
 
-    it('removes duplicate follow notifications from same actor', () => {
+    it('removes duplicate follow notifications from same actor, keeps newest', () => {
       const notifications = [
+        makeNotif({ id: 'n3', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000001 }),
         makeNotif({ id: 'n1', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000003 }),
         makeNotif({ id: 'n2', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000002 }),
-        makeNotif({ id: 'n3', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000001 }),
       ];
 
       const result = deduplicateFollows(notifications);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('n1'); // keeps the first (most recent)
+      expect(result[0].id).toBe('n1'); // newest by timestamp
+    });
+
+    it('keeps newest regardless of input order', () => {
+      // API order is reversed from timestamp order
+      const notifications = [
+        makeNotif({ id: 'oldest', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000001 }),
+        makeNotif({ id: 'newest', type: 'follow', actorPubkey: 'pk1', timestamp: 1700000005 }),
+      ];
+
+      const result = deduplicateFollows(notifications);
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('newest');
     });
 
     it('keeps follows from different actors', () => {
@@ -185,32 +582,6 @@ describe('notificationTransform', () => {
 
       const result = deduplicateFollows(notifications);
       expect(result).toHaveLength(2); // follow n1 + like n2 (follow n3 deduped)
-    });
-  });
-
-  describe('generateNotificationMessage', () => {
-    it('generates like message with name', () => {
-      expect(generateNotificationMessage('like', 'Alice')).toBe('Alice liked your video');
-    });
-
-    it('generates comment message with name', () => {
-      expect(generateNotificationMessage('comment', 'Bob')).toBe('Bob commented on your video');
-    });
-
-    it('generates follow message with name', () => {
-      expect(generateNotificationMessage('follow', 'Charlie')).toBe('Charlie started following you');
-    });
-
-    it('generates repost message with name', () => {
-      expect(generateNotificationMessage('repost', 'Dana')).toBe('Dana reposted your video');
-    });
-
-    it('generates zap message with name', () => {
-      expect(generateNotificationMessage('zap', 'Eve')).toBe('Eve zapped your video');
-    });
-
-    it('uses "Someone" when name is undefined', () => {
-      expect(generateNotificationMessage('like')).toBe('Someone liked your video');
     });
   });
 

@@ -11,6 +11,18 @@ interface FunnelcakeFallbackReportOptions {
   fallbackTo?: 'websocket';
   context?: Record<string, unknown>;
   dedupeKey?: string;
+  /** The caught error that triggered the fallback; aborts are silently skipped */
+  error?: unknown;
+}
+
+/**
+ * Detect cancelled requests (user typed again, navigated away, component
+ * unmounted). These are normal cancellations, never backend failures, and
+ * must not reach Sentry or analytics (#459).
+ */
+export function isAbortError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  return (error as { name?: unknown }).name === 'AbortError';
 }
 
 const reportedFallbacks = new Map<string, number>();
@@ -43,7 +55,12 @@ export function reportFunnelcakeFallback({
   fallbackTo = 'websocket',
   context,
   dedupeKey,
+  error: cause,
 }: FunnelcakeFallbackReportOptions) {
+  if (isAbortError(cause)) {
+    return;
+  }
+
   if (shouldSkipDuplicateReport(dedupeKey)) {
     return;
   }

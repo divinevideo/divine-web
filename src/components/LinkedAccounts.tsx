@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import {
   useExternalIdentities,
   verifyIdentityClaim,
+  VERIFIER_TEMPORARILY_UNAVAILABLE,
   SUPPORTED_PLATFORMS,
   type ExternalIdentity,
 } from '@/hooks/useExternalIdentities';
@@ -83,14 +84,22 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
 
   // Seed from localStorage cache if available (skip stale 'manual' results so they get re-verified)
   const rawCached = identity.proof
-    ? getCachedVerification(identity.platform, identity.identity, identity.proof)
+    ? getCachedVerification(identity.platform, identity.identity, identity.proof, pubkey)
     : undefined;
   const cachedResult = rawCached?.error === 'manual' ? undefined : rawCached;
 
   // Eager verification — runs as soon as proof exists (uses verifyer service for all platforms)
   const verification = useQuery({
-    queryKey: ['identity-verify', identity.platform, identity.identity, identity.proof],
-    queryFn: () => verifyIdentityClaim(identity, pubkey),
+    queryKey: ['identity-verify', pubkey, identity.platform, identity.identity, identity.proof],
+    // "Couldn't check right now" isn't an answer: treat it as a failed attempt,
+    // so the query retries and keeps showing an earlier verified result.
+    queryFn: async () => {
+      const result = await verifyIdentityClaim(identity, pubkey);
+      if (result.code === VERIFIER_TEMPORARILY_UNAVAILABLE) {
+        throw new Error('The verification service could not check this account right now');
+      }
+      return result;
+    },
     enabled: !!identity.proof,
     staleTime: 10 * 60 * 1000, // Cache 10 min (re-check periodically)
     gcTime: 30 * 60 * 1000,

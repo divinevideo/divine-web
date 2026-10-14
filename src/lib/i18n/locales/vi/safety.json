@@ -1,0 +1,20 @@
+{
+  "title": "Tiêu chuẩn an toàn",
+  "updated": "Cập nhật lần cuối: 30 tháng 3, 2026",
+  "sections": {
+    "overview": "1. Tổng quan",
+    "definitions": "2. Định nghĩa",
+    "prohibited": "3. Nội dung và hành vi bị cấm",
+    "childSafety": "4. An toàn trẻ em",
+    "matureContent": "5. Nội dung người lớn",
+    "integrity": "6. Tính toàn vẹn của nền tảng và hành vi lạm dụng",
+    "enforcement": "7. Thực thi",
+    "moderation": "8. Phương thức kiểm duyệt",
+    "reporting": "9. Báo cáo",
+    "userControls": "10. Quyền kiểm soát của người dùng",
+    "decentralization": "11. Giới hạn của phi tập trung",
+    "automated": "12. Ra quyết định tự động",
+    "appeals": "13. Kháng cáo",
+    "updates": "14. Cập nhật"
+  }
+}

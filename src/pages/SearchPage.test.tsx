@@ -1,7 +1,8 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type {
   ButtonHTMLAttributes,
   HTMLAttributes,
@@ -11,6 +12,7 @@ import type {
 } from 'react';
 import { nip19 } from 'nostr-tools';
 import { initializeI18n } from '@/lib/i18n';
+import { trackSearch } from '@/lib/analytics';
 import SearchPage from './SearchPage';
 
 const {
@@ -19,18 +21,26 @@ const {
   mockFetchVideoById,
   mockNostrQuery,
   mockUseInfiniteSearchVideos,
+  mockUseSearchUsers,
+  mockUseSearchHashtags,
+  mockUseNip05Validation,
   mockEnterFullscreen,
   mockSetVideosForFullscreen,
   mockUpdateVideos,
+  mockInfiniteScroll,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockFetchEventById: vi.fn(),
   mockFetchVideoById: vi.fn(),
   mockNostrQuery: vi.fn(),
   mockUseInfiniteSearchVideos: vi.fn(),
+  mockUseSearchUsers: vi.fn(),
+  mockUseSearchHashtags: vi.fn(),
+  mockUseNip05Validation: vi.fn(),
   mockEnterFullscreen: vi.fn(),
   mockSetVideosForFullscreen: vi.fn(),
   mockUpdateVideos: vi.fn(),
+  mockInfiniteScroll: vi.fn(),
 }));
 
 vi.mock('@unhead/react', () => ({
@@ -117,7 +127,10 @@ vi.mock('@/components/VideoCardWithMetrics', () => ({
 }));
 
 vi.mock('react-infinite-scroll-component', () => ({
-  default: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  default: ({ children, dataLength }: { children: ReactNode; dataLength: number }) => {
+    mockInfiniteScroll({ dataLength });
+    return <div>{children}</div>;
+  },
 }));
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
@@ -154,19 +167,15 @@ vi.mock('@/hooks/useInfiniteSearchVideos', () => ({
 }));
 
 vi.mock('@/hooks/useSearchUsers', () => ({
-  useSearchUsers: () => ({
-    data: [],
-    isLoading: false,
-    error: null,
-  }),
+  useSearchUsers: mockUseSearchUsers,
+}));
+
+vi.mock('@/hooks/useNip05Validation', () => ({
+  useNip05Validation: mockUseNip05Validation,
 }));
 
 vi.mock('@/hooks/useSearchHashtags', () => ({
-  useSearchHashtags: ({ query }: { query: string }) => ({
-    data: query ? [] : [],
-    isLoading: false,
-    error: null,
-  }),
+  useSearchHashtags: mockUseSearchHashtags,
 }));
 
 vi.mock('@/lib/funnelcakeClient', () => ({
@@ -177,12 +186,40 @@ vi.mock('@/lib/eventLookup', () => ({
   fetchEventById: mockFetchEventById,
 }));
 
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+}
+
 function renderPage(initialEntries: string[] = ['/search']) {
+  const queryClient = createTestQueryClient();
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
-      <SearchPage />
-      <LocationDisplay />
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={initialEntries}>
+        <SearchPage />
+        <LocationDisplay />
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
+}
+
+function renderPageInBrowser(path: string) {
+  window.history.pushState(null, '', path);
+  const queryClient = createTestQueryClient();
+  return render(
+    renderPageWithBrowserRouter(queryClient)
+  );
+}
+
+function renderPageWithBrowserRouter(queryClient = createTestQueryClient()) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <SearchPage />
+        <LocationDisplay />
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 
@@ -216,11 +253,31 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 0,
+    });
+    mockUseSearchUsers.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    });
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query ? [] : [],
+      isLoading: false,
+      error: null,
+    }));
+    // Default: NIP-05 not yet validated, so cards show the legacy @username.
+    mockUseNip05Validation.mockReturnValue({
+      isValid: false,
+      isLoading: false,
+      isInvalid: true,
+      state: 'invalid',
+      nip05: undefined,
     });
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    window.history.pushState(null, '', '/');
   });
 
   it('clears the blur suggestion timeout on unmount', async () => {
@@ -390,6 +447,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 2,
     });
 
     renderPage(['/search?q=twerking&filter=videos&sort=top']);
@@ -415,6 +473,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 1,
     });
 
     renderPage(['/search?q=twerking&filter=videos']);
@@ -441,6 +500,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 1,
     });
 
     renderPage(['/search?q=vine&filter=videos']);
@@ -467,6 +527,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 1,
     });
 
     renderPage(['/search?q=twerking&filter=videos&play=compilation&start=0']);
@@ -493,6 +554,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 1,
     });
 
     renderPage(['/search?q=twerking&filter=videos&play=compilation&video=video-1']);
@@ -506,6 +568,160 @@ describe('SearchPage', () => {
     );
   });
 
+  it('does not rewrite the same search url when only result counts change', async () => {
+    vi.useFakeTimers();
+    const originalReplaceState = window.history.replaceState;
+    const replaceStateSpy = vi.fn(originalReplaceState.bind(window.history));
+    window.history.replaceState = replaceStateSpy;
+
+    try {
+      mockUseInfiniteSearchVideos.mockReturnValue({
+        data: { pages: [{ videos: [{ id: 'video-1', pubkey: 'a'.repeat(64) }] }] },
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isLoading: false,
+        error: null,
+        fetchedCount: 1,
+      });
+
+      const { rerender } = renderPageInBrowser('/search?q=twerking&filter=videos');
+      replaceStateSpy.mockClear();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600);
+      });
+
+      expect(replaceStateSpy).not.toHaveBeenCalled();
+
+      mockUseInfiniteSearchVideos.mockReturnValue({
+        data: {
+          pages: [
+            { videos: [{ id: 'video-1', pubkey: 'a'.repeat(64) }] },
+            { videos: [{ id: 'video-2', pubkey: 'b'.repeat(64) }] },
+          ],
+        },
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isLoading: false,
+        error: null,
+        fetchedCount: 2,
+      });
+
+      rerender(
+        renderPageWithBrowserRouter()
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600);
+      });
+
+      expect(replaceStateSpy).not.toHaveBeenCalled();
+      expect(screen.getByTestId('location-display').textContent).toBe('/search?q=twerking&filter=videos');
+    } finally {
+      window.history.replaceState = originalReplaceState;
+    }
+  });
+
+  it('tracks a slow search once after results settle', async () => {
+    vi.useFakeTimers();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: true,
+      error: null,
+      fetchedCount: 0,
+    });
+
+    const { rerender } = renderPage(['/search?q=twerking&filter=videos']);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
+
+    expect(trackSearch).not.toHaveBeenCalled();
+
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [
+          { videos: [{ id: 'video-1', pubkey: 'a'.repeat(64) }] },
+          { videos: [{ id: 'video-2', pubkey: 'b'.repeat(64) }] },
+        ],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+      fetchedCount: 2,
+    });
+
+    rerender(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <MemoryRouter initialEntries={['/search?q=twerking&filter=videos']}>
+          <SearchPage />
+          <LocationDisplay />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
+
+    expect(trackSearch).toHaveBeenCalledTimes(1);
+    expect(trackSearch).toHaveBeenLastCalledWith('twerking', 'videos', 2);
+  });
+
+  it('does not retrack a settled search when result counts change', async () => {
+    vi.useFakeTimers();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'video-1', pubkey: 'a'.repeat(64) }] }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+      fetchedCount: 1,
+    });
+
+    const { rerender } = renderPage(['/search?q=twerking&filter=videos']);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
+
+    expect(trackSearch).toHaveBeenCalledTimes(1);
+    expect(trackSearch).toHaveBeenLastCalledWith('twerking', 'videos', 1);
+
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [
+          { videos: [{ id: 'video-1', pubkey: 'a'.repeat(64) }] },
+          { videos: [{ id: 'video-2', pubkey: 'b'.repeat(64) }] },
+        ],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+      fetchedCount: 2,
+    });
+
+    rerender(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <MemoryRouter initialEntries={['/search?q=twerking&filter=videos']}>
+          <SearchPage />
+          <LocationDisplay />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
+
+    expect(trackSearch).toHaveBeenCalledTimes(1);
+  });
+
   // Regression: bare VideoCard hides view counts because it has no metrics
   // wrapper. Search results MUST go through VideoCardWithMetrics so loop /
   // view counts render alongside other feeds.
@@ -516,6 +732,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 1,
     });
 
     renderPage(['/search?q=dance']);
@@ -531,12 +748,96 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 1,
     });
 
     renderPage(['/search?q=dance&filter=videos']);
 
     expect(screen.getAllByTestId('video-card-video-2').length).toBeGreaterThan(0);
     expect(screen.queryAllByTestId('bare-video-card-video-2')).toHaveLength(0);
+  });
+
+  it('renders hashtag results as structured search result cards', () => {
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query
+        ? [
+            {
+              hashtag: 'twerking',
+              video_count: 255,
+              thumbnail: 'https://media.divine.video/twerking.jpg',
+            },
+            {
+              hashtag: 'twerkingvine',
+              video_count: 4,
+              thumbnail: 'https://media.divine.video/twerkingvine.jpg',
+            },
+          ]
+        : [],
+      isLoading: false,
+      error: null,
+    }));
+
+    renderPage(['/search?q=twerking&filter=hashtags']);
+
+    expect(screen.getByText('2 matches for "twerking"')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', {
+      name: 'Search hashtag #twerking, 255 videos',
+    }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', {
+      name: 'Search hashtag #twerkingvine, 4 videos',
+    }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('img', {
+      name: 'Preview for #twerking',
+    })[0]).toHaveAttribute('src', 'https://media.divine.video/twerking.jpg');
+    expect(screen.getAllByRole('img', {
+      name: 'Preview for #twerkingvine',
+    })[0]).toHaveAttribute('src', 'https://media.divine.video/twerkingvine.jpg');
+  });
+
+  it('opens the hashtag video feed when a hashtag result is clicked', async () => {
+    const user = userEvent.setup();
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query
+        ? [{ hashtag: 'twerking', video_count: 255 }]
+        : [],
+      isLoading: false,
+      error: null,
+    }));
+
+    renderPage(['/search?q=twerking&filter=hashtags']);
+
+    await user.click(screen.getAllByRole('button', {
+      name: 'Search hashtag #twerking, 255 videos',
+    })[0]);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/hashtag/twerking');
+  });
+
+  it('hides a hashtag thumbnail when the media URL fails to load', async () => {
+    mockUseSearchHashtags.mockImplementation(({ query }: { query: string }) => ({
+      data: query
+        ? [{
+            hashtag: 'twerking',
+            video_count: 255,
+            thumbnail: 'https://media.divine.video/missing.jpg',
+          }]
+        : [],
+      isLoading: false,
+      error: null,
+    }));
+
+    renderPage(['/search?q=twerking&filter=hashtags']);
+
+    const thumbnails = screen.getAllByRole('img', {
+      name: 'Preview for #twerking',
+    });
+    thumbnails.forEach(thumbnail => fireEvent.error(thumbnail));
+
+    await waitFor(() => {
+      expect(screen.queryAllByRole('img', {
+        name: 'Preview for #twerking',
+      })).toHaveLength(0);
+    });
   });
 
   it('defaults to hot sort when no sort param is in the URL and passes it to useInfiniteSearchVideos', () => {
@@ -546,6 +847,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 0,
     });
 
     renderPage(['/search?q=dogs']);
@@ -558,6 +860,29 @@ describe('SearchPage', () => {
     expect(screen.getByTestId('search-sort-relevance')).toHaveAttribute('aria-checked', 'false');
   });
 
+  it('keys video infinite scroll from fetched count instead of deduped rendered count', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [
+            { id: 'video-1', pubkey: 'a'.repeat(64), videoUrl: 'https://example.com/video-1.mp4' },
+            { id: 'video-1', pubkey: 'a'.repeat(64), videoUrl: 'https://example.com/video-1-copy.mp4' },
+          ],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: true,
+      isLoading: false,
+      error: null,
+      fetchedCount: 2,
+    });
+
+    renderPage(['/search?q=dogs&filter=videos']);
+
+    expect(screen.getAllByTestId('video-card-video-1')).toHaveLength(2);
+    expect(mockInfiniteScroll).toHaveBeenCalledWith({ dataLength: 2 });
+  });
+
   it('honors the sort URL param on initial load', () => {
     mockUseInfiniteSearchVideos.mockReturnValue({
       data: { pages: [{ videos: [] }] },
@@ -565,6 +890,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 0,
     });
 
     renderPage(['/search?q=dogs&sort=top']);
@@ -581,6 +907,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 0,
     });
 
     renderPage(['/search?q=dogs&sort=garbage']);
@@ -602,6 +929,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 0,
     });
 
     renderPage(['/search?q=dogs']);
@@ -641,6 +969,7 @@ describe('SearchPage', () => {
       hasNextPage: false,
       isLoading: false,
       error: null,
+      fetchedCount: 0,
     });
 
     renderPage(['/search?q=dogs']);
@@ -656,5 +985,132 @@ describe('SearchPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('location-display').textContent).not.toContain('sort=');
     });
+  });
+
+  it('shows the divine NIP-05 as the secondary identifier on user cards, not the legacy Vine username', () => {
+    mockUseNip05Validation.mockReturnValue({
+      isValid: true, isLoading: false, isInvalid: false, state: 'valid', nip05: '_@jacky.divine.video',
+    });
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey: '1'.repeat(64),
+          metadata: {
+            display_name: 'Jacky!',
+            name: 'Minimal Mouse 1',
+            nip05: '_@jacky.divine.video',
+            about: 'Neo-Bwa Kale',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=jacky&filter=users']);
+
+    expect(screen.getAllByText('@jacky.divine.video').length).toBeGreaterThan(0);
+    expect(screen.queryAllByText('@Minimal Mouse 1')).toHaveLength(0);
+  });
+
+  it('shows the third-party NIP-05 in friendly form on user cards', () => {
+    mockUseNip05Validation.mockReturnValue({
+      isValid: true, isLoading: false, isInvalid: false, state: 'valid', nip05: 'alice@primal.net',
+    });
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey: '2'.repeat(64),
+          metadata: {
+            display_name: 'Alice',
+            name: 'alice_vine',
+            nip05: 'alice@primal.net',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=alice&filter=users']);
+
+    expect(screen.getAllByText('@alice.primal.net').length).toBeGreaterThan(0);
+  });
+
+  it('falls back to the legacy Vine username when no NIP-05 is set', () => {
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey: '3'.repeat(64),
+          metadata: {
+            display_name: 'bob_legacy',
+            name: 'bob_legacy',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=bob&filter=users']);
+
+    expect(screen.getAllByText('@bob_legacy').length).toBeGreaterThan(0);
+  });
+
+  it('uses the friendly-path profile link for users with a NIP-05', () => {
+    mockUseNip05Validation.mockReturnValue({
+      isValid: true,
+      isLoading: false,
+      isInvalid: false,
+      state: 'valid',
+      nip05: '_@sam.dvine.video',
+    });
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey: '4'.repeat(64),
+          metadata: {
+            display_name: 'Sam',
+            nip05: '_@sam.dvine.video',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=sam&filter=users']);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /view profile of sam/i })[0]!);
+    expect(mockNavigate).toHaveBeenCalledWith('/u/sam.dvine.video');
+  });
+
+  it('uses the npub profile link for users with an unvalidated NIP-05', () => {
+    const pubkey = '5'.repeat(64);
+    mockUseNip05Validation.mockReturnValue({
+      isValid: false,
+      isLoading: false,
+      isInvalid: true,
+      state: 'invalid',
+      nip05: 'sam@spoofed.example',
+    });
+    mockUseSearchUsers.mockReturnValue({
+      data: [
+        {
+          pubkey,
+          metadata: {
+            display_name: 'Sam',
+            nip05: 'sam@spoofed.example',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage(['/search?q=sam&filter=users']);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /view profile of sam/i })[0]!);
+    expect(mockNavigate).toHaveBeenCalledWith(`/${nip19.npubEncode(pubkey)}`);
   });
 });

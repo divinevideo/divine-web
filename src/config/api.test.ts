@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  API_CONFIG,
   clearFunnelcakeApiModeOverride,
   getFunnelcakeApiModeOverride,
   resolveNotificationsBaseUrl,
@@ -139,5 +140,11 @@ describe('Funnelcake API mode override storage', () => {
     clearFunnelcakeApiModeOverride();
 
     expect(getFunnelcakeApiModeOverride()).toBe('auto');
+  });
+});
+
+describe('account portability config', () => {
+  it('defaults to the stable /exit entry point', () => {
+    expect(API_CONFIG.accountPortability.url).toBe('/exit');
   });
 });

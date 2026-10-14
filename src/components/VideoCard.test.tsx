@@ -6,6 +6,7 @@ import type {
   ReactNode,
 } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { nip19 } from 'nostr-tools';
 import type { ParsedVideoData } from '@/types/video';
 import { initializeI18n } from '@/lib/i18n';
 import { VideoCard } from './VideoCard';
@@ -28,6 +29,15 @@ const authMocks = vi.hoisted(() => ({
   confirmAdult: vi.fn(),
   useCurrentUser: vi.fn(),
   useAdultVerification: vi.fn(),
+}));
+
+const authorMocks = vi.hoisted(() => ({
+  metadata: {
+    name: 'Video Author',
+    picture: 'https://example.com/avatar.jpg',
+  } as Record<string, unknown>,
+  reposterMetadata: undefined as Record<string, unknown> | undefined,
+  useNip05Validation: vi.fn(),
 }));
 
 vi.mock('@/components/ui/card', () => ({
@@ -108,11 +118,18 @@ vi.mock('@/components/ThumbnailPlayer', () => ({
   ThumbnailPlayer: ({
     onClick,
     onPlayButtonClick,
+    linkTo,
   }: {
     onClick?: () => void;
     onPlayButtonClick?: () => void;
+    linkTo?: string;
   }) => (
     <div data-testid="thumbnail-player">
+      {linkTo && (
+        <a href={linkTo} data-testid="thumbnail-link">
+          Open video
+        </a>
+      )}
       <button onClick={onClick} type="button">
         Thumbnail
       </button>
@@ -165,22 +182,26 @@ vi.mock('@/components/SmartLink', () => ({
   SmartLink: ({
     children,
     ownerPubkey: _ownerPubkey,
+    to,
     ...props
-  }: HTMLAttributes<HTMLAnchorElement> & { ownerPubkey?: string }) => (
-    <a {...props}>{children}</a>
+  }: HTMLAttributes<HTMLAnchorElement> & { ownerPubkey?: string; to: string }) => (
+    <a href={to} {...props}>{children}</a>
   ),
 }));
 
 vi.mock('@/hooks/useAuthor', () => ({
-  useAuthor: () => ({
+  useAuthor: (pubkey: string) => ({
     data: {
-      metadata: {
-        name: 'Video Author',
-        picture: 'https://example.com/avatar.jpg',
-      },
+      metadata: authorMocks.reposterMetadata && pubkey === 'b'.repeat(64)
+        ? authorMocks.reposterMetadata
+        : authorMocks.metadata,
     },
     isLoading: false,
   }),
+}));
+
+vi.mock('@/hooks/useNip05Validation', () => ({
+  useNip05Validation: authorMocks.useNip05Validation,
 }));
 
 vi.mock('@/hooks/useIsMobile', () => ({
@@ -198,7 +219,11 @@ vi.mock('@/hooks/useDeleteVideo', () => ({
     mutate: playbackMocks.deleteVideo,
     isPending: false,
   }),
-  useCanDeleteVideo: () => false,
+}));
+
+vi.mock('@/hooks/useIsOwnVideo', () => ({
+  useIsOwnVideo: (video?: ParsedVideoData) =>
+    authMocks.useCurrentUser()?.user?.pubkey === video?.pubkey,
 }));
 
 vi.mock('@/hooks/usePinnedVideos', () => ({
@@ -301,8 +326,10 @@ vi.mock('@/lib/utils', () => ({
 }));
 
 vi.mock('@/lib/formatUtils', () => ({
-  formatClassicVineViewBreakdown: () => '0 views',
-  formatViewCount: (count: number) => String(count),
+  formatClassicVineViewBreakdown: (_totalViews: number, originalLoops: number) =>
+    originalLoops > 0 ? `${originalLoops} Classic Loops` : null,
+  formatLoopCount: (count: number) => `${count} Loops`,
+  formatViewCount: (count: number) => `${count} views`,
   formatCount: (count: number) => String(count),
 }));
 
@@ -398,6 +425,107 @@ describe('VideoCard', () => {
       isLoading: false,
       hasSigner: false,
     });
+    authorMocks.metadata = {
+      name: 'Video Author',
+      picture: 'https://example.com/avatar.jpg',
+    };
+    authorMocks.reposterMetadata = undefined;
+    authorMocks.useNip05Validation.mockReturnValue({
+      isValid: false,
+      isLoading: false,
+      isInvalid: true,
+      state: 'invalid',
+      nip05: undefined,
+    });
+  });
+
+  it('renders the thumbnail as a real link to the video page in thumbnail mode', () => {
+    render(<VideoCard video={baseVideo} mode="thumbnail" />);
+
+    const link = screen.getByTestId('thumbnail-link');
+    expect(link).toHaveAttribute('href', `/video/${baseVideo.id}`);
+    expect(playbackMocks.navigate).not.toHaveBeenCalled();
+  });
+
+  it('links the author through a friendly profile path when NIP-05 is valid', () => {
+    authorMocks.metadata = {
+      name: 'Video Author',
+      picture: 'https://example.com/avatar.jpg',
+      nip05: '_@author.divine.video',
+    };
+    authorMocks.useNip05Validation.mockReturnValue({
+      isValid: true,
+      isLoading: false,
+      isInvalid: false,
+      state: 'valid',
+      nip05: '_@author.divine.video',
+    });
+
+    render(<VideoCard video={baseVideo} mode="thumbnail" />);
+
+    expect(screen.getByRole('link', { name: 'Video Author' })).toHaveAttribute('href', '/u/author');
+  });
+
+  it('links the author through npub when NIP-05 is invalid', () => {
+    authorMocks.metadata = {
+      name: 'Video Author',
+      picture: 'https://example.com/avatar.jpg',
+      nip05: 'author@spoofed.example',
+    };
+
+    render(<VideoCard video={baseVideo} mode="thumbnail" />);
+
+    expect(screen.getByRole('link', { name: 'Video Author' })).toHaveAttribute(
+      'href',
+      `/${nip19.npubEncode(baseVideo.pubkey)}`,
+    );
+  });
+
+  it('shows the reposter display_name when their name is empty', () => {
+    authorMocks.reposterMetadata = {
+      name: '',
+      display_name: 'Visible Reposter',
+      picture: 'https://example.com/reposter.jpg',
+    };
+
+    render(
+      <VideoCard
+        video={{
+          ...baseVideo,
+          reposts: [{
+            eventId: 'repost-event-1',
+            reposterPubkey: 'b'.repeat(64),
+            repostedAt: 1_700_000_001,
+          }],
+        }}
+        mode="thumbnail"
+      />,
+    );
+
+    expect(screen.getByText(/Visible Reposter/)).toBeInTheDocument();
+  });
+
+  it('builds the thumbnail link from the navigation context when provided', () => {
+    render(
+      <VideoCard
+        video={baseVideo}
+        mode="thumbnail"
+        navigationContext={{ source: 'search', query: 'cats' }}
+        videoIndex={2}
+      />
+    );
+
+    const href = screen.getByTestId('thumbnail-link').getAttribute('href') ?? '';
+    expect(href).toContain(`/video/${baseVideo.id}`);
+    expect(href).toContain('source=search');
+    expect(href).toContain('q=cats');
+    expect(href).toContain('index=2');
+  });
+
+  it('does not render a thumbnail link in auto-play mode', () => {
+    render(<VideoCard video={makeVideo({ id: 'video-1' })} mode="auto-play" />);
+
+    expect(screen.queryByTestId('thumbnail-link')).not.toBeInTheDocument();
   });
 
   it('marks a thumbnail-mode video active when inline playback starts', () => {
@@ -485,6 +613,53 @@ describe('VideoCard', () => {
     expect(screen.queryByText('Log in to view')).not.toBeInTheDocument();
   });
 
+  it('renders the native playback total instead of raw loop count', () => {
+    render(
+      <VideoCard
+        video={makeVideo({
+          loopCount: 10,
+          isVineMigrated: false,
+        })}
+        viewCount={31}
+      />
+    );
+
+    expect(screen.getByText('31 Loops')).toBeInTheDocument();
+    expect(screen.queryByText('10 Classic Loops')).not.toBeInTheDocument();
+  });
+
+  it('uses native loop labeling for non-migrated videos with old publish timestamps', () => {
+    render(
+      <VideoCard
+        video={makeVideo({
+          loopCount: 10,
+          isVineMigrated: false,
+          originalVineTimestamp: 1_400_000_000,
+        })}
+        viewCount={31}
+      />
+    );
+
+    expect(screen.getByText('31 Loops')).toBeInTheDocument();
+    expect(screen.queryByText('10 Classic Loops')).not.toBeInTheDocument();
+  });
+
+  it('keeps migrated Vine cards on the archived loop count', () => {
+    render(
+      <VideoCard
+        video={makeVideo({
+          loopCount: 10,
+          isVineMigrated: true,
+          originalVineTimestamp: 1_400_000_000,
+        })}
+        viewCount={31}
+      />
+    );
+
+    expect(screen.getByText('10 Classic Loops')).toBeInTheDocument();
+    expect(screen.queryByText('31 Loops')).not.toBeInTheDocument();
+  });
+
   it('lets failed playback be retried without remounting the card', () => {
     const video = makeVideo();
     render(<VideoCard video={video} />);
@@ -499,5 +674,25 @@ describe('VideoCard', () => {
 
     expect(screen.getByTestId(`video-player-${video.id}`)).toBeInTheDocument();
     expect(screen.queryByText('Failed to load video')).not.toBeInTheDocument();
+  });
+
+  describe('self-moderation affordances', () => {
+    it('hides report and mute actions on the viewer\'s own video', () => {
+      authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: 'f'.repeat(64) } });
+      render(<VideoCard video={baseVideo} />);
+
+      expect(screen.queryByText('Report video')).not.toBeInTheDocument();
+      expect(screen.queryByText('Report user')).not.toBeInTheDocument();
+      expect(screen.queryByText(/^Mute /)).not.toBeInTheDocument();
+    });
+
+    it('shows report and mute actions on another user\'s video', () => {
+      authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+      render(<VideoCard video={baseVideo} />);
+
+      expect(screen.getByText('Report video')).toBeInTheDocument();
+      expect(screen.getByText('Report user')).toBeInTheDocument();
+      expect(screen.getByText(/^Mute /)).toBeInTheDocument();
+    });
   });
 });

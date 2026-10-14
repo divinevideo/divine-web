@@ -1,16 +1,46 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LocalNsecBanner } from './LocalNsecBanner';
+import {
+  NOT_PROTECTED,
+  UNKNOWN_PROTECTED_MINOR_STATUS,
+  type ProtectedMinorStatus,
+} from '@/lib/protectedMinor';
 
-const { mockBuildSecureAccountRedirect } = vi.hoisted(() => ({
+const { mockBuildSecureAccountRedirect, mockUseProtectedMinorStatus } = vi.hoisted(() => ({
   mockBuildSecureAccountRedirect: vi.fn(),
+  mockUseProtectedMinorStatus: vi.fn(),
 }));
 
+vi.mock('@/hooks/useProtectedMinorStatus', () => ({
+  useProtectedMinorStatus: () => mockUseProtectedMinorStatus(),
+}));
+
+const PROTECTED_STATUS: ProtectedMinorStatus = Object.freeze({
+  state: 'protected',
+  isKnown: true,
+  verifiedMinorAt: null,
+});
+
 const originalLocation = window.location;
+const originalCreateObjectURL = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
+const originalRevokeObjectURL = Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL');
 const locationAssign = vi.fn();
 const clipboardWriteText = vi.fn();
+
+/** Install a controllable download rig (jsdom lacks both URL blob helpers). */
+function stubObjectUrl(): ReturnType<typeof vi.fn> {
+  const createObjectURL = vi.fn(() => 'blob:stub');
+  Object.defineProperty(URL, 'createObjectURL', {
+    value: createObjectURL, writable: true, configurable: true,
+  });
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    value: vi.fn(), writable: true, configurable: true,
+  });
+  return createObjectURL;
+}
 
 vi.mock('@/lib/divineLogin', async () => {
   const actual = await vi.importActual<typeof import('@/lib/divineLogin')>('@/lib/divineLogin');
@@ -23,6 +53,7 @@ vi.mock('@/lib/divineLogin', async () => {
 
 describe('LocalNsecBanner', () => {
   beforeEach(() => {
+    mockUseProtectedMinorStatus.mockReturnValue(NOT_PROTECTED);
     mockBuildSecureAccountRedirect.mockResolvedValue({
       state: 'secure-state',
       pubkey: 'pubkey-123',
@@ -49,6 +80,18 @@ describe('LocalNsecBanner', () => {
       writable: true,
       configurable: true,
     });
+    // Restore the URL blob helpers so a test that stubs them can't order-couple
+    // the next one (jsdom's default is that both are absent).
+    if (originalCreateObjectURL) {
+      Object.defineProperty(URL, 'createObjectURL', originalCreateObjectURL);
+    } else {
+      delete (URL as { createObjectURL?: unknown }).createObjectURL;
+    }
+    if (originalRevokeObjectURL) {
+      Object.defineProperty(URL, 'revokeObjectURL', originalRevokeObjectURL);
+    } else {
+      delete (URL as { revokeObjectURL?: unknown }).revokeObjectURL;
+    }
   });
 
   it('renders the secure-account and backup call to action set', () => {
@@ -80,6 +123,110 @@ describe('LocalNsecBanner', () => {
         returnPath: '/settings/linked-accounts',
       });
       expect(locationAssign).toHaveBeenCalledWith('https://login.divine.video/api/oauth/authorize?client_id=divine-web');
+    });
+  });
+
+  describe('command-boundary re-check (#182)', () => {
+    it('aborts a pending secure-account redirect when the restriction engages mid-flight', async () => {
+      const user = userEvent.setup();
+      let resolveRedirect!: (value: { state: string; pubkey: string; url: string }) => void;
+      mockBuildSecureAccountRedirect.mockImplementation(
+        () => new Promise((resolve) => { resolveRedirect = resolve; }),
+      );
+
+      const { rerender } = render(<LocalNsecBanner nsec="nsec1example" />);
+
+      await user.click(screen.getByRole('button', { name: /Secure with divine.video login/i }));
+      expect(mockBuildSecureAccountRedirect).toHaveBeenCalled();
+
+      mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+      rerender(<LocalNsecBanner nsec="nsec1example" />);
+
+      resolveRedirect({
+        state: 'secure-state',
+        pubkey: 'pubkey-123',
+        url: 'https://login.divine.video/api/oauth/authorize?client_id=divine-web',
+      });
+      // Let the pending handleSecure continuation run to completion. The
+      // happy-path test above proves this code path reaches location.assign
+      // when unrestricted, so not-called here is a real verdict.
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(locationAssign).not.toHaveBeenCalled();
+    });
+
+    // fireEvent (not userEvent) for the clipboard paths: userEvent.setup()
+    // installs its own navigator.clipboard stub, which would detach the
+    // clipboardWriteText spy these two tests assert on.
+    it('aborts the download fall-through when the restriction engages while the clipboard write is pending', async () => {
+      let rejectWrite!: (error: Error) => void;
+      clipboardWriteText.mockImplementation(
+        () => new Promise((_resolve, reject) => { rejectWrite = reject; }),
+      );
+      const createObjectURL = stubObjectUrl();
+
+      const { rerender } = render(<LocalNsecBanner nsec="nsec1example" />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Back up nsec/i }));
+      expect(clipboardWriteText).toHaveBeenCalled();
+
+      mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+      rerender(<LocalNsecBanner nsec="nsec1example" />);
+
+      // A clipboard write can reject late (permission prompt, focus loss); the
+      // catch fall-through must not hand the key over via a file download.
+      rejectWrite(new Error('NotAllowedError'));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(createObjectURL).not.toHaveBeenCalled();
+      expect(screen.queryByText(/somewhere safe/i)).not.toBeInTheDocument();
+    });
+
+    it('falls through to a file download when the clipboard rejects and the user is not restricted (positive control)', async () => {
+      let rejectWrite!: (error: Error) => void;
+      clipboardWriteText.mockImplementation(
+        () => new Promise((_resolve, reject) => { rejectWrite = reject; }),
+      );
+      const createObjectURL = stubObjectUrl();
+      // downloadBackup reaches anchor.click(); jsdom logs an unimplemented-
+      // navigation stack for that, so stub it to keep the run output clean.
+      const anchorClick = vi
+        .spyOn(HTMLAnchorElement.prototype, 'click')
+        .mockImplementation(() => {});
+
+      try {
+        render(<LocalNsecBanner nsec="nsec1example" />);
+
+        fireEvent.click(screen.getByRole('button', { name: /Back up nsec/i }));
+        rejectWrite(new Error('NotAllowedError'));
+        await screen.findByText(/somewhere safe/i);
+
+        // Guarantees the guard the negative tests rely on isn't just always-on:
+        // an unrestricted user still gets the download fall-through.
+        expect(createObjectURL).toHaveBeenCalled();
+      } finally {
+        anchorClick.mockRestore();
+      }
+    });
+
+    // The banner is its own gate (dcadenas review on #476): parents render it
+    // unconditionally so a restricted flip keeps it mounted, and the banner
+    // renders null itself. These two pin the render-side of that gate; the
+    // flip tests above pin the command-boundary side.
+    it('renders nothing while the account is a protected minor', () => {
+      mockUseProtectedMinorStatus.mockReturnValue(PROTECTED_STATUS);
+
+      const { container } = render(<LocalNsecBanner nsec="nsec1example" />);
+
+      expect(container).toBeEmptyDOMElement();
+    });
+
+    it('fails closed: renders nothing while the status is unknown', () => {
+      mockUseProtectedMinorStatus.mockReturnValue(UNKNOWN_PROTECTED_MINOR_STATUS);
+
+      const { container } = render(<LocalNsecBanner nsec="nsec1example" />);
+
+      expect(container).toBeEmptyDOMElement();
     });
   });
 });

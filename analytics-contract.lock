@@ -1,0 +1,15 @@
+{
+  "artifact": "src/generated/productAnalytics.ts",
+  "artifact_commit": "f11951855bc7f83634ff9d70f1d6135b1c4ea2ee",
+  "artifact_sha256": "ed72ed97d229d9785de0c7c891481a34a76d6c73a01d5c916e03bf1eac23d75c",
+  "contract_commit": "58ec2aa4090d2f17ca0ef1e30d3602f5bd24f9d6",
+  "manifest": "analytics-contract.manifest.json",
+  "manifest_sha256": "6c99268e331c49500f4cb71df153bedd570208b965979bf25fa6b848d578f77f",
+  "schema_version": 2,
+  "source_artifact": "analytics/generated/productAnalytics.ts",
+  "source_manifest": "analytics/generated/manifest.json",
+  "source_vector": "analytics/event-id-vectors.json",
+  "vector": "analytics-event-id-vectors.json",
+  "vector_commit": "27e21a7a1ea3c6cb998186eda50807e63806efc9",
+  "vector_sha256": "29a2cbb82f3545d84b5b69d6ff15d9e659110983256f6fcef36cd7e47f458c02"
+}

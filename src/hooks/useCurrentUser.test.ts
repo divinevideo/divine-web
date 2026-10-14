@@ -2,19 +2,30 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NLoginType } from '@nostrify/react/login';
 
+import { NIP07_GRACE_MS, NIP07_POLL_INTERVAL_MS } from './useNip07Availability';
+
 const {
   mockGetValidToken,
+  mockIsExpired,
   mockJwtSigner,
   mockLogins,
+  mockReleaseBunkerSignersExcept,
   mockUseAuthor,
 } = vi.hoisted(() => ({
   mockGetValidToken: vi.fn<() => string | null>(() => null),
+  mockIsExpired: { value: false },
   mockJwtSigner: {
     getPublicKey: vi.fn<() => Promise<string>>(),
     signEvent: vi.fn(),
   },
   mockLogins: [] as NLoginType[],
+  mockReleaseBunkerSignersExcept: vi.fn<(ids: Iterable<string>) => void>(),
   mockUseAuthor: vi.fn<(pubkey?: string) => { data: Record<string, never> }>(() => ({ data: {} })),
+}));
+
+vi.mock('@/lib/bunkerSignerRegistry', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/bunkerSignerRegistry')>()),
+  releaseBunkerSignersExcept: (ids: Iterable<string>) => mockReleaseBunkerSignersExcept(ids),
 }));
 
 vi.mock('@nostrify/react', () => ({
@@ -36,6 +47,7 @@ vi.mock('./useAuthor.ts', () => ({
 vi.mock('@/hooks/useDivineSession', () => ({
   useDivineSession: () => ({
     getValidToken: mockGetValidToken,
+    isExpired: mockIsExpired.value,
   }),
 }));
 
@@ -69,14 +81,45 @@ describe('useCurrentUser', () => {
     mockLogins.length = 0;
     mockGetValidToken.mockReset();
     mockGetValidToken.mockReturnValue(null);
+    mockIsExpired.value = false;
     mockJwtSigner.getPublicKey.mockReset();
     mockJwtSigner.signEvent.mockReset();
     mockUseAuthor.mockClear();
+    mockReleaseBunkerSignersExcept.mockClear();
     resetNostrProvider();
   });
 
+  // A removed login's signer is the last thing holding its sockets open, and
+  // nothing else releases it.
+  describe('bunker signer release', () => {
+    const bunkerLogin = (id: string): NLoginType => ({
+      id,
+      type: 'bunker',
+      pubkey: id.slice(-64).padStart(64, 'd'),
+      createdAt: '2026-03-10T00:00:00.000Z',
+      data: {
+        bunkerPubkey: 'b'.repeat(64),
+        clientNsec: 'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
+        relays: ['wss://relay.example'],
+      },
+    });
+
+    it('keeps the signers of every surviving login', () => {
+      mockLogins.push(bunkerLogin('bunker:one'), bunkerLogin('bunker:two'));
+
+      renderHook(() => useCurrentUser());
+
+      expect(mockReleaseBunkerSignersExcept).toHaveBeenCalledWith(['bunker:one', 'bunker:two']);
+    });
+
+    it('releases everything once the last login is gone', () => {
+      renderHook(() => useCurrentUser());
+
+      expect(mockReleaseBunkerSignersExcept).toHaveBeenCalledWith([]);
+    });
+  });
+
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
     resetNostrProvider();
   });
@@ -93,6 +136,7 @@ describe('useCurrentUser', () => {
 
     expect(result.current.users).toHaveLength(1);
     expect(result.current.signer).toBe(mockJwtSigner);
+    expect(result.current.hostedToken).toBe('jwt-token');
     expect(mockUseAuthor).toHaveBeenCalledWith('b'.repeat(64));
   });
 
@@ -117,6 +161,18 @@ describe('useCurrentUser', () => {
 
     expect(result.current.users).toHaveLength(1);
     expect(result.current.signer).toBe(mockJwtSigner);
+  });
+
+  it('does not expose an expired hosted token for key export', async () => {
+    mockGetValidToken.mockReturnValue('expired-token');
+    mockIsExpired.value = true;
+    mockJwtSigner.getPublicKey.mockResolvedValue('e'.repeat(64));
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    await waitFor(() => expect(result.current.user?.pubkey).toBe('e'.repeat(64)));
+    expect(result.current.hostedToken).toBeNull();
+    expect(result.current.isHostedAccount).toBe(true);
   });
 
   it('does not fall back to a manual account while a JWT session is still initializing', () => {
@@ -160,6 +216,18 @@ describe('useCurrentUser', () => {
     });
     expect(result.current.users).toHaveLength(1);
     expect(result.current.signer).toBeDefined();
+    expect(result.current.hostedToken).toBeNull();
+  });
+
+  it('does not expose a hosted token when JWT resolution fails without a current user', async () => {
+    mockGetValidToken.mockReturnValue('jwt-token');
+    mockJwtSigner.getPublicKey.mockRejectedValue(new Error('rpc failed'));
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    await waitFor(() => expect(result.current.isResolvingJwt).toBe(false));
+    expect(result.current.user).toBeUndefined();
+    expect(result.current.hostedToken).toBeNull();
   });
 
   it('reports isResolvingJwt while the session initializes, then clears it', async () => {
@@ -204,7 +272,90 @@ describe('useCurrentUser', () => {
     expect(result.current.isResolvingJwt).toBe(true);
   });
 
-  it('does not resolve extension logins when no browser extension is available', () => {
+  it('recovers an extension login when the provider injects shortly after mount', () => {
+    vi.useFakeTimers();
+    try {
+      mockLogins.push({
+        id: 'extension:pub123',
+        type: 'extension',
+        pubkey: 'pub123',
+        createdAt: '2026-03-10T00:00:00.000Z',
+        data: null,
+      });
+
+      const { result } = renderHook(() => useCurrentUser());
+
+      // Extension content script hasn't injected window.nostr yet.
+      expect(result.current.user?.pubkey).toBe('pub123');
+      expect(result.current.isAuthRestoring).toBe(true);
+
+      setNostrProvider();
+      act(() => {
+        vi.advanceTimersByTime(NIP07_POLL_INTERVAL_MS);
+      });
+
+      expect(result.current.user?.pubkey).toBe('pub123');
+      expect(result.current.signer).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('skips extension logins without a Sentry-visible warning when no extension appears', () => {
+    vi.useFakeTimers();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      mockLogins.push({
+        id: 'extension:pub123',
+        type: 'extension',
+        pubkey: 'pub123',
+        createdAt: '2026-03-10T00:00:00.000Z',
+        data: null,
+      });
+
+      const { result } = renderHook(() => useCurrentUser());
+
+      // While the grace period runs, nothing is logged at all.
+      expect(result.current.user?.pubkey).toBe('pub123');
+      expect(result.current.isAuthRestoring).toBe(true);
+      expect(warnSpy).not.toHaveBeenCalled();
+      expect(infoSpy).not.toHaveBeenCalled();
+
+      act(() => {
+        vi.advanceTimersByTime(NIP07_GRACE_MS + NIP07_POLL_INTERVAL_MS);
+      });
+
+      expect(result.current.user).toBeUndefined();
+      expect(result.current.users).toEqual([]);
+      expect(result.current.signer).toBeUndefined();
+      // Sentry captures console.warn/error; a missing extension is an expected
+      // state and must stay at info level.
+      expect(warnSpy).not.toHaveBeenCalled();
+      expect(infoSpy).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('returns an extension user and signer when a browser extension is available', () => {
+    setNostrProvider();
+
+    mockLogins.push({
+      id: 'extension:pub123',
+      type: 'extension',
+      pubkey: 'pub123',
+      createdAt: '2026-03-10T00:00:00.000Z',
+      data: null,
+    });
+
+    const { result } = renderHook(() => useCurrentUser());
+
+    expect(result.current.user?.pubkey).toBe('pub123');
+    expect(result.current.users).toHaveLength(1);
+    expect(result.current.signer).toBeDefined();
+    expect(mockUseAuthor).toHaveBeenCalledWith('pub123');
+  });  it('does not resolve extension logins when no browser extension is available', () => {
     mockLogins.push({
       id: 'extension:pub123',
       type: 'extension',
@@ -281,22 +432,18 @@ describe('useCurrentUser', () => {
     expect(result.current.isAuthRestoring).toBe(false);
   });
 
-  it('returns an extension user and signer when a browser extension is available', () => {
-    setNostrProvider();
-
-    mockLogins.push({
-      id: 'extension:pub123',
-      type: 'extension',
-      pubkey: 'pub123',
-      createdAt: '2026-03-10T00:00:00.000Z',
-      data: null,
-    });
-
+  it('drops the pubkey-only placeholder when extension restoration times out', () => {
+    vi.useFakeTimers();
+    mockLogins.push({ id: 'extension:pub123', type: 'extension', pubkey: 'pub123', createdAt: '2026-03-10T00:00:00.000Z', data: null });
     const { result } = renderHook(() => useCurrentUser());
-
     expect(result.current.user?.pubkey).toBe('pub123');
-    expect(result.current.users).toHaveLength(1);
+    expect(result.current.isAuthRestoring).toBe(true);
+    act(() => { vi.advanceTimersByTime(30000); });
+    expect(result.current.user).toBeUndefined();
+    expect(result.current.isAuthRestoring).toBe(false);
+    act(() => { setNostrProvider(); window.dispatchEvent(new Event('focus')); });
+    expect(result.current.user?.pubkey).toBe('pub123');
     expect(result.current.signer).toBeDefined();
-    expect(mockUseAuthor).toHaveBeenCalledWith('pub123');
   });
+
 });

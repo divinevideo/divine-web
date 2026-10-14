@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { APP_STORE_URL } from '@/lib/mobileStoreLinks';
 
 type Platform = 'android' | 'ios' | 'desktop';
 
@@ -14,7 +15,8 @@ function detectPlatform(): Platform {
   return 'desktop';
 }
 
-const APP_STORE_URL = 'https://apps.apple.com/app/divine/id6744894353';
+// Deliberately not the shared PLAY_STORE_URL: this one is encoded into the
+// Android intent fallback below, and the shared constant pins gl=us&hl=en.
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=co.openvine.app';
 
 export function AppCallbackPage() {

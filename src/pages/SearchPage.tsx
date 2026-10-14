@@ -7,14 +7,13 @@ import { useSearchParams } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useSeoMeta } from '@unhead/react';
-import { MagnifyingGlass as Search, Hash, Play, Users, VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
+import { ArrowRight, MagnifyingGlass as Search, Hash, Play, Users, VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { trackSearch } from '@/lib/analytics';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import InfiniteScroll from 'react-infinite-scroll-component';
@@ -24,6 +23,7 @@ import { useSearchUsers } from '@/hooks/useSearchUsers';
 import { useSearchHashtags, type HashtagResult } from '@/hooks/useSearchHashtags';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { SortMode } from '@/types/nostr';
 import { SEARCH_SORT_MODES as SORT_MODES } from '@/lib/constants/sortModes';
@@ -44,7 +44,10 @@ import {
   buildCompilationPlaybackUrl,
   parseCompilationPlaybackParams,
 } from '@/lib/compilationPlayback';
-import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { toFriendlyPath } from '@/lib/profileLinks';
+import { getDivineNip05Info } from '@/lib/nip05Utils';
+import { useNip05Validation } from '@/hooks/useNip05Validation';
+import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 
 type SearchFilter = 'all' | 'videos' | 'users' | 'hashtags';
 
@@ -91,6 +94,7 @@ export function SearchPage() {
     hasNextPage: hasNextVideos,
     isLoading: isLoadingVideos,
     error: videoError,
+    fetchedCount: fetchedVideoCount,
   } = useInfiniteSearchVideos({
     query: searchQuery,
     sortMode,
@@ -139,10 +143,11 @@ export function SearchPage() {
     description: 'Search for videos, users, and hashtags on Divine Web',
   });
 
-  // Debounced URL update - only update URL after user stops typing for 300ms
+  // Debounced URL update - only update URL after user stops typing for 500ms
   // This prevents analytics from firing on every keystroke
-  const debouncedSearchQuery = useRef(searchQuery);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const analyticsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTrackedSearchRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Clear any existing timer
@@ -150,9 +155,8 @@ export function SearchPage() {
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Set new timer to update URL after 300ms of no typing
+    // Set new timer to update URL after 500ms of no typing
     debounceTimerRef.current = setTimeout(() => {
-      debouncedSearchQuery.current = searchQuery;
       const params = new URLSearchParams();
       if (searchQuery) params.set('q', searchQuery);
       if (sortMode !== 'hot') params.set('sort', sortMode);
@@ -165,12 +169,9 @@ export function SearchPage() {
           params.set('start', String(compilationRequest.start));
         }
       }
-      setSearchParams(params, { replace: true });
 
-      // Track search analytics when user stops typing
-      if (searchQuery.trim()) {
-        const totalResults = videoResults.length + userResults.length + hashtagResults.length;
-        trackSearch(searchQuery, activeFilter, totalResults);
+      if (params.toString() !== searchParams.toString()) {
+        setSearchParams(params, { replace: true });
       }
     }, 500);
 
@@ -184,10 +185,50 @@ export function SearchPage() {
     compilationRequest.play,
     compilationRequest.start,
     compilationRequest.videoId,
-    hashtagResults.length,
+    searchParams,
     searchQuery,
     setSearchParams,
     sortMode,
+  ]);
+
+  useEffect(() => {
+    if (analyticsTimerRef.current) {
+      clearTimeout(analyticsTimerRef.current);
+    }
+
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) {
+      lastTrackedSearchRef.current = null;
+      return;
+    }
+
+    if (isLoadingVideos || isLoadingUsers || isLoadingHashtags) {
+      return;
+    }
+
+    const trackingKey = JSON.stringify([trimmedQuery, activeFilter]);
+    if (lastTrackedSearchRef.current === trackingKey) {
+      return;
+    }
+
+    analyticsTimerRef.current = setTimeout(() => {
+      const totalResults = videoResults.length + userResults.length + hashtagResults.length;
+      trackSearch(searchQuery, activeFilter, totalResults);
+      lastTrackedSearchRef.current = trackingKey;
+    }, 500);
+
+    return () => {
+      if (analyticsTimerRef.current) {
+        clearTimeout(analyticsTimerRef.current);
+      }
+    };
+  }, [
+    activeFilter,
+    hashtagResults.length,
+    isLoadingHashtags,
+    isLoadingUsers,
+    isLoadingVideos,
+    searchQuery,
     userResults.length,
     videoResults.length,
   ]);
@@ -289,11 +330,12 @@ export function SearchPage() {
     pastedLookupQueryRef.current = normalizeDirectSearchInput(pastedValue) || null;
   };
 
-  // Handle hashtag suggestion click
   const handleHashtagClick = (hashtag: string) => {
-    setSearchQuery(`#${hashtag}`);
+    const normalizedHashtag = hashtag.trim().replace(/^#+/, '').toLowerCase();
+    if (!normalizedHashtag) return;
+
     setShowSuggestions(false);
-    searchInputRef.current?.focus();
+    navigate(`/hashtag/${encodeURIComponent(normalizedHashtag)}`);
   };
 
   // Handle filter tab change
@@ -627,15 +669,11 @@ export function SearchPage() {
                       <Hash className="h-5 w-5" />
                       Hashtags
                     </h2>
-                    <div className="flex flex-wrap gap-2">
-                      {hashtagResults.slice(0, 12).map((hashtag) => (
-                        <HashtagCard
-                          key={hashtag.hashtag}
-                          hashtag={hashtag}
-                          onClick={() => handleHashtagClick(hashtag.hashtag)}
-                        />
-                      ))}
-                    </div>
+                    <HashtagResultsList
+                      hashtags={hashtagResults.slice(0, 12)}
+                      onHashtagClick={handleHashtagClick}
+                      variant="preview"
+                    />
                     {hashtagResults.length > 12 && (
                       <div className="text-center mt-4">
                         <Button
@@ -664,7 +702,7 @@ export function SearchPage() {
               <NoResultsState />
             ) : (
               <InfiniteScroll
-                dataLength={videoResults.length}
+                dataLength={fetchedVideoCount}
                 next={fetchNextVideos}
                 hasMore={hasNextVideos ?? false}
                 loader={
@@ -728,15 +766,12 @@ export function SearchPage() {
             ) : hashtagResults.length === 0 ? (
               <NoResultsState />
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {hashtagResults.map((hashtag) => (
-                  <HashtagCard
-                    key={hashtag.hashtag}
-                    hashtag={hashtag}
-                    onClick={() => handleHashtagClick(hashtag.hashtag)}
-                  />
-                ))}
-              </div>
+              <HashtagResultsList
+                hashtags={hashtagResults}
+                onHashtagClick={handleHashtagClick}
+                query={searchQuery}
+                variant="full"
+              />
             )}
           </TabsContent>
         </Tabs>
@@ -756,13 +791,20 @@ interface UserCardMetadata {
 // User card component
 function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadata } }) {
   const navigate = useSubdomainNavigate();
-  const displayName = user.metadata?.display_name || user.metadata?.name || genUserName(user.pubkey);
+  const displayName = resolveDisplayName(user.metadata, user.pubkey);
   const username = user.metadata?.name || genUserName(user.pubkey);
+  const nip05 = user.metadata?.nip05;
+  const { state: nip05State } = useNip05Validation(nip05, user.pubkey);
+  // Only show NIP-05 as the user-visible identifier when it's validated.
+  // Unvalidated NIP-05s could be spoofed by anyone claiming a handle.
+  const nip05Display = nip05 && nip05State === 'valid'
+    ? (getDivineNip05Info(nip05)?.displayName ?? `@${toFriendlyPath(nip05) ?? nip05}`)
+    : null;
   const about = user.metadata?.about;
   const picture = getSafeProfileImage(user.metadata?.picture);
-  const profilePath = buildProfileLinkPath({
+  const profilePath = useValidatedProfileLinkPath({
     pubkey: user.pubkey,
-    nip05: user.metadata?.nip05,
+    nip05,
   });
 
   const handleClick = () => {
@@ -793,7 +835,11 @@ function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadat
           </Avatar>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold truncate">{displayName}</h3>
-            <p className="text-sm text-muted-foreground truncate">@{username}</p>
+            {nip05Display ? (
+              <p className="text-sm text-muted-foreground truncate">{nip05Display}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground truncate">@{username}</p>
+            )}
             {about && (
               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                 {about}
@@ -806,23 +852,129 @@ function UserCard({ user }: { user: { pubkey: string; metadata?: UserCardMetadat
   );
 }
 
-// Hashtag card component
-function HashtagCard({
+function formatVideoCount(count: number): string {
+  return `${count.toLocaleString()} ${count === 1 ? 'video' : 'videos'}`;
+}
+
+function HashtagResultsList({
+  hashtags,
+  onHashtagClick,
+  query,
+  variant,
+}: {
+  hashtags: HashtagResult[];
+  onHashtagClick: (hashtag: string) => void;
+  query?: string;
+  variant: 'preview' | 'full';
+}) {
+  const [featuredHashtag, ...remainingHashtags] = hashtags;
+  const isFull = variant === 'full';
+  const trimmedQuery = query?.trim();
+
+  if (!featuredHashtag) return null;
+
+  return (
+    <section className="mx-auto w-full max-w-5xl space-y-4" aria-label="Hashtag search results">
+      {isFull && (
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Hash className="h-5 w-5" />
+              Hashtags
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {hashtags.length.toLocaleString()} matches for {trimmedQuery ? `"${trimmedQuery}"` : 'this search'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isFull && (
+        <HashtagResultCard
+          hashtag={featuredHashtag}
+          onClick={() => onHashtagClick(featuredHashtag.hashtag)}
+          featured
+        />
+      )}
+
+      <div className={`grid gap-3 ${isFull ? 'sm:grid-cols-2 xl:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
+        {(isFull ? remainingHashtags : hashtags).map((hashtag) => (
+          <HashtagResultCard
+            key={hashtag.hashtag}
+            hashtag={hashtag}
+            onClick={() => onHashtagClick(hashtag.hashtag)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HashtagResultCard({
   hashtag,
-  onClick
+  onClick,
+  featured = false,
 }: {
   hashtag: HashtagResult;
   onClick: () => void;
+  featured?: boolean;
 }) {
+  const countLabel = formatVideoCount(hashtag.video_count);
+  const thumbnailSizeClass = featured ? 'h-16 w-16 sm:h-20 sm:w-20' : 'h-14 w-14';
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  const thumbnail = thumbnailFailed ? undefined : hashtag.thumbnail;
+  const thumbnailClass = `${thumbnailSizeClass} flex-shrink-0 rounded-md object-cover`;
+
   return (
-    <Badge
-      variant="secondary"
-      className="cursor-pointer hover:bg-secondary/80 px-3 py-1"
+    <button
+      type="button"
+      className={
+        featured
+          ? 'group flex w-full items-center justify-between gap-4 rounded-lg border-2 border-brand-dark-green bg-brand-dark-green p-4 text-left text-background shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-brand-light-green/30 dark:text-card-foreground sm:p-5'
+          : 'group flex min-h-[92px] w-full items-center justify-between gap-3 rounded-lg border border-brand-dark-green/20 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-brand-light-green/60 hover:shadow-md dark:border-brand-light-green/20 dark:hover:bg-brand-dark-green'
+      }
       onClick={onClick}
+      aria-label={`Search hashtag #${hashtag.hashtag}, ${countLabel}`}
     >
-      #{hashtag.hashtag}
-      <span className="ml-2 text-xs opacity-70">{hashtag.video_count} videos</span>
-    </Badge>
+      {thumbnail ? (
+        <img
+          src={thumbnail}
+          alt={`Preview for #${hashtag.hashtag}`}
+          loading="lazy"
+          onError={() => setThumbnailFailed(true)}
+          className={thumbnailClass}
+        />
+      ) : (
+        <span
+          className={`${thumbnailSizeClass} flex flex-shrink-0 items-center justify-center rounded-md ${
+            featured
+              ? 'bg-background/10 text-background/80 dark:bg-card/60 dark:text-card-foreground'
+              : 'bg-brand-light-green text-brand-dark-green'
+          }`}
+          aria-hidden="true"
+        >
+          <Hash className={featured ? 'h-8 w-8' : 'h-6 w-6'} />
+        </span>
+      )}
+      <span className="min-w-0 flex-1">
+        <span className={featured ? 'block truncate text-2xl font-bold' : 'block truncate text-lg font-semibold'}>
+          #{hashtag.hashtag}
+        </span>
+        <span className={featured ? 'mt-1 block text-sm text-background/75 dark:text-muted-foreground' : 'mt-1 block text-sm text-muted-foreground'}>
+          {countLabel}
+        </span>
+      </span>
+      <span
+        className={
+          featured
+            ? 'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform group-hover:translate-x-1'
+            : 'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-brand-light-green text-brand-dark-green transition-transform group-hover:translate-x-1'
+        }
+        aria-hidden="true"
+      >
+        <ArrowRight className={featured ? 'h-5 w-5' : 'h-4 w-4'} />
+      </span>
+    </button>
   );
 }
 

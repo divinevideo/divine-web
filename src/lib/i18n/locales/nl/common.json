@@ -8,8 +8,8 @@
     "home": "Home",
     "discover": "Ontdekken",
     "popular": "Popular",
+    "services": "Services",
     "search": "Zoeken",
-    "messages": "Berichten",
     "notifications": "Meldingen",
     "profile": "Profiel",
     "analytics": "Analyse"
@@ -30,7 +30,9 @@
     "help": "Help",
     "merch": "Merch",
     "familyResources": "Gezinsbronnen",
-    "kidsPolicy": "Kinderbeleid"
+    "kidsPolicy": "Kinderbeleid",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Lichte modus",
@@ -68,6 +70,8 @@
     "classic": "Klassiek",
     "hot": "Heet",
     "new": "Nieuw",
+    "featured": "Uitgelicht",
+    "sponsoredBy": "Gesponsord door <bdi>{{sponsorName}}</bdi>",
     "tags": "Tags",
     "verifiedOnly": "Door mensen gemaakt",
     "verifiedOnlyHint": "Toont alleen video's met ProofMode-verificatie",
@@ -101,19 +105,6 @@
     "reply": "Antwoorden",
     "comment": "Reageren"
   },
-  "messages": {
-    "badge": "Berichten",
-    "title": "Directe berichten",
-    "subtitle": "Praat met support, stuur vines prive of houd een gesprek gaande met mensen die je volgt.",
-    "searchPlaceholder": "Zoek mensen om een bericht te sturen",
-    "newMessage": "Nieuw bericht",
-    "readyToShare": "Klaar om prive te delen.",
-    "shareWithTitle": "Je volgende bericht bevat “{{title}}”.",
-    "shareWithLink": "Je volgende bericht bevat een vine-link.",
-    "signerUnsupported": "Je huidige signer kan je laten inloggen, maar ondersteunt nog geen NIP-44-versleuteling. Schakel over naar een nsec, bunker of andere signer met NIP-44-ondersteuning om directe berichten op het web te gebruiken.",
-    "supportBadge": "Support",
-    "supportSummary": "Vraag naar bugs, moderatie of accountproblemen."
-  },
   "support": {
     "title": "Support",
     "subtitle": "Hulp nodig? We staan klaar om je te helpen.",
@@ -134,6 +125,19 @@
     "communityDescription": "Doe mee aan onze communitygesprekken en maak contact met andere Divine-gebruikers op Nostr.",
     "communityBody": "Divine is gebouwd op Nostr, een gedecentraliseerd sociaal protocol. Vind ons in je favoriete Nostr-client."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Tag niet gevonden",
     "notFoundDescription": "De gevraagde tag kon niet worden gevonden.",
@@ -146,7 +150,11 @@
     "emptyState": "Er zijn momenteel geen categorieen beschikbaar.",
     "metaTitle": "Categorieen bekijken - Divine",
     "metaDescription": "Ontdek videocategorieen op Divine - komedie, muziek, dans, dieren, sport, eten en meer.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} video",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} videos"
   },
   "vineBadge": {
@@ -184,7 +192,6 @@
       "pinToProfile": "Vastmaken aan profiel",
       "deleteVideo": "Video verwijderen",
       "reportVideo": "Video melden",
-      "sendViaMessage": "Versturen via bericht",
       "reportUser": "Gebruiker melden",
       "muteUser": "{{name}} dempen",
       "viewSource": "Bron bekijken"
@@ -386,7 +393,6 @@
     "message": "Bericht",
     "reportUser": "Gebruiker melden",
     "subscribeRss": "Abonneer op RSS-feed",
-    "videos": "Video's",
     "followers": "Volgers",
     "followingStat": "Volgend",
     "followingDialogTitle": "Volgend",
@@ -395,17 +401,26 @@
     "originalVineLoops": "Originele Vine Loops",
     "classicVines": "Classic Vines",
     "classicVineStatsCaption": "Statistieken van het originele Vine-platform (2013-2017)",
-    "legacySocialLabel": "{{label}}: {{handle}}"
+    "legacySocialLabel": "{{label}}: {{handle}}",
+    "blockUser": "Gebruiker blokkeren",
+    "unblockUser": "Gebruiker deblokkeren",
+    "blockDialogTitle": "Deze gebruiker blokkeren?",
+    "blockDialogDescription": "{{name}} wordt verwijderd uit je openbare volglijst en hun video’s blijven uit je feeds.",
+    "unblockDialogTitle": "Deze gebruiker deblokkeren?",
+    "unblockDialogDescription": "Hierdoor worden de video’s van {{name}} weer zichtbaar, maar je volgt hen niet opnieuw.",
+    "blockedTitle": "Geblokkeerd.",
+    "blockedDescription": "Uit je volglijst en uit je feeds.",
+    "unblockedTitle": "Gedeblokkeerd.",
+    "unblockedDescription": "Hun video’s kunnen weer verschijnen. Je volgt hen niet.",
+    "cancel": "Annuleren",
+    "blockFailedDescription": "Blokkeren mislukt. Probeer het opnieuw."
   },
   "loginDialog": {
     "title": "Inloggen bij Divine",
     "heading": "Kom binnen.",
-    "subtitleRegister": "Heb je een uitnodiging? Maak een account aan.",
     "subtitleSignIn": "Log in op login.divine.video met je bestaande account.",
     "tabRegister": "Registreren",
     "tabSignIn": "Inloggen",
-    "checkingInvite": "Uitnodigingsstatus controleren...",
-    "inviteUnavailable": "Aanmelden via uitnodiging is nu niet beschikbaar. Je kunt nog wel inloggen op het volgende tabblad.",
     "tabExtension": "Extensie",
     "tabExtensionShort": "Ext",
     "tabKey": "Sleutel",
@@ -423,8 +438,9 @@
     "bunkerLabel": "Bunker-URI",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Inloggen met Bunker",
+    "bunkerAuthPrompt": "Je signer wacht op goedkeuring. We probeerden de pagina te openen, maar je browser blokkeerde dat — open hem hier:",
+    "bunkerAuthLink": "Goedkeuren in je signer",
     "connecting": "Verbinden...",
-    "errorInviteServiceUnavailable": "Uitnodigingsservice niet beschikbaar",
     "errorExtensionNotFound": "Nostr-extensie niet gevonden. Installeer een NIP-07-extensie.",
     "errorExtensionLoginFailed": "Inloggen met extensie mislukt",
     "errorKeyLoginFailed": "Inloggen met deze sleutel mislukt. Controleer of hij klopt.",
@@ -436,19 +452,22 @@
     "errorFileEmpty": "Kon de inhoud van het bestand niet lezen.",
     "errorFileNoValidKey": "Bestand bevat geen geldige geheime sleutel.",
     "errorFileReadFailed": "Bestand lezen mislukt.",
-    "errorInviteValidationFailed": "Kan uitnodigingscode niet valideren",
-    "errorInviteCodeUsed": "Deze uitnodigingscode is al gebruikt",
     "errorSignInStartFailed": "Kan inloggen niet starten",
-    "errorWaitlistJoinFailed": "Kan niet aansluiten bij de wachtlijst"
+    "subtitleCreate": "Stel je Divine-account in.",
+    "createAccountButton": "Account maken",
+    "creatingAccount": "Account wordt ingesteld...",
+    "errorSignUpStartFailed": "Registratie kan niet worden gestart"
   },
   "accountSwitcher": {
     "myProfile": "Mijn profiel",
     "settings": "Instellingen",
     "linkedAccounts": "Gekoppelde accounts",
+    "relays": "Relays",
     "switchRelay": "Relay wisselen",
     "switchAccount": "Account wisselen",
     "addAnotherAccount": "Nog een account toevoegen",
-    "logOut": "Uitloggen"
+    "logOut": "Uitloggen",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "Video melden",
@@ -516,6 +535,7 @@
     "signInButton": "Inloggen"
   },
   "badgeDetailModal": {
+    "description": "Het hele verhaal achter deze badge — wie hem uitgaf en wanneer.",
     "title": "Badge-details",
     "officialBadge": "✦ Officiële Divine-badge",
     "issuedBy": "Uitgegeven door",
@@ -580,6 +600,20 @@
     "mutedKeywordsTitle_one": "Gedempte trefwoorden ({{count}})",
     "mutedKeywordsTitle_other": "Gedempte trefwoorden ({{count}})",
     "noMutedUsers": "Niemand op mute. Lekker rustig.",
+    "mutedHereTitle_one": "Hier gedempt ({{count}})",
+    "mutedHereTitle_other": "Hier gedempt ({{count}})",
+    "mutedHereDescription": "Deze dempingen zijn via web toegevoegd. Als je er een verwijdert, hef je alleen die demping op.",
+    "mutedElsewhereTitle_one": "Elders gedempt of geblokkeerd ({{count}})",
+    "mutedElsewhereTitle_other": "Elders gedempt of geblokkeerd ({{count}})",
+    "mutedElsewhereDescription": "Deze komen van een andere client of apparaat. Sommige kunnen blokkades uit de Divine-app zijn.",
+    "noWebMutedUsers": "Nog geen webdempingen.",
+    "noUnknownMutedUsers": "Nu niets van andere clients.",
+    "reviewBeforeUnmute": "Controleren",
+    "confirmUnmuteTitle": "Deze demping opheffen?",
+    "confirmUnmuteDescription": "Deze vermelding kan een blokkade zijn die in de Divine-app is gezet. Als je die hier opheft, wordt dat p-tag overal verwijderd waar je kind 10000-lijst synchroniseert.",
+    "confirmWebUnmuteDescription": "Deze demping is via web toegevoegd. Controleer dit voordat je hem verwijdert, voor het geval een andere client nu op hetzelfde p-tag leunt.",
+    "confirmUnmuteCancel": "Behouden",
+    "confirmUnmuteAction": "Opheffen",
     "noMutedHashtags": "Nog geen hashtags gedempt.",
     "noMutedKeywords": "Geen gedempte trefwoorden. Je feed is rauw.",
     "reportHistoryTitle": "Meldingsgeschiedenis",
@@ -591,6 +625,7 @@
     "toastErrorTitle": "Fout",
     "toastErrorEnterValue": "Voer een waarde in om te dempen",
     "toastErrorInvalidNpub": "Ongeldig npub-formaat",
+    "toastErrorMuteYourself": "Je kunt jezelf niet dempen.",
     "toastMutedTitle": "Gedempt",
     "toastMutedDescription": "Met succes toegevoegd aan mutelist",
     "toastMuteFailed": "Dempen mislukt. Probeer het opnieuw.",
@@ -598,7 +633,17 @@
     "toastUnmutedDescription": "Verwijderd uit mutelist",
     "toastUnmuteFailed": "Demping opheffen mislukt. Probeer het opnieuw.",
     "toastFunnelcakeUpdatedTitle": "Funnelcake API bijgewerkt",
-    "toastFunnelcakeUpdatedDescription": "{{url}} wordt gebruikt voor toekomstige REST-reads."
+    "toastFunnelcakeUpdatedDescription": "{{url}} wordt gebruikt voor toekomstige REST-reads.",
+    "unblock": "Deblokkeren",
+    "statusUsersBlockedSuffix": "gebruikers geblokkeerd",
+    "blockedUsersTitle_one": "Geblokkeerde gebruikers ({{count}})",
+    "blockedUsersTitle_other": "Geblokkeerde gebruikers ({{count}})",
+    "blockedUsersDescription": "Geblokkeerde gebruikers worden verwijderd uit je openbare volglijst. Deblokkeren maakt hun video’s ook weer zichtbaar, maar volgt hen niet opnieuw.",
+    "mutedUsersDescription": "Gedempte gebruikers blijven verborgen uit je feeds zonder te veranderen wie je volgt.",
+    "noBlockedUsers": "Geen geblokkeerde gebruikers.",
+    "toastUnblockedTitle": "Gedeblokkeerd",
+    "toastUnblockedDescription": "Verwijderd uit geblokkeerde gebruikers. Hun video’s kunnen weer verschijnen.",
+    "toastUnblockFailed": "Deblokkeren mislukt. Probeer het opnieuw."
   },
   "linkedAccountsSettings": {
     "copy": "Kopiëren",
@@ -645,10 +690,13 @@
       "mastodon": "Plaats een toot met de onderstaande tekst en plak vervolgens de Post-ID uit de URL.",
       "telegram": "Stuur een bericht in een openbaar kanaal/groep met de onderstaande tekst en plak vervolgens het berichtpad (bijv. channelname/123).",
       "bluesky": "Post op Bluesky met de onderstaande tekst en plak vervolgens de record key (rkey) uit de post-URL.",
-      "discord": "Maak een Discord-server met je npub in de servernaam of beschrijving, maak vervolgens een permanente uitnodigingslink en plak de invite-code."
+      "discord": "Plaats een bericht met de onderstaande tekst, klik er dan met de rechtermuisknop op en kies ‘Kopieer berichtenlink’. Een serveruitnodiging kan niet bewijzen van wie een account is. Vul je Discord-gebruikersnaam in — die op je profiel, niet je weergavenaam."
     },
     "toastErrorTitle": "Fout",
     "toastEnterProof": "Voer de bewijs-URL of -ID in",
+    "toastInvalidDiscordLink": "Plak een link naar een Discord-bericht: klik met de rechtermuisknop op je bericht en kies ‘Kopieer berichtenlink’.",
+    "discordUsernameLabel": "Je Discord-gebruikersnaam",
+    "discordUsernamePlaceholder": "jegebruikersnaam",
     "toastCannotDetermineUsername": "Kon de gebruikersnaam niet uit de URL bepalen",
     "toastVerifiedTitle": "Geverifieerd!",
     "toastLinkedTitle": "Gekoppeld",
@@ -810,6 +858,8 @@
     "seoDescription": "Bekijk deze video op Divine",
     "seoDescriptionWithAuthor": "Bekijk deze video van {{name}} op Divine",
     "errorTitle": "Fout",
+    "nextVideoUnavailableDescription": "Kon de volgende video niet laden. Opnieuw proberen?",
+    "loadMoreUnavailableDescription": "Couldn't load more videos. Try again?",
     "likedTitle": "Geliket!",
     "likedDescription": "Je reactie is gepubliceerd",
     "likeFailedDescription": "Video liken mislukt",
@@ -831,7 +881,12 @@
     "searchPrefix": "Zoeken: {{query}}",
     "searchResults": "Zoekresultaten",
     "authorVideos": "Video's van {{name}}",
+    "featuredVideos": "Uitgelichte video's",
+    "featuredTabWrappedDescription": "Dat uitgelichte tabblad is voorbij. Hier is Trending.",
+    "featuredNavigationEndedDescription": "Deze video staat er nog, maar zit niet meer in het geladen deel van het tabblad.",
+    "backToFeaturedTab": "Terug naar {{label}}",
     "loadingMore": "Meer video's laden...",
+    "allCaughtUp": "That's the whole haul.",
     "previousVideoAria": "Vorige video",
     "nextVideoAria": "Volgende video",
     "previousArrow": "← vorige",
@@ -903,8 +958,10 @@
     "notFoundTitle": "Lijst niet gevonden",
     "notFoundDescription": "Deze lijst is mogelijk verwijderd of bestaat niet",
     "browseLists": "Lijsten bekijken",
-    "backToLists": "Terug naar lijsten",
-    "listCreator": "Maker van de lijst",
+    "backToCreatorLists": "Alle lijsten van {{name}}",
+    "videoList": "Videolijst",
+    "untitledVideoList": "Naamloze videolijst",
+    "byCreator": "Van {{name}}",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} video's",
     "collaborative": "Samenwerking",
@@ -931,18 +988,15 @@
     "retry": "Opnieuw proberen",
     "peopleCount_one": "{{count}} persoon",
     "peopleCount_other": "{{count}} mensen",
-    "notFoundTitle": "Gesprek niet gevonden",
-    "notFoundDescription": "Ga terug naar je inbox en start een nieuw bericht.",
-    "backToInbox": "Terug naar inbox",
     "dmUnavailableTitle": "Privéberichten zijn niet beschikbaar",
     "dmUnavailableDescription": "Deze signer kan je authenticeren, maar biedt niet de NIP-44-encryptiemethoden die nodig zijn voor privéberichten.",
+    "backToSupport": "Terug naar Support",
     "noMessages": "Nog geen berichten",
     "noMessagesHint": "Stuur het eerste bericht om deze thread te openen.",
-    "readyToShare": "Klaar om te delen",
-    "placeholderShare": "Voeg een optionele notitie toe...",
     "placeholderMessage": "Schrijf een bericht..."
   },
   "videoCommentsModal": {
+    "description": "Bekijk wat anderen zeggen en plaats je eigen reactie.",
     "title": "Reacties",
     "loading": "Reacties laden...",
     "emptyMessage": "Nog geen reacties",
@@ -960,7 +1014,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Videovoorbeeld",
     "thumbnailAlt": "Videothumbnail",
-    "playVideo": "Video afspelen"
+    "playVideo": "Video afspelen",
+    "openVideo": "Video openen"
   },
   "hashtagExplorer": {
     "heading": "Hashtag Explorer",
@@ -1036,8 +1091,7 @@
       "likes": "Likes",
       "comments": "Reacties",
       "follows": "Volgers",
-      "reposts": "Reposts",
-      "zaps": "Zaps"
+      "reposts": "Reposts"
     },
     "empty": {
       "all": {
@@ -1063,16 +1117,33 @@
       "reposts": {
         "title": "Nog geen repost-notificaties.",
         "description": "Reposts van je video's verschijnen hier."
-      },
-      "zaps": {
-        "title": "Nog geen zap-notificaties.",
-        "description": "Zaps op je video's verschijnen hier."
       }
     },
     "errorTitle": "Notificaties laden mislukt",
     "errorFallback": "Probeer het later nog eens",
     "sectionNew": "Nieuw",
-    "sectionEarlier": "Eerder"
+    "sectionEarlier": "Eerder",
+    "message": {
+      "liked": "vindt je video leuk",
+      "commented": "reageerde op je video",
+      "reposted": "deelde je video",
+      "followed": "volgt je nu",
+      "andOthers_one": "en {{count}} ander",
+      "andOthers_other": "en {{count}} anderen",
+      "likedTitled": "vindt {{title}} leuk",
+      "commentedTitled": "reageerde op {{title}}",
+      "repostedTitled": "deelde {{title}}",
+      "likedComment": "vindt je reactie leuk",
+      "likedCommentTitled": "vindt je reactie op {{title}} leuk"
+    },
+    "video": {
+      "untitled": "je video"
+    },
+    "a11y": {
+      "openVideo": "{{title}} openen",
+      "viewProfile": "Profiel van {{name}}",
+      "unread": "Ongelezen"
+    }
   },
   "getEmbedPage": {
     "title": "Divine-widget embedden",
@@ -1140,7 +1211,7 @@
   "trendingPage": {
     "heading": "Trending",
     "subheading": "Ontdek wat populair is in de community",
-    "rssTitle": "DiVine - Trending",
+    "rssTitle": "Divine - Trending",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1201,7 +1272,7 @@
     "notFoundDescription": {
       "vine": "Deze Vine-gebruiker is mogelijk nog niet geïmporteerd naar het Nostr-netwerk.",
       "nip05": "Controleer of de NIP-05-identifier klopt.",
-      "legacy": "Deze gebruikersnaam komt niet overeen met een oud Vine-profiel of OpenVine-handle."
+      "legacy": "Deze gebruikersnaam komt niet overeen met een bekend profiel."
     }
   },
   "atUsernamePage": {
@@ -1297,14 +1368,11 @@
   "pwaInstallPrompt": {
     "close": "Sluiten",
     "getDivine": "Download Divine",
-    "installDivineWeb": "Installeer Divine Web",
     "descriptionNative": "Installeer de native app voor de beste Divine-ervaring",
-    "descriptionWeb": "Installeer onze app voor een betere ervaring",
     "appStore": "App Store",
     "appStoreAria": "Download Divine in de App Store",
     "googlePlay": "Google Play",
     "googlePlayAria": "Download Divine op Google Play",
-    "install": "Installeren",
     "notNow": "Niet nu"
   },
   "relaySelector": {
@@ -1329,7 +1397,6 @@
     "muteErrorDescription": "Kon de mute niet opslaan. Nog eens proberen?",
     "deleteVideo": "Video verwijderen",
     "reportVideo": "Video rapporteren",
-    "sendViaMessage": "Versturen via bericht",
     "reportUser": "Gebruiker rapporteren",
     "muteUser": "{{name}} muten",
     "viewSource": "Bron bekijken",
@@ -1393,23 +1460,6 @@
     "confirm": "Reactie verwijderen",
     "deleting": "Bezig met verwijderen..."
   },
-  "inviteCodeForm": {
-    "label": "Uitnodigingscode",
-    "placeholder": "Plak je uitnodigingscode",
-    "checking": "Bezig met controleren...",
-    "continue": "Doorgaan",
-    "joinWaitlist": "Geen uitnodiging? Zet je op de wachtlijst."
-  },
-  "invitesLandingPage": {
-    "seoTitle": "Word lid van diVine met uitnodigingscode {{code}}",
-    "seoTitleDefault": "Word lid van diVine",
-    "seoDescription": "Je bent uitgenodigd! Gebruik code {{code}} om lid te worden van diVine.",
-    "seoDescriptionDefault": "Gebruik je uitnodigingscode om lid te worden van diVine en video te delen.",
-    "heading": "Je bent uitgenodigd!",
-    "subheading": "Voer je uitnodigingscode in om lid te worden van diVine",
-    "alreadyHaveAccount": "Heb je al een account?",
-    "signIn": "Inloggen"
-  },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
     "defaultDescription": "Achter de schermen bij de lancering van Divine",
@@ -1418,5 +1468,99 @@
     "podcastEpisode": "Podcastaflevering",
     "openInApplePodcasts": "Openen in Apple Podcasts",
     "playEpisode": "Aflevering afspelen"
+  },
+  "listsPage": {
+    "createList": "Lijst maken",
+    "createFirstList": "Maak je eerste lijst",
+    "createVideoList": "Videolijst",
+    "createPeopleList": "Personenlijst"
+  },
+  "createPeopleListDialog": {
+    "title": "Personenlijst maken",
+    "description": "Zet mensen bij elkaar en bekijk hun nieuwste loops op één plek.",
+    "nameLabel": "Lijstnaam *",
+    "namePlaceholder": "Favoriete creators",
+    "descriptionLabel": "Beschrijving",
+    "descriptionPlaceholder": "Mensen van wie je geen loop mist...",
+    "imageLabel": "URL van omslagafbeelding",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Geef ’m eerst een naam.",
+    "reservedName": "Die naam is gereserveerd voor een systeemlijst.",
+    "imageInvalid": "Gebruik een volledige afbeeldings-URL.",
+    "cancelButton": "Annuleren",
+    "creatingButton": "Bezig met maken...",
+    "createButton": "Lijst maken",
+    "createdTitle": "Personenlijst gemaakt.",
+    "createdDescription": "‘{{name}}’ staat klaar.",
+    "failedTitle": "Niet gelukt.",
+    "failedDescription": "Het maken van de personenlijst liep vast. Opnieuw?"
+  },
+  "editPeopleListDialog": {
+    "title": "Personenlijst bewerken",
+    "description": "Werk de naam, beschrijving of omslagafbeelding van deze lijst bij.",
+    "nameLabel": "Lijstnaam *",
+    "namePlaceholder": "Favoriete creators",
+    "descriptionLabel": "Beschrijving",
+    "descriptionPlaceholder": "Mensen van wie je geen loop mist...",
+    "imageLabel": "URL van omslagafbeelding",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Geef ’m eerst een naam.",
+    "imageInvalid": "Gebruik een volledige afbeeldings-URL.",
+    "cancelButton": "Annuleren",
+    "savingButton": "Bezig met opslaan...",
+    "saveButton": "Opslaan",
+    "savedTitle": "Opgeslagen.",
+    "savedDescription": "‘{{name}}’ is bijgewerkt.",
+    "failedTitle": "Niet opgeslagen.",
+    "failedDescription": "Het bijwerken van de personenlijst liep vast. Opnieuw?"
+  },
+  "deleteListDialog": {
+    "title": "Lijst verwijderen?",
+    "videosDescription": "Hiermee wordt verwijdering van de lijst ‘{{name}}’ aangevraagd. Video’s in de lijst blijven bestaan.",
+    "peopleDescription": "Hiermee wordt verwijdering van de lijst ‘{{name}}’ aangevraagd. Mensen in de lijst blijven bestaan.",
+    "noteLabel": "Let op:",
+    "relayNote": "Deze actie stuurt een verwijderverzoek naar relays. De meeste relays honoreren dat, maar verwijdering is niet overal gegarandeerd.",
+    "cancelButton": "Annuleren",
+    "deletingButton": "Bezig met verwijderen...",
+    "deleteButton": "Lijst verwijderen"
+  },
+  "peopleListDetailPage": {
+    "editList": "Bewerken",
+    "delete": "Verwijderen",
+    "share": "Delen",
+    "deletedTitle": "Personenlijst verwijderd.",
+    "deletedDescription": "‘{{name}}’ is verwijderd.",
+    "deleteFailedTitle": "Verwijderen mislukt.",
+    "deleteFailedDescription": "Het verwijderen van de personenlijst liep vast. Opnieuw?"
+  },
+  "userList": {
+    "searchPlaceholder": "Zoeken op naam",
+    "noMatches": "Niemand hier komt overeen. Een andere naam proberen?",
+    "searchHint": "Typ minstens 2 letters of cijfers.",
+    "searchUnavailable": "Zoeken lukt nu niet. Opnieuw proberen?",
+    "noFollowers": "Nog geen volgers.",
+    "noFollowing": "Volgt nog niemand."
+  },
+  "supporters": {
+    "chip": "Supporter",
+    "title": "Divine-supporters",
+    "intro": "Help Divine onafhankelijk, menselijk en voor iedereen toegankelijk te houden.",
+    "membership": "Je supporterlidmaatschap",
+    "thankYou": "Bedankt dat je Divine steunt.",
+    "thanksDetail": "Jouw steun helpt deze plek voor mensen te behouden. Fijn dat je er bent.",
+    "showChip": "Mijn supporterbadge op mijn profiel tonen",
+    "privacy": "Je lidmaatschap is standaard privé. Zet dit aan om je badge openbaar te tonen. Je kunt dit altijd wijzigen.",
+    "check": "Supporterstatus controleren",
+    "checking": "Supporterstatus wordt gecontroleerd…",
+    "checkHint": "Al supporter? Controleer het lidmaatschap van dit account. Je ondertekenaar kan om toestemming vragen.",
+    "checkError": "We konden je supporterstatus niet controleren. Probeer het opnieuw.",
+    "unknown": "Je supporterstatus is nog niet bevestigd. Controleer opnieuw voordat je nog een aankoop doet.",
+    "saveError": "We konden je zichtbaarheidskeuze niet opslaan. Probeer het opnieuw.",
+    "purchaseInstructions": "Word supporter in de mobiele Divine-app: meld je aan met hetzelfde account en open het supportergedeelte in de instellingen. Al gekocht? Herstel je aankoop daar en controleer je status hier.",
+    "getApp": "Download de app om supporter te worden",
+    "verificationPrerequisite": "Word supporter om verificatie aan te vragen",
+    "verificationNext": "Je volgende stap: verificatie",
+    "verificationDetail": "Een supporterlidmaatschap is vereist om verificatie aan te vragen. Het verifieert je identiteit niet en garandeert geen goedkeuring. Je kunt bestaande accounts koppelen om identiteitsbewijzen te delen.",
+    "linkAccounts": "Ga naar gekoppelde accounts"
   }
 }

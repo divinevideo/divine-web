@@ -5,16 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AuthCallbackPage from './AuthCallbackPage';
 import { initializeI18n } from '@/lib/i18n';
 
-const {
-  mockClearInviteHandoff,
-  mockExchangeDivineLoginCallback,
-} = vi.hoisted(() => ({
-  mockClearInviteHandoff: vi.fn(),
+const { mockExchangeDivineLoginCallback } = vi.hoisted(() => ({
   mockExchangeDivineLoginCallback: vi.fn(),
-}));
-
-vi.mock('@/lib/authHandoff', () => ({
-  clearInviteHandoff: mockClearInviteHandoff,
 }));
 
 vi.mock('@/lib/divineLogin', () => ({
@@ -92,7 +84,6 @@ describe('AuthCallbackPage integration', () => {
     });
 
     expect(await screen.findByText('Home Route')).toBeInTheDocument();
-    expect(mockClearInviteHandoff).toHaveBeenCalled();
     expect(localStorage.getItem('keycast_jwt_token')).toBe(JSON.stringify('jwt-token'));
   });
 });

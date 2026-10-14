@@ -8,7 +8,9 @@ import { VideoPlayer } from './VideoPlayer';
 const mockRegisterVideo = vi.fn();
 const mockUnregisterVideo = vi.fn();
 const mockUpdateVideoVisibility = vi.fn();
+const mockSetUserPaused = vi.fn();
 const hlsTestState = vi.hoisted(() => ({
+  inViewRef: vi.fn(),
   instances: [] as Array<{
     attachMedia: ReturnType<typeof vi.fn>;
     destroy: ReturnType<typeof vi.fn>;
@@ -24,6 +26,8 @@ const hlsTestState = vi.hoisted(() => ({
 vi.mock('@/hooks/useVideoPlayback', () => ({
   useVideoPlayback: vi.fn(() => ({
     activeVideoId: null,
+    userPausedVideoId: null,
+    setUserPaused: mockSetUserPaused,
     registerVideo: mockRegisterVideo,
     unregisterVideo: mockUnregisterVideo,
     updateVideoVisibility: mockUpdateVideoVisibility,
@@ -124,7 +128,7 @@ vi.mock('hls.js', () => {
 // Mock react-intersection-observer to avoid observer.observe issues
 vi.mock('react-intersection-observer', () => ({
   useInView: vi.fn(() => ({
-    ref: vi.fn(),
+    ref: hlsTestState.inViewRef,
     inView: true,
     entry: null,
   })),
@@ -167,6 +171,8 @@ describe('VideoPlayer', () => {
     const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
     (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
       activeVideoId: null,
+      userPausedVideoId: null,
+      setUserPaused: mockSetUserPaused,
       registerVideo: mockRegisterVideo,
       unregisterVideo: mockUnregisterVideo,
       updateVideoVisibility: mockUpdateVideoVisibility,
@@ -249,6 +255,41 @@ describe('VideoPlayer', () => {
   });
 
   describe('ref stability - prevents infinite loop', () => {
+    it('does not run unmount cleanup when context actions change identity', async () => {
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: null,
+        userPausedVideoId: null,
+        setUserPaused: mockSetUserPaused,
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: vi.fn(),
+        updateVideoVisibility: vi.fn(),
+        globalMuted: true,
+      }));
+      const pauseSpy = vi.spyOn(HTMLMediaElement.prototype, 'pause');
+
+      const { rerender } = render(
+        <VideoPlayer videoId="cleanup-stability" src="https://example.com/stable.mp4" />
+      );
+      pauseSpy.mockClear();
+
+      rerender(<VideoPlayer videoId="cleanup-stability" src="https://example.com/stable.mp4" />);
+
+      expect(pauseSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not run unmount cleanup when the video identity changes', () => {
+      const { rerender } = render(
+        <VideoPlayer videoId="video-a" src="https://example.com/a.mp4" />
+      );
+      mockUnregisterVideo.mockClear();
+
+      rerender(<VideoPlayer videoId="video-b" src="https://example.com/b.mp4" />);
+
+      expect(mockUnregisterVideo).toHaveBeenCalledWith('video-a');
+      expect(mockUnregisterVideo).not.toHaveBeenCalledWith('video-b');
+    });
+
     it('should not trigger infinite loop when context values change', async () => {
       // This test verifies the bug: setRefs callback must be stable
       //
@@ -680,6 +721,8 @@ describe('VideoPlayer', () => {
         throw new Error('expected rendered video element');
       }
 
+      playSpy.mockClear();
+
       let currentTimeValue = 6.4;
       Object.defineProperty(video, 'currentTime', {
         get: () => currentTimeValue,
@@ -758,6 +801,318 @@ describe('VideoPlayer', () => {
         'shared-video-id',
         expect.any(HTMLVideoElement)
       );
+    });
+  });
+
+  describe('active playback startup', () => {
+    it('does not resume a user-paused video when loading completes', async () => {
+      const playSpy = vi.fn().mockResolvedValue(undefined);
+      HTMLMediaElement.prototype.play = playSpy;
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'loading-paused',
+        userPausedVideoId: 'loading-paused',
+        setUserPaused: mockSetUserPaused,
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted: true,
+      }));
+
+      const { container } = render(
+        <VideoPlayer videoId="loading-paused" src="https://example.com/loading-paused.mp4" />
+      );
+      const video = container.querySelector('video');
+      if (!video) throw new Error('expected rendered video element');
+      playSpy.mockClear();
+
+      fireEvent.loadedData(video);
+
+      expect(playSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not run a queued mute resume after the user pauses', async () => {
+      let userPausedVideoId: string | null = null;
+      let isPaused = false;
+      const playSpy = vi.fn().mockImplementation(() => {
+        isPaused = false;
+        return Promise.resolve();
+      });
+      HTMLMediaElement.prototype.play = playSpy;
+      HTMLMediaElement.prototype.pause = vi.fn().mockImplementation(() => {
+        isPaused = true;
+      });
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockImplementation(() => isPaused);
+      const rafQueue: FrameRequestCallback[] = [];
+      vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+        rafQueue.push(cb);
+        return rafQueue.length;
+      });
+      mockSetUserPaused.mockImplementation((videoId: string, paused: boolean) => {
+        userPausedVideoId = paused ? videoId : null;
+      });
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'queued-resume',
+        userPausedVideoId,
+        setUserPaused: mockSetUserPaused,
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted: true,
+      }));
+
+      const { container, rerender } = render(
+        <VideoPlayer videoId="queued-resume" src="https://example.com/queued-resume.mp4" />
+      );
+      const video = container.querySelector('video');
+      if (!video) throw new Error('expected rendered video element');
+      playSpy.mockClear();
+
+      fireEvent.click(video);
+      rerender(<VideoPlayer videoId="queued-resume" src="https://example.com/queued-resume.mp4" />);
+      act(() => {
+        for (let i = 0; i < 10 && rafQueue.length > 0; i++) {
+          const pending = rafQueue.splice(0);
+          pending.forEach((cb) => cb(0));
+        }
+      });
+
+      expect(playSpy).not.toHaveBeenCalled();
+      expect(isPaused).toBe(true);
+    });
+
+    it('keeps a user-paused active video paused across rerenders and mute changes', async () => {
+      let globalMuted = true;
+      let userPausedVideoId: string | null = null;
+      let isPaused = false;
+      const playSpy = vi.fn().mockImplementation(() => {
+        isPaused = false;
+        return Promise.resolve();
+      });
+      const pauseSpy = vi.fn().mockImplementation(() => {
+        isPaused = true;
+      });
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockImplementation(() => isPaused);
+      HTMLMediaElement.prototype.play = playSpy;
+      HTMLMediaElement.prototype.pause = pauseSpy;
+      // The mute-sync effect resumes inside a double requestAnimationFrame.
+      // Queue the callbacks and flush them at controlled points instead of
+      // relying on the environment's frame timing, so the test is deterministic:
+      // we drain the mount frame while the video is still playing, then flush
+      // again after the pause to catch any effect that tries to resume it.
+      const rafQueue: FrameRequestCallback[] = [];
+      vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+        rafQueue.push(cb);
+        return rafQueue.length;
+      });
+      const flushFrames = () => {
+        for (let i = 0; i < 10 && rafQueue.length > 0; i++) {
+          const pending = rafQueue.splice(0);
+          pending.forEach((cb) => cb(0));
+        }
+      };
+      mockSetUserPaused.mockImplementation((videoId: string, paused: boolean) => {
+        userPausedVideoId = paused ? videoId : null;
+      });
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'user-paused',
+        userPausedVideoId,
+        setUserPaused: mockSetUserPaused,
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted,
+      }));
+
+      const { container, rerender } = render(
+        <VideoPlayer videoId="user-paused" src="https://example.com/user-paused.mp4" />
+      );
+      const video = container.querySelector('video');
+      if (!video) throw new Error('expected rendered video element');
+
+      // Drain the mount frame while the video is still playing, so a leftover
+      // frame can't fire after the pause and resume it. Then ignore any startup
+      // play(): from here on the user has paused, so no effect may resume it.
+      act(() => flushFrames());
+      playSpy.mockClear();
+
+      fireEvent.click(video);
+      expect(mockSetUserPaused).toHaveBeenCalledWith('user-paused', true);
+      expect(pauseSpy).toHaveBeenCalled();
+
+      // A plain rerender (isUserPaused now true) must not let the active-status
+      // effect resume the paused video.
+      rerender(<VideoPlayer videoId="user-paused" src="https://example.com/user-paused.mp4" />);
+      // A mute toggle must not resume it either (the mute-sync effect path).
+      globalMuted = false;
+      rerender(<VideoPlayer videoId="user-paused" src="https://example.com/user-paused.mp4" />);
+      // Fire any frame a regressed effect scheduled to resume the paused video.
+      act(() => flushFrames());
+
+      expect(playSpy).not.toHaveBeenCalled();
+      expect(isPaused).toBe(true);
+    });
+
+    it('starts an active video before loadeddata fires', async () => {
+      const playSpy = vi.fn().mockResolvedValue(undefined);
+      HTMLMediaElement.prototype.play = playSpy;
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'ios-metadata-only',
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted: true,
+      }));
+
+      render(
+        <VideoPlayer
+          videoId="ios-metadata-only"
+          src="https://example.com/ios-metadata-only.mp4"
+        />
+      );
+
+      await waitFor(() => {
+        expect(playSpy).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('resumes an active video after switching to a fallback URL', async () => {
+      let isPaused = true;
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockImplementation(() => isPaused);
+      const playSpy = vi.fn().mockImplementation(() => {
+        isPaused = false;
+        return Promise.resolve();
+      });
+      HTMLMediaElement.prototype.play = playSpy;
+
+      const { useVideoPlayback } = await import('@/hooks/useVideoPlayback');
+      (useVideoPlayback as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        activeVideoId: 'fallback-resume',
+        registerVideo: mockRegisterVideo,
+        unregisterVideo: mockUnregisterVideo,
+        updateVideoVisibility: mockUpdateVideoVisibility,
+        globalMuted: true,
+      }));
+
+      const { container } = render(
+        <VideoPlayer
+          videoId="fallback-resume"
+          src="https://example.com/primary.mp4"
+          fallbackUrls={['https://example.com/fallback.mp4']}
+        />
+      );
+
+      const video = container.querySelector('video');
+      expect(video).not.toBeNull();
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+
+      await waitFor(() => {
+        expect(playSpy).toHaveBeenCalledTimes(1);
+      });
+
+      playSpy.mockClear();
+      fireEvent.error(video);
+
+      await waitFor(() => {
+        expect(video.src).toBe('https://example.com/fallback.mp4');
+      });
+
+      isPaused = true;
+      fireEvent.loadedData(video);
+
+      await waitFor(() => {
+        expect(playSpy).toHaveBeenCalledTimes(1);
+      });
+    });
+  });
+
+  describe('playback is not blocked by auth', () => {
+    // Helper: track every truthy value assigned to a <video> element's src.
+    const trackVideoSrc = (srcValues: string[]) => {
+      const originalCreateElement = document.createElement.bind(document);
+      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        const element = originalCreateElement(tagName);
+        if (tagName === 'video') {
+          let currentSrc = '';
+          Object.defineProperty(element, 'src', {
+            get: () => currentSrc,
+            set: (value: string) => {
+              currentSrc = value;
+              if (value) srcValues.push(value);
+            },
+            configurable: true,
+          });
+        }
+        return element;
+      });
+    };
+
+    it('sets src for a public video even when the auth preflight never resolves', async () => {
+      // Regression: checkMediaAuth ran *before* loadVideoSource, so a slow or hanging
+      // HEAD preflight delayed (or fully blocked) playback for every non-verified viewer.
+      // Public playback must never wait on the auth probe.
+      const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
+      let resolveProbe: ((value: { authorized: boolean; status: number }) => void) | undefined;
+      (checkMediaAuth as ReturnType<typeof vi.fn>).mockReturnValue(
+        new Promise((resolve) => {
+          resolveProbe = resolve;
+        }),
+      );
+
+      const src = 'https://example.com/public-no-auth.mp4';
+      const srcValues: string[] = [];
+      trackVideoSrc(srcValues);
+
+      render(<VideoPlayer videoId="public-no-auth" src={src} />);
+
+      // src must be set without the probe ever resolving.
+      await waitFor(() => {
+        expect(srcValues).toContain(src);
+      }, { timeout: 1000 });
+
+      // Sanity: the probe really was still pending when src was set.
+      expect(resolveProbe).toBeDefined();
+    });
+
+    it('does not restart a public video load when getAuthHeader changes reference', async () => {
+      // Regression: getAuthHeader (keyed on the signer) was in the load effect's deps.
+      // A late-injecting signer/extension produced a new getAuthHeader reference, which
+      // re-ran the effect and aborted the in-flight load — repeatedly — stalling playback.
+      const { useAdultVerification } = await import('@/hooks/useAdultVerification');
+      (useAdultVerification as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        isVerified: false,
+        isLoading: false,
+        hasSigner: false,
+        // NEW reference on every render, simulating a resolving signer.
+        getAuthHeader: vi.fn().mockResolvedValue(null),
+      }));
+
+      const src = 'https://example.com/stable-public.mp4';
+      const srcValues: string[] = [];
+      trackVideoSrc(srcValues);
+
+      const { rerender } = render(<VideoPlayer videoId="stable-public" src={src} />);
+
+      await waitFor(() => {
+        expect(srcValues).toContain(src);
+      }, { timeout: 1000 });
+
+      // Force re-renders: each hands the component a fresh getAuthHeader reference.
+      rerender(<VideoPlayer videoId="stable-public" src={src} />);
+      rerender(<VideoPlayer videoId="stable-public" src={src} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // The source must have been assigned exactly once — no abort/reload churn.
+      expect(srcValues.filter((value) => value === src)).toHaveLength(1);
     });
   });
 });

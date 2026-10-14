@@ -2,11 +2,12 @@
 // ABOUTME: Bridges the gap between REST API data and existing video display components
 
 import { parseByteArrayId } from './funnelcakeClient';
-import { SHORT_VIDEO_KIND, type ParsedVideoData } from '@/types/video';
+import { SHORT_VIDEO_KIND, type ParsedVideoData, type ProofModeData, type ProofModeLevel } from '@/types/video';
 import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake';
 import { debugLog } from './debug';
-import { getProofModeData } from './videoParser';
-import { extractSha256FromVideoUrl } from './videoVerification';
+import { getProofModeData, getVineId } from './videoParser';
+import { extractSha256FromVideoUrl, normalizeSha256 } from './videoVerification';
+import { videoAddress } from '@/lib/videoAddress';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 /**
@@ -45,10 +46,121 @@ function getVineExternalId(raw: FunnelcakeVideoRaw): string {
   return raw.d_tag || '';
 }
 
+function normalizeLoopCount(loops?: number | null): number {
+  return typeof loops === 'number' && Number.isFinite(loops) && loops > 0
+    ? Math.floor(loops)
+    : 0;
+}
+
+export function parseFullEvent(raw: FunnelcakeVideoRaw, id: string, pubkey: string): NostrEvent | undefined {
+  const eventJson = raw.event_json;
+  if (eventJson) {
+    try {
+      const event = typeof eventJson === 'string' ? JSON.parse(eventJson) : eventJson;
+      if (event && typeof event === 'object' && Array.isArray(event.tags)) {
+        // Detail APIs may send partial payloads; default any missing fields
+        // from the raw row the same way the tags branch below does.
+        const partial = event as Partial<NostrEvent> & { tags: string[][] };
+        return {
+          id: typeof partial.id === 'string' ? partial.id : id,
+          pubkey: typeof partial.pubkey === 'string' ? partial.pubkey : pubkey,
+          created_at: typeof partial.created_at === 'number' ? partial.created_at : raw.created_at,
+          kind: typeof partial.kind === 'number' ? partial.kind : raw.kind,
+          tags: partial.tags,
+          content: typeof partial.content === 'string' ? partial.content : (raw.content || ''),
+          sig: typeof partial.sig === 'string' ? partial.sig : '',
+        } as NostrEvent;
+      }
+    } catch {
+      // Fall through to top-level tags below.
+    }
+  }
+
+  if (!raw.tags) return undefined;
+
+  return {
+    id,
+    pubkey,
+    created_at: raw.created_at,
+    kind: raw.kind,
+    tags: raw.tags,
+    content: raw.content || '',
+    sig: '',
+  } as NostrEvent;
+}
+
+function isProofModeLevel(level: string): level is ProofModeLevel {
+  return level === 'verified_mobile' ||
+    level === 'verified_web' ||
+    level === 'basic_proof' ||
+    level === 'unverified';
+}
+
 /**
- * Transform a single Funnelcake video to ParsedVideoData format
+ * Sentinel stored in ProofModeData component fields when the data comes from a
+ * compact proof summary. A summary only says "this component exists and did
+ * not fail verification" — it carries no real manifest JSON, fingerprint, or
+ * attestation token. These values are presence markers only and MUST NOT be
+ * rendered verbatim in UI (e.g. ProofModeBadge's showDetails popover).
  */
-export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoData {
+const SUMMARY_PRESENT = 'summary:present';
+
+function proofSummaryToProofMode(raw: FunnelcakeVideoRaw): ProofModeData | undefined {
+  if (!raw.proof || raw.proof.status === 'unknown' || raw.proof.status === 'invalid') return undefined;
+
+  const checks = raw.proof.checks ?? {};
+  const manifest = checks.proofmode_present && checks.proofmode_parse_ok === true
+    ? SUMMARY_PRESENT
+    : undefined;
+  const deviceAttestation = checks.device_attestation_present && checks.device_attestation_valid !== false
+    ? SUMMARY_PRESENT
+    : undefined;
+  const pgpFingerprint = checks.pgp_signature_present && checks.pgp_signature_valid !== false
+    ? SUMMARY_PRESENT
+    : undefined;
+  const c2paManifestId = checks.c2pa_manifest_present && checks.c2pa_manifest_valid !== false
+    ? SUMMARY_PRESENT
+    : undefined;
+
+  // A summary with no usable components carries nothing worth badging — even
+  // a (contradictory) 'verified' status over an all-failed checklist.
+  if (!manifest && !deviceAttestation && !pgpFingerprint && !c2paManifestId) {
+    return undefined;
+  }
+
+  const isVerified = raw.proof.status === 'verified';
+  const summaryLevel = raw.proof.level && isProofModeLevel(raw.proof.level)
+    ? raw.proof.level
+    : undefined;
+  // Only a 'verified' status can earn a verified_* badge. Cap anything else to
+  // basic_proof — the same fallback used when present/partial summaries omit
+  // the level entirely.
+  const cappedLevel = !isVerified && (summaryLevel === 'verified_mobile' || summaryLevel === 'verified_web')
+    ? 'basic_proof'
+    : summaryLevel;
+  const level: ProofModeLevel = cappedLevel ?? (isVerified ? 'verified_web' : 'basic_proof');
+
+  return {
+    level,
+    manifest,
+    deviceAttestation,
+    pgpFingerprint,
+    c2paManifestId,
+  };
+}
+
+/**
+ * Transform a single Funnelcake video to ParsedVideoData format.
+ *
+ * Returns null when the row carries no `d` tag. Every row here becomes a kind
+ * 34236 event, and an addressable event with no `d` has no coordinate to be
+ * addressed by, so anything keyed on that coordinate — likes, reposts, view
+ * events — silently narrows to the event id, which is superseded the first time
+ * the author edits. `videoParser` already refuses these on the relay path
+ * (`if (!vineId && event.kind === SHORT_VIDEO_KIND) continue`); this keeps the
+ * REST path from admitting what the relay path rejects.
+ */
+export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoData | null {
   // Handle byte array conversion for id and pubkey
   const id = Array.isArray(raw.id) ? parseByteArrayId(raw.id) : String(raw.id);
   const pubkey = Array.isArray(raw.pubkey) ? parseByteArrayId(raw.pubkey) : String(raw.pubkey);
@@ -72,15 +184,16 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     ?? parseLoopsFromContent(raw.content)
     ?? parseLoopsFromContent(raw.title);
 
-  const fullEvent = raw.tags ? ({
-    id: id,
-    pubkey: pubkey,
-    created_at: raw.created_at,
-    kind: raw.kind,
-    tags: raw.tags,
-    content: raw.content || '',
-    sig: '',
-  } as NostrEvent) : undefined;
+  const fullEvent = parseFullEvent(raw, id, pubkey);
+  const fullEventProofMode = fullEvent ? getProofModeData(fullEvent) : undefined;
+
+  // Thin list payloads can omit the top-level d_tag while still carrying the
+  // event's tags, so read those before giving up on the coordinate.
+  const vineId = raw.d_tag || (fullEvent ? getVineId(fullEvent) : null);
+  if (!vineId) {
+    debugLog('[FunnelcakeTransform] Dropping video with no d tag:', id);
+    return null;
+  }
 
   const video: ParsedVideoData = {
     id,
@@ -95,17 +208,20 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     blurhash: raw.blurhash,
     title: raw.title,
     dimensions: raw.dim ?? raw.dimensions, // Video dimensions from API (e.g., "1080x1920"); v2 uses `dimensions`
-    sha256: extractSha256FromVideoUrl(raw.video_url),
+    // Validated before it wins: a truthy but malformed backend hash would
+    // otherwise shadow the URL-derived one, and downstream moderation lookups
+    // silently no-op on anything that is not 64 hex.
+    sha256: normalizeSha256(raw.sha256) ?? extractSha256FromVideoUrl(raw.video_url),
     ageRestricted: raw.age_restricted === true || raw.moderation_status === 'age_restricted',
     hashtags,
 
     // Vine-specific fields
-    vineId: raw.d_tag || null, // d_tag is the unique identifier
-    // loops only meaningful for Vine archive videos — for new Divine videos,
-    // the API `loops` field tracks playback re-loops, NOT classic Vine loop counts
+    vineId, // The `d` tag: the addressable event's unique identifier
+    // For Vine imports, `loopCount` is the original archive count. For native
+    // Divine videos, it is the current playback loop count from Funnelcake.
     loopCount: isVineMigrated
-      ? (archivedLoopCount ?? raw.loops ?? 0)
-      : 0,
+      ? (archivedLoopCount ?? normalizeLoopCount(raw.loops))
+      : normalizeLoopCount(raw.loops),
     divineViewCount: raw.views ?? 0,
 
     // Social metrics from Funnelcake (pre-computed).
@@ -133,7 +249,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     textTrackContent: raw.text_track_content,
 
     // ProofMode data - extract from tags when available (single video endpoint)
-    proofMode: fullEvent ? getProofModeData(fullEvent) : undefined,
+    proofMode: fullEventProofMode ?? proofSummaryToProofMode(raw),
 
     // Empty reposts array (Funnelcake doesn't return individual reposts)
     reposts: [],
@@ -148,13 +264,15 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
 /**
  * Transform a Funnelcake API response to an array of ParsedVideoData
  */
-export function transformFunnelcakeResponse(response: FunnelcakeResponse): ParsedVideoData[] {
-  if (!response.videos || !Array.isArray(response.videos)) {
+export function transformFunnelcakeResponse(response: FunnelcakeResponse | FunnelcakeVideoRaw[]): ParsedVideoData[] {
+  const rawVideos = Array.isArray(response) ? response : response.videos;
+
+  if (!Array.isArray(rawVideos)) {
     debugLog('[FunnelcakeTransform] No videos in response');
     return [];
   }
 
-  const transformed = response.videos
+  const transformed = rawVideos
     .map(raw => {
       try {
         return transformFunnelcakeVideo(raw);
@@ -169,7 +287,7 @@ export function transformFunnelcakeResponse(response: FunnelcakeResponse): Parse
   // The API may return duplicate rows for the same video
   const seen = new Set<string>();
   const videos = transformed.filter(v => {
-    const key = `${v.pubkey}:${v.kind}:${v.vineId || v.id}`;
+    const key = videoAddress(v);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -178,7 +296,7 @@ export function transformFunnelcakeResponse(response: FunnelcakeResponse): Parse
   if (videos.length < transformed.length) {
     debugLog(`[FunnelcakeTransform] Deduplicated ${transformed.length} → ${videos.length} videos`);
   }
-  debugLog(`[FunnelcakeTransform] Transformed ${videos.length}/${response.videos.length} videos`);
+  debugLog(`[FunnelcakeTransform] Transformed ${videos.length}/${rawVideos.length} videos`);
 
   return videos;
 }
@@ -187,10 +305,18 @@ export function transformFunnelcakeResponse(response: FunnelcakeResponse): Parse
  * Transform Funnelcake response to video page format for infinite scroll hooks
  */
 export function transformToVideoPage(
-  response: FunnelcakeResponse,
+  response: FunnelcakeResponse | FunnelcakeVideoRaw[],
   cursorType: 'timestamp' | 'offset' | 'cursor' = 'timestamp'
 ): {
   videos: ParsedVideoData[];
+  /**
+   * Rows the API returned for this page, before any of them were dropped.
+   *
+   * `videos` is what survived within-page dedup and any transform drop, so it
+   * under-reports what the page carried. Infinite-scroll accounting needs a
+   * count that tracks fetching rather than survival (divine-web#380).
+   */
+  fetchedRows: number;
   nextCursor: number | undefined;
   offset?: number;
   /** Raw opaque cursor string for cursor-based pagination (recommendations) */
@@ -198,21 +324,26 @@ export function transformToVideoPage(
   hasMore: boolean;
 } {
   const videos = transformFunnelcakeResponse(response);
+  const rawRows = Array.isArray(response) ? response : response.videos;
+  const fetchedRows = Array.isArray(rawRows) ? rawRows.length : 0;
 
   // Parse next cursor based on pagination type
   let nextCursor: number | undefined;
   let offset: number | undefined;
   let rawCursor: string | undefined;
 
-  if (response.has_more && response.next_cursor) {
+  const hasMore = !Array.isArray(response) && response.has_more;
+  const nextCursorValue = !Array.isArray(response) ? response.next_cursor : undefined;
+
+  if (hasMore && nextCursorValue) {
     if (cursorType === 'cursor') {
       // Opaque cursor: pass through as-is (recommendations)
-      rawCursor = response.next_cursor;
+      rawCursor = nextCursorValue;
     } else if (cursorType === 'offset') {
-      offset = parseInt(response.next_cursor, 10);
+      offset = parseInt(nextCursorValue, 10);
     } else {
       // Timestamp cursor - parse as number
-      nextCursor = parseInt(response.next_cursor, 10);
+      nextCursor = parseInt(nextCursorValue, 10);
       // If parsing fails, use last video's timestamp
       if (isNaN(nextCursor) && videos.length > 0) {
         nextCursor = videos[videos.length - 1].createdAt - 1;
@@ -222,10 +353,11 @@ export function transformToVideoPage(
 
   return {
     videos,
+    fetchedRows,
     nextCursor,
     offset,
     rawCursor,
-    hasMore: response.has_more,
+    hasMore,
   };
 }
 
@@ -247,6 +379,8 @@ export function mergeVideoStats(
     likeCount: stats.reactions ?? video.likeCount,
     commentCount: stats.comments ?? video.commentCount,
     repostCount: stats.reposts ?? video.repostCount,
-    loopCount: video.isVineMigrated ? (stats.loops ?? video.loopCount) : video.loopCount,
+    loopCount: stats.loops !== undefined
+      ? normalizeLoopCount(stats.loops)
+      : video.loopCount,
   };
 }

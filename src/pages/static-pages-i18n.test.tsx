@@ -3,7 +3,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { initializeI18n } from '@/lib/i18n';
-import { AboutPage } from './AboutPage';
 import { AuthenticityPage } from './AuthenticityPage';
 import { DMCAPage } from './DMCAPage';
 import { FAQPage } from './FAQPage';
@@ -80,6 +79,8 @@ describe('static pages i18n', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Política de privacidad' })).toBeInTheDocument();
+    expect(screen.getByText(/Divine uses Shorebird to check for and deliver app updates/)).toBeInTheDocument();
+    expect(screen.getByText(/not used for advertising or cross-app tracking/)).toBeInTheDocument();
   });
 
   it('renders safety copy in spanish', () => {
@@ -91,6 +92,10 @@ describe('static pages i18n', () => {
 
     expect(screen.getByRole('heading', { name: 'Normas de seguridad' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '1. Descripción general' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'how account deletion works' })).toHaveAttribute(
+      'href',
+      '/delete-account',
+    );
   });
 
   it('renders DMCA copy in spanish', () => {
@@ -104,17 +109,6 @@ describe('static pages i18n', () => {
     expect(screen.getByRole('heading', { name: '1. Descripción general' })).toBeInTheDocument();
   });
 
-  it('renders about copy in spanish', () => {
-    render(
-      <MemoryRouter>
-        <AboutPage />
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByRole('heading', { name: 'Acerca de Divine' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'La historia detrás de Divine' })).toBeInTheDocument();
-  });
-
   it('renders open source copy in spanish', () => {
     render(
       <MemoryRouter>
@@ -123,7 +117,7 @@ describe('static pages i18n', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Proyecto de código abierto' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '¡La beta ya está activa!' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Aplicaciones móviles disponibles' })).toBeInTheDocument();
   });
 
   it('renders authenticity copy in spanish', () => {

@@ -3,6 +3,7 @@
 
 import type { SortMode } from '@/types/nostr';
 import { VIDEO_KINDS } from '@/types/video';
+import { recordProbe } from './relayHealth';
 
 type CapabilitySource = 'optimistic' | 'nip11' | 'probe' | 'fallback';
 
@@ -29,12 +30,17 @@ const VIDEO_SORT_MODES: SortMode[] = ['hot', 'top', 'rising', 'controversial'];
 const CACHE_DURATION = 5 * 60 * 1000;
 const capabilitiesCache = new Map<string, RelayCapabilities>();
 
+// Maps a relay URL onto the origin its NIP-11 document is served from. This is
+// a scheme question, not an admission question: admission is enforced where
+// relay lists are built, and reusing that predicate here would leave a `ws://`
+// URL that `fetch` rejects.
 function normalizeRelayUrl(relayUrl: string): URL | null {
   try {
-    if (relayUrl.startsWith('ws://') || relayUrl.startsWith('wss://')) {
-      return new URL(relayUrl.replace(/^ws/, 'http'));
+    const url = new URL(relayUrl);
+    if (url.protocol === 'ws:' || url.protocol === 'wss:') {
+      url.protocol = url.protocol === 'ws:' ? 'http:' : 'https:';
     }
-    return new URL(relayUrl);
+    return url;
   } catch {
     return null;
   }
@@ -74,11 +80,7 @@ export function getOptimisticRelayCapabilities(relayUrl: string): RelayCapabilit
         source: 'optimistic',
       });
 
-    case 'relay.ditto.pub':
     case 'relay.nostr.wine':
-    case 'relay.openvine.co':
-    case 'relay2.openvine.co':
-    case 'relay3.openvine.co':
       return createCapabilities(relayUrl, {
         supportsNIP50: true,
         supportsSearch: true,
@@ -218,6 +220,11 @@ export async function detectRelayCapabilities(relayUrl: string): Promise<RelayCa
       source,
     });
 
+    recordProbe(relayUrl, {
+      nip50: capabilities.supportsNIP50,
+      funnelcake: capabilities.supportsVideoSorts,
+    });
+
     capabilitiesCache.set(relayUrl, capabilities);
     return capabilities;
   } catch (error) {
@@ -227,6 +234,9 @@ export async function detectRelayCapabilities(relayUrl: string): Promise<RelayCa
       source: 'fallback',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
+
+    // No recordProbe here: a failed probe is not live evidence and must not
+    // grant capability bonuses or mark the relay source as 'live'.
 
     capabilitiesCache.set(relayUrl, fallbackCapabilities);
     return fallbackCapabilities;

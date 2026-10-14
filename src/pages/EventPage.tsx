@@ -19,7 +19,9 @@ import {
   isNoteEventKind,
 } from '@/lib/eventRouting';
 import { getDirectSearchTarget } from '@/lib/directSearch';
-import { genUserName } from '@/lib/genUserName';
+import { appendRelayHints, parseRelayHints } from '@/lib/relayHints';
+import { getEventLookupRelayUrls } from '@/config/relays';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { NoteContent } from '@/components/NoteContent';
 import { SmartLink } from '@/components/SmartLink';
@@ -109,15 +111,6 @@ function EventLoadingState() {
   );
 }
 
-function getRelayHints(search: string): string[] {
-  const params = new URLSearchParams(search);
-  return params
-    .getAll('relays')
-    .flatMap(value => value.split(','))
-    .map(value => value.trim())
-    .filter(Boolean);
-}
-
 export function EventPage() {
   const { eventId, kind, pubkey, identifier } = useParams<{
     eventId?: string;
@@ -133,9 +126,17 @@ export function EventPage() {
 
   const numericKind = kind ? Number(kind) : null;
   const decodedIdentifier = identifier ? decodeURIComponent(identifier) : null;
-  const relayHints = getRelayHints(location.search);
-  const configuredRelayUrls = config.relayUrls || [config.relayUrl];
-  const relayKey = [...configuredRelayUrls, ...relayHints].join(',');
+  const relayHints = parseRelayHints(location.search);
+  const configuredRelayUrls = [
+    ...(config.relayUrls || [config.relayUrl]),
+    ...(config.customRelayUrls ?? []),
+  ];
+  const relays = getEventLookupRelayUrls({
+    configuredRelayUrls,
+    relayHints,
+    disabledRelayUrls: config.disabledPresetUrls,
+  });
+  const relayKey = relays.join(',');
 
   const { data: event, isLoading, error } = useQuery({
     queryKey: ['event-page', eventId, numericKind, pubkey, decodedIdentifier, relayKey],
@@ -146,6 +147,7 @@ export function EventPage() {
         return fetchEventById(nostr, eventId, signal, {
           relayHints,
           relayUrls: configuredRelayUrls,
+          disabledRelayUrls: config.disabledPresetUrls,
         });
       }
 
@@ -157,6 +159,7 @@ export function EventPage() {
         }, signal, {
           relayHints,
           relayUrls: configuredRelayUrls,
+          disabledRelayUrls: config.disabledPresetUrls,
         });
       }
 
@@ -169,9 +172,7 @@ export function EventPage() {
 
   const author = useAuthor(event?.pubkey || '');
   const authorName = event
-    ? author.data?.metadata?.display_name
-      || author.data?.metadata?.name
-      || genUserName(event.pubkey)
+    ? resolveDisplayName(author.data?.metadata, event.pubkey)
     : '';
   const authorImage = getSafeProfileImage(author.data?.metadata?.picture);
   const authorNpub = event ? nip19.npubEncode(event.pubkey) : '';
@@ -200,7 +201,7 @@ export function EventPage() {
   }
 
   if (event && redirectPath && redirectPath !== location.pathname) {
-    return <Navigate to={redirectPath} replace />;
+    return <Navigate to={appendRelayHints(redirectPath, relayHints)} replace />;
   }
 
   if (!event) {

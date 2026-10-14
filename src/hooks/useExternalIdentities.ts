@@ -3,9 +3,11 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
+import type { NostrEvent } from '@nostrify/nostrify';
 import { nip19 } from 'nostr-tools';
 import { getCachedVerification, setCachedVerification } from '@/lib/verificationCache';
 import { API_CONFIG, getFeatureFlag } from '@/config/api';
+import { isDiscordMessageLink } from '@/lib/discordProof';
 
 export interface ExternalIdentity {
   platform: string;
@@ -115,7 +117,7 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
   discord: {
     label: 'Discord',
     profileUrl: (id) => `https://discord.com/users/${id}`,
-    proofUrl: (_id, proof) => `https://discord.gg/${proof}`,
+    proofUrl: (_id, proof) => isDiscordMessageLink(proof) ? proof.trim() : '',
     verificationText: (npub) => [
       `Verifying that I control the following Nostr public key: "${npub}"`,
     ],
@@ -145,6 +147,20 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
 
 export const SUPPORTED_PLATFORMS = PLATFORM_CONFIG;
 
+/**
+ * The verification service's code for "couldn't be checked right now": the
+ * platform didn't answer, so this isn't a verdict on the claim. Such answers
+ * aren't saved, so the next view asks again.
+ */
+export const VERIFIER_TEMPORARILY_UNAVAILABLE = 'temporarily_unavailable';
+
+export interface IdentityVerificationResult {
+  verified: boolean;
+  error?: string;
+  /** The verification service's machine-readable reason, when it gave one. */
+  code?: string;
+}
+
 export function parseIdentityTag(tag: string[]): ExternalIdentity | null {
   if (tag[0] !== 'i' || !tag[1]) return null;
 
@@ -167,6 +183,21 @@ export function parseIdentityTag(tag: string[]): ExternalIdentity | null {
   };
 }
 
+/**
+ * How long to wait for the kind:10011 relay fan-out before settling with
+ * whatever arrived. Kind 10011 is replaceable, so NPool.query waits for every
+ * routed relay to EOSE — a single unreachable relay (hung WebSocket that never
+ * opens or closes) would otherwise block the query forever. See issue #415.
+ */
+const IDENTITIES_QUERY_TIMEOUT_MS = 5000;
+
+function isAbortLikeError(error: unknown): boolean {
+  const name = typeof error === 'object' && error !== null && 'name' in error
+    ? String(error.name)
+    : '';
+  return name === 'AbortError' || name === 'TimeoutError';
+}
+
 export function useExternalIdentities(pubkey: string | undefined) {
   const { nostr } = useNostr();
 
@@ -175,10 +206,19 @@ export function useExternalIdentities(pubkey: string | undefined) {
     queryFn: async ({ signal }) => {
       if (!pubkey || !nostr) return [];
 
-      const events = await nostr.query(
-        [{ kinds: [10011], authors: [pubkey], limit: 1 }],
-        { signal },
-      );
+      let events: NostrEvent[] = [];
+      try {
+        events = await nostr.query(
+          [{ kinds: [10011], authors: [pubkey], limit: 1 }],
+          { signal: AbortSignal.any([signal, AbortSignal.timeout(IDENTITIES_QUERY_TIMEOUT_MS)]) },
+        );
+      } catch (error) {
+        // NPool.query returns partial results when the signal aborts, but
+        // other NRelay implementations may throw. Settle with no identities
+        // rather than an error state that would retry-loop.
+        if (!isAbortLikeError(error)) throw error;
+        events = [];
+      }
 
       if (events.length === 0) return [];
 
@@ -214,7 +254,10 @@ function cleanProofId(platform: string, proof: string): string {
       case 'mastodon': return parts.pop() || proof;
       case 'bluesky': return parts.pop() || proof;
       case 'telegram': return parts.slice(-2).join('/') || proof;
-      case 'discord': return parts.pop() || proof;
+      // The verifier parses the message URL itself, and a message id is
+      // meaningless without its channel. Reducing it to a bare id made the
+      // service fall back to its own configured channel and 404 everywhere else.
+      case 'discord': return proof.trim();
       case 'youtube': {
         if (url.hostname.includes('youtu.be')) return parts[0] || proof;
         if (parts[0] === 'watch') return url.searchParams.get('v') || proof;
@@ -239,7 +282,7 @@ function cleanProofId(platform: string, proof: string): string {
 export async function verifyIdentityClaim(
   identity: ExternalIdentity,
   pubkey: string,
-): Promise<{ verified: boolean; error?: string }> {
+): Promise<IdentityVerificationResult> {
   if (!identity.proofUrl && !identity.proof) {
     return { verified: false, error: 'No proof URL' };
   }
@@ -258,13 +301,26 @@ export async function verifyIdentityClaim(
   }
 
   // Check localStorage cache first (skip 'manual' so verifyer service gets a chance)
-  const cached = getCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof);
+  const cached = getCachedVerification(
+    cleanedIdentity.platform,
+    cleanedIdentity.identity,
+    cleanedIdentity.proof,
+    pubkey,
+  );
   if (cached && cached.error !== 'manual') return cached;
 
   // Try verification service if available
   const serviceResult = await verifyViaService(cleanedIdentity, pubkey);
   if (serviceResult) {
-    setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, serviceResult);
+    if (serviceResult.code !== VERIFIER_TEMPORARILY_UNAVAILABLE) {
+      setCachedVerification(
+        cleanedIdentity.platform,
+        cleanedIdentity.identity,
+        cleanedIdentity.proof,
+        pubkey,
+        serviceResult,
+      );
+    }
     return serviceResult;
   }
 
@@ -287,7 +343,13 @@ export async function verifyIdentityClaim(
 
     if (!response.ok) {
       const result = { verified: false, error: `HTTP ${response.status}` };
-      setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, result);
+      setCachedVerification(
+        cleanedIdentity.platform,
+        cleanedIdentity.identity,
+        cleanedIdentity.proof,
+        pubkey,
+        result,
+      );
       return result;
     }
 
@@ -296,7 +358,13 @@ export async function verifyIdentityClaim(
 
     const found = expectedTexts.some((expected) => text.includes(expected));
     const result = { verified: found, error: found ? undefined : 'npub not found in proof' };
-    setCachedVerification(cleanedIdentity.platform, cleanedIdentity.identity, cleanedIdentity.proof, result);
+    setCachedVerification(
+      cleanedIdentity.platform,
+      cleanedIdentity.identity,
+      cleanedIdentity.proof,
+      pubkey,
+      result,
+    );
     return result;
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Fetch failed';
@@ -311,7 +379,7 @@ export async function verifyIdentityClaim(
 async function verifyViaService(
   identity: ExternalIdentity,
   pubkey: string,
-): Promise<{ verified: boolean; error?: string } | null> {
+): Promise<IdentityVerificationResult | null> {
   const baseUrl = API_CONFIG.verificationService.baseUrl;
   if (!baseUrl || !getFeatureFlag('useVerificationService')) return null;
 
@@ -331,7 +399,11 @@ async function verifyViaService(
     if (!response.ok) return null;
 
     const data = await response.json();
-    return { verified: !!data.verified, error: data.error };
+    return {
+      verified: !!data.verified,
+      error: data.error,
+      ...(typeof data.code === 'string' ? { code: data.code } : {}),
+    };
   } catch {
     return null; // Service unavailable, fall through to browser verification
   }

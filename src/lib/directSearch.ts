@@ -7,6 +7,7 @@ import {
   buildVideoPath,
   buildResolvedEventRoute,
 } from '@/lib/eventRouting';
+import { appendRelayHints } from '@/lib/relayHints';
 
 const VIDEO_COORDINATE_PATTERN = /^(?:a:)?(?<kind>\d+):(?<pubkey>[0-9a-f]{64}):(?<identifier>.+)$/i;
 const HEX_64_PATTERN = /^[0-9a-f]{64}$/i;
@@ -67,16 +68,6 @@ export function isLikelyOpaqueVideoIdentifier(value: string, allowShortTokens = 
   }
 
   return allowShortTokens || normalized.length >= 16;
-}
-
-function withRelayHints(path: string, relayHints?: string[]): string {
-  if (!path.startsWith('/event') || !relayHints?.length) {
-    return path;
-  }
-
-  const params = new URLSearchParams();
-  params.set('relays', relayHints.join(','));
-  return `${path}?${params.toString()}`;
 }
 
 function parseHttpUrl(value: string): URL | null {
@@ -213,7 +204,7 @@ export function getDirectSearchTarget(value: string): DirectSearchTarget | null 
             : buildEventPath(decoded.data.id);
 
         return {
-          path: withRelayHints(path, decoded.data.relays),
+          path: appendRelayHints(path, decoded.data.relays),
           entity: decoded.data.kind && VIDEO_KINDS.includes(decoded.data.kind as typeof VIDEO_KINDS[number])
             ? 'video'
             : 'event',
@@ -224,7 +215,7 @@ export function getDirectSearchTarget(value: string): DirectSearchTarget | null 
         {
           const path = buildAddressableRoute(decoded.data.kind, decoded.data.pubkey, decoded.data.identifier);
         return {
-          path: withRelayHints(path, decoded.data.relays),
+          path: appendRelayHints(path, decoded.data.relays),
           entity: VIDEO_KINDS.includes(decoded.data.kind as typeof VIDEO_KINDS[number]) ? 'video' : 'event',
         };
         }

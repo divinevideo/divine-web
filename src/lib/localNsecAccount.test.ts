@@ -5,6 +5,7 @@ import { generateSecretKey, nip19 } from 'nostr-tools';
 import {
   buildNsecDownload,
   getActiveLocalNsecLogin,
+  getLocalNsecLogin,
   getStoredLocalNsecLogin,
 } from './localNsecAccount';
 
@@ -58,6 +59,14 @@ describe('localNsecAccount', () => {
     ]));
 
     expect(getStoredLocalNsecLogin()?.data.nsec).toBe(nsec);
+  });
+
+  it('returns an nsec only when it belongs to the requested account', () => {
+    const first = NLogin.fromNsec(createNsec());
+    const second = NLogin.fromNsec(createNsec());
+
+    expect(getLocalNsecLogin([first, second], second.pubkey)).toEqual(second);
+    expect(getLocalNsecLogin([first], second.pubkey)).toBeNull();
   });
 
   it('builds downloadable backup content for local nsec accounts', () => {

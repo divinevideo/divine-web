@@ -32,6 +32,9 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
   const label = t(`proofModeBadge.levels.${config.tKey}.label`);
   const tooltip = t(`proofModeBadge.levels.${config.tKey}.tooltip`);
   const description = t(`proofModeBadge.levels.${config.tKey}.description`);
+  const pgpFingerprint = proofData?.pgpFingerprint === 'summary:present'
+    ? undefined
+    : proofData?.pgpFingerprint;
 
   const badge = (
     <Badge
@@ -86,9 +89,11 @@ export function ProofModeBadge({ level, proofData, className, showDetails = fals
                 <Shield className="h-4 w-4 mt-0.5 text-brand-blue-dark dark:text-brand-blue flex-shrink-0" />
                 <div>
                   <p className="font-medium">{t('proofModeBadge.cryptographicSignature')}</p>
-                  <p className="text-xs text-muted-foreground font-mono break-all">
-                    {proofData.pgpFingerprint}
-                  </p>
+                  {pgpFingerprint && (
+                    <p className="text-xs text-muted-foreground font-mono break-all">
+                      {pgpFingerprint}
+                    </p>
+                  )}
                 </div>
               </div>
             )}

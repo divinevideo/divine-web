@@ -6,16 +6,36 @@ import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { initializeI18n } from '@/lib/i18n';
 import { VideoFeed } from './VideoFeed';
 
-const { mockNavigate, mockUseVideoProvider, mockEnterFullscreen, mockSetVideosForFullscreen, mockUpdateVideos } = vi.hoisted(() => ({
+const {
+  mockNavigate,
+  mockUseVideoProvider,
+  mockEnterFullscreen,
+  mockSetVideosForFullscreen,
+  mockUpdateVideos,
+  mockUseVideoPrefetch,
+  mockInfiniteScroll,
+  mockTrackEvent,
+  mockVideoCardWithMetrics,
+  mockVideoGrid,
+} = vi.hoisted(() => ({
+  mockTrackEvent: vi.fn(),
   mockNavigate: vi.fn(),
   mockUseVideoProvider: vi.fn(),
   mockEnterFullscreen: vi.fn(),
   mockSetVideosForFullscreen: vi.fn(),
   mockUpdateVideos: vi.fn(),
+  mockUseVideoPrefetch: vi.fn(),
+  mockInfiniteScroll: vi.fn(),
+  mockVideoCardWithMetrics: vi.fn(),
+  mockVideoGrid: vi.fn(),
 }));
 
 vi.mock('@/hooks/useVideoProvider', () => ({
   useVideoProvider: mockUseVideoProvider,
+}));
+
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: mockTrackEvent,
 }));
 
 vi.mock('@/hooks/useBatchedAuthors', () => ({
@@ -59,7 +79,7 @@ vi.mock('@/hooks/useVideoPlayback', () => ({
 }));
 
 vi.mock('@/hooks/useVideoPrefetch', () => ({
-  useVideoPrefetch: vi.fn(),
+  useVideoPrefetch: mockUseVideoPrefetch,
 }));
 
 vi.mock('@/lib/debug', () => ({
@@ -74,11 +94,17 @@ vi.mock('@/lib/performanceMonitoring', () => ({
 }));
 
 vi.mock('@/components/VideoCardWithMetrics', () => ({
-  VideoCardWithMetrics: () => <div data-testid="video-card" />,
+  VideoCardWithMetrics: (props: unknown) => {
+    mockVideoCardWithMetrics(props);
+    return <div data-testid="video-card" />;
+  },
 }));
 
 vi.mock('@/components/VideoGrid', () => ({
-  VideoGrid: () => <div data-testid="video-grid" />,
+  VideoGrid: (props: unknown) => {
+    mockVideoGrid(props);
+    return <div data-testid="video-grid" />;
+  },
 }));
 
 vi.mock('@/components/AddToListDialog', () => ({
@@ -97,7 +123,10 @@ vi.mock('@/components/ui/card', () => ({
 }));
 
 vi.mock('react-infinite-scroll-component', () => ({
-  default: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  default: ({ children, dataLength }: { children: ReactNode; dataLength: number }) => {
+    mockInfiniteScroll({ dataLength });
+    return <div>{children}</div>;
+  },
 }));
 
 describe('VideoFeed', () => {
@@ -129,6 +158,7 @@ describe('VideoFeed', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
+      fetchedCount: 1,
       dataSource: 'funnelcake',
     });
   });
@@ -174,5 +204,145 @@ describe('VideoFeed', () => {
       [expect.objectContaining({ id: 'video-1' })],
       0,
     );
+  });
+
+  it('reports one featured impression per mount, not one per appended page', () => {
+    const makeVideos = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        id: `video-${index + 1}`,
+        pubkey: 'a'.repeat(64),
+        videoUrl: `https://example.com/video-${index + 1}.mp4`,
+      }));
+
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: makeVideos(1) }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: true,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      fetchedCount: 1,
+      dataSource: 'funnelcake',
+    });
+
+    const { rerender } = render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <VideoFeed feedType="featured" featuredTabId="ft_1234abcd" />
+      </MemoryRouter>
+    );
+
+    expect(mockTrackEvent).toHaveBeenCalledExactlyOnceWith('featured_tab_video_impression', {
+      featured_tab_id: 'ft_1234abcd',
+      rendered_videos: 1,
+    });
+
+    // Second page arrives; the impression must not be counted again.
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: makeVideos(1) }, { videos: makeVideos(3).slice(1) }] },
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      fetchedCount: 3,
+      dataSource: 'funnelcake',
+    });
+
+    rerender(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <VideoFeed feedType="featured" featuredTabId="ft_1234abcd" />
+      </MemoryRouter>
+    );
+
+    expect(mockTrackEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not prefetch full video files before first playback', () => {
+    render(
+      <MemoryRouter initialEntries={['/popular']}>
+        <VideoFeed feedType="popular" />
+      </MemoryRouter>
+    );
+
+    expect(mockUseVideoPrefetch).toHaveBeenCalledWith(
+      null,
+      [expect.objectContaining({ id: 'video-1' })],
+      { prefetchVideos: false },
+    );
+  });
+
+  it('passes featured tab context to feed cards', () => {
+    render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <VideoFeed feedType="featured" featuredTabId="ft_1234abcd" />
+      </MemoryRouter>
+    );
+
+    expect(mockVideoCardWithMetrics).toHaveBeenCalledWith(
+      expect.objectContaining({
+        navigationContext: expect.objectContaining({
+          source: 'featured',
+          featuredTabId: 'ft_1234abcd',
+        }),
+      })
+    );
+  });
+
+  it('passes featured tab context to grid cards', () => {
+    render(
+      <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
+        <VideoFeed feedType="featured" featuredTabId="ft_1234abcd" viewMode="grid" />
+      </MemoryRouter>
+    );
+
+    expect(mockVideoGrid).toHaveBeenCalledWith(
+      expect.objectContaining({
+        navigationContext: expect.objectContaining({
+          source: 'featured',
+          featuredTabId: 'ft_1234abcd',
+        }),
+      })
+    );
+  });
+
+  it('keys infinite scroll from fetched count instead of filtered rendered count', () => {
+    mockUseVideoProvider.mockReturnValue({
+      data: {
+        pages: [{
+          videos: [
+            {
+              id: 'video-1',
+              pubkey: 'a'.repeat(64),
+              kind: 34236,
+              vineId: 'same-address',
+              videoUrl: 'https://example.com/video-1.mp4',
+            },
+            {
+              id: 'video-2',
+              pubkey: 'a'.repeat(64),
+              kind: 34236,
+              vineId: 'same-address',
+              videoUrl: 'https://example.com/video-2.mp4',
+            },
+          ],
+        }],
+      },
+      fetchNextPage: vi.fn(),
+      hasNextPage: true,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      fetchedCount: 2,
+      dataSource: 'funnelcake',
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/discovery']}>
+        <VideoFeed feedType="discovery" />
+      </MemoryRouter>
+    );
+
+    expect(screen.getAllByTestId('video-card')).toHaveLength(1);
+    expect(mockInfiniteScroll).toHaveBeenCalledWith({ dataLength: 2 });
   });
 });

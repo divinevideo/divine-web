@@ -31,7 +31,7 @@ export function HomePage() {
       {
         rel: 'alternate',
         type: 'application/rss+xml',
-        title: 'DiVine - Latest Videos',
+        title: 'Divine - Latest Videos',
         href: feedUrls.latest(),
       },
       ...(userNpub ? [{

@@ -14,6 +14,20 @@ vi.mock('./HubSpotSignup', () => ({
 }));
 
 describe('AppFooter', () => {
+  it('describes the signup as a newsletter without promising an invite code', () => {
+    render(
+      <MemoryRouter>
+        <AppFooter />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText('Divine is live in the App Store and on Google Play. Want our news in your inbox? Sign up here.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/invite code/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId('hubspot-signup')).toBeInTheDocument();
+  });
+
   it('renders a DMCA & Copyright link to /dmca', () => {
     render(
       <MemoryRouter>
@@ -22,6 +36,32 @@ describe('AppFooter', () => {
     );
 
     expect(screen.getByRole('link', { name: 'DMCA & Copyright' })).toHaveAttribute('href', '/dmca');
+  });
+
+  it('renders an account portability docs link', () => {
+    render(
+      <MemoryRouter>
+        <AppFooter />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Account Portability' })).toHaveAttribute(
+      'href',
+      '/exit',
+    );
+  });
+
+  it('renders a delete account docs link', () => {
+    render(
+      <MemoryRouter>
+        <AppFooter />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Delete Account' })).toHaveAttribute(
+      'href',
+      '/delete-account',
+    );
   });
 
   it('renders a merch store link', () => {
@@ -36,4 +76,5 @@ describe('AppFooter', () => {
       '/merch',
     );
   });
+
 });

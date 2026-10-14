@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowUp, LinkSimple as Link2, X } from '@phosphor-icons/react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useReducer, useState } from 'react';
+import { ArrowLeft, ArrowUp, LinkSimple as Link2 } from '@phosphor-icons/react';
+import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,55 +8,43 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
+import { useProtectedMinorStatus } from '@/hooks/useProtectedMinorStatus';
 import {
   useDmCapability,
   useDmConversation,
   useDmSend,
-  useParsedDmShare,
 } from '@/hooks/useDirectMessages';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import {
   DIVINE_SUPPORT_PUBKEY,
   decodeConversationId,
-  getDmConversationPath,
+  encodeConversationId,
   type DmMessage,
 } from '@/lib/dm';
-import { genUserName } from '@/lib/genUserName';
+import {
+  getSupportDmConversationPath,
+  isSupportOnlyDmPeerSet,
+} from '@/lib/dmAccessPolicy';
+import { createDmClientId } from '@/lib/dmOutbox';
+import { isThreadAllowedForProtectedMinor } from '@/lib/dmInboundFilter';
+import { officialAccountsService } from '@/lib/officialAccounts';
+import { isMinorDmRestricted } from '@/lib/protectedMinor';
+import { getConversationSubtitle } from '@/lib/conversationDisplay';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage } from '@/lib/imageUtils';
-import { getDivineNip05Info } from '@/lib/nip05Utils';
 import { formatRelativeTime } from '@/lib/notificationTransform';
 import { cn } from '@/lib/utils';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+const SUPPORT_CONVERSATION_ID = encodeConversationId([DIVINE_SUPPORT_PUBKEY]);
 
 function getDisplayName(pubkey: string, metadata?: { display_name?: string; name?: string }, t?: TFn) {
   if (pubkey === DIVINE_SUPPORT_PUBKEY) {
     return metadata?.display_name || metadata?.name || (t ? t('conversationPage.divineSupport') : 'Divine Support');
   }
 
-  return metadata?.display_name || metadata?.name || genUserName(pubkey);
-}
-
-function getConversationSubtitle(
-  pubkey: string,
-  metadata?: { name?: string; nip05?: string },
-  t?: TFn,
-) {
-  if (pubkey === DIVINE_SUPPORT_PUBKEY) {
-    return t ? t('conversationPage.privateSupportChat') : 'Private support chat';
-  }
-
-  const nip05 = metadata?.nip05?.trim();
-  if (nip05) {
-    const divineInfo = getDivineNip05Info(nip05);
-    if (divineInfo) {
-      return divineInfo.displayName;
-    }
-
-    return nip05.startsWith('_@') ? `@${nip05.slice(2)}` : `@${nip05}`;
-  }
-
-  return `@${metadata?.name || genUserName(pubkey)}`;
+  return resolveDisplayName(metadata, pubkey);
 }
 
 function MessageBubble({
@@ -187,25 +175,58 @@ function ThreadSkeleton() {
 export function ConversationPage() {
   const { t } = useTranslation();
   const navigate = useSubdomainNavigate();
-  const location = useLocation();
   const { conversationId } = useParams<{ conversationId: string }>();
   const { canUseDirectMessages, isCheckingDmCapability } = useDmCapability();
+  const { state: minorState } = useProtectedMinorStatus();
   const peerPubkeys = useMemo(() => decodeConversationId(conversationId || ''), [conversationId]);
   const { data: authorMap = {} } = useBatchedAuthors(peerPubkeys);
   const conversationQuery = useDmConversation(conversationId);
   const sendMessage = useDmSend();
-  const share = useParsedDmShare(location.search);
   const [draft, setDraft] = useState('');
   const messages = conversationQuery.data;
   const latestMessageAt = conversationQuery.latestMessageAt;
   const lastReadAt = conversationQuery.lastReadAt;
   const markConversationRead = conversationQuery.markConversationRead;
+  const [, bumpVerdicts] = useReducer((x: number) => x + 1, 0);
+
+  useEffect(() => officialAccountsService.onVerdictChanged(bumpVerdicts), []);
 
   useEffect(() => {
-    if (latestMessageAt > lastReadAt) {
+    if (!isMinorDmRestricted(minorState)) return;
+    for (const pubkey of peerPubkeys) {
+      void officialAccountsService.isApprovedMinorDmRecipient(pubkey);
+    }
+  }, [minorState, peerPubkeys]);
+
+  const threadAllowedForMinor = isThreadAllowedForProtectedMinor(peerPubkeys, {
+    state: minorState,
+    isApproved: (pubkey) =>
+      officialAccountsService.isApprovedMinorDmRecipientSync(pubkey),
+  });
+  // Both checks are load-bearing. decodeConversationId drops segments that are
+  // not valid pubkeys, so a noncanonical id like `<support>,not-a-pubkey`
+  // decodes to the support peer set and would pass isSupportOnlyDmPeerSet on
+  // its own. The raw compare is what forces those routes to the canonical id.
+  const threadBlocked =
+    conversationId !== SUPPORT_CONVERSATION_ID ||
+    !isSupportOnlyDmPeerSet(peerPubkeys) ||
+    !threadAllowedForMinor;
+
+  useEffect(() => {
+    if (!threadBlocked && latestMessageAt > lastReadAt) {
       markConversationRead();
     }
-  }, [lastReadAt, latestMessageAt, markConversationRead]);
+  }, [lastReadAt, latestMessageAt, markConversationRead, threadBlocked]);
+
+  useEffect(() => {
+    if (threadBlocked) {
+      navigate(getSupportDmConversationPath(), { replace: true });
+    }
+  }, [threadBlocked, navigate]);
+
+  if (threadBlocked) {
+    return null;
+  }
 
   const peerNames = peerPubkeys.map((pubkey) => getDisplayName(pubkey, authorMap[pubkey]?.metadata, t));
   const title = peerNames.length === 1
@@ -215,26 +236,24 @@ export function ConversationPage() {
     ? getConversationSubtitle(peerPubkeys[0], authorMap[peerPubkeys[0]]?.metadata, t)
     : peerNames.join(', ');
 
-  const sharelessPath = conversationId ? getDmConversationPath(peerPubkeys) : '/messages';
-
   const handleSend = async () => {
     const trimmedDraft = draft.trim();
-    if (!peerPubkeys.length || (!trimmedDraft && !share)) {
+    if (!peerPubkeys.length || !trimmedDraft) {
       return;
     }
 
     try {
       await sendMessage.mutateAsync({
+        // Minted here rather than inside the mutation so the send has an
+        // identity before any wrap is built — that is what lets a retry find
+        // the first attempt's rumor and replay it instead of minting a second
+        // message the recipient cannot collapse (#578).
+        clientId: createDmClientId(peerPubkeys),
         participantPubkeys: peerPubkeys,
         content: trimmedDraft,
-        share: share ?? undefined,
       });
 
       setDraft('');
-
-      if (share) {
-        navigate(sharelessPath, { replace: true });
-      }
     } catch {
       // Mutation error state and toast are handled by the hook.
     }
@@ -249,7 +268,6 @@ export function ConversationPage() {
       clientId: message.clientId,
       participantPubkeys: message.peerPubkeys,
       content: message.content,
-      share: message.share,
     });
   };
 
@@ -259,22 +277,6 @@ export function ConversationPage() {
       await handleSend();
     }
   };
-
-  if (!conversationId || !peerPubkeys.length) {
-    return (
-      <div className="min-h-full bg-brand-off-white dark:bg-brand-dark-green">
-        <main className="container py-6">
-          <div className="mx-auto max-w-3xl rounded-[32px] border border-border/80 bg-card/80 px-6 py-12 text-center shadow-sm backdrop-blur-sm">
-            <p className="text-lg font-semibold text-foreground">{t('conversationPage.notFoundTitle')}</p>
-            <p className="mt-2 text-sm text-muted-foreground">{t('conversationPage.notFoundDescription')}</p>
-            <Button className="mt-5 rounded-full" onClick={() => navigate('/messages')}>
-              {t('conversationPage.backToInbox')}
-            </Button>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   // While the bunker NIP-44 healthcheck is in flight, render a neutral
   // skeleton instead of the "unavailable" copy — capability is unknown,
@@ -300,8 +302,8 @@ export function ConversationPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               {t('conversationPage.dmUnavailableDescription')}
             </p>
-            <Button className="mt-5 rounded-full" onClick={() => navigate('/messages')}>
-              {t('conversationPage.backToInbox')}
+            <Button className="mt-5 rounded-full" onClick={() => navigate('/support')}>
+              {t('conversationPage.backToSupport')}
             </Button>
           </div>
         </main>
@@ -319,7 +321,8 @@ export function ConversationPage() {
                 variant="ghost"
                 size="icon"
                 className="rounded-full"
-                onClick={() => navigate('/messages')}
+                aria-label={t('conversationPage.backToSupport')}
+                onClick={() => navigate('/support')}
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
@@ -370,40 +373,19 @@ export function ConversationPage() {
             </div>
 
             <div className="border-t border-border/80 pt-4">
-              {share && (
-                <div className="mb-3 flex items-start justify-between gap-3 rounded-[24px] border border-primary/20 bg-primary/10 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-primary">
-                      {t('conversationPage.readyToShare')}
-                    </p>
-                    <p className="mt-1 truncate text-sm font-medium text-foreground">
-                      {share.title || share.url}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full"
-                    onClick={() => navigate(sharelessPath, { replace: true })}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-
               <div className="flex items-end gap-3">
                 <Textarea
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   onKeyDown={handleComposerKeyDown}
-                  placeholder={share ? t('conversationPage.placeholderShare') : t('conversationPage.placeholderMessage')}
+                  placeholder={t('conversationPage.placeholderMessage')}
                   rows={2}
                   className="resize-none rounded-[24px] border-border/80 bg-background/80 px-4 py-3 text-sm"
                 />
                 <Button
                   className="h-12 w-12 rounded-full"
                   onClick={handleSend}
-                  disabled={!draft.trim() && !share}
+                  disabled={!draft.trim()}
                 >
                   <ArrowUp className="h-4 w-4" />
                 </Button>

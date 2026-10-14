@@ -14,12 +14,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
+import { buildListPath } from '@/lib/eventRouting';
 import { useState } from 'react';
 import { AddToListDialog } from './AddToListDialog';
 
 interface VideoListBadgesProps {
   videoId: string;
+  videoEventId?: string;
   videoPubkey: string;
   compact?: boolean;
   showAddButton?: boolean;
@@ -38,13 +40,13 @@ function ListBadge({
   videoCount: number;
 }) {
   const author = useAuthor(listPubkey);
-  const authorName = author.data?.metadata?.name || genUserName(listPubkey);
+  const authorName = resolveDisplayName(author.data?.metadata, listPubkey);
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Link to={`/list/${listPubkey}/${listId}`}>
+          <Link to={buildListPath(listPubkey, listId)}>
             <Badge 
               variant="secondary" 
               className="hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
@@ -68,12 +70,13 @@ function ListBadge({
 
 export function VideoListBadges({
   videoId,
+  videoEventId,
   videoPubkey,
   compact = false,
   showAddButton = true,
   className = ''
 }: VideoListBadgesProps) {
-  const { data: lists, isLoading } = useVideosInLists(videoId);
+  const { data: lists, isLoading } = useVideosInLists(videoId, videoEventId);
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   if (isLoading) {
@@ -102,6 +105,7 @@ export function VideoListBadges({
         {showAddDialog && (
           <AddToListDialog
             videoId={videoId}
+            videoEventId={videoEventId}
             videoPubkey={videoPubkey}
             open={showAddDialog}
             onClose={() => setShowAddDialog(false)}
@@ -140,7 +144,7 @@ export function VideoListBadges({
           listId={list.id}
           listName={list.name}
           listPubkey={list.pubkey}
-          videoCount={list.videoCoordinates.length}
+          videoCount={list.memberCount}
         />
       ))}
 
@@ -183,6 +187,7 @@ export function VideoListBadges({
       {showAddDialog && (
         <AddToListDialog
           videoId={videoId}
+          videoEventId={videoEventId}
           videoPubkey={videoPubkey}
           open={showAddDialog}
           onClose={() => setShowAddDialog(false)}

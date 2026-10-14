@@ -1,6 +1,7 @@
 import { SmartLink } from '@/components/SmartLink';
 import { useTranslation } from 'react-i18next';
 import { SocialLinks } from '@/components/SocialLinks';
+import { MAILING_LIST_BLURB } from '@/lib/constants/mailingListCopy';
 import { HubSpotSignup } from './HubSpotSignup';
 
 export function AppFooter() {
@@ -15,9 +16,7 @@ export function AppFooter() {
             {/* Left side - Email signup */}
             <div className="flex flex-col gap-2 lg:max-w-md">
               <div className="text-sm font-semibold text-brand-green">Divine Inspiration</div>
-              <p className="text-sm text-brand-off-white mb-2">
-                The Divine beta is currently full. If you'd like to hear our news and be among the first to hear when the Divine app goes live, sign up here.
-              </p>
+              <p className="text-sm text-brand-off-white mb-2">{MAILING_LIST_BLURB}</p>
               <HubSpotSignup />
             </div>
 
@@ -93,6 +92,14 @@ export function AppFooter() {
                 <span>•</span>
                 <SmartLink to="/kids" className="hover:text-brand-off-white transition-colors">
                   {t('menu.kidsPolicy')}
+                </SmartLink>
+                <span>•</span>
+                <SmartLink to="/exit" className="hover:text-brand-off-white transition-colors">
+                  Account Portability
+                </SmartLink>
+                <span>•</span>
+                <SmartLink to="/delete-account" className="hover:text-brand-off-white transition-colors">
+                  Delete Account
                 </SmartLink>
                 <span>•</span>
                 <SmartLink to="/dmca" className="hover:text-brand-off-white transition-colors">

@@ -6,16 +6,51 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { SHORT_VIDEO_KIND } from '@/types/video';
-import { parseVideoListFromEvent, type PlayOrder, type VideoList } from '@/lib/parseVideoListFromEvent';
+import {
+  deduplicateVideoLists,
+  isVideoCoordinate,
+  memberMatchesCoordinate,
+  memberMatchesVideoId,
+  parseVideoListFromEvent,
+  videoListMemberKey,
+  videoListMemberToTag,
+  type PlayOrder,
+  type VideoList,
+  type VideoListMember,
+} from '@/lib/parseVideoListFromEvent';
 import { resolveListPermissions } from '@/lib/listPermissions';
+import { debugLog } from '@/lib/debug';
 
 export type { PlayOrder, VideoList };
 
+function memberFromCoordinate(videoCoordinate: string): VideoListMember {
+  return { type: 'a', value: videoCoordinate };
+}
+
+function getPreferredSourceTagName(sourceTags: string[][] | undefined, supportedNames: string[], fallback: string): string {
+  return sourceTags?.find(tag => supportedNames.includes(tag[0]))?.[0] ?? fallback;
+}
+
 function buildListTags(
-  list: Pick<VideoList, 'id' | 'name' | 'description' | 'image' | 'tags' | 'isCollaborative' | 'allowedCollaborators' | 'thumbnailEventId' | 'playOrder'>,
-  videoCoordinates: string[],
+  list: Pick<VideoList, 'id' | 'name' | 'description' | 'image' | 'tags' | 'isCollaborative' | 'allowedCollaborators' | 'thumbnailEventId' | 'playOrder'> & Partial<Pick<VideoList, 'sourceTags'>>,
+  members: VideoListMember[],
 ): string[][] {
+  const ownedTags = new Set([
+    'd',
+    'title',
+    'description',
+    'image',
+    't',
+    'collaborative',
+    'collaborator',
+    'thumbnail',
+    'thumbnail-event',
+    'playorder',
+    'play-order',
+    'e',
+    'a',
+  ]);
+
   const tags: string[][] = [
     ['d', list.id],
     ['title', list.name],
@@ -45,18 +80,54 @@ function buildListTags(
   }
 
   if (list.thumbnailEventId) {
-    tags.push(['thumbnail-event', list.thumbnailEventId]);
+    tags.push([
+      getPreferredSourceTagName(list.sourceTags, ['thumbnail', 'thumbnail-event'], 'thumbnail'),
+      list.thumbnailEventId,
+    ]);
   }
 
   if (list.playOrder && list.playOrder !== 'chronological') {
-    tags.push(['play-order', list.playOrder]);
+    tags.push([
+      getPreferredSourceTagName(list.sourceTags, ['playorder', 'play-order'], 'playorder'),
+      list.playOrder,
+    ]);
   }
 
-  videoCoordinates.forEach((coord) => {
-    tags.push(['a', coord]);
-  });
+  const preservedSourceTags = (list.sourceTags ?? [])
+    .filter((tag) => tag[0] && !ownedTags.has(tag[0]))
+    .map(tag => [...tag]);
+
+  tags.push(...preservedSourceTags);
+  tags.push(...members.map(videoListMemberToTag));
 
   return tags;
+}
+
+function toVideoListSnapshot(
+  list: Pick<VideoList, 'id' | 'name' | 'description' | 'image' | 'pubkey' | 'tags' | 'isCollaborative' | 'allowedCollaborators' | 'thumbnailEventId' | 'playOrder'>,
+  members: VideoListMember[],
+  sourceTags: string[][],
+): VideoList {
+  return {
+    id: list.id,
+    name: list.name,
+    description: list.description,
+    image: list.image,
+    pubkey: list.pubkey,
+    createdAt: Math.floor(Date.now() / 1000),
+    members,
+    memberCount: members.length,
+    videoCoordinates: members
+      .filter((member): member is Extract<VideoListMember, { type: 'a' }> => member.type === 'a')
+      .map(member => member.value),
+    public: true,
+    tags: list.tags,
+    isCollaborative: list.isCollaborative,
+    allowedCollaborators: list.allowedCollaborators,
+    thumbnailEventId: list.thumbnailEventId,
+    playOrder: list.playOrder || 'chronological',
+    sourceTags,
+  };
 }
 
 async function fetchListByOwner(
@@ -127,18 +198,15 @@ export function useVideoLists(pubkey?: string) {
         filter.authors = [targetPubkey];
       }
 
-      console.log('[useVideoLists] Querying for lists with filter:', filter);
+      debugLog('[useVideoLists] Querying for lists with filter:', filter);
 
       const events = await nostr.query([filter], { signal });
 
-      console.log('[useVideoLists] Found', events.length, 'list events');
+      debugLog('[useVideoLists] Found', events.length, 'list events');
 
-      const lists = events
-        .map(parseVideoListFromEvent)
-        .filter((list): list is VideoList => list !== null)
-        .sort((a, b) => b.createdAt - a.createdAt);
+      const lists = deduplicateVideoLists(events);
 
-      console.log('[useVideoLists] Parsed', lists.length, 'valid lists');
+      debugLog('[useVideoLists] Parsed', lists.length, 'valid lists');
 
       return lists;
     },
@@ -151,11 +219,11 @@ export function useVideoLists(pubkey?: string) {
 /**
  * Hook to fetch videos that are in lists
  */
-export function useVideosInLists(videoId?: string) {
+export function useVideosInLists(videoId?: string, videoEventId?: string) {
   const { nostr } = useNostr();
 
   return useQuery({
-    queryKey: ['videos-in-lists', videoId],
+    queryKey: ['videos-in-lists', videoId, videoEventId],
     queryFn: async (context) => {
       if (!videoId) return [];
 
@@ -164,17 +232,15 @@ export function useVideosInLists(videoId?: string) {
         AbortSignal.timeout(5000)
       ]);
 
-      // Query for lists that contain this video
+      // Relay tag filters require exact addressable coordinates, but this call
+      // only has the video's d tag. Query recent public lists and match locally.
       const events = await nostr.query([{
         kinds: [30005], // Video sets
-        '#a': [`${SHORT_VIDEO_KIND}:*:${videoId}`], // Search for any author with this d-tag
         limit: 100
       }], { signal });
 
-      const lists = events
-        .map(parseVideoListFromEvent)
-        .filter((list): list is VideoList => list !== null)
-        .sort((a, b) => b.createdAt - a.createdAt);
+      const lists = deduplicateVideoLists(events)
+        .filter((list) => list.members.some((member) => memberMatchesVideoId(member, videoId, videoEventId)));
 
       return lists;
     },
@@ -203,13 +269,17 @@ export function useCreateVideoList() {
       isCollaborative,
       allowedCollaborators,
       thumbnailEventId,
-      playOrder
+      playOrder,
+      members,
+      sourceTags,
     }: {
       id: string;
       name: string;
       description?: string;
       image?: string;
       videoCoordinates: string[];
+      members?: VideoListMember[];
+      sourceTags?: string[][];
       tags?: string[];
       isCollaborative?: boolean;
       allowedCollaborators?: string[];
@@ -218,50 +288,21 @@ export function useCreateVideoList() {
     }) => {
       if (!user) throw new Error('Must be logged in to create lists');
 
-      const tags: string[][] = [
-        ['d', id],
-        ['title', name]
-      ];
-
-      if (description) {
-        tags.push(['description', description]);
-      }
-
-      if (image) {
-        tags.push(['image', image]);
-      }
-
-      // Add categorization tags
-      if (listTags && listTags.length > 0) {
-        listTags.forEach(tag => {
-          tags.push(['t', tag]);
-        });
-      }
-
-      // Add collaborative settings
-      if (isCollaborative) {
-        tags.push(['collaborative', 'true']);
-        if (allowedCollaborators && allowedCollaborators.length > 0) {
-          allowedCollaborators.forEach(pubkey => {
-            tags.push(['collaborator', pubkey]);
-          });
-        }
-      }
-
-      // Add featured thumbnail
-      if (thumbnailEventId) {
-        tags.push(['thumbnail-event', thumbnailEventId]);
-      }
-
-      // Add play order
-      if (playOrder && playOrder !== 'chronological') {
-        tags.push(['play-order', playOrder]);
-      }
-
-      // Add video coordinates as 'a' tags
-      videoCoordinates.forEach(coord => {
-        tags.push(['a', coord]);
-      });
+      const listMembers = members ?? videoCoordinates
+        .filter(isVideoCoordinate)
+        .map(memberFromCoordinate);
+      const tags = buildListTags({
+        id,
+        name,
+        description,
+        image,
+        tags: listTags,
+        isCollaborative,
+        allowedCollaborators,
+        thumbnailEventId,
+        playOrder,
+        sourceTags,
+      }, listMembers);
 
       await publishEvent({
         kind: 30005,
@@ -270,21 +311,18 @@ export function useCreateVideoList() {
       });
 
       // Return the created list data for optimistic update
-      return {
+      return toVideoListSnapshot({
         id,
         name,
         description,
         image,
         pubkey: user.pubkey,
-        createdAt: Math.floor(Date.now() / 1000),
-        videoCoordinates,
-        public: true,
         tags: listTags,
         isCollaborative,
         allowedCollaborators,
         thumbnailEventId,
-        playOrder: playOrder || 'chronological'
-      } as VideoList;
+        playOrder,
+      }, listMembers, tags);
     },
     onSuccess: (newList) => {
       // Optimistically add the new list to the cache immediately
@@ -318,11 +356,13 @@ export function useAddVideoToList() {
     mutationFn: async ({
       listId,
       ownerPubkey,
-      videoCoordinate
+      videoCoordinate,
+      videoEventId,
     }: {
       listId: string;
       ownerPubkey: string;
       videoCoordinate: string;
+      videoEventId?: string;
     }) => {
       if (!user) throw new Error('Must be logged in to modify lists');
 
@@ -337,12 +377,16 @@ export function useAddVideoToList() {
         throw new Error('You do not have permission to edit this list');
       }
 
-      // Check if video already in list
-      if (currentList.videoCoordinates.includes(videoCoordinate)) {
+      const incomingMember = memberFromCoordinate(videoCoordinate);
+      const incomingVideoId = videoCoordinate.split(':').at(-1) ?? '';
+
+      if (currentList.members.some((member) => (
+        memberMatchesCoordinate(member, videoCoordinate) || memberMatchesVideoId(member, incomingVideoId, videoEventId)
+      ))) {
         return; // Already in list
       }
 
-      const tags = buildListTags(currentList, [...currentList.videoCoordinates, videoCoordinate]);
+      const tags = buildListTags(currentList, [...currentList.members, incomingMember]);
 
       await publishEvent({
         kind: 30005,
@@ -372,11 +416,11 @@ export function useRemoveVideoFromList() {
     mutationFn: async ({
       listId,
       ownerPubkey,
-      videoCoordinate
+      videoMember,
     }: {
       listId: string;
       ownerPubkey: string;
-      videoCoordinate: string;
+      videoMember: VideoListMember;
     }) => {
       if (!user) throw new Error('Must be logged in to modify lists');
 
@@ -391,12 +435,10 @@ export function useRemoveVideoFromList() {
         throw new Error('You do not have permission to edit this list');
       }
 
-      // Filter out the video to remove
-      const updatedCoordinates = currentList.videoCoordinates.filter(
-        coord => coord !== videoCoordinate
-      );
+      const updatedMembers = currentList.members
+        .filter(member => videoListMemberKey(member) !== videoListMemberKey(videoMember));
 
-      const tags = buildListTags(currentList, updatedCoordinates);
+      const tags = buildListTags(currentList, updatedMembers);
 
       await publishEvent({
         kind: 30005,
@@ -435,13 +477,12 @@ export function useTrendingVideoLists() {
         limit: 50
       }], { signal });
 
-      const lists = events
-        .map(parseVideoListFromEvent)
-        .filter((list): list is VideoList => list !== null && list.videoCoordinates.length > 0)
+      const lists = deduplicateVideoLists(events)
+        .filter((list) => list.memberCount > 0)
         .sort((a, b) => {
           // Sort by number of videos and recency
-          const scoreA = a.videoCoordinates.length * 10 + (a.createdAt / 1000);
-          const scoreB = b.videoCoordinates.length * 10 + (b.createdAt / 1000);
+          const scoreA = a.memberCount * 10 + (a.createdAt / 1000);
+          const scoreB = b.memberCount * 10 + (b.createdAt / 1000);
           return scoreB - scoreA;
         })
         .slice(0, 20); // Top 20 lists
@@ -468,13 +509,14 @@ export function useDeleteVideoList() {
         throw new Error('Only the list owner can delete this list');
       }
 
-      // Publish a kind 5 deletion event targeting the list
-      // The 'a' tag references the addressable event to delete
+      // Publish a kind 5 deletion event targeting the list.
+      // The 'a' tag references the addressable event, and 'k' names its kind.
       await publishEvent({
         kind: 5, // NIP-09 deletion event
         content: 'List deleted by owner',
         tags: [
           ['a', `30005:${ownerPubkey}:${listId}`],
+          ['k', '30005'],
         ]
       });
 
@@ -521,9 +563,8 @@ export function useFollowedUsersLists(followedPubkeys: string[] | undefined) {
         limit: 100
       }], { signal });
 
-      const lists = events
-        .map(parseVideoListFromEvent)
-        .filter((list): list is VideoList => list !== null && list.videoCoordinates.length > 0)
+      const lists = deduplicateVideoLists(events)
+        .filter((list) => list.memberCount > 0)
         .sort((a, b) => b.createdAt - a.createdAt);
 
       return lists;

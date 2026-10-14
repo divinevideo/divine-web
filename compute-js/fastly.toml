@@ -25,6 +25,15 @@ service_id = "WfOrPTFYmwwxRvqrfralLA"
       file = "./test-data/secrets.json"
       format = "json"
 
+  [local_server.backends]
+    [local_server.backends.funnelcake]
+      url = "https://relay.divine.video"
+      override_host = "relay.divine.video"
+
+    [local_server.backends.funnelcake_staging]
+      url = "https://relay.staging.divine.video"
+      override_host = "relay.staging.divine.video"
+
 [scripts]
   build = "npm run build"
 

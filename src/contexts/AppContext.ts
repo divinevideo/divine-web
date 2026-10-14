@@ -9,6 +9,10 @@ export interface AppConfig {
   relayUrl: string;
   /** Array of relay URLs to query (overrides relayUrl if provided) */
   relayUrls?: string[];
+  /** User-added relay URLs not in the preset list. */
+  customRelayUrls?: string[];
+  /** URLs from PRESET_RELAYS the user has disabled. */
+  disabledPresetUrls?: string[];
 }
 
 export interface AppContextType {

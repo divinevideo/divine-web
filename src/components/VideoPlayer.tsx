@@ -61,6 +61,7 @@ interface VideoPlayerProps {
   // View event tracking
   videoData?: ParsedVideoData;
   trafficSource?: ViewTrafficSource;
+  analyticsPosition?: number;
   // Object-fit mode for the video element (default: 'contain')
   objectFit?: 'contain' | 'cover';
 }
@@ -108,6 +109,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       subtitlesVisible,
       videoData,
       trafficSource,
+      analyticsPosition = 0,
       objectFit = 'contain',
     },
     ref
@@ -133,6 +135,12 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     // Adult verification hook
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
+    // Keep the latest auth-header generator in a ref. getAuthHeader is keyed on the
+    // signer, so a late-resolving signer (e.g. a browser extension that injects after
+    // load) hands us a new reference. Reading it through a ref keeps it out of the load
+    // effect's dependency array, so resolving auth never aborts an in-flight video load.
+    const getAuthHeaderRef = useRef(getAuthHeader);
+    getAuthHeaderRef.current = getAuthHeader;
     const isKnownAgeRestricted = videoData?.ageRestricted === true || discoveredAgeRestricted;
     const { mediaUrl: authenticatedPosterUrl } = useAuthenticatedMediaUrl(poster, {
       enabled: !!poster && !requiresAuth && !authCheckPending,
@@ -144,21 +152,36 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     // Mobile-specific state
     const [touchState, setTouchState] = useState<TouchState | null>(null);
     const [lastTapTime, setLastTapTime] = useState(0);
-    const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+    const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const resolvedPlaybackId = playbackId ?? videoId;
-    const { activeVideoId, registerVideo, unregisterVideo, updateVideoVisibility, globalMuted } = useVideoPlayback();
+    const {
+      activeVideoId,
+      globalMuted,
+      registerVideo,
+      setUserPaused,
+      unregisterVideo,
+      updateVideoVisibility,
+      userPausedVideoId,
+    } = useVideoPlayback();
     const isActive = activeVideoId === resolvedPlaybackId;
+    const isUserPaused = userPausedVideoId === resolvedPlaybackId;
+    const shouldBePlayingRef = useRef(isActive && !isUserPaused && !hasError);
+    shouldBePlayingRef.current = isActive && !isUserPaused && !hasError;
 
     // Store context functions in refs to avoid unstable dependencies in setRefs callback
     // This prevents infinite loops when context functions change reference
     const registerVideoRef = useRef(registerVideo);
     const unregisterVideoRef = useRef(unregisterVideo);
+    const updateVideoVisibilityRef = useRef(updateVideoVisibility);
+    const resolvedPlaybackIdRef = useRef(resolvedPlaybackId);
     const globalMutedRef = useRef(globalMuted);
 
     // Keep refs updated with latest values
     registerVideoRef.current = registerVideo;
     unregisterVideoRef.current = unregisterVideo;
+    updateVideoVisibilityRef.current = updateVideoVisibility;
+    resolvedPlaybackIdRef.current = resolvedPlaybackId;
     globalMutedRef.current = globalMuted;
 
     // Get responsive layout class
@@ -197,6 +220,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       duration: videoDuration,
       source: trafficSource,
       enabled: !!videoData,
+      visibilityRatio: entry?.intersectionRatio ?? 0,
+      position: analyticsPosition,
     });
 
     // Combine refs - minimize dependencies for stability
@@ -260,11 +285,11 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     // Update playing state based on active status and control video playback
     useEffect(() => {
       verboseLog(`[VideoPlayer ${videoId}] Active status changed: ${isActive}`);
-      setIsPlaying(isActive);
+      setIsPlaying(isActive && !isUserPaused);
 
       // Actually control the video element
       if (videoRef.current) {
-        if (isActive && !isLoading && !hasError) {
+        if (isActive && !isUserPaused && !hasError) {
           verboseLog(`[VideoPlayer ${videoId}] Starting playback`);
           // Ensure video is not already playing before calling play()
           if (videoRef.current.paused) {
@@ -283,13 +308,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           videoRef.current.currentTime = 0;
         }
       }
-    }, [isActive, videoId, isLoading, hasError]);
+    }, [isActive, isUserPaused, videoId, hasError]);
 
     // Sync video muted state with global muted state
     useEffect(() => {
       if (videoRef.current) {
         const video = videoRef.current;
-        const shouldBePlayingCheck = isActive && !isLoading && !hasError;
+        const shouldBePlayingCheck = isActive && !isUserPaused && !hasError;
 
         verboseLog(`[VideoPlayer ${videoId}] Syncing muted state to: ${globalMuted}, isActive: ${isActive}, shouldBePlaying: ${shouldBePlayingCheck}`);
 
@@ -305,7 +330,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           requestAnimationFrame(() => {
             // Then use another one to ensure we're after any browser-triggered events
             requestAnimationFrame(() => {
-              if (video.paused) {
+              if (video.paused && shouldBePlayingRef.current) {
                 verboseLog(`[VideoPlayer ${videoId}] Video paused after mute change, resuming...`);
                 video.play().catch(error => {
                   verboseLog(`[VideoPlayer ${videoId}] Failed to resume after mute change:`, error);
@@ -325,7 +350,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           }, 100);
         }
       }
-    }, [globalMuted, videoId, isActive, isLoading, hasError]);
+    }, [globalMuted, videoId, isActive, isUserPaused, hasError]);
 
     // Handle play/pause
     const togglePlay = useCallback(() => {
@@ -337,9 +362,11 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
       if (isPlaying) {
         verboseLog(`[VideoPlayer ${videoId}] Pausing video`);
+        setUserPaused(resolvedPlaybackId, true);
         videoRef.current.pause();
       } else {
         verboseLog(`[VideoPlayer ${videoId}] Attempting to play video`);
+        setUserPaused(resolvedPlaybackId, false);
         videoRef.current.play().catch((error) => {
           debugError(`[VideoPlayer ${videoId}] Play failed:`, error);
           if (error.name === 'NotSupportedError') {
@@ -349,7 +376,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         });
       }
       setIsPlaying(!isPlaying);
-    }, [videoId, isPlaying]);
+    }, [videoId, isPlaying, resolvedPlaybackId, setUserPaused]);
 
 
 
@@ -372,8 +399,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       const currentTime = Date.now();
 
       // Clear any existing long press timer
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
       }
 
       // Set up touch state
@@ -389,9 +416,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       const timer = setTimeout(() => {
         onLongPress?.();
       }, 500);
-      setLongPressTimer(timer);
+      longPressTimerRef.current = timer;
 
-    }, [isMobile, longPressTimer, onLongPress]);
+    }, [isMobile, onLongPress]);
 
     const handleTouchMove = useCallback((e: React.TouchEvent) => {
       if (!isMobile || !touchState) return;
@@ -408,9 +435,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       const deltaY = touch.clientY - touchState.startY;
 
       // Clear long press timer on movement
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        setLongPressTimer(null);
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
       }
 
       // Handle pinch gesture
@@ -439,7 +466,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           onBrightnessGesture?.({ direction, delta: Math.abs(deltaY) });
         }
       }
-    }, [isMobile, touchState, longPressTimer, onPinch, onVolumeGesture, onBrightnessGesture]);
+    }, [isMobile, touchState, onPinch, onVolumeGesture, onBrightnessGesture]);
 
     const handleTouchEnd = useCallback((e: React.TouchEvent) => {
       if (!isMobile || !touchState) return;
@@ -449,18 +476,18 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       const isButton = target.closest('button');
       if (isButton) {
         // Clear any state and timers, but don't process any gestures
-        if (longPressTimer) {
-          clearTimeout(longPressTimer);
-          setLongPressTimer(null);
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
         }
         setTouchState(null);
         return; // Don't handle tap/swipe gestures if touching a button
       }
 
       // Clear long press timer
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        setLongPressTimer(null);
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
       }
 
       const currentTime = Date.now();
@@ -492,7 +519,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       }
 
       setTouchState(null);
-    }, [isMobile, touchState, longPressTimer, lastTapTime, togglePlay, onDoubleTap, onSwipeLeft, onSwipeRight]);
+    }, [isMobile, touchState, lastTapTime, togglePlay, onDoubleTap, onSwipeLeft, onSwipeRight]);
 
     // Track load timing
     const loadStartTime = useRef<number | null>(null);
@@ -555,6 +582,15 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       setIsLoading(false);
       setHasLoadedOnce(true);
       setAuthDeniedAfterVerification(false);
+
+      if (isActive && !isUserPaused && !hasError && videoRef.current?.paused) {
+        videoRef.current.play().catch((error) => {
+          debugError(`[VideoPlayer ${videoId}] Failed to resume after load:`, error);
+          if (error.name === 'NotSupportedError') {
+            handleError();
+          }
+        });
+      }
 
       // Emit first video load metric (only once)
       if (loadDuration > 0 && typeof window !== 'undefined') {
@@ -751,30 +787,43 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         hlsRef.current = null;
       }
 
-      // Preflight auth check for HLS URL
-      const checkAuth = async () => {
-        const urlToCheck = hlsUrl || allUrls[currentUrlIndex];
-        if (urlToCheck && !isAdultVerified) {
-          const authResult = await checkMediaAuth(urlToCheck);
-          setAuthCheckPending(false);
-          if (authResult && !authResult.authorized && (authResult.status === 401 || authResult.status === 403)) {
-            verboseLog(`[VideoPlayer ${videoId}] Preflight check: auth required (${authResult.status})`);
-            setRequiresAuth(true);
-            setIsLoading(false);
-            return false;
-          }
-        } else {
-          // Already verified or no URL to check
-          setAuthCheckPending(false);
+      // Playback must never wait on the auth probe. The previous code awaited a HEAD
+      // request to checkMediaAuth before setting video.src, which delayed (and on a
+      // slow probe, effectively blocked) the first frame for every non-verified viewer.
+      const urlToCheck = hlsUrl || allUrls[currentUrlIndex];
+
+      const handleProbeResult = (authResult: Awaited<ReturnType<typeof checkMediaAuth>> | undefined) => {
+        if (abortController.signal.aborted) return;
+        setAuthCheckPending(false);
+        if (authResult && !authResult.authorized && (authResult.status === 401 || authResult.status === 403)) {
+          verboseLog(`[VideoPlayer ${videoId}] Auth required (${authResult.status})`);
+          setRequiresAuth(true);
+          setIsLoading(false);
         }
-        return true;
       };
 
-      // Run preflight check then load video
-      checkAuth().then((authorized) => {
-        if (!authorized) return;
+      if (isKnownAgeRestricted && !isAdultVerified && urlToCheck) {
+        // Known age-restricted media keeps the blocking gate: show the age check
+        // before ever requesting the protected blob.
+        checkMediaAuth(urlToCheck).then((authResult) => {
+          if (abortController.signal.aborted) return;
+          handleProbeResult(authResult);
+          if (!(authResult && !authResult.authorized && (authResult.status === 401 || authResult.status === 403))) {
+            loadVideoSource();
+          }
+        });
+      } else {
+        // Fast path: start playback immediately. For unmarked media we still probe in
+        // the background — if it's actually protected, the probe (or the element's own
+        // error handler) flips requiresAuth and swaps in the age gate. Public media just
+        // plays without waiting on anything.
         loadVideoSource();
-      });
+        if (urlToCheck && !isAdultVerified) {
+          checkMediaAuth(urlToCheck).then(handleProbeResult);
+        } else {
+          setAuthCheckPending(false);
+        }
+      }
 
       function loadVideoSource() {
         if (!video) return; // Guard for TypeScript - video was checked before calling
@@ -802,7 +851,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         // rejects any malformed auth header with 401 even when the blob is public.
         if (isAdultVerified && isKnownAgeRestricted) {
           verboseLog(`[VideoPlayer ${videoId}] Using NIP-98 auth loader for each HLS request`);
-          hlsConfig.loader = createAuthLoader(getAuthHeader);
+          hlsConfig.loader = createAuthLoader(getAuthHeaderRef.current);
         }
 
         const hls = new Hls(hlsConfig);
@@ -874,7 +923,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
               try {
                 // NIP-98 (not BUD-01): Blossom's viewer auth path only accepts
                 // BUD-01 list events, rejecting get events with an action mismatch.
-                const authHeader = await getAuthHeader(currentUrl, 'GET');
+                const authHeader = await getAuthHeaderRef.current(currentUrl, 'GET');
                 // Check if request was aborted while getting auth header
                 if (abortController.signal.aborted) {
                   verboseLog(`[VideoPlayer ${videoId}] Fetch aborted before starting`);
@@ -952,13 +1001,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       };
 
-    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, getAuthHeader, isKnownAgeRestricted]); // React to HLS URL, fallback, and auth changes
+    }, [hlsUrl, currentUrlIndex, allUrls, videoId, requiresAuth, isAdultVerified, authRetryCount, isKnownAgeRestricted]); // React to HLS URL, fallback, and auth changes (getAuthHeader is read via ref to avoid restarting loads on signer churn)
 
     // Cleanup on unmount
     useEffect(() => {
-      verboseLog(`[VideoPlayer ${videoId}] Component mounting`);
+      verboseLog(`[VideoPlayer ${resolvedPlaybackIdRef.current}] Component mounting`);
       return () => {
-        verboseLog(`[VideoPlayer ${videoId}] Component unmounting`);
+        verboseLog(`[VideoPlayer ${resolvedPlaybackIdRef.current}] Component unmounting`);
 
         // Ensure video is paused before unmounting
         if (videoRef.current) {
@@ -967,20 +1016,20 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
 
         // Clear visibility and unregister
-        updateVideoVisibility(resolvedPlaybackId, 0);
-        unregisterVideo(resolvedPlaybackId);
+        updateVideoVisibilityRef.current(resolvedPlaybackIdRef.current, 0);
+        unregisterVideoRef.current(resolvedPlaybackIdRef.current);
 
         // Clean up timers
-        if (longPressTimer) clearTimeout(longPressTimer);
+        if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
 
         // Revoke blob URL to prevent memory leaks
         if (blobUrlRef.current) {
-          verboseLog(`[VideoPlayer ${videoId}] Revoking blob URL on unmount`);
+          verboseLog(`[VideoPlayer ${resolvedPlaybackIdRef.current}] Revoking blob URL on unmount`);
           URL.revokeObjectURL(blobUrlRef.current);
           blobUrlRef.current = null;
         }
       };
-    }, [resolvedPlaybackId, videoId, unregisterVideo, updateVideoVisibility, longPressTimer]);
+    }, []);
 
     // Handle GIF format (use img tag)
     const currentUrl = allUrls[currentUrlIndex] || src;

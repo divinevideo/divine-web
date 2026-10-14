@@ -20,14 +20,13 @@ import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideoReactions } from '@/hooks/useVideoReactions';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { useMuteItem } from '@/hooks/useModeration';
-import { useDeleteVideo, useCanDeleteVideo } from '@/hooks/useDeleteVideo';
-import { useDmCapability } from '@/hooks/useDirectMessages';
+import { useDeleteVideo } from '@/hooks/useDeleteVideo';
+import { useIsOwnVideo } from '@/hooks/useIsOwnVideo';
 import { useToast } from '@/hooks/useToast';
-import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
 import { formatDistanceToNow } from 'date-fns';
-import { formatClassicVineViewBreakdown, formatCount, formatViewCount } from '@/lib/formatUtils';
+import { formatClassicVineViewBreakdown, formatCount, formatLoopCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { useBadges } from '@/hooks/useBadges';
 import { InlineBadges } from '@/components/InlineBadges';
@@ -40,8 +39,7 @@ import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import { useSubtitles } from '@/hooks/useSubtitles';
 import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRow';
 import type { ParsedVideoData } from '@/types/video';
-import { buildDmSharePayloadFromVideo, buildDmShareQueryString } from '@/lib/dm';
-import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 
 interface FullscreenVideoItemProps {
   video: ParsedVideoData;
@@ -109,21 +107,22 @@ export function FullscreenVideoItem({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement>(null);
-  const { globalMuted, setGlobalMuted, setActiveVideo } = useVideoPlayback();
+  const videoElementRef = useRef<HTMLVideoElement>(null);
+  const { globalMuted, setGlobalMuted, setActiveVideo, setUserPaused } = useVideoPlayback();
   const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
   // Subtitles default to ON when available, independent of mute state
   const [subtitlesVisible, setSubtitlesVisible] = useState(true);
   const showSubtitles = subtitlesVisible && hasSubtitles;
 
   const { toast } = useToast();
-  const navigate = useSubdomainNavigate();
-  const { canUseDirectMessages } = useDmCapability();
   const muteUser = useMuteItem();
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
-  const canDelete = useCanDeleteVideo(video);
+  const isOwnVideo = useIsOwnVideo(video);
   const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
-  const { data: lists } = useVideosInLists(video.vineId ?? undefined);
-  const classicViewBreakdown = formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0);
+  const { data: lists } = useVideosInLists(video.vineId ?? undefined, video.id);
+  const playbackCountLabel = video.isVineMigrated
+    ? formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0)
+    : formatLoopCount(viewCount);
 
   // Get author data
   const authorData = useAuthor(video.pubkey, {
@@ -143,7 +142,7 @@ export function FullscreenVideoItem({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
-  const profileUrl = buildProfileLinkPath({
+  const profileUrl = useValidatedProfileLinkPath({
     pubkey: video.pubkey,
     nip05: rawMetadata?.nip05,
   });
@@ -176,16 +175,26 @@ export function FullscreenVideoItem({
 
   // Handle tap on video area to toggle play/pause
   const handleOverlayClick = useCallback(() => {
-    // Find the video element and toggle play
-    const videoEl = document.querySelector(`video`) as HTMLVideoElement;
+    // Toggle this item's own video element. The fullscreen feed mounts every
+    // item, so multiple <video> elements are in the document at once;
+    // document.querySelector('video') would grab the first one, not the one the
+    // user tapped. Use the ref VideoPlayer forwards to its <video>.
+    const videoEl = videoElementRef.current;
     if (videoEl) {
+      // Record the pause in the shared playback model so the active-status and
+      // mute-sync effects honor it. Without this, a mute toggle (or any effect
+      // re-run) resumes a video the user paused, since this overlay bypasses
+      // VideoPlayer.togglePlay. See divinevideo/divine-web#680.
+      const pausedVideoId = playbackId ?? video.id;
       if (videoEl.paused) {
+        setUserPaused(pausedVideoId, false);
         videoEl.play().catch(() => { /* handled by VideoPlayer */ });
       } else {
+        setUserPaused(pausedVideoId, true);
         videoEl.pause();
       }
     }
-  }, []);
+  }, [playbackId, video.id, setUserPaused]);
 
   // Handle double-tap to like
   const handleDoubleTap = useCallback(() => {
@@ -244,6 +253,7 @@ export function FullscreenVideoItem({
       <div className="absolute inset-0 z-0 flex items-center justify-center">
         {!videoError ? (
           <VideoPlayer
+            ref={videoElementRef}
             videoId={video.id}
             playbackId={playbackId}
             src={video.videoUrl}
@@ -361,6 +371,7 @@ export function FullscreenVideoItem({
               {(video.title || video.content) && (
                 <div className="text-white text-sm drop-shadow-lg line-clamp-2 mb-2 pointer-events-auto">
                   <NoteContent
+                    linkifyBareDomains
                     event={{
                       id: video.id,
                       pubkey: video.pubkey,
@@ -395,10 +406,10 @@ export function FullscreenVideoItem({
               )}
 
               {/* View count */}
-              {viewCount > 0 && (
+              {viewCount > 0 && playbackCountLabel && (
                 <div className="flex items-center gap-1 text-sm text-white/80 drop-shadow-lg mt-1">
                   <Eye className="h-3 w-3" />
-                  <span>{classicViewBreakdown || formatViewCount(viewCount)}</span>
+                  <span>{playbackCountLabel}</span>
                 </div>
               )}
             </div>
@@ -500,7 +511,7 @@ export function FullscreenVideoItem({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-black/90 border-white/20 text-white">
-                  {canDelete && (
+                  {isOwnVideo && (
                     <>
                       <DropdownMenuItem
                         onClick={() => setShowDeleteDialog(true)}
@@ -512,38 +523,33 @@ export function FullscreenVideoItem({
                       <DropdownMenuSeparator className="bg-white/20" />
                     </>
                   )}
-                  <DropdownMenuItem
-                    onClick={() => setShowReportDialog(true)}
-                    className="focus:bg-white/10"
-                  >
-                    <Flag className="h-4 w-4 mr-2" />
-                    {t('fullscreenVideoItem.reportVideo')}
-                  </DropdownMenuItem>
-                  {canUseDirectMessages && (
-                    <DropdownMenuItem
-                      onClick={() => navigate(`/messages?${buildDmShareQueryString(buildDmSharePayloadFromVideo(video))}`)}
-                      className="focus:bg-white/10"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      {t('fullscreenVideoItem.sendViaMessage')}
-                    </DropdownMenuItem>
+                  {!isOwnVideo && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => setShowReportDialog(true)}
+                        className="focus:bg-white/10"
+                      >
+                        <Flag className="h-4 w-4 mr-2" />
+                        {t('fullscreenVideoItem.reportVideo')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setShowReportUserDialog(true)}
+                        className="focus:bg-white/10"
+                      >
+                        <Flag className="h-4 w-4 mr-2" />
+                        {t('fullscreenVideoItem.reportUser')}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-white/20" />
+                      <DropdownMenuItem
+                        onClick={handleMuteUser}
+                        className="text-red-400 focus:text-red-400 focus:bg-red-500/20"
+                      >
+                        <UserX className="h-4 w-4 mr-2" />
+                        {t('fullscreenVideoItem.muteUser', { name: displayName })}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-white/20" />
+                    </>
                   )}
-                  <DropdownMenuItem
-                    onClick={() => setShowReportUserDialog(true)}
-                    className="focus:bg-white/10"
-                  >
-                    <Flag className="h-4 w-4 mr-2" />
-                    {t('fullscreenVideoItem.reportUser')}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-white/20" />
-                  <DropdownMenuItem
-                    onClick={handleMuteUser}
-                    className="text-red-400 focus:text-red-400 focus:bg-red-500/20"
-                  >
-                    <UserX className="h-4 w-4 mr-2" />
-                    {t('fullscreenVideoItem.muteUser', { name: displayName })}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-white/20" />
                   <DropdownMenuItem
                     onClick={() => setShowViewSourceDialog(true)}
                     className="focus:bg-white/10"
@@ -577,6 +583,7 @@ export function FullscreenVideoItem({
       {video.vineId && showAddToListDialog && (
         <AddToListDialog
           videoId={video.vineId}
+          videoEventId={video.id}
           videoPubkey={video.pubkey}
           open={showAddToListDialog}
           onClose={() => setShowAddToListDialog(false)}

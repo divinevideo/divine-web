@@ -27,6 +27,7 @@ const CLIENT_ID = 'divine-web/1.0';
 
 interface PublishViewEventParams {
   video: ParsedVideoData;
+  /** Elapsed playback seconds in this view event, not positions within the video. */
   startSeconds: number;
   endSeconds: number;
   source?: ViewTrafficSource;
@@ -55,15 +56,8 @@ export function useViewEventPublisher(): UseViewEventPublisherResult {
     endSeconds,
     source = 'unknown',
   }: PublishViewEventParams): Promise<boolean> => {
-    // Skip if no meaningful watch time
-    if (endSeconds <= startSeconds) {
-      debugLog('[ViewEventPublisher] Skipping: no watch time', { startSeconds, endSeconds });
-      return false;
-    }
-
-    // Skip very short views (less than 1 second)
-    if (endSeconds - startSeconds < 1) {
-      debugLog('[ViewEventPublisher] Skipping: less than 1 second watched');
+    if (endSeconds < startSeconds) {
+      debugLog('[ViewEventPublisher] Skipping: invalid watch range', { startSeconds, endSeconds });
       return false;
     }
 

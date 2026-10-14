@@ -11,6 +11,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { WarningCircle as AlertCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+
+type DeleteListKind = 'video' | 'people';
 
 interface DeleteListDialogProps {
   open: boolean;
@@ -18,6 +21,7 @@ interface DeleteListDialogProps {
   onConfirm: () => void;
   listName: string;
   isDeleting: boolean;
+  listKind?: DeleteListKind;
 }
 
 export function DeleteListDialog({
@@ -26,12 +30,16 @@ export function DeleteListDialog({
   onConfirm,
   listName,
   isDeleting,
+  listKind = 'video',
 }: DeleteListDialogProps) {
+  const { t } = useTranslation();
   const handleClose = () => {
     if (!isDeleting) {
       onClose();
     }
   };
+
+  const itemKey = listKind === 'people' ? 'people' : 'videos';
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -39,17 +47,18 @@ export function DeleteListDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-destructive" />
-            Delete List?
+            {t('deleteListDialog.title')}
           </DialogTitle>
           <DialogDescription>
-            This will permanently delete the list "{listName}". Videos in the list will not be affected.
+            {t(`deleteListDialog.${itemKey}Description`, { name: listName })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">
           <div className="bg-brand-yellow-light border border-brand-yellow rounded-lg p-3 dark:bg-brand-yellow-dark">
             <p className="text-sm text-brand-yellow-dark dark:text-brand-yellow-light">
-              <strong>Note:</strong> This action sends a deletion request to relays. Most relays will honor this request, but deletion is not guaranteed on all relays.
+              <strong>{t('deleteListDialog.noteLabel')}</strong>{' '}
+              {t('deleteListDialog.relayNote')}
             </p>
           </div>
         </div>
@@ -60,7 +69,7 @@ export function DeleteListDialog({
             onClick={handleClose}
             disabled={isDeleting}
           >
-            Cancel
+            {t('deleteListDialog.cancelButton')}
           </Button>
           <Button
             variant="destructive"
@@ -70,10 +79,10 @@ export function DeleteListDialog({
             {isDeleting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Deleting...
+                {t('deleteListDialog.deletingButton')}
               </>
             ) : (
-              'Delete List'
+              t('deleteListDialog.deleteButton')
             )}
           </Button>
         </DialogFooter>

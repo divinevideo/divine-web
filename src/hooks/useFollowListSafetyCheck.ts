@@ -4,6 +4,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
 import { debugLog } from '@/lib/debug';
+import { countContactListFollows } from '@/lib/contactListSelection';
 
 interface SafetyCheckResult {
   needsWarning: boolean;
@@ -87,7 +88,6 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
               'divine.video',
               'divineweb',
               'divine web',
-              'openvine',
             ];
 
             isDivineClient = divineClientNames.some(name =>
@@ -99,7 +99,7 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
             if (clientTag) {
               debugLog('[SafetyCheck] Client tag lowercase:', clientTag.toLowerCase());
               debugLog('[SafetyCheck] Checking against divine identifiers:',
-                ['divine', 'divine.video', 'divineweb', 'divine web', 'openvine']);
+                ['divine', 'divine.video', 'divineweb', 'divine web']);
             }
           } catch (err) {
             debugLog('[SafetyCheck] Failed to parse profile metadata:', err);
@@ -107,9 +107,7 @@ export function useFollowListSafetyCheck(pubkey: string | undefined, enabled: bo
         }
 
         // Check if user has existing follow list with contacts
-        const hasExistingFollowList = contactListEvent
-          ? contactListEvent.tags.filter(tag => tag[0] === 'p').length > 0
-          : false;
+        const hasExistingFollowList = countContactListFollows(contactListEvent ?? null) > 0;
 
         debugLog('[SafetyCheck] Has existing follow list:', hasExistingFollowList);
         debugLog('[SafetyCheck] -------------------------------------------');

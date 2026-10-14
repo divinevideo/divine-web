@@ -23,7 +23,8 @@ import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRo
 import { useAuthor } from '@/hooks/useAuthor';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useMuteItem } from '@/hooks/useModeration';
-import { useDeleteVideo, useCanDeleteVideo } from '@/hooks/useDeleteVideo';
+import { useDeleteVideo } from '@/hooks/useDeleteVideo';
+import { useIsOwnVideo } from '@/hooks/useIsOwnVideo';
 import { useIsVideoPinned, usePinVideo, useUnpinVideo } from '@/hooks/usePinnedVideos';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
@@ -31,21 +32,19 @@ import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { enhanceAuthorData } from '@/lib/generateProfile';
 import { genUserName } from '@/lib/genUserName';
+import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { formatDistanceToNow } from 'date-fns';
 import type { ParsedVideoData } from '@/types/video';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { cn } from '@/lib/utils';
-import { formatClassicVineViewBreakdown, formatViewCount, formatCount } from '@/lib/formatUtils';
+import { formatClassicVineViewBreakdown, formatLoopCount, formatCount } from '@/lib/formatUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
 import { useShare } from '@/hooks/useShare';
-import { useDmCapability } from '@/hooks/useDirectMessages';
-import { buildDmSharePayloadFromVideo, buildDmShareQueryString } from '@/lib/dm';
 import { getVideoShareData } from '@/lib/shareUtils';
-import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { SmartLink } from '@/components/SmartLink';
 import { MuteType } from '@/types/moderation';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
@@ -54,7 +53,7 @@ import { useSubtitles } from '@/hooks/useSubtitles';
 import { debugLog } from '@/lib/debug';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
-import { buildProfileLinkPath } from '@/lib/profileLinks';
+import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 
 interface VideoCardProps {
   video: ParsedVideoData;
@@ -144,15 +143,16 @@ export function VideoCard({
     ? video.hlsUrl || optimalHlsUrl
     : undefined;
   const effectiveHlsUrl = hlsFallbackUrl || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined)));
-  const { data: lists } = useVideosInLists(video.vineId ?? undefined);
+  const { data: lists } = useVideosInLists(video.vineId ?? undefined, video.id);
 
   // NEW: Get reposter data from reposts array
   const hasReposts = video.reposts && video.reposts.length > 0;
   const latestRepost = hasReposts ? video.reposts[video.reposts.length - 1] : null;
   const reposterPubkey = latestRepost?.reposterPubkey;
   const reposterData = useAuthor(reposterPubkey || '');
-  const shouldShowReposter = hasReposts && reposterPubkey;
-  const classicViewBreakdown = formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0);
+  const playbackCountLabel = video.isVineMigrated
+    ? formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0)
+    : formatLoopCount(viewCount);
   const [videoError, setVideoError] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   // Always start with video player visible in auto-play mode, but let VideoPlaybackContext control actual playback
@@ -171,7 +171,7 @@ export function VideoCard({
 
   // Log once per video mount to trace aspect ratio decisions
   useMemo(() => {
-    debugLog(`[AspectRatio] video=${video.id?.slice(0, 8)} isClassicVine=${isClassicVine}`,
+    debugLog(`[AspectRatio] video=${video.id} isClassicVine=${isClassicVine}`,
       `loopCount=${video.loopCount} isVineMigrated=${video.isVineMigrated}`,
       `dimensions=${video.dimensions} vineTimestamp=${video.originalVineTimestamp}`);
   }, [video.id, isClassicVine, video.loopCount, video.isVineMigrated, video.dimensions, video.originalVineTimestamp]);
@@ -206,7 +206,7 @@ export function VideoCard({
   // unlike HLS streams which may be transcoded to different dimensions.
   const handleThumbnailDimensions = useCallback((d: { width: number; height: number }) => {
     const newRatio = d.width / d.height;
-    console.log(`[AspectRatio] THUMBNAIL video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} isClassicVine=${isClassicVine} → ${isClassicVine ? 'IGNORED (classic vine)' : 'APPLIED'}`);
+    debugLog(`[AspectRatio] THUMBNAIL video=${video.id} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} isClassicVine=${isClassicVine} → ${isClassicVine ? 'IGNORED (classic vine)' : 'APPLIED'}`);
     if (isClassicVine) return; // Classic Vines locked to 1:1
     thumbnailRatioRef.current = newRatio;
     setVideoAspectRatio(newRatio);
@@ -220,7 +220,7 @@ export function VideoCard({
     const thumbRatio = thumbnailRatioRef.current;
 
     if (isClassicVine) {
-      console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (classic vine, forcing 1:1)`);
+      debugLog(`[AspectRatio] VIDEO video=${video.id} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (classic vine, forcing 1:1)`);
       return;
     }
 
@@ -228,7 +228,7 @@ export function VideoCard({
     if (thumbRatio !== null) {
       const ratioChange = Math.abs(newRatio - thumbRatio) / thumbRatio;
       if (ratioChange > 0.1) {
-        console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (${(ratioChange * 100).toFixed(0)}% off thumbnail=${thumbRatio.toFixed(3)})`);
+        debugLog(`[AspectRatio] VIDEO video=${video.id} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (${(ratioChange * 100).toFixed(0)}% off thumbnail=${thumbRatio.toFixed(3)})`);
         return; // >10% difference = HLS distortion, ignore
       }
     }
@@ -238,12 +238,12 @@ export function VideoCard({
       const isNewLandscape = newRatio > 1.1;
       // Don't let HLS flip a video with declared portrait/square dimensions to landscape
       if (isInitialPortraitOrSquare && isNewLandscape) {
-        console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (declared ${initialAspectRatio.toFixed(3)} but HLS says landscape)`);
+        debugLog(`[AspectRatio] VIDEO video=${video.id} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → IGNORED (declared ${initialAspectRatio.toFixed(3)} but HLS says landscape)`);
         return;
       }
     }
 
-    console.log(`[AspectRatio] VIDEO video=${video.id?.slice(0, 8)} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → APPLIED (was ${videoAspectRatio.toFixed(3)})`);
+    debugLog(`[AspectRatio] VIDEO video=${video.id} dims=${d.width}x${d.height} ratio=${newRatio.toFixed(3)} → APPLIED (was ${videoAspectRatio.toFixed(3)})`);
     setVideoAspectRatio(newRatio);
   }, [initialAspectRatio, hasDeclaredDimensions, isClassicVine, video.id, videoAspectRatio]);
   const _isMobile = useIsMobile();
@@ -252,9 +252,7 @@ export function VideoCard({
   const isHorizontal = effectiveLayout === 'horizontal';
   const { toast } = useToast();
   const { share } = useShare();
-  const { canUseDirectMessages } = useDmCapability();
   const muteUser = useMuteItem();
-  const navigate = useSubdomainNavigate();
   const { activeVideoId, setActiveVideo, globalMuted, setGlobalMuted } = useVideoPlayback();
   const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
   // Subtitles default to ON when available, independent of mute state
@@ -262,7 +260,7 @@ export function VideoCard({
   const showSubtitles = subtitlesVisible && hasSubtitles;
 
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
-  const canDelete = useCanDeleteVideo(video);
+  const isOwnVideo = useIsOwnVideo(video);
   const { user: currentUser } = useCurrentUser();
   const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
   const isPinned = useIsVideoPinned(coordinate);
@@ -276,12 +274,7 @@ export function VideoCard({
 
   // Enhance author data with generated profiles
   const author = enhanceAuthorData(authorData.data, video.pubkey);
-  const reposter = shouldShowReposter && reposterPubkey
-    ? enhanceAuthorData(reposterData.data, reposterPubkey)
-    : null;
-
   const metadata: NostrMetadata = author.metadata;
-  const reposterMetadata: NostrMetadata | undefined = reposter?.metadata;
 
   // Use raw author data (pre-enhancement) to detect real vs generated names
   // enhanceAuthorData fills in generated names like "ElectricVine742" — we don't want those
@@ -295,14 +288,15 @@ export function VideoCard({
   const profileImage = getSafeProfileImage(
     rawMetadata?.picture || video.authorAvatar || metadata.picture
   );
-  const profileUrl = buildProfileLinkPath({
+  const authorNip05 = rawMetadata?.nip05;
+  const profileUrl = useValidatedProfileLinkPath({
     pubkey: video.pubkey,
-    nip05: rawMetadata?.nip05,
+    nip05: authorNip05,
   });
 
   const reposterName = reposterData.isLoading
     ? t('videoCard.loadingProfile')
-    : (reposterMetadata?.name || (reposterPubkey ? genUserName(reposterPubkey) : ''));
+    : (reposterPubkey ? resolveDisplayName(reposterData.data?.metadata, reposterPubkey) : '');
 
   // NEW: Get all unique reposters for display
   const allReposters = video.reposts || [];
@@ -352,18 +346,20 @@ export function VideoCard({
     }
   };
 
-  const handleThumbnailClick = () => {
-    // In thumbnail mode (grid view), navigate to video page instead of playing inline
-    if (mode === 'thumbnail') {
-      const targetUrl = navigationContext
+  // In thumbnail mode (grid view), the thumbnail is a real link to the video
+  // page so native browser behaviors (middle-click, open in new tab) work.
+  const thumbnailLinkTo = mode === 'thumbnail'
+    ? (navigationContext
         ? buildVideoNavigationUrl(video.id, navigationContext, videoIndex)
-        : `/video/${video.id}`;
-      navigate(targetUrl, { ownerPubkey: video.pubkey });
-    } else {
-      setActiveVideo(video.id);
-      setIsPlaying(true);
-      onPlay?.();
-    }
+        : `/video/${video.id}`)
+    : undefined;
+
+  const handleThumbnailClick = () => {
+    // Thumbnail mode: navigation is handled by the real link inside ThumbnailPlayer
+    if (mode === 'thumbnail') return;
+    setActiveVideo(video.id);
+    setIsPlaying(true);
+    onPlay?.();
   };
 
   const handleThumbnailPlayButtonClick = () => {
@@ -464,9 +460,6 @@ export function VideoCard({
   };
 
   const handleShare = () => share(getVideoShareData(video));
-  const handleShareViaDm = () => {
-    navigate(`/messages?${buildDmShareQueryString(buildDmSharePayloadFromVideo(video))}`);
-  };
 
   const handlePinToggle = async () => {
     if (!coordinate) return;
@@ -536,6 +529,7 @@ export function VideoCard({
       {video.vineId && showAddToListDialog && (
         <AddToListDialog
           videoId={video.vineId}
+          videoEventId={video.id}
           videoPubkey={video.pubkey}
           open={showAddToListDialog}
           onClose={() => setShowAddToListDialog(false)}
@@ -617,6 +611,8 @@ export function VideoCard({
                   duration={video.duration}
                   ageRestricted={video.ageRestricted}
                   className="w-full h-full"
+                  linkTo={thumbnailLinkTo}
+                  linkOwnerPubkey={video.pubkey}
                   onClick={handleThumbnailClick}
                   onPlayButtonClick={handleThumbnailPlayButtonClick}
                   onError={() => setVideoError(true)}
@@ -644,6 +640,7 @@ export function VideoCard({
                     subtitlesVisible={showSubtitles}
                     videoData={video}
                     trafficSource={trafficSource}
+                    analyticsPosition={videoIndex ?? 0}
                     objectFit={isClassicVine ? 'cover' : 'contain'}
                   />
                   {mode === 'thumbnail' && showThumbnailDuringStartup && (
@@ -814,6 +811,7 @@ export function VideoCard({
             {video.content && video.content.trim() !== video.title?.trim() && (
               <div className={cn("whitespace-pre-wrap break-words", isHorizontal && "line-clamp-2")}>
                 <NoteContent
+                  linkifyBareDomains
                   event={{
                     id: video.id,
                     pubkey: video.pubkey,
@@ -849,10 +847,10 @@ export function VideoCard({
           </div>
 
           {/* Stats row - horizontal layout: show view/loop count only (likes/comments shown on buttons) */}
-          {isHorizontal && viewCount > 0 && (
+          {isHorizontal && viewCount > 0 && playbackCountLabel && (
             <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="py-2 mt-auto hover:underline block">
               <span className="block text-sm text-muted-foreground">
-                {classicViewBreakdown || formatViewCount(viewCount)}
+                {playbackCountLabel}
               </span>
             </SmartLink>
           )}
@@ -861,10 +859,10 @@ export function VideoCard({
           {!isHorizontal && (
             <div className="px-4 py-2" data-testid="video-metadata">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                {viewCount > 0 && (
+                {viewCount > 0 && playbackCountLabel && (
                   <SmartLink to={`/video/${video.id}`} ownerPubkey={video.pubkey} className="flex items-center gap-1 hover:underline">
                     <Eye className="h-3 w-3" />
-                    <span>{classicViewBreakdown || formatViewCount(viewCount)}</span>
+                    <span>{playbackCountLabel}</span>
                   </SmartLink>
                 )}
               </div>
@@ -1021,7 +1019,7 @@ export function VideoCard({
                   <DropdownMenuSeparator />
                 </>
               )}
-              {canDelete && (
+              {isOwnVideo && (
                 <>
                   <DropdownMenuItem
                     onClick={() => setShowDeleteDialog(true)}
@@ -1033,26 +1031,24 @@ export function VideoCard({
                   <DropdownMenuSeparator />
                 </>
               )}
-              <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
-                <Flag className="h-4 w-4 mr-2" />
-                {t('videoCard.menu.reportVideo')}
-              </DropdownMenuItem>
-              {canUseDirectMessages && (
-                <DropdownMenuItem onClick={handleShareViaDm}>
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  {t('videoCard.menu.sendViaMessage')}
-                </DropdownMenuItem>
+              {!isOwnVideo && (
+                <>
+                  <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+                    <Flag className="h-4 w-4 mr-2" />
+                    {t('videoCard.menu.reportVideo')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowReportUserDialog(true)}>
+                    <Flag className="h-4 w-4 mr-2" />
+                    {t('videoCard.menu.reportUser')}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleMuteUser} className="text-destructive focus:text-destructive">
+                    <UserX className="h-4 w-4 mr-2" />
+                    {t('videoCard.menu.muteUser', { name: displayName })}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
               )}
-              <DropdownMenuItem onClick={() => setShowReportUserDialog(true)}>
-                <Flag className="h-4 w-4 mr-2" />
-                {t('videoCard.menu.reportUser')}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleMuteUser} className="text-destructive focus:text-destructive">
-                <UserX className="h-4 w-4 mr-2" />
-                {t('videoCard.menu.muteUser', { name: displayName })}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setShowViewSourceDialog(true)}>
                 <Code className="h-4 w-4 mr-2" />
                 {t('videoCard.menu.viewSource')}

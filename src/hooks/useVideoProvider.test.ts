@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
+import { FEED_PAGE_SIZE } from '@/config/feed';
 import type { RelayCapabilities } from '@/lib/relayCapabilities';
 
 const mockUseInfiniteVideos = vi.fn();
 const mockUseInfiniteVideosFunnelcake = vi.fn();
+const mockUseFeaturedTabVideos = vi.fn();
 const mockUseResolvedRelayCapabilities = vi.fn();
 
 let relayUrl = 'wss://relay.divine.video';
@@ -45,8 +47,18 @@ vi.mock('@/hooks/useInfiniteVideosFunnelcake', () => ({
   useInfiniteVideosFunnelcake: mockUseInfiniteVideosFunnelcake,
 }));
 
+vi.mock('@/hooks/useFeaturedTabVideos', () => ({
+  useFeaturedTabVideos: mockUseFeaturedTabVideos,
+}));
+
 vi.mock('@/hooks/useRelayCapabilities', () => ({
   useResolvedRelayCapabilities: mockUseResolvedRelayCapabilities,
+}));
+
+// Blocklist behavior is covered in useVideoProvider.blocklist.test.ts;
+// these routing tests run with an empty blocklist.
+vi.mock('@/hooks/useFeedBlocklist', () => ({
+  useFeedBlocklist: () => new Set<string>(),
 }));
 
 vi.mock('@/config/relays', async () => {
@@ -70,6 +82,7 @@ beforeEach(async () => {
 
   mockUseInfiniteVideos.mockReturnValue(queryResult);
   mockUseInfiniteVideosFunnelcake.mockReturnValue(queryResult);
+  mockUseFeaturedTabVideos.mockReturnValue(queryResult);
   mockUseResolvedRelayCapabilities.mockReturnValue(makeCapabilities());
 
   const hook = await import('./useVideoProvider');
@@ -118,7 +131,7 @@ describe('chooseVideoDataSource', () => {
   });
 
   it('falls back to canonical Funnelcake for hot feeds on relays without video-sort support', () => {
-    relayUrl = 'wss://relay.ditto.pub';
+    relayUrl = 'wss://relay.damus.io';
 
     const decision = chooseVideoDataSource({
       feedType: 'trending',
@@ -219,6 +232,49 @@ describe('useVideoProvider', () => {
     expect(result.current.dataSource).toBe('funnelcake');
   });
 
+  it('routes featured feeds to the REST-only featured hook with no WebSocket fallback', () => {
+    const { result } = renderHook(() =>
+      useVideoProvider({
+        feedType: 'featured',
+        featuredTabId: 'ft_1234abcd',
+      })
+    );
+
+    expect(mockUseInfiniteVideosFunnelcake).toHaveBeenCalledWith(expect.objectContaining({
+      enabled: false,
+    }));
+    expect(mockUseFeaturedTabVideos).toHaveBeenCalledWith(expect.objectContaining({
+      configId: 'ft_1234abcd',
+      apiUrl: 'https://api.divine.video',
+      pageSize: FEED_PAGE_SIZE,
+      enabled: true,
+    }));
+    expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({
+      enabled: false,
+    }));
+    expect(result.current.dataSource).toBe('funnelcake');
+  });
+
+  it('does not fall back to WebSocket when a featured REST query errors', () => {
+    mockUseFeaturedTabVideos.mockReturnValue({
+      ...queryResult,
+      error: new Error('No featured videos'),
+    });
+
+    const { result } = renderHook(() =>
+      useVideoProvider({
+        feedType: 'featured',
+        featuredTabId: 'ft_1234abcd',
+      })
+    );
+
+    expect(mockUseInfiniteVideos).toHaveBeenCalledWith(expect.objectContaining({
+      enabled: false,
+    }));
+    expect(result.current.dataSource).toBe('funnelcake');
+    expect(result.current.error?.message).toBe('No featured videos');
+  });
+
   it('prefers Funnelcake for Divine hot feeds', () => {
     mockUseResolvedRelayCapabilities.mockReturnValue(makeCapabilities({
       supportsVideoSorts: true,
@@ -300,5 +356,26 @@ describe('useVideoProvider', () => {
       enabled: true,
     }));
     expect(result.current.dataSource).toBe('websocket');
+  });
+
+  it('reports fetched count from unfiltered active query pages', () => {
+    mockUseInfiniteVideosFunnelcake.mockReturnValue({
+      ...queryResult,
+      data: {
+        pages: [
+          { videos: [{ pubkey: 'a' }, { pubkey: 'b' }], nextCursor: undefined },
+          { videos: [{ pubkey: 'a' }], nextCursor: undefined },
+        ],
+        pageParams: [undefined, 2],
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useVideoProvider({
+        feedType: 'discovery',
+      })
+    );
+
+    expect(result.current.fetchedCount).toBe(3);
   });
 });

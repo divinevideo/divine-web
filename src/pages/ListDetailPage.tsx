@@ -2,9 +2,8 @@
 // ABOUTME: Shows list details, videos in the list, and allows editing for list owners
 
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { nip19 } from 'nostr-tools';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -14,7 +13,7 @@ import { parseVideoListFromEvent, type PlayOrder, type VideoList } from '@/lib/p
 import { EditListDialog } from '@/components/EditListDialog';
 import { DeleteListDialog } from '@/components/DeleteListDialog';
 import { VideoGrid } from '@/components/VideoGrid';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,104 +27,10 @@ import { useShare } from '@/hooks/useShare';
 import { useAppContext } from '@/hooks/useAppContext';
 import { getListShareData } from '@/lib/shareUtils';
 import { getSafeProfileImage } from '@/lib/imageUtils';
+import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { getEventLookupRelayUrls } from '@/config/relays';
-import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
-import { parseVideoEvent, getVineId, getThumbnailUrl, getOriginalVineTimestamp, getLoopCount, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated } from '@/lib/videoParser';
+import { fetchListVideos } from '@/lib/listVideos';
 import { resolveListPermissions } from '@/lib/listPermissions';
-
-async function fetchListVideos(
-  nostr: { query: (filters: NostrFilter[], options: { signal: AbortSignal }) => Promise<NostrEvent[]> },
-  coordinates: string[],
-  signal: AbortSignal
-): Promise<ParsedVideoData[]> {
-  if (coordinates.length === 0) return [];
-
-  // Parse coordinates to extract pubkeys and d-tags
-  const filters: NostrFilter[] = [];
-  const coordinateMap = new Map<string, { pubkey: string; dTag: string }>();
-
-  coordinates.forEach(coord => {
-    const [kind, pubkey, dTag] = coord.split(':');
-    const kindNum = parseInt(kind, 10);
-    if (VIDEO_KINDS.includes(kindNum) && pubkey && dTag) {
-      coordinateMap.set(`${pubkey}:${dTag}`, { pubkey, dTag });
-    }
-  });
-
-  // Group by pubkey for efficient querying
-  const pubkeyGroups = new Map<string, string[]>();
-  coordinateMap.forEach(({ pubkey, dTag }) => {
-    if (!pubkeyGroups.has(pubkey)) {
-      pubkeyGroups.set(pubkey, []);
-    }
-    pubkeyGroups.get(pubkey)!.push(dTag);
-  });
-
-  // Create filters for each pubkey group
-  pubkeyGroups.forEach((dTags, pubkey) => {
-    filters.push({
-      kinds: VIDEO_KINDS,
-      authors: [pubkey],
-      '#d': dTags,
-      limit: dTags.length
-    });
-  });
-
-  if (filters.length === 0) return [];
-
-  const events = await nostr.query(filters, { signal });
-
-  // Parse and order videos according to list order
-  const videoMap = new Map<string, ParsedVideoData>();
-
-  events.forEach(event => {
-    const vineId = getVineId(event);
-    if (!vineId) return;
-
-    const videoEvent = parseVideoEvent(event);
-    if (!videoEvent?.videoMetadata?.url) return;
-
-    const key = `${event.pubkey}:${vineId}`;
-    videoMap.set(key, {
-      id: event.id,
-      pubkey: event.pubkey,
-      kind: SHORT_VIDEO_KIND,
-      createdAt: event.created_at,
-      originalVineTimestamp: getOriginalVineTimestamp(event),
-      content: event.content,
-      videoUrl: videoEvent.videoMetadata.url,
-      fallbackVideoUrls: videoEvent.videoMetadata?.fallbackUrls,
-      hlsUrl: videoEvent.videoMetadata?.hlsUrl,
-      thumbnailUrl: getThumbnailUrl(videoEvent),
-      title: videoEvent.title,
-      duration: videoEvent.videoMetadata?.duration,
-      hashtags: videoEvent.hashtags || [],
-      vineId,
-      loopCount: getLoopCount(event),
-      likeCount: getOriginalLikeCount(event),
-      repostCount: getOriginalRepostCount(event),
-      commentCount: getOriginalCommentCount(event),
-      proofMode: getProofModeData(event),
-      origin: getOriginPlatform(event),
-      isVineMigrated: isVineMigrated(event),
-      reposts: [] // List videos don't include repost data
-    });
-  });
-
-  // Return videos in the order they appear in the list
-  const orderedVideos: ParsedVideoData[] = [];
-  coordinates.forEach(coord => {
-    const [_, pubkey, dTag] = coord.split(':');
-    const key = `${pubkey}:${dTag}`;
-    const video = videoMap.get(key);
-    if (video) {
-      orderedVideos.push(video);
-    }
-  });
-
-  return orderedVideos;
-}
 
 const PlayOrderIcon = ({ order }: { order?: PlayOrder }) => {
   switch (order) {
@@ -154,13 +59,29 @@ const PlayOrderLabel = ({ order }: { order?: PlayOrder }) => {
   }
 };
 
+function getReadableAuthorName(profileName: string | undefined, pubkey: string): string {
+  const trimmedName = profileName?.trim();
+  if (trimmedName && !/^[0-9a-f]{64}$/i.test(trimmedName)) {
+    return trimmedName;
+  }
+
+  return genUserName(pubkey);
+}
+
 export default function ListDetailPage() {
   const { t } = useTranslation();
   const { pubkey, listId } = useParams<{ pubkey: string; listId: string }>();
   const navigate = useNavigate();
   const { nostr } = useNostr();
   const { config } = useAppContext();
-  const listLookupRelayKey = (config.relayUrls || [config.relayUrl]).join(',');
+  const listLookupRelays = getEventLookupRelayUrls({
+    configuredRelayUrls: [
+      ...(config.relayUrls || [config.relayUrl]),
+      ...(config.customRelayUrls ?? []),
+    ],
+    disabledRelayUrls: config.disabledPresetUrls,
+  });
+  const listLookupRelayKey = listLookupRelays.join(',');
   const { user } = useCurrentUser();
   const { toast } = useToast();
   const { share } = useShare();
@@ -181,6 +102,7 @@ export default function ListDetailPage() {
         title: t('listDetailPage.listDeletedTitle'),
         description: t('listDetailPage.listDeletedDescription', { name: list.name }),
       });
+      setShowDeleteDialog(false);
       navigate('/lists');
     } catch (error) {
       toast({
@@ -190,7 +112,6 @@ export default function ListDetailPage() {
       });
     } finally {
       setIsDeleting(false);
-      setShowDeleteDialog(false);
     }
   };
 
@@ -212,9 +133,7 @@ export default function ListDetailPage() {
         limit: 1
       }], {
         signal,
-        relays: getEventLookupRelayUrls({
-          configuredRelayUrls: config.relayUrls || [config.relayUrl],
-        }),
+        relays: listLookupRelays,
       });
 
       if (ownerEvents.length === 0) {
@@ -238,9 +157,7 @@ export default function ListDetailPage() {
         limit: 50,
       }], {
         signal,
-        relays: getEventLookupRelayUrls({
-          configuredRelayUrls: config.relayUrls || [config.relayUrl],
-        }),
+        relays: listLookupRelays,
       });
 
       const participantSet = new Set(participantPubkeys);
@@ -262,7 +179,7 @@ export default function ListDetailPage() {
 
   // Fetch videos in the list
   const { data: videos, isLoading: videosLoading } = useQuery({
-    queryKey: ['list-videos', pubkey, listId, list?.videoCoordinates],
+    queryKey: ['list-videos', pubkey, listId, list?.members],
     queryFn: async (context) => {
       if (!list) return [];
 
@@ -271,7 +188,7 @@ export default function ListDetailPage() {
         AbortSignal.timeout(10000)
       ]);
 
-      return fetchListVideos(nostr, list.videoCoordinates, signal);
+      return fetchListVideos(nostr, list.members, signal);
     },
     enabled: !!list
   });
@@ -279,7 +196,18 @@ export default function ListDetailPage() {
   // Fetch author info
   const author = useAuthor(pubkey || '');
   const authorMetadata = author.data?.metadata;
-  const authorName = authorMetadata?.name || genUserName(pubkey || '');
+  const authorName = getReadableAuthorName(
+    authorMetadata?.display_name || authorMetadata?.name,
+    pubkey || '',
+  );
+  // Undefined for a list that never got a title tag, so the translated
+  // placeholder below stays out of the shareable video URL.
+  const listTitle = list && list.name !== list.id ? list.name : undefined;
+  const displayListName = listTitle ?? t('listDetailPage.untitledVideoList');
+  const creatorProfilePath = buildProfileLinkPath({
+    pubkey: pubkey || '',
+    fallbackRoute: 'profile',
+  });
 
   const handleShare = () => {
     if (!pubkey || !listId) return;
@@ -333,117 +261,101 @@ export default function ListDetailPage() {
   }
 
   return (
-    <div className="container max-w-6xl mx-auto px-4 py-8">
-      <div className="space-y-6">
-        {/* Back button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/lists')}
-          className="mb-4"
+    <div className="container mx-auto max-w-6xl px-4 py-8">
+      <div className="space-y-8">
+        <Link
+          to={`${creatorProfilePath}/lists`}
+          className="inline-flex items-center gap-2 text-sm font-semibold text-foreground hover:text-primary hover:underline"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t('listDetailPage.backToLists')}
-        </Button>
+          <ArrowLeft className="h-4 w-4" />
+          {t('listDetailPage.backToCreatorLists', { name: authorName })}
+        </Link>
 
-        {/* List Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <CardTitle className="text-2xl flex items-center gap-2">
-                  <List className="h-6 w-6" />
-                  {list.name}
-                </CardTitle>
-                {list.description && (
-                  <CardDescription className="mt-2">
-                    {list.description}
-                  </CardDescription>
-                )}
+        <Card variant="brand" accent="violet" className="overflow-hidden">
+          <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <div className="min-w-0">
+              <div className="mb-3 flex items-center gap-2 text-sm font-bold text-primary">
+                <List className="h-5 w-5" aria-hidden="true" />
+                <span>{t('listDetailPage.videoList')}</span>
               </div>
-              {list.image && (
-                <img
-                  src={list.image}
-                  alt={list.name}
-                  className="w-24 h-24 rounded object-cover ml-4"
-                />
+              <h1 className="font-display text-3xl font-extrabold tracking-tight text-brand-dark-green dark:text-brand-off-white sm:text-4xl">
+                {displayListName}
+              </h1>
+              {list.description && (
+                <p className="mt-3 max-w-2xl text-base text-muted-foreground sm:text-lg">
+                  {list.description}
+                </p>
               )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              {/* Author and stats */}
-              <div className="space-y-3">
-                <a
-                  href={`/profile/${pubkey ? nip19.npubEncode(pubkey) : ''}`}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+
+              <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+                <Link
+                  to={creatorProfilePath}
+                  aria-label={t('listDetailPage.byCreator', { name: authorName })}
+                  className="inline-flex items-center gap-2 rounded-2xl font-semibold text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <Avatar size="sm">
                     <AvatarImage src={getSafeProfileImage(authorMetadata?.picture)} />
                     <AvatarFallback>{authorName[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="font-medium">{authorName}</p>
-                    <p className="text-xs text-muted-foreground">{t('listDetailPage.listCreator')}</p>
-                  </div>
-                </a>
-
-                <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                  <div className="flex items-center gap-1">
-                    <Video className="h-4 w-4" />
-                    <span>{t('listDetailPage.videoCount', { count: list.videoCoordinates.length })}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{formatDistanceToNow(list.createdAt * 1000, { addSuffix: true })}</span>
-                  </div>
+                  <span>{t('listDetailPage.byCreator', { name: authorName })}</span>
+                </Link>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock className="h-4 w-4" aria-hidden="true" />
+                    {formatDistanceToNow(list.createdAt * 1000, { addSuffix: true })}
+                  </span>
                   {list.playOrder && (
-                    <div className="flex items-center gap-1">
+                    <span className="inline-flex items-center gap-1.5">
                       <PlayOrderIcon order={list.playOrder} />
-                      <span><PlayOrderLabel order={list.playOrder} /></span>
-                    </div>
+                      <PlayOrderLabel order={list.playOrder} />
+                    </span>
                   )}
                   {list.isCollaborative && (
-                    <div className="flex items-center gap-1 text-green-600">
-                      <Users className="h-4 w-4" />
-                      <span>{t('listDetailPage.collaborative')}</span>
-                    </div>
+                    <span className="inline-flex items-center gap-1.5 text-primary">
+                      <Users className="h-4 w-4" aria-hidden="true" />
+                      {t('listDetailPage.collaborative')}
+                    </span>
                   )}
                 </div>
-
-                {/* Tags */}
-                {list.tags && list.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {list.tags.map(tag => (
-                      <Badge key={tag} variant="secondary">
-                        #{tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-2">
+              {list.tags && list.tags.length > 0 && (
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {list.tags.map(tag => (
+                    <Badge key={tag} variant="secondary">#{tag}</Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-start gap-3 lg:flex-col lg:items-end">
+              {list.image && (
+                <img
+                  src={list.image}
+                  alt=""
+                  className="h-24 w-24 rounded-[22px] border-2 border-brand-dark-green object-cover sm:h-32 sm:w-32"
+                />
+              )}
+              <div className="flex flex-wrap justify-end gap-2">
                 {permissions.canEditMetadata && (
                   <>
                     <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
-                      <Edit className="h-4 w-4 mr-2" />
+                      <Edit className="mr-2 h-4 w-4" />
                       {t('listDetailPage.editList')}
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(true)}>
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <Trash2 className="mr-2 h-4 w-4" />
                       {t('listDetailPage.delete')}
                     </Button>
                   </>
                 )}
-                <Button variant="outline" size="sm" onClick={handleShare}>
-                  <Share2 className="h-4 w-4 mr-2" />
+                <Button variant="sticker" size="sm" onClick={handleShare}>
+                  <Share2 className="mr-2 h-4 w-4" />
                   {t('listDetailPage.share')}
                 </Button>
               </div>
             </div>
-          </CardContent>
+          </div>
         </Card>
 
         {/* Videos Grid */}
@@ -454,20 +366,26 @@ export default function ListDetailPage() {
             ))}
           </div>
         ) : videos && videos.length > 0 ? (
-          <div>
-            <h2 className="text-lg font-semibold mb-4">{t('listDetailPage.videosInList')}</h2>
+          <section aria-labelledby="list-videos-heading" className="space-y-4">
+            <div>
+              <h2 id="list-videos-heading" className="font-display text-2xl font-extrabold text-brand-dark-green dark:text-brand-off-white">
+                {t('listDetailPage.videoCount', { count: videos.length })}
+              </h2>
+              <p className="text-sm text-muted-foreground">{t('listDetailPage.videosInList')}</p>
+            </div>
 
             {permissions.canEditContent ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {videos.map((video) => {
-                  const videoCoord = `${video.kind}:${video.pubkey}:${video.vineId}`;
                   return (
                     <div key={video.id} className="relative group">
                       <VideoGrid
                         videos={[video]}
                         navigationContext={{
-                          source: 'profile',
+                          source: 'video-list',
                           pubkey: listOwnerPubkey || list.pubkey,
+                          listId: list.id,
+                          listName: listTitle,
                         }}
                       />
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -488,7 +406,7 @@ export default function ListDetailPage() {
                                   await removeVideo.mutateAsync({
                                     listId: list.id,
                                     ownerPubkey: listOwnerPubkey || list.pubkey,
-                                    videoCoordinate: videoCoord
+                                    videoMember: video.listMember,
                                   });
                                   toast({
                                     title: t('listDetailPage.videoRemovedTitle'),
@@ -518,12 +436,14 @@ export default function ListDetailPage() {
               <VideoGrid
                 videos={videos}
                 navigationContext={{
-                  source: 'profile',
+                  source: 'video-list',
                   pubkey: listOwnerPubkey || list.pubkey,
+                  listId: list.id,
+                  listName: listTitle,
                 }}
               />
             )}
-          </div>
+          </section>
         ) : (
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">

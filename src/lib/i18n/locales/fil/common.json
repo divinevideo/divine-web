@@ -8,8 +8,8 @@
     "home": "Tahanan",
     "discover": "Tuklasin",
     "popular": "Popular",
+    "services": "Services",
     "search": "Hanapin",
-    "messages": "Mga Mensahe",
     "notifications": "Mga Abiso",
     "profile": "Profile",
     "analytics": "Analytics"
@@ -30,7 +30,9 @@
     "help": "Tulong",
     "merch": "Merch",
     "familyResources": "Mga resource para sa pamilya",
-    "kidsPolicy": "Patakaran para sa mga bata"
+    "kidsPolicy": "Patakaran para sa mga bata",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Maliwanag na mode",
@@ -68,6 +70,8 @@
     "classic": "Klasiko",
     "hot": "Sikat",
     "new": "Bago",
+    "featured": "Tampok",
+    "sponsoredBy": "Sponsored ng <bdi>{{sponsorName}}</bdi>",
     "tags": "Mga Tag",
     "verifiedOnly": "Gawa ng Tao",
     "verifiedOnlyHint": "Mga video lang na may ProofMode verification.",
@@ -101,19 +105,6 @@
     "reply": "Sumagot",
     "comment": "Magkomento"
   },
-  "messages": {
-    "badge": "Mga Mensahe",
-    "title": "Mga direktang mensahe",
-    "subtitle": "Kausapin ang support, magpadala ng loop nang pribado, o ituloy ang thread mo sa mga sinusundan mo.",
-    "searchPlaceholder": "Sino padadalhan?",
-    "newMessage": "Bagong mensahe",
-    "readyToShare": "Handa nang ipadala nang pribado.",
-    "shareWithTitle": "Kasama sa susunod mong mensahe ang “{{title}}”.",
-    "shareWithLink": "Kasama sa susunod mong mensahe ang vine link.",
-    "signerUnsupported": "Pwede ka namang mag-log in sa signer mo, pero hindi pa nito kayang gumamit ng NIP-44. Lumipat sa nsec, bunker, o iba pang signer na may NIP-44 support para magamit ang DMs dito.",
-    "supportBadge": "Suporta",
-    "supportSummary": "Mga bug, moderation, account — pakikinggan ka namin."
-  },
   "support": {
     "title": "Suporta",
     "subtitle": "Kailangan ng tulong? Sagot ka namin.",
@@ -134,6 +125,19 @@
     "communityDescription": "Tara, sumama sa komunidad ng Divine sa Nostr.",
     "communityBody": "Tumatakbo ang Divine sa Nostr, ang decentralized social protocol. Hanapin kami sa paboritong Nostr client mo."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Wala ang tag.",
     "notFoundDescription": "Wala kaming mahanap dyan.",
@@ -146,7 +150,11 @@
     "emptyState": "Walang nilulutong kategorya ngayon.",
     "metaTitle": "Galugarin ang mga Kategorya - Divine",
     "metaDescription": "Tuklasin ang mga kategorya ng video sa Divine — komedya, musika, sayaw, hayop, sports, pagkain, at marami pa.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} video",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} mga video"
   },
   "vineBadge": {
@@ -184,7 +192,6 @@
       "pinToProfile": "I-pin sa profile",
       "deleteVideo": "Burahin ang video",
       "reportVideo": "I-report ang video",
-      "sendViaMessage": "Ipadala bilang mensahe",
       "reportUser": "I-report ang user",
       "muteUser": "I-mute si {{name}}",
       "viewSource": "Tingnan ang source"
@@ -386,7 +393,6 @@
     "message": "Mag-message",
     "reportUser": "I-report ang user",
     "subscribeRss": "Mag-subscribe sa RSS feed",
-    "videos": "Mga Video",
     "followers": "Mga Sumusunod",
     "followingStat": "Sinusundan",
     "followingDialogTitle": "Sinusundan",
@@ -395,17 +401,26 @@
     "originalVineLoops": "Mga Orihinal na Vine Loop",
     "classicVines": "Mga Klasikong Vine",
     "classicVineStatsCaption": "Mga stats mula sa orihinal na Vine platform (2013-2017)",
-    "legacySocialLabel": "{{label}}: {{handle}}"
+    "legacySocialLabel": "{{label}}: {{handle}}",
+    "blockUser": "I-block ang user",
+    "unblockUser": "I-unblock ang user",
+    "blockDialogTitle": "I-block ang user na ito?",
+    "blockDialogDescription": "Aalisin si {{name}} sa public following list mo, at hindi lalabas ang mga video niya sa feeds mo.",
+    "unblockDialogTitle": "I-unblock ang user na ito?",
+    "unblockDialogDescription": "Ipapakita ulit nito ang mga video ni {{name}}, pero hindi mo siya awtomatikong ipa-follow ulit.",
+    "blockedTitle": "Na-block.",
+    "blockedDescription": "Wala na siya sa following list mo at sa feeds mo.",
+    "unblockedTitle": "Na-unblock.",
+    "unblockedDescription": "Puwedeng lumabas ulit ang mga video niya. Hindi mo siya fina-follow.",
+    "cancel": "Kanselahin",
+    "blockFailedDescription": "Hindi na-block. Subukan ulit."
   },
   "loginDialog": {
     "title": "Mag-sign in sa Divine",
     "heading": "Sali na.",
-    "subtitleRegister": "May invite ka? I-set up ang account mo.",
     "subtitleSignIn": "Mag-sign in sa login.divine.video gamit ang account mo.",
     "tabRegister": "Mag-register",
     "tabSignIn": "Mag-sign in",
-    "checkingInvite": "Tinitignan ang invite...",
-    "inviteUnavailable": "Hindi available ang invite sign-up ngayon. Pwede ka pa ring mag-sign in sa kabilang tab.",
     "tabExtension": "Extension",
     "tabExtensionShort": "Ext",
     "tabKey": "Key",
@@ -423,8 +438,9 @@
     "bunkerLabel": "Bunker URI",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Mag-log in gamit ang Bunker",
+    "bunkerAuthPrompt": "Kailangan ng iyong signer na aprubahan mo ito. Sinubukan naming buksan ang pahina nito pero hinarang ito ng browser mo — buksan dito:",
+    "bunkerAuthLink": "Aprubahan sa iyong signer",
     "connecting": "Kumokonekta...",
-    "errorInviteServiceUnavailable": "Hindi available ang invite service",
     "errorExtensionNotFound": "Walang nakitang Nostr extension. Mag-install ng NIP-07 extension.",
     "errorExtensionLoginFailed": "Hindi nag-log in ang extension",
     "errorKeyLoginFailed": "Hindi nag-log in gamit ang key na ito. Tignan kung tama ito.",
@@ -436,19 +452,22 @@
     "errorFileEmpty": "Hindi mabasa ang laman ng file.",
     "errorFileNoValidKey": "Walang valid na secret key sa file.",
     "errorFileReadFailed": "Hindi mabasa ang file.",
-    "errorInviteValidationFailed": "Hindi ma-validate ang invite code",
-    "errorInviteCodeUsed": "Nagamit na ang invite code na ito",
     "errorSignInStartFailed": "Hindi masimulan ang sign-in",
-    "errorWaitlistJoinFailed": "Hindi maka-join sa waitlist"
+    "subtitleCreate": "I-set up ang Divine account mo.",
+    "createAccountButton": "Gumawa ng account",
+    "creatingAccount": "Sine-set up ang account mo...",
+    "errorSignUpStartFailed": "Hindi masimulan ang pag-sign up"
   },
   "accountSwitcher": {
     "myProfile": "Profile ko",
     "settings": "Settings",
     "linkedAccounts": "Mga Naka-link na Account",
+    "relays": "Relays",
     "switchRelay": "Lumipat ng Relay",
     "switchAccount": "Lumipat ng Account",
     "addAnotherAccount": "Magdagdag ng account",
-    "logOut": "Mag-log out"
+    "logOut": "Mag-log out",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "I-report ang Video",
@@ -516,6 +535,7 @@
     "signInButton": "Mag-log in"
   },
   "badgeDetailModal": {
+    "description": "Ang buong kuwento ng badge na ito — kung sino ang nagbigay at kailan.",
     "title": "Mga Detalye ng Badge",
     "officialBadge": "✦ Opisyal na Divine Badge",
     "issuedBy": "Ibinigay ni",
@@ -580,6 +600,20 @@
     "mutedKeywordsTitle_one": "Mga Muted Keyword ({{count}})",
     "mutedKeywordsTitle_other": "Mga Muted Keyword ({{count}})",
     "noMutedUsers": "Walang naka-mute. Tahimik.",
+    "mutedHereTitle_one": "Naka-mute dito ({{count}})",
+    "mutedHereTitle_other": "Naka-mute dito ({{count}})",
+    "mutedHereDescription": "Idinagdag sa web ang mga mute na ito. Kapag inalis ang isa, iyon lang ang maa-unmute.",
+    "mutedElsewhereTitle_one": "Naka-mute o naka-block sa ibang lugar ({{count}})",
+    "mutedElsewhereTitle_other": "Naka-mute o naka-block sa ibang lugar ({{count}})",
+    "mutedElsewhereDescription": "Galing ang mga ito sa ibang client o device. Maaaring Blocks mula sa Divine app ang ilan.",
+    "noWebMutedUsers": "Wala pang web mutes.",
+    "noUnknownMutedUsers": "Wala mula sa ibang clients ngayon.",
+    "reviewBeforeUnmute": "Suriin",
+    "confirmUnmuteTitle": "Alisin ang mute na ito?",
+    "confirmUnmuteDescription": "Maaaring Block ito na ginawa sa Divine app. Kapag inalis dito, matatanggal ang p-tag na iyon saanman nagsi-sync ang kind 10000 list mo.",
+    "confirmWebUnmuteDescription": "Idinagdag sa web ang mute na ito. Suriin muna bago alisin, baka umaasa na ang ibang client sa parehong p-tag.",
+    "confirmUnmuteCancel": "Panatilihin",
+    "confirmUnmuteAction": "Alisin",
     "noMutedHashtags": "Wala pang naka-mute na hashtag.",
     "noMutedKeywords": "Walang muted keyword. Walang filter ang feed mo.",
     "reportHistoryTitle": "History ng Mga Report",
@@ -591,6 +625,7 @@
     "toastErrorTitle": "May Problema",
     "toastErrorEnterValue": "Maglagay ng value na imu-mute",
     "toastErrorInvalidNpub": "Mali ang format ng npub",
+    "toastErrorMuteYourself": "Hindi mo puwedeng i-mute ang sarili mo.",
     "toastMutedTitle": "Na-mute",
     "toastMutedDescription": "Naidagdag sa mute list",
     "toastMuteFailed": "Hindi na-mute. Subukan ulit?",
@@ -598,7 +633,17 @@
     "toastUnmutedDescription": "Naalis sa mute list",
     "toastUnmuteFailed": "Hindi na-unmute. Subukan ulit?",
     "toastFunnelcakeUpdatedTitle": "Na-update ang Funnelcake API",
-    "toastFunnelcakeUpdatedDescription": "Gagamitin ang {{url}} para sa susunod na REST reads."
+    "toastFunnelcakeUpdatedDescription": "Gagamitin ang {{url}} para sa susunod na REST reads.",
+    "unblock": "I-unblock",
+    "statusUsersBlockedSuffix": "user na naka-block",
+    "blockedUsersTitle_one": "Mga Blocked User ({{count}})",
+    "blockedUsersTitle_other": "Mga Blocked User ({{count}})",
+    "blockedUsersDescription": "Inaalis ang mga naka-block na user sa public following list mo. Kapag in-unblock, ipapakita rin ulit ang mga video nila, pero hindi mo sila ipa-follow ulit.",
+    "mutedUsersDescription": "Nakatago pa rin sa feeds mo ang mga naka-mute na user nang hindi binabago kung sino ang fina-follow mo.",
+    "noBlockedUsers": "Walang naka-block na user.",
+    "toastUnblockedTitle": "Na-unblock",
+    "toastUnblockedDescription": "Inalis sa blocked users. Puwedeng lumabas ulit ang mga video niya.",
+    "toastUnblockFailed": "Hindi na-unblock. Subukan ulit."
   },
   "linkedAccountsSettings": {
     "copy": "Kopyahin",
@@ -645,10 +690,13 @@
       "mastodon": "Mag-post ng toot na may laman ng teksto sa baba, tapos i-paste ang Post ID mula sa URL.",
       "telegram": "Magpadala ng mensahe sa public channel/group na may laman ng teksto sa baba, tapos i-paste ang path ng mensahe (hal. channelname/123).",
       "bluesky": "Mag-post sa Bluesky na may laman ng teksto sa baba, tapos i-paste ang record key (rkey) mula sa URL ng post.",
-      "discord": "Gumawa ng Discord server na may iyong npub sa pangalan o description ng server, tapos gumawa ng permanenteng invite link at i-paste ang invite code."
+      "discord": "Mag-post ng mensahe na may laman ng teksto sa baba, tapos i-right-click ito at piliin ang “Copy Message Link”. Hindi mapapatunayan ng server invite kung sino ang may-ari ng account. Ilagay ang iyong Discord username — ang nasa profile mo, hindi ang display name mo."
     },
     "toastErrorTitle": "May Problema",
     "toastEnterProof": "Ilagay ang URL o ID ng patunay",
+    "toastInvalidDiscordLink": "Mag-paste ng link ng Discord message: i-right-click ang mensahe mo at piliin ang “Copy Message Link”.",
+    "discordUsernameLabel": "Ang iyong Discord username",
+    "discordUsernamePlaceholder": "yourusername",
     "toastCannotDetermineUsername": "Hindi matukoy ang username mula sa URL",
     "toastVerifiedTitle": "Na-verify!",
     "toastLinkedTitle": "Na-link",
@@ -810,6 +858,8 @@
     "seoDescription": "Panoorin ang loop na 'to sa Divine",
     "seoDescriptionWithAuthor": "Panoorin ang loop na 'to ni {{name}} sa Divine",
     "errorTitle": "May Mali",
+    "nextVideoUnavailableDescription": "Hindi ma-load ang susunod na video. Subukan ulit?",
+    "loadMoreUnavailableDescription": "Couldn't load more videos. Try again?",
     "likedTitle": "Na-like!",
     "likedDescription": "Na-publish na ang reaksyon mo",
     "likeFailedDescription": "Hindi na-like ang loop",
@@ -831,7 +881,12 @@
     "searchPrefix": "Hanap: {{query}}",
     "searchResults": "Resulta ng paghahanap",
     "authorVideos": "Mga loop ni {{name}}",
+    "featuredVideos": "Mga featured na loop",
+    "featuredTabWrappedDescription": "Tapos na 'yung featured tab. Eto ang Sumisikat.",
+    "featuredNavigationEndedDescription": "Nandiyan pa 'yung loop, pero wala na sa na-load na bahagi ng tab.",
+    "backToFeaturedTab": "Balik sa {{label}}",
     "loadingMore": "Naglo-load pa ng mga loop...",
+    "allCaughtUp": "That's the whole haul.",
     "previousVideoAria": "Nakaraang loop",
     "nextVideoAria": "Susunod na loop",
     "previousArrow": "← nakaraan",
@@ -903,8 +958,10 @@
     "notFoundTitle": "Hindi nakita ang listahan",
     "notFoundDescription": "Baka tinanggal na ang listahan na 'to o wala talaga",
     "browseLists": "Tingnan ang mga Listahan",
-    "backToLists": "Bumalik sa mga Listahan",
-    "listCreator": "Gumawa ng listahan",
+    "backToCreatorLists": "Lahat ng listahan ni {{name}}",
+    "videoList": "Listahan ng video",
+    "untitledVideoList": "Listahan ng video na walang pamagat",
+    "byCreator": "Ni {{name}}",
     "videoCount_one": "{{count}} loop",
     "videoCount_other": "{{count}} na loop",
     "collaborative": "Collaborative",
@@ -931,18 +988,15 @@
     "retry": "Subukan ulit",
     "peopleCount_one": "{{count}} tao",
     "peopleCount_other": "{{count}} na tao",
-    "notFoundTitle": "Hindi nakita ang usapan",
-    "notFoundDescription": "Bumalik sa inbox mo at magsimula ng bagong mensahe.",
-    "backToInbox": "Bumalik sa inbox",
     "dmUnavailableTitle": "Hindi available ang direct messages",
     "dmUnavailableDescription": "Pwede kang i-authenticate ng signer na 'to, pero hindi nito available ang NIP-44 encryption na kailangan para sa pribadong mensahe.",
+    "backToSupport": "Bumalik sa Suporta",
     "noMessages": "Walang mensahe pa.",
     "noMessagesHint": "Magpadala ng unang mensahe para buksan ang thread na 'to.",
-    "readyToShare": "Handa nang i-share",
-    "placeholderShare": "Magdagdag ng optional na note...",
     "placeholderMessage": "Ipasok ang mensahe..."
   },
   "videoCommentsModal": {
+    "description": "Tingnan ang sinasabi ng iba at mag-iwan ng sarili mong komento.",
     "title": "Mga komento",
     "loading": "Naglo-load ng mga komento...",
     "emptyMessage": "Wala pang komento.",
@@ -960,7 +1014,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Preview ng video",
     "thumbnailAlt": "Thumbnail ng video",
-    "playVideo": "I-play ang video"
+    "playVideo": "I-play ang video",
+    "openVideo": "Buksan ang video"
   },
   "hashtagExplorer": {
     "heading": "Mga hashtag",
@@ -1036,8 +1091,7 @@
       "likes": "Mga Like",
       "comments": "Mga Komento",
       "follows": "Mga Follow",
-      "reposts": "Mga Repost",
-      "zaps": "Mga Zap"
+      "reposts": "Mga Repost"
     },
     "empty": {
       "all": {
@@ -1063,16 +1117,33 @@
       "reposts": {
         "title": "Wala pang abiso ng repost.",
         "description": "Lalabas dito ang mga repost ng mga video mo."
-      },
-      "zaps": {
-        "title": "Wala pang abiso ng zap.",
-        "description": "Lalabas dito ang mga zap sa mga video mo."
       }
     },
     "errorTitle": "Hindi na-load ang mga abiso",
     "errorFallback": "Pakisubukang muli mamaya",
     "sectionNew": "Bago",
-    "sectionEarlier": "Mas Maaga"
+    "sectionEarlier": "Mas Maaga",
+    "message": {
+      "liked": "nag-like ng video mo",
+      "commented": "nag-comment sa video mo",
+      "reposted": "nag-repost ng video mo",
+      "followed": "nag-follow sa iyo",
+      "andOthers_one": "at {{count}} pa",
+      "andOthers_other": "at {{count}} pa",
+      "likedTitled": "nag-like ng {{title}}",
+      "commentedTitled": "nag-comment sa {{title}}",
+      "repostedTitled": "nag-repost ng {{title}}",
+      "likedComment": "nag-like sa komento mo",
+      "likedCommentTitled": "nag-like sa komento mo sa {{title}}"
+    },
+    "video": {
+      "untitled": "video mo"
+    },
+    "a11y": {
+      "openVideo": "Buksan ang {{title}}",
+      "viewProfile": "Profile ni {{name}}",
+      "unread": "Hindi pa nababasa"
+    }
   },
   "getEmbedPage": {
     "title": "I-embed ang Divine Widget",
@@ -1140,7 +1211,7 @@
   "trendingPage": {
     "heading": "Trending",
     "subheading": "Tuklasin kung ano ang sikat sa komunidad",
-    "rssTitle": "DiVine - Trending",
+    "rssTitle": "Divine - Trending",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1201,7 +1272,7 @@
     "notFoundDescription": {
       "vine": "Maaaring hindi pa na-import sa Nostr network ang Vine user na ito.",
       "nip05": "Pakitiyak na tama ang NIP-05 identifier.",
-      "legacy": "Hindi tugma ang username na ito sa anumang legacy Vine profile o OpenVine handle."
+      "legacy": "Hindi tugma ang username na ito sa anumang kilalang profile."
     }
   },
   "atUsernamePage": {
@@ -1297,14 +1368,11 @@
   "pwaInstallPrompt": {
     "close": "Isara",
     "getDivine": "Kunin ang Divine",
-    "installDivineWeb": "I-install ang Divine Web",
     "descriptionNative": "I-install ang native app para sa pinakamagandang karanasan sa Divine",
-    "descriptionWeb": "I-install ang aming app para sa mas magandang karanasan",
     "appStore": "App Store",
     "appStoreAria": "I-download ang Divine sa App Store",
     "googlePlay": "Google Play",
     "googlePlayAria": "Kunin ang Divine sa Google Play",
-    "install": "I-install",
     "notNow": "Hindi ngayon"
   },
   "relaySelector": {
@@ -1329,7 +1397,6 @@
     "muteErrorDescription": "Hindi na-save ang mute. Subukan ulit?",
     "deleteVideo": "I-delete ang video",
     "reportVideo": "I-report ang video",
-    "sendViaMessage": "Ipadala bilang mensahe",
     "reportUser": "I-report ang user",
     "muteUser": "I-mute si {{name}}",
     "viewSource": "Tingnan ang source",
@@ -1393,23 +1460,6 @@
     "confirm": "I-delete ang komento",
     "deleting": "Dine-delete..."
   },
-  "inviteCodeForm": {
-    "label": "Invite code",
-    "placeholder": "I-paste ang invite code mo",
-    "checking": "Sinusuri...",
-    "continue": "Magpatuloy",
-    "joinWaitlist": "Walang invite? Sumali sa waitlist."
-  },
-  "invitesLandingPage": {
-    "seoTitle": "Sumali sa diVine gamit ang invite code {{code}}",
-    "seoTitleDefault": "Sumali sa diVine",
-    "seoDescription": "Inimbitahan ka! Gamitin ang code {{code}} para sumali sa diVine.",
-    "seoDescriptionDefault": "Gamitin ang invite code mo para sumali sa diVine at magsimulang mag-share ng video.",
-    "heading": "Imbitado Ka!",
-    "subheading": "Ilagay ang invite code mo para sumali sa diVine",
-    "alreadyHaveAccount": "May account ka na?",
-    "signIn": "Mag-sign in"
-  },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited at ang Laban Kontra AI Slop",
     "defaultDescription": "Sa likod ng eksena ng Divine launch",
@@ -1418,5 +1468,99 @@
     "podcastEpisode": "Podcast Episode",
     "openInApplePodcasts": "Buksan sa Apple Podcasts",
     "playEpisode": "I-play ang Episode"
+  },
+  "listsPage": {
+    "createList": "Gumawa ng listahan",
+    "createFirstList": "Gawin ang iyong unang listahan",
+    "createVideoList": "Listahan ng video",
+    "createPeopleList": "Listahan ng tao"
+  },
+  "createPeopleListDialog": {
+    "title": "Gumawa ng listahan ng tao",
+    "description": "Pagsama-samahin ang mga tao at panoorin ang pinakabago nilang mga loop sa isang lugar.",
+    "nameLabel": "Pangalan ng listahan *",
+    "namePlaceholder": "Mga paboritong creator",
+    "descriptionLabel": "Paglalarawan",
+    "descriptionPlaceholder": "Mga taong hindi mo pinapalampas ang loop...",
+    "imageLabel": "URL ng cover image",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Pangalanan mo muna.",
+    "reservedName": "Nakalaan ang pangalang iyon para sa listahan ng sistema.",
+    "imageInvalid": "Gumamit ng kumpletong URL ng larawan.",
+    "cancelButton": "Kanselahin",
+    "creatingButton": "Ginagawa...",
+    "createButton": "Gumawa ng listahan",
+    "createdTitle": "Nagawa na ang listahan ng tao.",
+    "createdDescription": "Handa na ang “{{name}}”.",
+    "failedTitle": "Hindi natuloy.",
+    "failedDescription": "May sablay sa paggawa ng listahan ng tao. Subukan ulit?"
+  },
+  "editPeopleListDialog": {
+    "title": "I-edit ang listahan ng tao",
+    "description": "I-update ang pangalan, paglalarawan, o cover image ng listahang ito.",
+    "nameLabel": "Pangalan ng listahan *",
+    "namePlaceholder": "Mga paboritong creator",
+    "descriptionLabel": "Paglalarawan",
+    "descriptionPlaceholder": "Mga taong hindi mo pinapalampas ang loop...",
+    "imageLabel": "URL ng cover image",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Pangalanan mo muna.",
+    "imageInvalid": "Gumamit ng kumpletong URL ng larawan.",
+    "cancelButton": "Kanselahin",
+    "savingButton": "Sine-save...",
+    "saveButton": "I-save",
+    "savedTitle": "Na-save.",
+    "savedDescription": "Na-update ang “{{name}}”.",
+    "failedTitle": "Hindi na-save.",
+    "failedDescription": "May sablay sa pag-update ng listahan ng tao. Subukan ulit?"
+  },
+  "deleteListDialog": {
+    "title": "Burahin ang listahan?",
+    "videosDescription": "Hihilingin nito ang pagbura ng listahang “{{name}}”. Hindi maaapektuhan ang mga video sa listahan.",
+    "peopleDescription": "Hihilingin nito ang pagbura ng listahang “{{name}}”. Hindi maaapektuhan ang mga tao sa listahan.",
+    "noteLabel": "Paalala:",
+    "relayNote": "Nagpapadala ang aksyong ito ng kahilingang pagbura sa mga relay. Karamihan ay susunod, pero hindi garantisado ang pagbura sa lahat ng relay.",
+    "cancelButton": "Kanselahin",
+    "deletingButton": "Binubura...",
+    "deleteButton": "Burahin ang listahan"
+  },
+  "peopleListDetailPage": {
+    "editList": "I-edit",
+    "delete": "Burahin",
+    "share": "Ibahagi",
+    "deletedTitle": "Nabura ang listahan ng tao.",
+    "deletedDescription": "Naalis na ang “{{name}}”.",
+    "deleteFailedTitle": "Hindi nabura.",
+    "deleteFailedDescription": "May sablay sa pagbura ng listahan ng tao. Subukan ulit?"
+  },
+  "userList": {
+    "searchPlaceholder": "Maghanap ayon sa pangalan",
+    "noMatches": "Walang tumugma dito. Subukan ang ibang pangalan?",
+    "searchHint": "Mag-type ng kahit 2 letra o numero.",
+    "searchUnavailable": "Hindi makapaghanap ngayon. Subukan ulit?",
+    "noFollowers": "Wala pang followers.",
+    "noFollowing": "Wala pang fina-follow."
+  },
+  "supporters": {
+    "chip": "Tagasuporta",
+    "title": "Mga Divine Supporter",
+    "intro": "Tulungang manatiling malaya, para sa tao, at bukas sa lahat ang Divine.",
+    "membership": "Ang pagiging tagasuporta mo",
+    "thankYou": "Salamat sa pagsuporta sa Divine.",
+    "thanksDetail": "Tumutulong ang suporta mo na panatilihing para sa tao ang lugar na ito. Masaya kaming nandito ka.",
+    "showChip": "Ipakita ang badge ng tagasuporta sa profile ko",
+    "privacy": "Pribado ang pagiging tagasuporta mo bilang default. I-on ito para ipakita sa publiko ang badge mo. Maaari mo itong baguhin anumang oras.",
+    "check": "Tingnan ang katayuan bilang tagasuporta",
+    "checking": "Tinitingnan ang katayuan bilang tagasuporta…",
+    "checkHint": "Tagasuporta ka na ba? Tingnan ang membership ng account na ito. Maaaring humingi ng pahintulot ang iyong panglagda.",
+    "checkError": "Hindi namin matingnan ang katayuan mo bilang tagasuporta. Subukan muli.",
+    "unknown": "Hindi pa kumpirmado ang katayuan mo bilang tagasuporta. Tingnan muli bago bumili ulit.",
+    "saveError": "Hindi namin na-save ang pinili mong pagpapakita ng badge. Subukan muli.",
+    "purchaseInstructions": "Maging tagasuporta sa Divine mobile app: mag-sign in gamit ang parehong account, pagkatapos buksan ang seksyon ng tagasuporta sa Mga Setting. Nakabili na? Ibalik ang binili mo roon, pagkatapos tingnan ang katayuan mo rito.",
+    "getApp": "Kunin ang app para maging tagasuporta",
+    "verificationPrerequisite": "Maging tagasuporta para mag-apply para sa beripikasyon",
+    "verificationNext": "Susunod mong hakbang: beripikasyon",
+    "verificationDetail": "Kailangan ang pagiging tagasuporta para mag-apply para sa beripikasyon. Hindi nito bineberipika ang pagkakakilanlan mo o ginagarantiya ang pag-apruba. Maaari mong i-link ang mga account mo para magbahagi ng patunay ng pagkakakilanlan.",
+    "linkAccounts": "Magpatuloy sa mga naka-link na account"
   }
 }

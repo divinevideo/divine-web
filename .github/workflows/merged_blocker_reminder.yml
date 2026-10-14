@@ -1,0 +1,213 @@
+name: Merged Blocker Reminder
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  issues: write
+
+jobs:
+  remind-blocked-issues:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark issues ready when their blocker PR merges
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const { owner, repo } = context.repo;
+            const blockerReferencePattern = new RegExp(
+              String.raw`\bblocked\s+(?:on|by)(?:\s+(?:pr|pull request))?\s+#\d+(?:\s*(?:,\s*(?:and\s+)?|and\s+|&\s*)(?:(?:pr|pull request)\s+)?#\d+)*`,
+              'gi',
+            );
+            const trustedCommentAssociations = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
+            const labels = {
+              blocked: { color: 'cfd3d7', description: 'Waiting on another issue or pull request' },
+              ready: { color: '0e8a16', description: 'Unblocked and ready to pick up' },
+            };
+
+            async function ensureLabel(name) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+                return;
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+              }
+
+              try {
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo,
+                  name,
+                  color: labels[name].color,
+                  description: labels[name].description,
+                });
+              } catch (error) {
+                // 422 means a concurrently merged PR created it first.
+                if (error.status !== 422) {
+                  throw error;
+                }
+              }
+            }
+
+            const marker = `<!-- merged-blocker-reminder:${prNumber} -->`;
+            const blockerStateCache = new Map([[prNumber, true]]);
+
+            function extractBlockerNumbers(text) {
+              // Quoted and negated lines are dropped first, then the survivors are
+              // rejoined so a blocker list that wraps mid-list still matches as one.
+              const scannable = text
+                .split(/\r?\n/)
+                .filter((line) => {
+                  const normalizedLine = line.trimStart();
+                  return (
+                    !normalizedLine.startsWith('>') &&
+                    !/\bnot\s+blocked\s+(?:on|by)\b/i.test(normalizedLine)
+                  );
+                })
+                .join('\n');
+
+              const numbers = new Set();
+              blockerReferencePattern.lastIndex = 0;
+              for (const match of scannable.matchAll(blockerReferencePattern)) {
+                for (const numberMatch of match[0].matchAll(/#(\d+)/g)) {
+                  numbers.add(Number(numberMatch[1]));
+                }
+              }
+              return numbers;
+            }
+
+            function extractTrustedBlockerNumbers(issueBody, comments) {
+              return new Set([
+                ...extractBlockerNumbers(issueBody ?? ''),
+                ...comments
+                  .filter((comment) => trustedCommentAssociations.has(comment.author_association))
+                  .flatMap((comment) => [...extractBlockerNumbers(comment.body ?? '')]),
+              ]);
+            }
+
+            async function listComments(issueNumber) {
+              return github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: issueNumber,
+                per_page: 100,
+              });
+            }
+
+            async function isBlockerClosed(blockerNumber) {
+              if (blockerStateCache.has(blockerNumber)) {
+                return blockerStateCache.get(blockerNumber);
+              }
+
+              let closed = false;
+
+              try {
+                const { data } = await github.rest.issues.get({
+                  owner,
+                  repo,
+                  issue_number: blockerNumber,
+                });
+                closed = data.state === 'closed' && (!data.pull_request || Boolean(data.pull_request.merged_at));
+              } catch (error) {
+                // A reference we cannot resolve keeps the issue blocked.
+                if (error.status !== 404) {
+                  throw error;
+                }
+                console.warn(`Blocker #${blockerNumber} does not exist; treating it as open.`);
+              }
+
+              blockerStateCache.set(blockerNumber, closed);
+              return closed;
+            }
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100,
+            });
+
+            const blockedIssues = [];
+
+            for (const issue of issues) {
+              if (issue.pull_request) {
+                continue;
+              }
+
+              // Fetched at most once per issue and reused for both the blocker
+              // match and the duplicate-comment check.
+              const comments = issue.comments > 0 ? await listComments(issue.number) : [];
+              const blockerNumbers = extractTrustedBlockerNumbers(issue.body, comments);
+
+              if (blockerNumbers.has(prNumber)) {
+                blockedIssues.push({ issue, comments, blockerNumbers });
+              }
+            }
+
+            if (blockedIssues.length === 0) {
+              return;
+            }
+
+            await ensureLabel('blocked');
+            await ensureLabel('ready');
+
+            for (const { issue, comments, blockerNumbers } of blockedIssues) {
+              const allBlockersClosed = (
+                await Promise.all([...blockerNumbers].map((number) => isBlockerClosed(number)))
+              ).every(Boolean);
+
+              if (!allBlockersClosed) {
+                continue;
+              }
+
+              const existingLabelNames = issue.labels.map((label) =>
+                typeof label === 'string' ? label : label.name,
+              );
+
+              if (existingLabelNames.includes('blocked')) {
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner,
+                    repo,
+                    issue_number: issue.number,
+                    name: 'blocked',
+                  });
+                } catch (error) {
+                  // Another merged blocker run may have removed it first.
+                  if (error.status !== 404) {
+                    throw error;
+                  }
+                }
+              }
+
+              if (!existingLabelNames.includes('ready')) {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  labels: ['ready'],
+                });
+              }
+
+              if (comments.some((comment) => comment.body?.includes(marker))) {
+                continue;
+              }
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: [
+                  marker,
+                  `PR #${prNumber} has merged, so this issue is ready to pick back up.`,
+                  '',
+                  'Re-check the issue body and merged PR copy before implementing.',
+                ].join('\n'),
+              });
+            }

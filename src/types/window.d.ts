@@ -2,7 +2,7 @@
 // ABOUTME: Allows TypeScript to recognize window.nostr, window._hsp, and window.__DIVINE_FEED__ properties
 
 import type { NostrSigner } from '@nostrify/nostrify';
-import type { FunnelcakeResponse } from './funnelcake';
+import type { FunnelcakeResponse, FunnelcakeVideoRaw } from './funnelcake';
 
 declare global {
   interface Window {
@@ -10,7 +10,7 @@ declare global {
     zE?: (namespace: string, action: string, ...args: unknown[]) => void;
     _hsp?: Array<[string, ...unknown[]]>;
     /** Feed data injected by the Fastly edge worker to avoid client round-trip */
-    __DIVINE_FEED__?: FunnelcakeResponse;
+    __DIVINE_FEED__?: FunnelcakeResponse | FunnelcakeVideoRaw[];
     /** Feed type that was injected (trending, recent, classics) */
     __DIVINE_FEED_TYPE__?: string;
     /** Set by divine-brain simulations before page scripts run to suppress analytics. */

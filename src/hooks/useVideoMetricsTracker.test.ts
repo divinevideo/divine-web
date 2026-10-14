@@ -19,6 +19,11 @@ vi.mock('@/lib/debug', () => ({
   debugLog: vi.fn(),
 }));
 
+const mockTrackProductEvent = vi.fn().mockResolvedValue('event-id');
+vi.mock('@/lib/analyticsClient', () => ({
+  trackProductEvent: (...args: unknown[]) => mockTrackProductEvent(...args),
+}));
+
 const makeVideo = (id: string): ParsedVideoData => ({
   id,
   pubkey: 'abc123pubkey',
@@ -39,6 +44,10 @@ describe('useVideoMetricsTracker', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    });
   });
 
   afterEach(() => {
@@ -79,7 +88,7 @@ describe('useVideoMetricsTracker', () => {
     expect(mockPublishViewEvent).not.toHaveBeenCalled();
   });
 
-  it('does not publish for less than 1 second of watch time', () => {
+  it('publishes for sub-second watch time', () => {
     const video = makeVideo('v1');
     const { unmount } = renderHook(() =>
       useVideoMetricsTracker({
@@ -90,11 +99,18 @@ describe('useVideoMetricsTracker', () => {
       })
     );
 
-    // Only 500ms — not enough
     act(() => { vi.advanceTimersByTime(500); });
     unmount();
 
-    expect(mockPublishViewEvent).not.toHaveBeenCalled();
+    expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+    expect(mockPublishViewEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        video,
+        startSeconds: 0,
+        endSeconds: 0,
+        source: 'unknown',
+      })
+    );
   });
 
   it('publishes remaining time on unmount', () => {
@@ -125,6 +141,77 @@ describe('useVideoMetricsTracker', () => {
     expect(call.endSeconds).toBeLessThanOrEqual(4);
   });
 
+  it('flushes watch time before publishing on unmount', () => {
+    const video = makeVideo('v1');
+    const { unmount } = renderHook(() =>
+      useVideoMetricsTracker({
+        video,
+        isPlaying: true,
+        currentTime: 0,
+        duration: 6,
+      })
+    );
+
+    act(() => { vi.advanceTimersByTime(500); });
+    unmount();
+
+    expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+    expect(mockTrackProductEvent).toHaveBeenCalledWith(
+      'playback_session_recorded',
+      expect.objectContaining({
+        content_id: video.id,
+        duration_ms: 6000,
+        watched_ms: 500,
+        end_reason: 'navigation',
+      }),
+    );
+  });
+
+  it('publishes sub-second watch time after pausing', () => {
+    const video = makeVideo('v1');
+    const { rerender, unmount } = renderHook(
+      ({ isPlaying }) =>
+        useVideoMetricsTracker({
+          video,
+          isPlaying,
+          currentTime: 0,
+          duration: 6,
+        }),
+      { initialProps: { isPlaying: true } }
+    );
+
+    act(() => { vi.advanceTimersByTime(500); });
+    rerender({ isPlaying: false });
+    act(() => { vi.advanceTimersByTime(5000); });
+    unmount();
+
+    expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+    expect(mockPublishViewEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        video,
+        startSeconds: 0,
+        endSeconds: 0,
+      })
+    );
+  });
+
+  it('does not publish when playback never starts', () => {
+    const video = makeVideo('v1');
+    const { unmount } = renderHook(() =>
+      useVideoMetricsTracker({
+        video,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 6,
+      })
+    );
+
+    act(() => { vi.advanceTimersByTime(500); });
+    unmount();
+
+    expect(mockPublishViewEvent).not.toHaveBeenCalled();
+  });
+
   it('does NOT publish on every re-render when video object reference changes', () => {
     const { rerender, unmount } = renderHook(
       ({ video }) =>
@@ -149,6 +236,26 @@ describe('useVideoMetricsTracker', () => {
 
     unmount();
     expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves accumulated watch time when the video object reference changes for the same id', () => {
+    // Regression: async enrichment (e.g. ProofMode) hands VideoPlayer a new video
+    // object with the same id mid-play. That must not reset the watch accumulator.
+    const { rerender, unmount } = renderHook(
+      ({ video }) =>
+        useVideoMetricsTracker({ video, isPlaying: true, currentTime: 3, duration: 6 }),
+      { initialProps: { video: makeVideo('v1') } }
+    );
+
+    act(() => { vi.advanceTimersByTime(3000); }); // ~3s accumulated
+    rerender({ video: makeVideo('v1') });         // same id, new object reference
+    act(() => { vi.advanceTimersByTime(1000); });  // ~1s more
+    unmount();
+
+    expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+    const call = mockPublishViewEvent.mock.calls[0][0];
+    // ~4s total watched must survive the reference change (was wiped to ~1s before the fix).
+    expect(call.endSeconds).toBeGreaterThanOrEqual(3);
   });
 
   it('publishes on each loop, then remaining time on unmount', () => {
@@ -223,10 +330,20 @@ describe('useVideoMetricsTracker', () => {
     act(() => { vi.advanceTimersByTime(2000); });
 
     expect(mockPublishViewEvent).toHaveBeenCalledTimes(1);
+    expect(mockPublishViewEvent).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      video: video1,
+      startSeconds: 0,
+      source: 'unknown',
+    }));
 
     unmount();
     // Also publishes for video2
     expect(mockPublishViewEvent).toHaveBeenCalledTimes(2);
+    expect(mockPublishViewEvent).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      video: video2,
+      startSeconds: 0,
+      source: 'unknown',
+    }));
   });
 
   it('does not accumulate time while paused', () => {
@@ -275,6 +392,124 @@ describe('useVideoMetricsTracker', () => {
     expect(mockPublishViewEvent).toHaveBeenCalledWith(
       expect.objectContaining({ source: 'trending' })
     );
+  });
+
+  it('records one aggregate playback event when playback is interrupted', () => {
+    const video = makeVideo('v1');
+    const { unmount } = renderHook(() =>
+      useVideoMetricsTracker({
+        video,
+        isPlaying: true,
+        currentTime: 3,
+        duration: 6,
+        source: 'trending',
+      })
+    );
+
+    act(() => { vi.advanceTimersByTime(3000); });
+    unmount();
+
+    expect(mockTrackProductEvent).toHaveBeenCalledTimes(1);
+    expect(mockTrackProductEvent).toHaveBeenCalledWith(
+      'playback_session_recorded',
+      {
+        playback_session_id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        ),
+        content_id: video.id,
+        surface: 'discovery',
+        duration_ms: 6000,
+        watched_ms: 3000,
+        loop_count: 0,
+        completed: false,
+        end_reason: 'navigation',
+      },
+    );
+  });
+
+  it('records one impression only after half the video is visible for one second', () => {
+    const video = makeVideo('v1');
+    const { rerender, unmount } = renderHook(
+      ({ visibilityRatio }) => useVideoMetricsTracker({
+        video,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 6,
+        source: 'home',
+        position: 4,
+        visibilityRatio,
+      }),
+      { initialProps: { visibilityRatio: 0.49 } },
+    );
+
+    act(() => { vi.advanceTimersByTime(2000); });
+    expect(mockTrackProductEvent).not.toHaveBeenCalled();
+
+    rerender({ visibilityRatio: 0.5 });
+    act(() => { vi.advanceTimersByTime(1000); });
+    rerender({ visibilityRatio: 0.9 });
+    act(() => { vi.advanceTimersByTime(2000); });
+
+    expect(mockTrackProductEvent).toHaveBeenCalledTimes(1);
+    expect(mockTrackProductEvent).toHaveBeenCalledWith('content_impression_recorded', {
+      content_id: video.id,
+      surface: 'feed',
+      position: 4,
+      visible_ms: 1000,
+    });
+    unmount();
+  });
+
+  it('does not record an impression after tracking is disabled', () => {
+    const video = makeVideo('v1');
+    const { rerender, unmount } = renderHook(
+      ({ enabled }) => useVideoMetricsTracker({
+        video,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 6,
+        source: 'home',
+        position: 4,
+        visibilityRatio: 0.5,
+        enabled,
+      }),
+      { initialProps: { enabled: true } },
+    );
+
+    // Impression timer is armed but has not yet fired.
+    act(() => { vi.advanceTimersByTime(500); });
+    // Tracking is turned off before the one-second threshold elapses.
+    rerender({ enabled: false });
+    act(() => { vi.advanceTimersByTime(1000); });
+
+    expect(mockTrackProductEvent).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it('does not record an impression while the browser tab is hidden', () => {
+    const video = makeVideo('v1');
+    const { unmount } = renderHook(() => useVideoMetricsTracker({
+      video,
+      isPlaying: false,
+      currentTime: 0,
+      duration: 6,
+      source: 'home',
+      position: 4,
+      visibilityRatio: 0.5,
+    }));
+
+    act(() => { vi.advanceTimersByTime(500); });
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'hidden',
+    });
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(mockTrackProductEvent).not.toHaveBeenCalled();
+    unmount();
   });
 
   it('detects video loops and increments loopCount', () => {

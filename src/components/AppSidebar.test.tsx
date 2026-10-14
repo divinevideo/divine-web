@@ -1,20 +1,32 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { Tag } from '@phosphor-icons/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { initializeI18n } from '@/lib/i18n';
+import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/mobileStoreLinks';
 import { AppSidebar } from './AppSidebar';
 import type { CategoryWithConfig } from '@/hooks/useCategories';
+import type { PlatformStats } from '@/hooks/usePlatformStats';
 
-const { mockNavigate, mockSetTheme, mockCategories } = vi.hoisted(() => ({
+const { mockNavigate, mockSetTheme, mockCategories, shell, mockStats } = vi.hoisted(() => ({
+  mockStats: { current: undefined as PlatformStats | undefined },
   mockNavigate: vi.fn(),
   mockSetTheme: vi.fn(),
   mockCategories: [] as CategoryWithConfig[],
+  shell: {
+    user: null as { pubkey: string } | null,
+    canUseDirectMessages: false,
+  },
 }));
 
 vi.mock('@/hooks/useCategories', () => ({
   useCategories: () => ({ data: mockCategories }),
+}));
+
+vi.mock('@/hooks/usePlatformStats', () => ({
+  usePlatformStats: () => ({ data: mockStats.current }),
 }));
 
 vi.mock('@/hooks/useTheme', () => ({
@@ -22,7 +34,7 @@ vi.mock('@/hooks/useTheme', () => ({
 }));
 
 vi.mock('@/hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({ user: null }),
+  useCurrentUser: () => ({ user: shell.user }),
 }));
 
 vi.mock('@/hooks/useNotifications', () => ({
@@ -30,7 +42,9 @@ vi.mock('@/hooks/useNotifications', () => ({
 }));
 
 vi.mock('@/hooks/useDirectMessages', () => ({
-  useDmCapability: () => ({ canUseDirectMessages: false }),
+  useDmCapability: () => ({
+    canUseDirectMessages: shell.canUseDirectMessages,
+  }),
   useUnreadDmCount: () => ({ data: 0 }),
 }));
 
@@ -50,12 +64,9 @@ vi.mock('@/hooks/useRssFeedAvailable', () => ({
   useRssFeedAvailable: () => false,
 }));
 
-vi.mock('@/hooks/usePlatformStats', () => ({
-  usePlatformStats: () => ({ data: undefined }),
-}));
-
 describe('AppSidebar', () => {
   beforeEach(async () => {
+    mockStats.current = { total_events: 0, total_videos: 0, vine_videos: 2158963 };
     const storage = new Map<string, string>();
 
     Object.defineProperty(window, 'localStorage', {
@@ -75,32 +86,18 @@ describe('AppSidebar', () => {
     mockNavigate.mockReset();
     mockSetTheme.mockReset();
     mockCategories.length = 0;
+    shell.user = null;
+    shell.canUseDirectMessages = false;
   });
 
   afterEach(() => {
-    document.head.querySelectorAll('script[src*="itunes.apple.com/lookup"]').forEach((script) => script.remove());
+    vi.unstubAllGlobals();
   });
 
   function setLanguages(languages: readonly string[]) {
     Object.defineProperty(window.navigator, 'languages', {
       configurable: true,
       value: languages,
-    });
-  }
-
-  async function resolveLatestAppStoreLookup(result: unknown) {
-    let script: HTMLScriptElement | null = null;
-    await waitFor(() => {
-      script = document.head.querySelector<HTMLScriptElement>('script[src*="itunes.apple.com/lookup"]');
-      expect(script).not.toBeNull();
-    });
-
-    const callback = new URL(script!.src).searchParams.get('callback');
-    expect(callback).toBeTruthy();
-
-    await act(async () => {
-      (window as unknown as Record<string, (value: unknown) => void>)[callback!](result);
-      await Promise.resolve();
     });
   }
 
@@ -123,28 +120,65 @@ describe('AppSidebar', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/dmca');
   });
 
-  it('shows the App Store badge when Apple lookup finds the regional listing', async () => {
-    setLanguages(['en-NZ']);
-
+  it('links account portability and deletion docs from the terms section', () => {
     render(
       <MemoryRouter>
         <AppSidebar />
       </MemoryRouter>,
     );
 
-    await resolveLatestAppStoreLookup({
-      resultCount: 1,
-      results: [{ trackViewUrl: 'https://apps.apple.com/nz/app/divine-video/id6747959501?uo=4' }],
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'Terminos y codigo abierto' }));
 
-    expect(await screen.findByRole('link', { name: 'Download Divine on the App Store' })).toHaveAttribute(
+    fireEvent.click(screen.getByRole('button', { name: 'Account Portability' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/exit');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/delete-account');
+  });
+
+  it('shows the sidebar imported Vines total', () => {
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(/2,158,963 vines (recovered|recuperados)/i)).toBeInTheDocument();
+  });
+
+  it('does not show a zero archive total', () => {
+    // Funnelcake answers 200 with vine_videos: 0 when its count query fails,
+    // so a zero means "unknown", not "none recovered".
+    mockStats.current = { total_events: 0, total_videos: 0, vine_videos: 0 };
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText(/vines (recovered|recuperados)/i)).not.toBeInTheDocument();
+  });
+
+  it('shows both store badges', () => {
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Download Divine on the App Store' })).toHaveAttribute(
       'href',
-      'https://apps.apple.com/nz/app/divine-video/id6747959501?uo=4',
+      APP_STORE_URL,
+    );
+    expect(screen.getByRole('link', { name: 'Get Divine on Google Play' })).toHaveAttribute(
+      'href',
+      PLAY_STORE_URL,
     );
   });
 
-  it('hides the App Store badge when Apple lookup has no regional listing', async () => {
-    setLanguages(['en-US']);
+  it('shows the App Store badge regardless of browser locale', () => {
+    // A bare language tag with no region used to skip the storefront lookup
+    // entirely, which hid the badge. The link is static now.
+    setLanguages(['en']);
 
     render(
       <MemoryRouter>
@@ -152,14 +186,22 @@ describe('AppSidebar', () => {
       </MemoryRouter>,
     );
 
-    await resolveLatestAppStoreLookup({
-      resultCount: 0,
-      results: [],
-    });
+    expect(screen.getByRole('link', { name: 'Download Divine on the App Store' })).toBeVisible();
+  });
 
-    await waitFor(() => {
-      expect(screen.queryByRole('link', { name: 'Download Divine on the App Store' })).not.toBeInTheDocument();
-    });
+  it('renders the App Store badge without injecting a third-party script', () => {
+    // The badge must not depend on a network call: under the Fastly edge
+    // shell's CSP the lookup script was blocked and the badge disappeared.
+    const scriptsBefore = document.head.getElementsByTagName('script').length;
+
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Download Divine on the App Store' })).toBeVisible();
+    expect(document.head.getElementsByTagName('script')).toHaveLength(scriptsBefore);
   });
 
   it('renders translated category labels from category config', () => {
@@ -183,6 +225,94 @@ describe('AppSidebar', () => {
     expect(screen.getByRole('button', { name: /musica/i })).toBeVisible();
   });
 
+  it('navigates to the services directory from the top-level nav', () => {
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Services' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/services');
+  });
+
+  it('shows the translated leaderboard after Popular and navigates there for visitors', () => {
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    const leaderboard = screen.getByRole('button', { name: 'Tabla de líderes' });
+    const popular = screen.getByRole('button', { name: 'Popular' });
+    expect(screen.getByRole('navigation')).toContainElement(leaderboard);
+    expect(popular.compareDocumentPosition(leaderboard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.click(leaderboard);
+    expect(mockNavigate).toHaveBeenCalledWith('/leaderboard');
+  });
+
+  it('shows the leaderboard for signed-in visitors', () => {
+    shell.user = { pubkey: 'a'.repeat(64) };
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Tabla de líderes' })).toBeVisible();
+  });
+
+  it('marks the leaderboard active on its route', () => {
+    render(
+      <MemoryRouter initialEntries={['/leaderboard']}>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Tabla de líderes' })).toHaveClass('bg-primary');
+  });
+
+  it('keeps the supporters entry inside the navigation landmark', () => {
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    const supporters = screen.getByRole('button', { name: 'Supporters de Divine' });
+    expect(screen.getByRole('navigation')).toContainElement(supporters);
+    fireEvent.click(supporters);
+    expect(mockNavigate).toHaveBeenCalledWith('/supporters');
+  });
+
+  it('marks the services nav item active on the prerendered /services/ URL', () => {
+    // Cloudflare Pages 308-redirects /services to /services/, so a direct hit,
+    // reload, or shared link always lands on the trailing-slash form.
+    render(
+      <MemoryRouter initialEntries={['/services/']}>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Services' })).toHaveClass(
+      'bg-primary',
+    );
+  });
+
+  it('links to the services directory from the footer Divine links', async () => {
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /acerca de divine/i }));
+
+    const link = await screen.findByRole('link', { name: 'Services' });
+    expect(link).toHaveAttribute('href', '/services');
+  });
+
   it('keeps the language chooser collapsed until opened', () => {
     render(
       <MemoryRouter>
@@ -196,5 +326,18 @@ describe('AppSidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: /idioma: español/i }));
 
     expect(screen.getByRole('button', { name: 'English' })).toBeVisible();
+  });
+
+  it('labels and opens the canonical Support conversation', () => {
+    shell.user = { pubkey: 'a'.repeat(64) };
+    shell.canUseDirectMessages = true;
+    render(
+      <MemoryRouter>
+        <AppSidebar />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mensaje al soporte' }));
+    expect(mockNavigate).toHaveBeenCalledWith(getSupportDmConversationPath());
   });
 });

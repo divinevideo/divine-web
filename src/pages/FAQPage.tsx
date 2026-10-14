@@ -15,6 +15,7 @@ import {
 import { ZendeskWidget } from '@/components/ZendeskWidget';
 import { MarketingLayout } from '@/components/MarketingLayout';
 import { useTranslation } from 'react-i18next';
+import { PLAY_STORE_URL, APP_STORE_URL } from '@/lib/mobileStoreLinks';
 
 function FAQQuestion({
   value,
@@ -390,6 +391,34 @@ export function FAQPage() {
                 </div>
               </FAQQuestion>
 
+              <FAQQuestion value="app-store-account" question="If I move from TestFlight to the App Store, which account will I sign into?">
+                <div className="text-muted-foreground space-y-2">
+                  <p>
+                    Whether you installed Divine from TestFlight or the App Store, it's the same app with the
+                    same sign-in. Logging in with your email and password works the same way in both.
+                  </p>
+                  <p>
+                    Each email address belongs to just one Divine account. If you already have a Divine account
+                    with that email, signing in takes you to that same account - not a new or different one.
+                  </p>
+                  <p>
+                    If you already have the TestFlight version and install the App Store version over it, you
+                    should stay signed in on that device, on the same account you were already using.
+                  </p>
+                  <p>
+                    Signing into one Divine account never merges, replaces, or deletes any other account you
+                    already have, including an older OG Vine account. Each one stays separate.
+                  </p>
+                  <p>
+                    Not sure which account is which? Contact{' '}
+                    <a href="https://help.divine.video" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      support
+                    </a>
+                    {' '}and we can check for you - no need to post your email publicly.
+                  </p>
+                </div>
+              </FAQQuestion>
+
               <FAQQuestion value="nostr" question="What is Nostr?">
                 <div className="text-muted-foreground space-y-2">
                   <p>
@@ -495,7 +524,14 @@ export function FAQPage() {
                     The web version supports browsing and viewing videos, with posting features coming soon.
                   </p>
                   <p>
-                    iOS TestFlight is currently full (10k signups in 4 hours!). Stay tuned for updates on mobile app availability.
+                    The Divine mobile apps are available now on the{' '}
+                    <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      App Store
+                    </a>{' '}
+                    and{' '}
+                    <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      Google Play
+                    </a>.
                   </p>
                 </div>
               </FAQQuestion>
@@ -765,12 +801,39 @@ export function FAQPage() {
                     don't post it on Divine.
                   </p>
                   <p className="font-semibold">
-                    Direct messages ARE private
+                    Private messages
                   </p>
                   <p>
-                    However, direct messages between users are end-to-end encrypted. We cannot read your
-                    messages that you send between users or when you share videos privately via DM. Your
-                    private conversations are truly private.
+                    On Divine Web, the current private messaging channel is for contacting Divine Support.
+                    Messages use encrypted NIP-17 delivery, and the support team can read and
+                    respond to messages sent to that channel. User-to-user DMs and private video
+                    sharing are not available on Divine Web right now.
+                  </p>
+                  <p>
+                    In the Divine mobile app you can also message people directly and share vines
+                    privately. Those messages are end-to-end encrypted and don't reach Divine Support.
+                  </p>
+                </div>
+              </FAQQuestion>
+
+              <FAQQuestion value="follower-counts" question="How does Divine count followers and following?">
+                <div className="text-muted-foreground space-y-2">
+                  <p>
+                    Your follower count is the number of accounts that currently follow you, and your
+                    following count is the number of accounts you currently follow. These counts can
+                    differ from other Nostr apps because different services may have indexed different
+                    parts of the public network.
+                  </p>
+                  <p>
+                    When you block someone, Divine stops showing you their content and hides their
+                    interactions with you. If you were following them, blocking unfollows them too, so
+                    your following count drops by one and so does their follower count.
+                  </p>
+                  <p>
+                    Blocking does not touch their follow of you. A follow is a public Nostr event
+                    published from their account, not yours, so your own follower count stays the
+                    same. Blocking also can't stop them from finding your public posts through
+                    another app or relay.
                   </p>
                 </div>
               </FAQQuestion>
@@ -1022,11 +1085,16 @@ export function FAQPage() {
               <FAQQuestion value="mobile-app" question="Is there a mobile app?">
                 <div className="text-muted-foreground space-y-2">
                   <p>
-                    Yes! Divine mobile apps are available in beta for both iOS and Android.
+                    Yes! Divine mobile apps are available on the{' '}
+                    <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      App Store
+                    </a>{' '}
+                    and{' '}
+                    <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      Google Play
+                    </a>{' '}
+                    for both iOS and Android.
                     Both apps include camera recording, video upload, and all viewing features.
-                  </p>
-                  <p className="text-muted-foreground">
-                    iOS TestFlight is currently full (10k signups in 4 hours!). Stay tuned for updates.
                   </p>
                 </div>
               </FAQQuestion>

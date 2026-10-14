@@ -1,7 +1,7 @@
 // ABOUTME: Utility functions for divine.video NIP-05 detection and formatting
 // ABOUTME: Handles both _@username.divine.video and username@divine.video formats
 
-const DIVINE_APEX_DOMAINS = ['divine.video', 'dvine.video'];
+export const DIVINE_APEX_DOMAINS = ['divine.video', 'dvine.video'] as const;
 
 /**
  * Check if a NIP-05 belongs to a divine.video subdomain.

@@ -8,8 +8,8 @@
     "home": "ホーム",
     "discover": "発見",
     "popular": "Popular",
+    "services": "Services",
     "search": "検索",
-    "messages": "メッセージ",
     "notifications": "通知",
     "profile": "プロフィール",
     "analytics": "分析"
@@ -30,7 +30,9 @@
     "help": "ヘルプ",
     "merch": "Merch",
     "familyResources": "家族向けリソース",
-    "kidsPolicy": "子どもポリシー"
+    "kidsPolicy": "子どもポリシー",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "ライトモード",
@@ -68,6 +70,8 @@
     "classic": "クラシック",
     "hot": "人気",
     "new": "新着",
+    "featured": "注目",
+    "sponsoredBy": "提供：<bdi>{{sponsorName}}</bdi>",
     "tags": "タグ",
     "verifiedOnly": "人が作成",
     "verifiedOnlyHint": "ProofMode 検証済みの動画のみ表示しています",
@@ -101,19 +105,6 @@
     "reply": "返信",
     "comment": "コメント"
   },
-  "messages": {
-    "badge": "メッセージ",
-    "title": "ダイレクトメッセージ",
-    "subtitle": "サポートに相談したり、vine を非公開で送ったり、フォロー中の人との会話を続けたりできます。",
-    "searchPlaceholder": "メッセージを送る相手を探す",
-    "newMessage": "新しいメッセージ",
-    "readyToShare": "非公開で共有する準備ができました。",
-    "shareWithTitle": "次のメッセージには「{{title}}」が含まれます。",
-    "shareWithLink": "次のメッセージには vine のリンクが含まれます。",
-    "signerUnsupported": "現在の signer ではログインできますが、まだ NIP-44 暗号化に対応していません。Web でダイレクトメッセージを使うには、NIP-44 に対応した nsec、bunker、または別の signer に切り替えてください。",
-    "supportBadge": "サポート",
-    "supportSummary": "不具合、モデレーション、またはアカウントの問題について相談できます。"
-  },
   "support": {
     "title": "サポート",
     "subtitle": "お困りですか。私たちがサポートします。",
@@ -134,6 +125,19 @@
     "communityDescription": "コミュニティの会話に参加し、Nostr 上の他の Divine ユーザーとつながりましょう。",
     "communityBody": "Divine は分散型ソーシャルプロトコル Nostr 上に構築されています。お気に入りの Nostr クライアントで見つけてください。"
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "タグが見つかりません",
     "notFoundDescription": "指定されたタグは見つかりませんでした。",
@@ -146,7 +150,11 @@
     "emptyState": "現在利用できるカテゴリはありません。",
     "metaTitle": "カテゴリを探す - Divine",
     "metaDescription": "Divine でコメディ、音楽、ダンス、動物、スポーツ、食べ物などの動画カテゴリを探そう。",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}}本の動画",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}}本の動画"
   },
   "vineBadge": {
@@ -184,7 +192,6 @@
       "pinToProfile": "プロフィールに固定",
       "deleteVideo": "動画を削除",
       "reportVideo": "動画を報告",
-      "sendViaMessage": "メッセージで送信",
       "reportUser": "ユーザーを報告",
       "muteUser": "{{name}}をミュート",
       "viewSource": "ソースを表示"
@@ -386,7 +393,6 @@
     "message": "メッセージ",
     "reportUser": "ユーザーを報告",
     "subscribeRss": "RSSフィードを購読",
-    "videos": "動画",
     "followers": "フォロワー",
     "followingStat": "フォロー中",
     "followingDialogTitle": "フォロー中",
@@ -395,17 +401,26 @@
     "originalVineLoops": "オリジナルVineループ",
     "classicVines": "クラシックVine",
     "classicVineStatsCaption": "オリジナルのVineプラットフォームの統計（2013-2017）",
-    "legacySocialLabel": "{{label}}: {{handle}}"
+    "legacySocialLabel": "{{label}}: {{handle}}",
+    "blockUser": "ユーザーをブロック",
+    "unblockUser": "ユーザーのブロックを解除",
+    "blockDialogTitle": "このユーザーをブロックしますか？",
+    "blockDialogDescription": "{{name}}はあなたの公開フォローリストから削除され、その動画はフィードに表示されなくなります。",
+    "unblockDialogTitle": "このユーザーのブロックを解除しますか？",
+    "unblockDialogDescription": "{{name}}の動画は再び表示されますが、フォローし直すわけではありません。",
+    "blockedTitle": "ブロックしました。",
+    "blockedDescription": "フォローリストとフィードから外しました。",
+    "unblockedTitle": "ブロックを解除しました。",
+    "unblockedDescription": "動画が再び表示されることがあります。フォローはしていません。",
+    "cancel": "キャンセル",
+    "blockFailedDescription": "ブロックに失敗しました。もう一度試してください。"
   },
   "loginDialog": {
     "title": "Divineにサインイン",
     "heading": "ログインしよう。",
-    "subtitleRegister": "招待コードがある？アカウントを作ろう。",
     "subtitleSignIn": "既存のアカウントでlogin.divine.videoからサインインしてください。",
     "tabRegister": "登録",
     "tabSignIn": "サインイン",
-    "checkingInvite": "招待ステータスを確認中...",
-    "inviteUnavailable": "招待による登録は現在ご利用いただけません。次のタブからサインインできます。",
     "tabExtension": "拡張機能",
     "tabExtensionShort": "拡張",
     "tabKey": "キー",
@@ -423,8 +438,9 @@
     "bunkerLabel": "Bunker URI",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Bunkerでログイン",
+    "bunkerAuthPrompt": "署名アプリの承認が必要です。ページを開こうとしましたがブラウザにブロックされました。こちらから開いてください:",
+    "bunkerAuthLink": "署名アプリで承認する",
     "connecting": "接続中...",
-    "errorInviteServiceUnavailable": "招待サービスが利用できません",
     "errorExtensionNotFound": "Nostr拡張機能が見つかりません。NIP-07拡張機能をインストールしてください。",
     "errorExtensionLoginFailed": "拡張機能でのログインに失敗しました",
     "errorKeyLoginFailed": "このキーでログインできませんでした。正しいか確認してください。",
@@ -436,19 +452,22 @@
     "errorFileEmpty": "ファイルの内容を読み込めませんでした。",
     "errorFileNoValidKey": "ファイルに有効な秘密鍵が含まれていません。",
     "errorFileReadFailed": "ファイルの読み込みに失敗しました。",
-    "errorInviteValidationFailed": "招待コードを検証できません",
-    "errorInviteCodeUsed": "この招待コードはすでに使用されています",
     "errorSignInStartFailed": "サインインを開始できません",
-    "errorWaitlistJoinFailed": "順番待ちリストに参加できません"
+    "subtitleCreate": "Divineアカウントを設定しましょう。",
+    "createAccountButton": "アカウントを作成",
+    "creatingAccount": "アカウントを設定中...",
+    "errorSignUpStartFailed": "登録を開始できません"
   },
   "accountSwitcher": {
     "myProfile": "マイプロフィール",
     "settings": "設定",
     "linkedAccounts": "連携アカウント",
+    "relays": "Relays",
     "switchRelay": "リレーを切り替え",
     "switchAccount": "アカウントを切り替え",
     "addAnotherAccount": "別のアカウントを追加",
-    "logOut": "ログアウト"
+    "logOut": "ログアウト",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "動画を報告",
@@ -516,6 +535,7 @@
     "signInButton": "サインイン"
   },
   "badgeDetailModal": {
+    "description": "このバッジの詳細 — 発行者と授与日。",
     "title": "バッジ詳細",
     "officialBadge": "✦ 公式Divineバッジ",
     "issuedBy": "発行者",
@@ -580,6 +600,20 @@
     "mutedKeywordsTitle_one": "ミュート済みキーワード（{{count}}）",
     "mutedKeywordsTitle_other": "ミュート済みキーワード（{{count}}）",
     "noMutedUsers": "誰もミュートしていません。平和です。",
+    "mutedHereTitle_one": "ここでミュート（{{count}}）",
+    "mutedHereTitle_other": "ここでミュート（{{count}}）",
+    "mutedHereDescription": "これらのミュートはWebから追加されました。削除すると、そのミュートだけが解除されます。",
+    "mutedElsewhereTitle_one": "別の場所でミュートまたはブロック（{{count}}）",
+    "mutedElsewhereTitle_other": "別の場所でミュートまたはブロック（{{count}}）",
+    "mutedElsewhereDescription": "別のクライアントまたはデバイスから来たものです。一部はDivineアプリのブロックかもしれません。",
+    "noWebMutedUsers": "Webのミュートはまだありません。",
+    "noUnknownMutedUsers": "今は他のクライアントからのものはありません。",
+    "reviewBeforeUnmute": "確認",
+    "confirmUnmuteTitle": "このミュートを解除しますか？",
+    "confirmUnmuteDescription": "この項目はDivineアプリで設定されたブロックかもしれません。ここで解除すると、kind 10000リストが同期されるすべての場所でそのp-tagが削除されます。",
+    "confirmWebUnmuteDescription": "このミュートはWebから追加されました。別のクライアントが同じp-tagに依存している可能性があるため、削除前に確認してください。",
+    "confirmUnmuteCancel": "残す",
+    "confirmUnmuteAction": "解除",
     "noMutedHashtags": "ミュート済みハッシュタグはまだありません。",
     "noMutedKeywords": "ミュート済みキーワードはありません。フィードはそのままです。",
     "reportHistoryTitle": "報告履歴",
@@ -591,6 +625,7 @@
     "toastErrorTitle": "エラー",
     "toastErrorEnterValue": "ミュートする値を入力してください",
     "toastErrorInvalidNpub": "npubの形式が無効です",
+    "toastErrorMuteYourself": "自分自身をミュートすることはできません。",
     "toastMutedTitle": "ミュートしました",
     "toastMutedDescription": "ミュートリストに追加しました",
     "toastMuteFailed": "ミュートに失敗しました。もう一度試してください。",
@@ -598,7 +633,17 @@
     "toastUnmutedDescription": "ミュートリストから削除しました",
     "toastUnmuteFailed": "ミュート解除に失敗しました。もう一度試してください。",
     "toastFunnelcakeUpdatedTitle": "Funnelcake APIを更新しました",
-    "toastFunnelcakeUpdatedDescription": "今後のREST読み取りには{{url}}を使用します。"
+    "toastFunnelcakeUpdatedDescription": "今後のREST読み取りには{{url}}を使用します。",
+    "unblock": "ブロック解除",
+    "statusUsersBlockedSuffix": "ブロック中のユーザー",
+    "blockedUsersTitle_one": "ブロック済みユーザー（{{count}}）",
+    "blockedUsersTitle_other": "ブロック済みユーザー（{{count}}）",
+    "blockedUsersDescription": "ブロックしたユーザーは公開フォローリストから削除されます。ブロック解除すると動画も再表示されますが、フォローし直すわけではありません。",
+    "mutedUsersDescription": "ミュートしたユーザーは、フォロー関係を変えずにフィードから非表示のままになります。",
+    "noBlockedUsers": "ブロック中のユーザーはいません。",
+    "toastUnblockedTitle": "ブロック解除しました",
+    "toastUnblockedDescription": "ブロック済みユーザーから削除しました。動画が再び表示されることがあります。",
+    "toastUnblockFailed": "ブロック解除に失敗しました。もう一度試してください。"
   },
   "linkedAccountsSettings": {
     "copy": "コピー",
@@ -645,10 +690,13 @@
       "mastodon": "下のテキストを含むtootを投稿し、URLから投稿IDを貼り付けてください。",
       "telegram": "下のテキストを含むメッセージを公開チャンネル/グループに送信し、メッセージパス（例：channelname/123）を貼り付けてください。",
       "bluesky": "下のテキストを含む投稿をBlueskyに行い、投稿URLからレコードキー（rkey）を貼り付けてください。",
-      "discord": "サーバー名または説明にあなたのnpubを含むDiscordサーバーを作成し、永久招待リンクを作成して招待コードを貼り付けてください。"
+      "discord": "下のテキストを含むメッセージを投稿し、そのメッセージを右クリックして「メッセージリンクをコピー」を選択してください。サーバーの招待リンクでは、アカウントの所有者を証明できません。Discordのユーザー名を入力してください。表示名ではなく、プロフィールに表示されるユーザー名です。"
     },
     "toastErrorTitle": "エラー",
     "toastEnterProof": "証明URLまたはIDを入力してください",
+    "toastInvalidDiscordLink": "Discordのメッセージリンクを貼り付けてください。自分のメッセージを右クリックして「メッセージリンクをコピー」を選択します。",
+    "discordUsernameLabel": "あなたのDiscordユーザー名",
+    "discordUsernamePlaceholder": "yourusername",
     "toastCannotDetermineUsername": "URLからユーザー名を特定できませんでした",
     "toastVerifiedTitle": "検証されました！",
     "toastLinkedTitle": "連携しました",
@@ -810,6 +858,8 @@
     "seoDescription": "Divineでこの動画を視聴",
     "seoDescriptionWithAuthor": "Divineで{{name}}のこの動画を視聴",
     "errorTitle": "エラー",
+    "nextVideoUnavailableDescription": "次の動画を読み込めませんでした。もう一度試しますか？",
+    "loadMoreUnavailableDescription": "Couldn't load more videos. Try again?",
     "likedTitle": "いいねしました！",
     "likedDescription": "リアクションが公開されました",
     "likeFailedDescription": "動画へのいいねに失敗しました",
@@ -831,7 +881,12 @@
     "searchPrefix": "検索：{{query}}",
     "searchResults": "検索結果",
     "authorVideos": "{{name}}の動画",
+    "featuredVideos": "注目の動画",
+    "featuredTabWrappedDescription": "その注目タブは終了しました。トレンドをどうぞ。",
+    "featuredNavigationEndedDescription": "この動画はまだありますが、読み込み済みのタブ範囲には入っていません。",
+    "backToFeaturedTab": "{{label}}に戻る",
     "loadingMore": "さらに動画を読み込み中...",
+    "allCaughtUp": "That's the whole haul.",
     "previousVideoAria": "前の動画",
     "nextVideoAria": "次の動画",
     "previousArrow": "← 前へ",
@@ -903,8 +958,10 @@
     "notFoundTitle": "リストが見つかりません",
     "notFoundDescription": "このリストは削除されたか、存在しない可能性があります",
     "browseLists": "リストを見る",
-    "backToLists": "リストに戻る",
-    "listCreator": "リスト作成者",
+    "backToCreatorLists": "{{name}}のすべてのリスト",
+    "videoList": "動画リスト",
+    "untitledVideoList": "無題の動画リスト",
+    "byCreator": "{{name}}作",
     "videoCount_one": "{{count}}本の動画",
     "videoCount_other": "{{count}}本の動画",
     "collaborative": "共同編集",
@@ -931,18 +988,15 @@
     "retry": "再試行",
     "peopleCount_one": "{{count}}人",
     "peopleCount_other": "{{count}}人",
-    "notFoundTitle": "会話が見つかりません",
-    "notFoundDescription": "受信箱に戻って新しいメッセージを始めてください。",
-    "backToInbox": "受信箱に戻る",
     "dmUnavailableTitle": "ダイレクトメッセージは利用できません",
     "dmUnavailableDescription": "この署名ツールは認証はできますが、プライベートメッセージに必要なNIP-44の暗号化メソッドを公開していません。",
+    "backToSupport": "サポートに戻る",
     "noMessages": "まだメッセージがありません",
     "noMessagesHint": "最初のメッセージを送信してこのスレッドを開始してください。",
-    "readyToShare": "シェアの準備完了",
-    "placeholderShare": "メモを追加（任意）...",
     "placeholderMessage": "メッセージを書く..."
   },
   "videoCommentsModal": {
+    "description": "みんなのコメントを見て、自分のコメントも残そう。",
     "title": "コメント",
     "loading": "コメントを読み込み中...",
     "emptyMessage": "まだコメントがありません",
@@ -960,7 +1014,8 @@
   "thumbnailPlayer": {
     "videoPreview": "動画プレビュー",
     "thumbnailAlt": "動画サムネイル",
-    "playVideo": "動画を再生"
+    "playVideo": "動画を再生",
+    "openVideo": "動画を開く"
   },
   "hashtagExplorer": {
     "heading": "ハッシュタグエクスプローラー",
@@ -1036,8 +1091,7 @@
       "likes": "いいね",
       "comments": "コメント",
       "follows": "フォロー",
-      "reposts": "リポスト",
-      "zaps": "Zap"
+      "reposts": "リポスト"
     },
     "empty": {
       "all": {
@@ -1063,16 +1117,33 @@
       "reposts": {
         "title": "リポストの通知はまだありません。",
         "description": "あなたの動画のリポストがここに表示されます。"
-      },
-      "zaps": {
-        "title": "Zapの通知はまだありません。",
-        "description": "動画へのZapがここに表示されます。"
       }
     },
     "errorTitle": "通知の読み込みに失敗しました",
     "errorFallback": "あとでもう一度お試しください",
     "sectionNew": "新着",
-    "sectionEarlier": "これまで"
+    "sectionEarlier": "これまで",
+    "message": {
+      "liked": "あなたの動画に「いいね」しました",
+      "commented": "あなたの動画にコメントしました",
+      "reposted": "あなたの動画をリポストしました",
+      "followed": "あなたをフォローしました",
+      "andOthers_one": "他{{count}}人",
+      "andOthers_other": "他{{count}}人",
+      "likedTitled": "{{title}}に「いいね」しました",
+      "commentedTitled": "{{title}}にコメントしました",
+      "repostedTitled": "{{title}}をリポストしました",
+      "likedComment": "あなたのコメントにいいねしました",
+      "likedCommentTitled": "{{title}} へのあなたのコメントにいいねしました"
+    },
+    "video": {
+      "untitled": "あなたの動画"
+    },
+    "a11y": {
+      "openVideo": "{{title}}を開く",
+      "viewProfile": "{{name}}のプロフィール",
+      "unread": "未読"
+    }
   },
   "getEmbedPage": {
     "title": "Divineウィジェットを埋め込む",
@@ -1140,7 +1211,7 @@
   "trendingPage": {
     "heading": "トレンド",
     "subheading": "コミュニティで人気のコンテンツをチェック",
-    "rssTitle": "DiVine - トレンド",
+    "rssTitle": "Divine - トレンド",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1201,7 +1272,7 @@
     "notFoundDescription": {
       "vine": "このVineユーザーはまだNostrネットワークにインポートされていない可能性があります。",
       "nip05": "NIP-05識別子が正しいかご確認ください。",
-      "legacy": "このユーザー名は旧VineプロフィールやOpenVineハンドルと一致しません。"
+      "legacy": "このユーザー名は既知のプロフィールと一致しません。"
     }
   },
   "atUsernamePage": {
@@ -1297,14 +1368,11 @@
   "pwaInstallPrompt": {
     "close": "閉じる",
     "getDivine": "Divineを入手",
-    "installDivineWeb": "Divine Webをインストール",
     "descriptionNative": "ネイティブアプリをインストールすると、Divineを最高の体験で楽しめます",
-    "descriptionWeb": "アプリをインストールするとさらに快適に使えます",
     "appStore": "App Store",
     "appStoreAria": "App StoreでDivineをダウンロード",
     "googlePlay": "Google Play",
     "googlePlayAria": "Google PlayでDivineを入手",
-    "install": "インストール",
     "notNow": "あとで"
   },
   "relaySelector": {
@@ -1329,7 +1397,6 @@
     "muteErrorDescription": "ミュートを保存できませんでした。もう一度お試しください。",
     "deleteVideo": "動画を削除",
     "reportVideo": "動画を報告",
-    "sendViaMessage": "メッセージで送信",
     "reportUser": "ユーザーを報告",
     "muteUser": "{{name}}をミュート",
     "viewSource": "ソースを表示",
@@ -1393,23 +1460,6 @@
     "confirm": "コメントを削除",
     "deleting": "削除中..."
   },
-  "inviteCodeForm": {
-    "label": "招待コード",
-    "placeholder": "招待コードを貼り付けてください",
-    "checking": "確認中...",
-    "continue": "続ける",
-    "joinWaitlist": "招待がない?ウェイトリストに登録してください。"
-  },
-  "invitesLandingPage": {
-    "seoTitle": "招待コード {{code}} でdiVineに参加",
-    "seoTitleDefault": "diVineに参加",
-    "seoDescription": "招待されています！コード {{code}} を使ってdiVineに参加しましょう。",
-    "seoDescriptionDefault": "招待コードを使ってdiVineに参加し、動画の共有を始めましょう。",
-    "heading": "招待されています！",
-    "subheading": "diVineに参加するには招待コードを入力してください",
-    "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
-    "signIn": "サインイン"
-  },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
     "defaultDescription": "Divineローンチの舞台裏",
@@ -1418,5 +1468,99 @@
     "podcastEpisode": "ポッドキャストエピソード",
     "openInApplePodcasts": "Apple Podcastsで開く",
     "playEpisode": "エピソードを再生"
+  },
+  "listsPage": {
+    "createList": "リストを作成",
+    "createFirstList": "最初のリストを作成",
+    "createVideoList": "動画リスト",
+    "createPeopleList": "ピープルリスト"
+  },
+  "createPeopleListDialog": {
+    "title": "ピープルリストを作成",
+    "description": "気になる人をまとめて、最新のループを一か所で楽しもう。",
+    "nameLabel": "リスト名 *",
+    "namePlaceholder": "お気に入りのクリエイター",
+    "descriptionLabel": "説明",
+    "descriptionPlaceholder": "ループを見逃したくない人たち…",
+    "imageLabel": "カバー画像のURL",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "まず名前をつけてね。",
+    "reservedName": "その名前はシステムリスト用に予約されています。",
+    "imageInvalid": "完全な画像URLを入力してね。",
+    "cancelButton": "キャンセル",
+    "creatingButton": "作成中...",
+    "createButton": "リストを作成",
+    "createdTitle": "ピープルリストを作成しました。",
+    "createdDescription": "「{{name}}」の準備ができました。",
+    "failedTitle": "うまくいきませんでした。",
+    "failedDescription": "ピープルリストの作成でつまずきました。もう一度試す？"
+  },
+  "editPeopleListDialog": {
+    "title": "ピープルリストを編集",
+    "description": "このリストの名前・説明・カバー画像を更新します。",
+    "nameLabel": "リスト名 *",
+    "namePlaceholder": "お気に入りのクリエイター",
+    "descriptionLabel": "説明",
+    "descriptionPlaceholder": "ループを見逃したくない人たち…",
+    "imageLabel": "カバー画像のURL",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "まず名前をつけてね。",
+    "imageInvalid": "完全な画像URLを入力してね。",
+    "cancelButton": "キャンセル",
+    "savingButton": "保存中...",
+    "saveButton": "保存",
+    "savedTitle": "保存しました。",
+    "savedDescription": "「{{name}}」を更新しました。",
+    "failedTitle": "保存できませんでした。",
+    "failedDescription": "ピープルリストの更新でつまずきました。もう一度試す？"
+  },
+  "deleteListDialog": {
+    "title": "リストを削除しますか？",
+    "videosDescription": "リスト「{{name}}」の削除をリクエストします。リスト内の動画には影響しません。",
+    "peopleDescription": "リスト「{{name}}」の削除をリクエストします。リスト内の人には影響しません。",
+    "noteLabel": "注意:",
+    "relayNote": "この操作はリレーに削除リクエストを送信します。多くのリレーは応じますが、すべてのリレーで削除される保証はありません。",
+    "cancelButton": "キャンセル",
+    "deletingButton": "削除中...",
+    "deleteButton": "リストを削除"
+  },
+  "peopleListDetailPage": {
+    "editList": "編集",
+    "delete": "削除",
+    "share": "シェア",
+    "deletedTitle": "ピープルリストを削除しました。",
+    "deletedDescription": "「{{name}}」を削除しました。",
+    "deleteFailedTitle": "削除できませんでした。",
+    "deleteFailedDescription": "ピープルリストの削除でつまずきました。もう一度試す？"
+  },
+  "userList": {
+    "searchPlaceholder": "名前で検索",
+    "noMatches": "一致する人はいません。別の名前で試しますか？",
+    "searchHint": "文字または数字を2文字以上入力してください。",
+    "searchUnavailable": "今は検索できません。もう一度試しますか？",
+    "noFollowers": "フォロワーはまだいません。",
+    "noFollowing": "まだ誰もフォローしていません。"
+  },
+  "supporters": {
+    "chip": "サポーター",
+    "title": "Divine サポーター",
+    "intro": "Divineが独立し、人のための、誰にでも開かれた場所であり続けられるよう応援してください。",
+    "membership": "サポーターメンバーシップ",
+    "thankYou": "Divineを応援してくださり、ありがとうございます。",
+    "thanksDetail": "あなたの応援が、人のためのこの場所を支えています。ご参加いただきうれしく思います。",
+    "showChip": "プロフィールにサポーターバッジを表示する",
+    "privacy": "メンバーシップは初期設定では非公開です。オンにするとバッジを公開できます。いつでも変更できます。",
+    "check": "サポーターの状態を確認",
+    "checking": "サポーターの状態を確認中…",
+    "checkHint": "すでにサポーターですか？このアカウントのメンバーシップを確認してください。署名ツールが承認を求める場合があります。",
+    "checkError": "サポーターの状態を確認できませんでした。もう一度お試しください。",
+    "unknown": "サポーターの状態はまだ確定していません。再購入する前にもう一度確認してください。",
+    "saveError": "表示設定を保存できませんでした。もう一度お試しください。",
+    "purchaseInstructions": "Divineのモバイルアプリでサポーターになれます。同じアカウントでログインし、設定のサポーター項目を開いてください。購入済みの場合は、アプリで購入を復元してから、ここで状態を確認してください。",
+    "getApp": "アプリを入手してサポーターになる",
+    "verificationPrerequisite": "認証を申請するにはサポーターになってください",
+    "verificationNext": "次のステップ：認証",
+    "verificationDetail": "認証の申請にはサポーターメンバーシップが必要です。メンバーシップ自体は本人確認を行わず、承認も保証しません。既存のアカウントを連携して本人であることの証明を共有できます。",
+    "linkAccounts": "連携アカウントに進む"
   }
 }

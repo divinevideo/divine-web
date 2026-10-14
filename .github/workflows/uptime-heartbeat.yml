@@ -1,0 +1,90 @@
+# ABOUTME: Scheduled uptime heartbeat — probes the live divine.video apex every
+# ABOUTME: 15 min and alerts #divine-alerts if it's down, independent of deploys.
+
+name: Uptime heartbeat
+
+# The deploy workflow only alerts at deploy time. This catches an outage that
+# happens with no deploy in flight (e.g. the 2026-06-25 blank-page incident sat
+# broken ~12h with no new pushes to re-trigger anything). Posts to the same
+# #divine-alerts webhook as the deploy notify-failure job.
+
+on:
+  schedule:
+    # Every 15 minutes. GitHub cron is best-effort and can lag under load, which
+    # is fine here: the goal is catching a multi-hour outage within ~15 min, not
+    # second-precision. A sustained outage re-pings each run until it recovers
+    # (Actions is stateless between runs, so there is no down/up dedup by design).
+    - cron: '*/15 * * * *'
+  # Manual trigger, including a self-test that forces an alert so the Slack wiring
+  # can be verified without faking an outage.
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: 'Send a test alert to #divine-alerts regardless of site status'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Probe divine.video and alert on sustained failure
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_DIVINE_ALERTS_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TEST_ALERT: ${{ github.event.inputs.test_alert }}
+        run: |
+          set -uo pipefail
+
+          if [ -z "${SLACK_WEBHOOK:-}" ]; then
+            echo "SLACK_DIVINE_ALERTS_WEBHOOK not set; skipping heartbeat."
+            exit 0
+          fi
+
+          post() {
+            # $1 = message text. Built via jq --arg so no input can break the JSON.
+            payload="$(jq -n --arg t "$1" '{text: $t}')"
+            if curl -sS -X POST -H 'Content-type: application/json' \
+                 --max-time 15 --data "$payload" "$SLACK_WEBHOOK" >/dev/null; then
+              echo "Posted to #divine-alerts."
+            else
+              echo "WARNING: failed to POST to Slack webhook."
+            fi
+          }
+
+          if [ "${TEST_ALERT:-false}" = "true" ]; then
+            post "$(printf '🧪 *uptime heartbeat test* — wiring OK, please ignore.\n<%s|heartbeat run>' "$RUN_URL")"
+            exit 0
+          fi
+
+          # index.html is served cache-control: no-store, so this is what real
+          # visitors get right now. The outage class is a 200 with an empty/short
+          # body (pointer resolved, body not served), so check status, size, AND
+          # the root element. Probe 3x to ride out a transient blip; only a 3/3
+          # failure pages the channel.
+          status=000
+          bytes=0
+          up=0
+          for attempt in 1 2 3; do
+            : > /tmp/probe-body
+            status="$(curl -sS -o /tmp/probe-body -w '%{http_code}' --max-time 15 "https://divine.video/?hb=${GITHUB_RUN_ID}-${attempt}" 2>/dev/null || true)"
+            status="${status:-000}"
+            bytes="$(wc -c < /tmp/probe-body | tr -d ' ')"
+            if [ "$status" = "200" ] && [ "${bytes:-0}" -gt 100 ] && grep -q 'id="root"' /tmp/probe-body; then
+              up=1
+              break
+            fi
+            echo "Probe ${attempt}: HTTP ${status}, ${bytes} bytes — not healthy."
+            if [ "$attempt" -lt 3 ]; then sleep 10; fi
+          done
+
+          if [ "$up" = "1" ]; then
+            echo "Site healthy (HTTP ${status}, ${bytes} bytes). No alert."
+            exit 0
+          fi
+
+          echo "Site DOWN after 3 probes (last: HTTP ${status}, ${bytes} bytes). Alerting."
+          post "$(printf '🔴 *divine.video appears DOWN* — uptime heartbeat\n3/3 probes failed (last: HTTP %s, %s bytes). Visitors are likely seeing a blank or error page.\n<%s|heartbeat run>  ·  check https://divine.video' "$status" "$bytes" "$RUN_URL")"

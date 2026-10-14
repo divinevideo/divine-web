@@ -131,6 +131,56 @@ describe('DivineJWTSigner', () => {
     );
   });
 
+  it('self-heals the cached pubkey when the remote signer returns a different pubkey', async () => {
+    const stalePubkey = 'a'.repeat(64);
+    const freshPubkey = 'b'.repeat(64);
+    const unsignedEvent = {
+      kind: 1,
+      content: 'pubkey rotation',
+      tags: [],
+      created_at: 1234567890,
+    };
+    const signedEvent = {
+      ...unsignedEvent,
+      id: 'event-id-rotated',
+      pubkey: freshPubkey, // remote signer used a different key than we cached
+      sig: 'sig-rotated',
+    };
+
+    mockFetch
+      .mockResolvedValueOnce({
+        json: async () => ({ result: stalePubkey }),
+      })
+      .mockResolvedValueOnce({
+        json: async () => ({ result: signedEvent }),
+      })
+      .mockResolvedValueOnce({
+        json: async () => ({ result: signedEvent }),
+      });
+
+    const signer = new DivineJWTSigner({ token: 'rotation-token' });
+
+    // First sign uses the stale cached pubkey on the unsigned event,
+    // but returns a signed event whose pubkey is the fresh one.
+    await expect(signer.signEvent(unsignedEvent)).resolves.toEqual(signedEvent);
+
+    // The cache must now reflect the fresh pubkey, even though we never
+    // re-fetched it from get_public_key.
+    await expect(signer.getPublicKey()).resolves.toBe(freshPubkey);
+
+    // Subsequent signEvent calls put the corrected pubkey on the unsigned event.
+    await signer.signEvent(unsignedEvent);
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      `${DIVINE_LOGIN_ORIGIN}/api/nostr`,
+      expect.objectContaining({
+        body: JSON.stringify({
+          method: 'sign_event',
+          params: [{ ...unsignedEvent, pubkey: freshPubkey }],
+        }),
+      })
+    );
+  });
+
   it('routes nip04 and nip44 encryption through the same RPC endpoint', async () => {
     mockFetch
       .mockResolvedValueOnce({

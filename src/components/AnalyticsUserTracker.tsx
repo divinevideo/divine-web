@@ -4,12 +4,16 @@
 import { useEffect } from 'react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { setAnalyticsUserId, trackUserAction } from '@/lib/analytics';
+import { configureProductAnalyticsIdentity, productAnalytics } from '@/lib/analyticsClient';
 
 export function AnalyticsUserTracker() {
-  const { user } = useCurrentUser();
+  const { user, signer, isResolvingJwt } = useCurrentUser();
 
   useEffect(() => {
     if (user) {
+      configureProductAnalyticsIdentity({ userPubkey: user.pubkey, signer });
+      void productAnalytics.flush();
+
       // Set user ID for analytics
       setAnalyticsUserId(user.pubkey);
 
@@ -17,11 +21,13 @@ export function AnalyticsUserTracker() {
       trackUserAction('login', {
         login_method: 'nostr',
       });
-    } else {
+    } else if (!isResolvingJwt) {
+      configureProductAnalyticsIdentity({});
+
       // Clear user ID when logged out
       setAnalyticsUserId(null);
     }
-  }, [user]);
+  }, [isResolvingJwt, signer, user]);
 
   return null; // This component doesn't render anything
 }

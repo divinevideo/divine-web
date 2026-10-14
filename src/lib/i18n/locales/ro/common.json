@@ -8,8 +8,8 @@
     "home": "Acasa",
     "discover": "Descopera",
     "popular": "Popular",
+    "services": "Services",
     "search": "Cauta",
-    "messages": "Mesaje",
     "notifications": "Notificari",
     "profile": "Profil",
     "analytics": "Analitice"
@@ -30,7 +30,9 @@
     "help": "Ajutor",
     "merch": "Merch",
     "familyResources": "Resurse pentru familie",
-    "kidsPolicy": "Politica pentru copii"
+    "kidsPolicy": "Politica pentru copii",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Mod luminos",
@@ -68,6 +70,8 @@
     "classic": "Clasic",
     "hot": "Popular",
     "new": "Nou",
+    "featured": "Recomandat",
+    "sponsoredBy": "Sponsorizat de <bdi>{{sponsorName}}</bdi>",
     "tags": "Etichete",
     "verifiedOnly": "Creat de oameni",
     "verifiedOnlyHint": "Afiseaza doar videoclipuri cu verificare ProofMode",
@@ -101,19 +105,6 @@
     "reply": "Raspunde",
     "comment": "Comenteaza"
   },
-  "messages": {
-    "badge": "Mesaje",
-    "title": "Mesaje directe",
-    "subtitle": "Vorbeste cu suportul, trimite vines in privat sau continua o conversatie cu persoanele pe care le urmaresti.",
-    "searchPlaceholder": "Gaseste persoane carora sa le scrii",
-    "newMessage": "Mesaj nou",
-    "readyToShare": "Gata de partajare privata.",
-    "shareWithTitle": "Urmatorul tau mesaj va include “{{title}}”.",
-    "shareWithLink": "Urmatorul tau mesaj va include un link vine.",
-    "signerUnsupported": "Signerul tau actual te poate autentifica, dar nu ofera inca criptare NIP-44. Treci la un nsec, bunker sau alt signer care suporta NIP-44 pentru a folosi mesaje directe pe web.",
-    "supportBadge": "Suport",
-    "supportSummary": "Intreaba despre buguri, moderare sau probleme de cont."
-  },
   "support": {
     "title": "Suport",
     "subtitle": "Ai nevoie de ajutor? Suntem aici sa te ajutam.",
@@ -134,6 +125,19 @@
     "communityDescription": "Alatura-te discutiilor comunitatii si conecteaza-te cu alti utilizatori Divine pe Nostr.",
     "communityBody": "Divine este construit pe Nostr, un protocol social descentralizat. Gaseste-ne in clientul tau Nostr preferat."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Eticheta nu a fost gasita",
     "notFoundDescription": "Eticheta solicitata nu a putut fi gasita.",
@@ -146,8 +150,11 @@
     "emptyState": "Nu exista categorii disponibile acum.",
     "metaTitle": "Rasfoieste categoriile - Divine",
     "metaDescription": "Exploreaza categoriile video de pe Divine - comedie, muzica, dans, animale, sport, mancare si multe altele.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} videoclip",
+    "videoCount_two": "{{count}} videos",
     "videoCount_few": "{{count}} videoclipuri",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} de videoclipuri"
   },
   "vineBadge": {
@@ -185,7 +192,6 @@
       "pinToProfile": "Fixează pe profil",
       "deleteVideo": "Șterge videoclipul",
       "reportVideo": "Raportează videoclipul",
-      "sendViaMessage": "Trimite prin mesaj",
       "reportUser": "Raportează utilizatorul",
       "muteUser": "Mută {{name}}",
       "viewSource": "Vezi sursa"
@@ -387,7 +393,6 @@
     "message": "Mesaj",
     "reportUser": "Raportează utilizatorul",
     "subscribeRss": "Abonează-te la fluxul RSS",
-    "videos": "Videoclipuri",
     "followers": "Urmăritori",
     "followingStat": "Urmărește",
     "followingDialogTitle": "Urmărește",
@@ -396,17 +401,26 @@
     "originalVineLoops": "Loop-uri Vine originale",
     "classicVines": "Vine-uri clasice",
     "classicVineStatsCaption": "Statistici de pe platforma originală Vine (2013-2017)",
-    "legacySocialLabel": "{{label}}: {{handle}}"
+    "legacySocialLabel": "{{label}}: {{handle}}",
+    "blockUser": "Blochează utilizatorul",
+    "unblockUser": "Deblochează utilizatorul",
+    "blockDialogTitle": "Blochezi acest utilizator?",
+    "blockDialogDescription": "{{name}} va fi eliminat din lista ta publică de urmărite, iar videoclipurile lui nu vor mai apărea în feedurile tale.",
+    "unblockDialogTitle": "Deblochezi acest utilizator?",
+    "unblockDialogDescription": "Asta va afișa din nou videoclipurile lui {{name}}, dar nu îl va urmări din nou.",
+    "blockedTitle": "Blocat.",
+    "blockedDescription": "A fost scos din lista ta de urmărite și din feedurile tale.",
+    "unblockedTitle": "Deblocat.",
+    "unblockedDescription": "Videoclipurile lui pot apărea din nou. Nu îl urmărești.",
+    "cancel": "Anulează",
+    "blockFailedDescription": "Blocarea a eșuat. Mai încearcă."
   },
   "loginDialog": {
     "title": "Conectează-te la Divine",
     "heading": "Intră.",
-    "subtitleRegister": "Ai o invitație? Fă-ți un cont.",
     "subtitleSignIn": "Conectează-te pe login.divine.video cu contul existent.",
     "tabRegister": "Înregistrare",
     "tabSignIn": "Conectare",
-    "checkingInvite": "Se verifică starea invitației...",
-    "inviteUnavailable": "Înscrierea pe bază de invitație nu e disponibilă acum. Te poți totuși conecta din tab-ul următor.",
     "tabExtension": "Extensie",
     "tabExtensionShort": "Ext",
     "tabKey": "Cheie",
@@ -424,8 +438,9 @@
     "bunkerLabel": "URI Bunker",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Conectează-te cu Bunker",
+    "bunkerAuthPrompt": "Semnatarul tău are nevoie de aprobare. Am încercat să deschidem pagina lui, dar browserul a blocat-o — deschide-o aici:",
+    "bunkerAuthLink": "Aprobă în semnatar",
     "connecting": "Se conectează...",
-    "errorInviteServiceUnavailable": "Serviciul de invitații e indisponibil",
     "errorExtensionNotFound": "Extensie Nostr negăsită. Te rugăm instalează o extensie NIP-07.",
     "errorExtensionLoginFailed": "Conectarea cu extensia a eșuat",
     "errorKeyLoginFailed": "Conectarea cu această cheie a eșuat. Verifică dacă e corectă.",
@@ -437,19 +452,22 @@
     "errorFileEmpty": "Nu am putut citi conținutul fișierului.",
     "errorFileNoValidKey": "Fișierul nu conține o cheie secretă validă.",
     "errorFileReadFailed": "Citirea fișierului a eșuat.",
-    "errorInviteValidationFailed": "Codul de invitație nu poate fi validat",
-    "errorInviteCodeUsed": "Acest cod de invitație a fost deja folosit",
     "errorSignInStartFailed": "Conectarea nu poate fi pornită",
-    "errorWaitlistJoinFailed": "Înscrierea pe lista de așteptare a eșuat"
+    "subtitleCreate": "Configurează-ți contul Divine.",
+    "createAccountButton": "Creează cont",
+    "creatingAccount": "Se configurează contul...",
+    "errorSignUpStartFailed": "Înregistrarea nu a putut fi pornită"
   },
   "accountSwitcher": {
     "myProfile": "Profilul meu",
     "settings": "Setări",
     "linkedAccounts": "Conturi conectate",
+    "relays": "Relays",
     "switchRelay": "Schimbă releul",
     "switchAccount": "Schimbă contul",
     "addAnotherAccount": "Adaugă alt cont",
-    "logOut": "Deconectează-te"
+    "logOut": "Deconectează-te",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "Raportează videoclipul",
@@ -517,6 +535,7 @@
     "signInButton": "Conectează-te"
   },
   "badgeDetailModal": {
+    "description": "Povestea completă a acestei insigne — cine a acordat-o și când.",
     "title": "Detalii insignă",
     "officialBadge": "✦ Insignă oficială Divine",
     "issuedBy": "Emisă de",
@@ -581,6 +600,20 @@
     "mutedKeywordsTitle_one": "Cuvinte cheie pe mute ({{count}})",
     "mutedKeywordsTitle_other": "Cuvinte cheie pe mute ({{count}})",
     "noMutedUsers": "Nimeni pe mute. Liniște.",
+    "mutedHereTitle_one": "Pe mute aici ({{count}})",
+    "mutedHereTitle_other": "Pe mute aici ({{count}})",
+    "mutedHereDescription": "Aceste mute-uri au fost adăugate de pe web. Eliminarea unuia ridică doar acel mute.",
+    "mutedElsewhereTitle_one": "Pe mute sau blocat în altă parte ({{count}})",
+    "mutedElsewhereTitle_other": "Pe mute sau blocați în altă parte ({{count}})",
+    "mutedElsewhereDescription": "Acestea vin de pe alt client sau dispozitiv. Unele pot fi Block-uri din aplicația Divine.",
+    "noWebMutedUsers": "Niciun mute web încă.",
+    "noUnknownMutedUsers": "Nimic de la alți clienți acum.",
+    "reviewBeforeUnmute": "Revizuiește",
+    "confirmUnmuteTitle": "Ridici acest mute?",
+    "confirmUnmuteDescription": "Această intrare poate fi un Block setat în aplicația Divine. Ridicarea ei aici elimină acel p-tag peste tot unde se sincronizează lista ta kind 10000.",
+    "confirmWebUnmuteDescription": "Acest mute a fost adăugat de pe web. Revizuiește-l înainte să-l elimini, în caz că alt client depinde acum de același p-tag.",
+    "confirmUnmuteCancel": "Păstrează",
+    "confirmUnmuteAction": "Ridică",
     "noMutedHashtags": "Niciun hashtag pe mute încă.",
     "noMutedKeywords": "Niciun cuvânt cheie pe mute. Feed-ul tău e brut.",
     "reportHistoryTitle": "Istoric raportări",
@@ -592,6 +625,7 @@
     "toastErrorTitle": "Eroare",
     "toastErrorEnterValue": "Te rugăm introdu o valoare pentru mute",
     "toastErrorInvalidNpub": "Format npub invalid",
+    "toastErrorMuteYourself": "Nu te poți dezactiva pe tine.",
     "toastMutedTitle": "Mut",
     "toastMutedDescription": "Adăugat cu succes pe lista de mute",
     "toastMuteFailed": "Mute-ul a eșuat. Mai încearcă.",
@@ -599,7 +633,24 @@
     "toastUnmutedDescription": "Eliminat de pe lista de mute",
     "toastUnmuteFailed": "Anularea mute-ului a eșuat. Mai încearcă.",
     "toastFunnelcakeUpdatedTitle": "API Funnelcake actualizat",
-    "toastFunnelcakeUpdatedDescription": "Folosesc {{url}} pentru citirile REST viitoare."
+    "toastFunnelcakeUpdatedDescription": "Folosesc {{url}} pentru citirile REST viitoare.",
+    "unblock": "Deblochează",
+    "statusUsersBlockedSuffix": "utilizatori blocați",
+    "blockedUsersTitle_one": "Utilizatori blocați ({{count}})",
+    "blockedUsersTitle_other": "Utilizatori blocați ({{count}})",
+    "blockedUsersDescription": "Utilizatorii blocați sunt eliminați din lista ta publică de urmărite. Deblocarea le afișează din nou videoclipurile, dar nu îi urmărește din nou.",
+    "mutedUsersDescription": "Utilizatorii pe mute rămân ascunși din feedurile tale fără să schimbe pe cine urmărești.",
+    "noBlockedUsers": "Niciun utilizator blocat.",
+    "toastUnblockedTitle": "Deblocat",
+    "toastUnblockedDescription": "Eliminat din utilizatorii blocați. Videoclipurile lui pot apărea din nou.",
+    "toastUnblockFailed": "Deblocarea a eșuat. Mai încearcă.",
+    "mutedHereTitle_few": "Pe mute aici ({{count}})",
+    "mutedElsewhereTitle_few": "Pe mute sau blocați în altă parte ({{count}})",
+    "blockedUsersTitle_few": "Utilizatori blocați ({{count}})",
+    "mutedUsersTitle_few": "Utilizatori pe mute ({{count}})",
+    "mutedHashtagsTitle_few": "Hashtaguri pe mute ({{count}})",
+    "mutedKeywordsTitle_few": "Cuvinte cheie pe mute ({{count}})",
+    "reportHistoryDescription_few": "Conținut raportat de tine ({{count}})"
   },
   "linkedAccountsSettings": {
     "copy": "Copiază",
@@ -646,10 +697,13 @@
       "mastodon": "Postează un toot care să conțină textul de mai jos, apoi lipește ID-ul postării din URL.",
       "telegram": "Trimite un mesaj într-un canal/grup public care să conțină textul de mai jos, apoi lipește calea mesajului (ex. nume_canal/123).",
       "bluesky": "Postează pe Bluesky un mesaj care să conțină textul de mai jos, apoi lipește cheia înregistrării (rkey) din URL-ul postării.",
-      "discord": "Creează un server Discord cu npub-ul tău în numele sau descrierea serverului, apoi creează un link de invitație permanent și lipește codul invitației."
+      "discord": "Postează un mesaj care să conțină textul de mai jos, apoi dă clic dreapta pe el și alege „Copiază link-ul mesajului”. O invitație pe un server nu poate dovedi cine deține un cont. Introdu numele tău de utilizator Discord — cel de pe profilul tău, nu numele afișat."
     },
     "toastErrorTitle": "Eroare",
     "toastEnterProof": "Te rugăm introdu URL-ul sau ID-ul dovezii",
+    "toastInvalidDiscordLink": "Lipește link-ul unui mesaj Discord: dă clic dreapta pe mesajul tău și alege „Copiază link-ul mesajului”.",
+    "discordUsernameLabel": "Numele tău de utilizator Discord",
+    "discordUsernamePlaceholder": "numedeutilizator",
     "toastCannotDetermineUsername": "Nu am putut determina numele de utilizator din URL",
     "toastVerifiedTitle": "Verificat!",
     "toastLinkedTitle": "Conectat",
@@ -811,6 +865,8 @@
     "seoDescription": "Vezi acest videoclip pe Divine",
     "seoDescriptionWithAuthor": "Vezi acest videoclip de la {{name}} pe Divine",
     "errorTitle": "Eroare",
+    "nextVideoUnavailableDescription": "Nu s-a putut incarca urmatorul videoclip. Incerci din nou?",
+    "loadMoreUnavailableDescription": "Couldn't load more videos. Try again?",
     "likedTitle": "Apreciat!",
     "likedDescription": "Reacția ta a fost publicată",
     "likeFailedDescription": "Aprecierea videoclipului a eșuat",
@@ -832,7 +888,12 @@
     "searchPrefix": "Căutare: {{query}}",
     "searchResults": "Rezultatele căutării",
     "authorVideos": "Videoclipurile lui {{name}}",
+    "featuredVideos": "Videoclipuri recomandate",
+    "featuredTabWrappedDescription": "Fila aceea recomandată s-a încheiat. Uite In tendinte.",
+    "featuredNavigationEndedDescription": "Videoclipul e tot aici, dar nu mai e în partea încărcată a filei.",
+    "backToFeaturedTab": "Înapoi la {{label}}",
     "loadingMore": "Se încarcă mai multe videoclipuri...",
+    "allCaughtUp": "That's the whole haul.",
     "previousVideoAria": "Videoclipul anterior",
     "nextVideoAria": "Videoclipul următor",
     "previousArrow": "← anteriorul",
@@ -904,8 +965,10 @@
     "notFoundTitle": "Listă negăsită",
     "notFoundDescription": "Această listă s-ar putea să fi fost ștearsă sau să nu existe",
     "browseLists": "Răsfoiește listele",
-    "backToLists": "Înapoi la liste",
-    "listCreator": "Creatorul listei",
+    "backToCreatorLists": "Toate listele lui {{name}}",
+    "videoList": "Listă video",
+    "untitledVideoList": "Listă video fără titlu",
+    "byCreator": "De {{name}}",
     "videoCount_one": "{{count}} videoclip",
     "videoCount_other": "{{count}} videoclipuri",
     "collaborative": "Colaborativ",
@@ -932,18 +995,15 @@
     "retry": "Reîncearcă",
     "peopleCount_one": "{{count}} persoană",
     "peopleCount_other": "{{count}} persoane",
-    "notFoundTitle": "Conversație negăsită",
-    "notFoundDescription": "Întoarce-te la inbox și începe un mesaj nou.",
-    "backToInbox": "Înapoi la inbox",
     "dmUnavailableTitle": "Mesajele directe nu sunt disponibile",
     "dmUnavailableDescription": "Acest signer te poate autentifica, dar nu expune metodele de criptare NIP-44 necesare pentru mesaje private.",
+    "backToSupport": "Înapoi la suport",
     "noMessages": "Niciun mesaj încă",
     "noMessagesHint": "Trimite primul mesaj ca să deschizi acest fir.",
-    "readyToShare": "Gata de distribuit",
-    "placeholderShare": "Adaugă o notă opțională...",
     "placeholderMessage": "Scrie un mesaj..."
   },
   "videoCommentsModal": {
+    "description": "Vezi ce spun ceilalți și lasă propriul tău comentariu.",
     "title": "Comentarii",
     "loading": "Se încarcă comentariile...",
     "emptyMessage": "Niciun comentariu încă",
@@ -961,7 +1021,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Previzualizare videoclip",
     "thumbnailAlt": "Miniatură videoclip",
-    "playVideo": "Redă videoclipul"
+    "playVideo": "Redă videoclipul",
+    "openVideo": "Deschide videoclipul"
   },
   "hashtagExplorer": {
     "heading": "Explorator de hashtag-uri",
@@ -1037,8 +1098,7 @@
       "likes": "Aprecieri",
       "comments": "Comentarii",
       "follows": "Urmăriri",
-      "reposts": "Repostări",
-      "zaps": "Zaps"
+      "reposts": "Repostări"
     },
     "empty": {
       "all": {
@@ -1064,16 +1124,34 @@
       "reposts": {
         "title": "Nicio repostare încă.",
         "description": "Repostările videoclipurilor tale apar aici."
-      },
-      "zaps": {
-        "title": "Niciun zap încă.",
-        "description": "Zaps-urile pe videoclipurile tale apar aici."
       }
     },
     "errorTitle": "Notificările n-au putut fi încărcate",
     "errorFallback": "Încearcă din nou mai târziu",
     "sectionNew": "Noi",
-    "sectionEarlier": "Mai vechi"
+    "sectionEarlier": "Mai vechi",
+    "message": {
+      "liked": "ți-a apreciat videoclipul",
+      "commented": "a comentat la videoclipul tău",
+      "reposted": "ți-a redistribuit videoclipul",
+      "followed": "a început să te urmărească",
+      "likedTitled": "a apreciat {{title}}",
+      "commentedTitled": "a comentat la {{title}}",
+      "repostedTitled": "a redistribuit {{title}}",
+      "andOthers_one": "și încă {{count}}",
+      "andOthers_few": "și încă {{count}}",
+      "andOthers_other": "și alți {{count}}",
+      "likedComment": "a apreciat comentariul tău",
+      "likedCommentTitled": "a apreciat comentariul tău la {{title}}"
+    },
+    "video": {
+      "untitled": "videoclipul tău"
+    },
+    "a11y": {
+      "openVideo": "Deschide {{title}}",
+      "viewProfile": "Profilul {{name}}",
+      "unread": "Necitită"
+    }
   },
   "getEmbedPage": {
     "title": "Inserează widget-ul Divine",
@@ -1141,7 +1219,7 @@
   "trendingPage": {
     "heading": "În tendințe",
     "subheading": "Descoperă ce e popular în comunitate",
-    "rssTitle": "DiVine - În tendințe",
+    "rssTitle": "Divine - În tendințe",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1202,7 +1280,7 @@
     "notFoundDescription": {
       "vine": "Acest utilizator Vine poate să nu fi fost încă importat în rețeaua Nostr.",
       "nip05": "Verifică dacă identificatorul NIP-05 e corect.",
-      "legacy": "Acest nume de utilizator nu se potrivește cu un profil Vine vechi sau un handle OpenVine."
+      "legacy": "Acest nume de utilizator nu se potrivește cu niciun profil cunoscut."
     }
   },
   "atUsernamePage": {
@@ -1298,14 +1376,11 @@
   "pwaInstallPrompt": {
     "close": "Închide",
     "getDivine": "Ia Divine",
-    "installDivineWeb": "Instalează Divine Web",
     "descriptionNative": "Instalează aplicația nativă pentru cea mai bună experiență Divine",
-    "descriptionWeb": "Instalează aplicația noastră pentru o experiență mai bună",
     "appStore": "App Store",
     "appStoreAria": "Descarcă Divine din App Store",
     "googlePlay": "Google Play",
     "googlePlayAria": "Ia Divine de pe Google Play",
-    "install": "Instalează",
     "notNow": "Nu acum"
   },
   "relaySelector": {
@@ -1330,7 +1405,6 @@
     "muteErrorDescription": "Mute-ul n-a putut fi salvat. Mai încerci o dată?",
     "deleteVideo": "Șterge videoclipul",
     "reportVideo": "Raportează videoclipul",
-    "sendViaMessage": "Trimite prin mesaj",
     "reportUser": "Raportează utilizatorul",
     "muteUser": "Mute {{name}}",
     "viewSource": "Vezi sursa",
@@ -1394,23 +1468,6 @@
     "confirm": "Șterge comentariul",
     "deleting": "Se șterge..."
   },
-  "inviteCodeForm": {
-    "label": "Cod de invitație",
-    "placeholder": "Lipește codul tău de invitație",
-    "checking": "Se verifică...",
-    "continue": "Continuă",
-    "joinWaitlist": "N-ai invitație? Înscrie-te pe lista de așteptare."
-  },
-  "invitesLandingPage": {
-    "seoTitle": "Alătură-te diVine cu codul de invitație {{code}}",
-    "seoTitleDefault": "Alătură-te diVine",
-    "seoDescription": "Ai fost invitat! Folosește codul {{code}} ca să te alături diVine.",
-    "seoDescriptionDefault": "Folosește codul tău de invitație ca să te alături diVine și să începi să distribui video.",
-    "heading": "Ești invitat!",
-    "subheading": "Introdu codul de invitație ca să te alături diVine",
-    "alreadyHaveAccount": "Ai deja un cont?",
-    "signIn": "Conectează-te"
-  },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
     "defaultDescription": "În culisele lansării Divine",
@@ -1419,5 +1476,99 @@
     "podcastEpisode": "Episod de podcast",
     "openInApplePodcasts": "Deschide în Apple Podcasts",
     "playEpisode": "Redă episodul"
+  },
+  "listsPage": {
+    "createList": "Creează listă",
+    "createFirstList": "Creează prima ta listă",
+    "createVideoList": "Listă video",
+    "createPeopleList": "Listă de persoane"
+  },
+  "createPeopleListDialog": {
+    "title": "Creează listă de persoane",
+    "description": "Adună oameni la un loc și vezi cele mai noi loopuri ale lor.",
+    "nameLabel": "Numele listei *",
+    "namePlaceholder": "Creatori favoriți",
+    "descriptionLabel": "Descriere",
+    "descriptionPlaceholder": "Oameni ale căror loopuri nu le ratezi niciodată...",
+    "imageLabel": "URL-ul imaginii de copertă",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Dă-i mai întâi un nume.",
+    "reservedName": "Numele acesta este rezervat pentru o listă de sistem.",
+    "imageInvalid": "Folosește un URL complet de imagine.",
+    "cancelButton": "Anulează",
+    "creatingButton": "Se creează...",
+    "createButton": "Creează lista",
+    "createdTitle": "Listă de persoane creată.",
+    "createdDescription": "„{{name}}” e gata.",
+    "failedTitle": "N-a mers.",
+    "failedDescription": "Crearea listei de persoane s-a poticnit. Mai încerci?"
+  },
+  "editPeopleListDialog": {
+    "title": "Editează lista de persoane",
+    "description": "Actualizează numele, descrierea sau imaginea de copertă a acestei liste.",
+    "nameLabel": "Numele listei *",
+    "namePlaceholder": "Creatori favoriți",
+    "descriptionLabel": "Descriere",
+    "descriptionPlaceholder": "Oameni ale căror loopuri nu le ratezi niciodată...",
+    "imageLabel": "URL-ul imaginii de copertă",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Dă-i mai întâi un nume.",
+    "imageInvalid": "Folosește un URL complet de imagine.",
+    "cancelButton": "Anulează",
+    "savingButton": "Se salvează...",
+    "saveButton": "Salvează",
+    "savedTitle": "Salvat.",
+    "savedDescription": "„{{name}}” este actualizată.",
+    "failedTitle": "Nu s-a salvat.",
+    "failedDescription": "Actualizarea listei de persoane s-a poticnit. Mai încerci?"
+  },
+  "deleteListDialog": {
+    "title": "Ștergi lista?",
+    "videosDescription": "Aceasta va cere ștergerea listei „{{name}}”. Videoclipurile din listă nu vor fi afectate.",
+    "peopleDescription": "Aceasta va cere ștergerea listei „{{name}}”. Persoanele din listă nu vor fi afectate.",
+    "noteLabel": "Notă:",
+    "relayNote": "Această acțiune trimite o cerere de ștergere către relee. Majoritatea o respectă, dar ștergerea nu este garantată peste tot.",
+    "cancelButton": "Anulează",
+    "deletingButton": "Se șterge...",
+    "deleteButton": "Șterge lista"
+  },
+  "peopleListDetailPage": {
+    "editList": "Editează",
+    "delete": "Șterge",
+    "share": "Distribuie",
+    "deletedTitle": "Listă de persoane ștearsă.",
+    "deletedDescription": "„{{name}}” a fost eliminată.",
+    "deleteFailedTitle": "Ștergerea a eșuat.",
+    "deleteFailedDescription": "Ștergerea listei de persoane s-a poticnit. Mai încerci?"
+  },
+  "userList": {
+    "searchPlaceholder": "Caută după nume",
+    "noMatches": "Nimeni de aici nu se potrivește. Încerci alt nume?",
+    "searchHint": "Scrie cel puțin 2 litere sau cifre.",
+    "searchUnavailable": "Căutarea nu merge acum. Mai încerci?",
+    "noFollowers": "Încă nu sunt urmăritori.",
+    "noFollowing": "Încă nu urmărește pe nimeni."
+  },
+  "supporters": {
+    "chip": "Susținător",
+    "title": "Susținătorii Divine",
+    "intro": "Ajută Divine să rămână independent, uman și deschis tuturor.",
+    "membership": "Abonamentul tău de susținător",
+    "thankYou": "Îți mulțumim că susții Divine.",
+    "thanksDetail": "Sprijinul tău ajută la păstrarea acestui loc pentru oameni. Ne bucurăm că ești aici.",
+    "showChip": "Arată insigna mea de susținător pe profil",
+    "privacy": "Abonamentul tău este privat în mod implicit. Activează această opțiune pentru a afișa insigna public. Poți schimba alegerea oricând.",
+    "check": "Verifică statutul de susținător",
+    "checking": "Se verifică statutul de susținător…",
+    "checkHint": "Ești deja susținător? Verifică abonamentul acestui cont. Instrumentul de semnare îți poate cere aprobarea.",
+    "checkError": "Nu am putut verifica statutul tău de susținător. Încearcă din nou.",
+    "unknown": "Statutul tău de susținător nu este încă confirmat. Verifică din nou înainte de o nouă achiziție.",
+    "saveError": "Nu am putut salva preferința de vizibilitate. Încearcă din nou.",
+    "purchaseInstructions": "Devino susținător în aplicația mobilă Divine: conectează-te cu același cont, apoi deschide secțiunea de susținători din setări. Ai cumpărat deja? Restaurează achiziția acolo, apoi verifică statutul aici.",
+    "getApp": "Descarcă aplicația pentru a deveni susținător",
+    "verificationPrerequisite": "Devino susținător pentru a solicita verificarea",
+    "verificationNext": "Următorul pas: verificarea",
+    "verificationDetail": "Abonamentul de susținător este necesar pentru a solicita verificarea. Nu îți verifică identitatea și nu garantează aprobarea. Poți conecta conturile existente pentru a distribui dovezi de identitate.",
+    "linkAccounts": "Continuă la conturile conectate"
   }
 }

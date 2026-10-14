@@ -8,8 +8,8 @@
     "home": "홈",
     "discover": "탐색",
     "popular": "Popular",
+    "services": "Services",
     "search": "검색",
-    "messages": "메시지",
     "notifications": "알림",
     "profile": "프로필",
     "analytics": "분석"
@@ -30,7 +30,9 @@
     "help": "도움말",
     "merch": "Merch",
     "familyResources": "가족 리소스",
-    "kidsPolicy": "어린이 정책"
+    "kidsPolicy": "어린이 정책",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "라이트 모드",
@@ -68,6 +70,8 @@
     "classic": "클래식",
     "hot": "인기",
     "new": "신규",
+    "featured": "추천",
+    "sponsoredBy": "<bdi>{{sponsorName}}</bdi> 협찬",
     "tags": "태그",
     "verifiedOnly": "사람이 만든 콘텐츠",
     "verifiedOnlyHint": "ProofMode 검증이 있는 동영상만 표시합니다",
@@ -101,19 +105,6 @@
     "reply": "답글",
     "comment": "댓글"
   },
-  "messages": {
-    "badge": "메시지",
-    "title": "다이렉트 메시지",
-    "subtitle": "지원팀과 대화하고, vine을 비공개로 보내거나, 팔로우한 사람들과 대화를 이어가세요.",
-    "searchPlaceholder": "메시지를 보낼 사람 찾기",
-    "newMessage": "새 메시지",
-    "readyToShare": "비공개로 공유할 준비가 되었습니다.",
-    "shareWithTitle": "다음 메시지에는 “{{title}}”가 포함됩니다.",
-    "shareWithLink": "다음 메시지에는 vine 링크가 포함됩니다.",
-    "signerUnsupported": "현재 signer로 로그인할 수는 있지만 아직 NIP-44 암호화를 제공하지 않습니다. 웹에서 다이렉트 메시지를 사용하려면 NIP-44를 지원하는 nsec, bunker 또는 다른 signer로 전환하세요.",
-    "supportBadge": "지원",
-    "supportSummary": "버그, 모더레이션 또는 계정 문제에 대해 문의하세요."
-  },
   "support": {
     "title": "지원",
     "subtitle": "도움이 필요하신가요? 저희가 도와드리겠습니다.",
@@ -134,6 +125,19 @@
     "communityDescription": "커뮤니티 대화에 참여하고 Nostr 의 다른 Divine 사용자와 연결하세요.",
     "communityBody": "Divine 은 탈중앙화 소셜 프로토콜인 Nostr 위에 구축되었습니다. 즐겨 사용하는 Nostr 클라이언트에서 저희를 찾아보세요."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "태그를 찾을 수 없습니다",
     "notFoundDescription": "요청한 태그를 찾을 수 없습니다.",
@@ -146,7 +150,11 @@
     "emptyState": "현재 사용할 수 있는 카테고리가 없습니다.",
     "metaTitle": "카테고리 둘러보기 - Divine",
     "metaDescription": "Divine 에서 코미디, 음악, 댄스, 동물, 스포츠, 음식 등 다양한 동영상 카테고리를 둘러보세요.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "동영상 {{count}}개",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "동영상 {{count}}개"
   },
   "vineBadge": {
@@ -184,7 +192,6 @@
       "pinToProfile": "프로필에 고정",
       "deleteVideo": "비디오 삭제",
       "reportVideo": "비디오 신고",
-      "sendViaMessage": "메시지로 보내기",
       "reportUser": "사용자 신고",
       "muteUser": "{{name}} 음소거",
       "viewSource": "소스 보기"
@@ -386,7 +393,6 @@
     "message": "메시지",
     "reportUser": "사용자 신고",
     "subscribeRss": "RSS 피드 구독",
-    "videos": "비디오",
     "followers": "팔로워",
     "followingStat": "팔로잉",
     "followingDialogTitle": "팔로잉",
@@ -395,17 +401,26 @@
     "originalVineLoops": "오리지널 Vine 루프",
     "classicVines": "Classic Vines",
     "classicVineStatsCaption": "오리지널 Vine 플랫폼의 통계 (2013-2017)",
-    "legacySocialLabel": "{{label}}: {{handle}}"
+    "legacySocialLabel": "{{label}}: {{handle}}",
+    "blockUser": "사용자 차단",
+    "unblockUser": "사용자 차단 해제",
+    "blockDialogTitle": "이 사용자를 차단할까요?",
+    "blockDialogDescription": "{{name}}님은 공개 팔로잉 목록에서 제거되고, 그 사람의 영상은 피드에 나오지 않아요.",
+    "unblockDialogTitle": "이 사용자의 차단을 해제할까요?",
+    "unblockDialogDescription": "{{name}}님의 영상은 다시 보일 수 있지만, 다시 팔로우되지는 않아요.",
+    "blockedTitle": "차단했어요.",
+    "blockedDescription": "팔로잉 목록과 피드에서 빠졌어요.",
+    "unblockedTitle": "차단을 해제했어요.",
+    "unblockedDescription": "영상이 다시 보일 수 있어요. 팔로우 중은 아니에요.",
+    "cancel": "취소",
+    "blockFailedDescription": "차단하지 못했어요. 다시 시도해 주세요."
   },
   "loginDialog": {
     "title": "Divine에 로그인",
     "heading": "들어가기.",
-    "subtitleRegister": "초대장 있어요? 계정을 만들어 보세요.",
     "subtitleSignIn": "기존 계정으로 login.divine.video에서 로그인하세요.",
     "tabRegister": "회원가입",
     "tabSignIn": "로그인",
-    "checkingInvite": "초대 상태 확인 중...",
-    "inviteUnavailable": "지금 초대 가입은 사용할 수 없어요. 다음 탭에서 로그인은 가능해요.",
     "tabExtension": "확장",
     "tabExtensionShort": "확장",
     "tabKey": "키",
@@ -423,8 +438,9 @@
     "bunkerLabel": "Bunker URI",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Bunker로 로그인",
+    "bunkerAuthPrompt": "서명 앱의 승인이 필요합니다. 페이지를 열려고 했지만 브라우저가 차단했습니다 — 여기서 열어 주세요:",
+    "bunkerAuthLink": "서명 앱에서 승인하기",
     "connecting": "연결 중...",
-    "errorInviteServiceUnavailable": "초대 서비스를 사용할 수 없음",
     "errorExtensionNotFound": "Nostr 확장을 찾을 수 없어요. NIP-07 확장을 설치하세요.",
     "errorExtensionLoginFailed": "확장 로그인 실패",
     "errorKeyLoginFailed": "이 키로 로그인 실패. 키가 올바른지 확인하세요.",
@@ -436,19 +452,22 @@
     "errorFileEmpty": "파일 내용을 읽을 수 없어요.",
     "errorFileNoValidKey": "파일에 유효한 비밀키가 없어요.",
     "errorFileReadFailed": "파일을 읽을 수 없어요.",
-    "errorInviteValidationFailed": "초대 코드를 확인할 수 없음",
-    "errorInviteCodeUsed": "이 초대 코드는 이미 사용되었습니다",
     "errorSignInStartFailed": "로그인을 시작할 수 없음",
-    "errorWaitlistJoinFailed": "대기자 명단에 등록할 수 없음"
+    "subtitleCreate": "Divine 계정을 설정하세요.",
+    "createAccountButton": "계정 만들기",
+    "creatingAccount": "계정 설정 중...",
+    "errorSignUpStartFailed": "가입을 시작할 수 없음"
   },
   "accountSwitcher": {
     "myProfile": "내 프로필",
     "settings": "설정",
     "linkedAccounts": "연결된 계정",
+    "relays": "Relays",
     "switchRelay": "Relay 전환",
     "switchAccount": "계정 전환",
     "addAnotherAccount": "다른 계정 추가",
-    "logOut": "로그아웃"
+    "logOut": "로그아웃",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "비디오 신고",
@@ -516,6 +535,7 @@
     "signInButton": "로그인"
   },
   "badgeDetailModal": {
+    "description": "이 배지의 전체 이야기 — 누가 언제 발급했는지.",
     "title": "배지 정보",
     "officialBadge": "✦ 공식 Divine 배지",
     "issuedBy": "발급자",
@@ -580,6 +600,20 @@
     "mutedKeywordsTitle_one": "음소거된 키워드 ({{count}})",
     "mutedKeywordsTitle_other": "음소거된 키워드 ({{count}})",
     "noMutedUsers": "음소거한 사람이 없어요. 평화롭네요.",
+    "mutedHereTitle_one": "여기서 음소거됨 ({{count}})",
+    "mutedHereTitle_other": "여기서 음소거됨 ({{count}})",
+    "mutedHereDescription": "이 음소거는 웹에서 추가됐어요. 하나를 제거하면 그 음소거만 해제돼요.",
+    "mutedElsewhereTitle_one": "다른 곳에서 음소거 또는 차단됨 ({{count}})",
+    "mutedElsewhereTitle_other": "다른 곳에서 음소거 또는 차단됨 ({{count}})",
+    "mutedElsewhereDescription": "다른 클라이언트나 기기에서 온 항목이에요. 일부는 Divine 앱의 차단일 수 있어요.",
+    "noWebMutedUsers": "아직 웹 음소거가 없어요.",
+    "noUnknownMutedUsers": "지금은 다른 클라이언트에서 온 항목이 없어요.",
+    "reviewBeforeUnmute": "검토",
+    "confirmUnmuteTitle": "이 음소거를 해제할까요?",
+    "confirmUnmuteDescription": "이 항목은 Divine 앱에서 설정한 차단일 수 있어요. 여기서 해제하면 kind 10000 목록이 동기화되는 모든 곳에서 해당 p-tag가 제거돼요.",
+    "confirmWebUnmuteDescription": "이 음소거는 웹에서 추가됐어요. 다른 클라이언트가 같은 p-tag에 의존할 수 있으니 제거하기 전에 확인하세요.",
+    "confirmUnmuteCancel": "유지",
+    "confirmUnmuteAction": "해제",
     "noMutedHashtags": "아직 음소거한 해시태그가 없어요.",
     "noMutedKeywords": "음소거한 키워드가 없어요. 피드가 그대로네요.",
     "reportHistoryTitle": "신고 기록",
@@ -591,6 +625,7 @@
     "toastErrorTitle": "오류",
     "toastErrorEnterValue": "음소거할 값을 입력하세요",
     "toastErrorInvalidNpub": "잘못된 npub 형식",
+    "toastErrorMuteYourself": "자기 자신을 음소거할 수 없습니다.",
     "toastMutedTitle": "음소거됨",
     "toastMutedDescription": "음소거 리스트에 추가됐어요",
     "toastMuteFailed": "음소거 실패. 다시 시도해 주세요.",
@@ -598,7 +633,17 @@
     "toastUnmutedDescription": "음소거 리스트에서 제거됐어요",
     "toastUnmuteFailed": "음소거 해제 실패. 다시 시도해 주세요.",
     "toastFunnelcakeUpdatedTitle": "Funnelcake API 업데이트됨",
-    "toastFunnelcakeUpdatedDescription": "이후 REST 읽기에 {{url}}을(를) 사용해요."
+    "toastFunnelcakeUpdatedDescription": "이후 REST 읽기에 {{url}}을(를) 사용해요.",
+    "unblock": "차단 해제",
+    "statusUsersBlockedSuffix": "명 차단됨",
+    "blockedUsersTitle_one": "차단된 사용자 ({{count}})",
+    "blockedUsersTitle_other": "차단된 사용자 ({{count}})",
+    "blockedUsersDescription": "차단된 사용자는 공개 팔로잉 목록에서 제거돼요. 차단을 해제하면 영상도 다시 보일 수 있지만, 다시 팔로우되지는 않아요.",
+    "mutedUsersDescription": "음소거한 사용자는 팔로우 관계를 바꾸지 않고 피드에서 계속 숨겨져요.",
+    "noBlockedUsers": "차단한 사용자가 없어요.",
+    "toastUnblockedTitle": "차단 해제됨",
+    "toastUnblockedDescription": "차단된 사용자에서 제거했어요. 영상이 다시 보일 수 있어요.",
+    "toastUnblockFailed": "차단 해제 실패. 다시 시도해 주세요."
   },
   "linkedAccountsSettings": {
     "copy": "복사",
@@ -645,10 +690,13 @@
       "mastodon": "아래 텍스트가 포함된 toot을 게시한 다음 URL에서 게시물 ID를 붙여넣으세요.",
       "telegram": "아래 텍스트가 포함된 메시지를 공개 채널/그룹에 보낸 다음 메시지 경로(예: channelname/123)를 붙여넣으세요.",
       "bluesky": "아래 텍스트가 포함된 게시물을 Bluesky에 올린 다음 게시물 URL에서 record key(rkey)를 붙여넣으세요.",
-      "discord": "서버 이름이나 설명에 npub이 포함된 Discord 서버를 만든 다음 영구 초대 링크를 만들고 초대 코드를 붙여넣으세요."
+      "discord": "아래 텍스트가 포함된 메시지를 게시한 다음, 그 메시지를 마우스 오른쪽 버튼으로 클릭하고 ‘메시지 링크 복사’를 선택하세요. 서버 초대 링크로는 계정 소유자를 증명할 수 없어요. Discord 사용자명을 입력하세요. 별명이 아니라 프로필에 있는 사용자명이에요."
     },
     "toastErrorTitle": "오류",
     "toastEnterProof": "증명 URL이나 ID를 입력하세요",
+    "toastInvalidDiscordLink": "Discord 메시지 링크를 붙여넣으세요. 메시지를 마우스 오른쪽 버튼으로 클릭하고 ‘메시지 링크 복사’를 선택하면 돼요.",
+    "discordUsernameLabel": "내 Discord 사용자명",
+    "discordUsernamePlaceholder": "yourusername",
     "toastCannotDetermineUsername": "URL에서 사용자명을 알아낼 수 없어요",
     "toastVerifiedTitle": "확인됨!",
     "toastLinkedTitle": "연결됨",
@@ -810,6 +858,8 @@
     "seoDescription": "Divine에서 이 비디오를 보세요",
     "seoDescriptionWithAuthor": "Divine에서 {{name}}님의 이 비디오를 보세요",
     "errorTitle": "오류",
+    "nextVideoUnavailableDescription": "다음 동영상을 불러오지 못했어요. 다시 시도할까요?",
+    "loadMoreUnavailableDescription": "Couldn't load more videos. Try again?",
     "likedTitle": "좋아요!",
     "likedDescription": "반응이 발행됐어요",
     "likeFailedDescription": "비디오에 좋아요를 남길 수 없어요",
@@ -831,7 +881,12 @@
     "searchPrefix": "검색: {{query}}",
     "searchResults": "검색 결과",
     "authorVideos": "{{name}}님의 비디오",
+    "featuredVideos": "추천 비디오",
+    "featuredTabWrappedDescription": "그 추천 탭은 끝났어요. 인기를 보여드릴게요.",
+    "featuredNavigationEndedDescription": "이 비디오는 아직 있지만, 불러온 탭 범위에는 더 이상 없어요.",
+    "backToFeaturedTab": "{{label}}(으)로 돌아가기",
     "loadingMore": "비디오 더 불러오는 중...",
+    "allCaughtUp": "That's the whole haul.",
     "previousVideoAria": "이전 비디오",
     "nextVideoAria": "다음 비디오",
     "previousArrow": "← 이전",
@@ -903,8 +958,10 @@
     "notFoundTitle": "리스트를 찾을 수 없어요",
     "notFoundDescription": "이 리스트는 삭제됐거나 없을 수 있어요",
     "browseLists": "리스트 둘러보기",
-    "backToLists": "리스트로 돌아가기",
-    "listCreator": "리스트 제작자",
+    "backToCreatorLists": "{{name}}의 모든 리스트",
+    "videoList": "동영상 리스트",
+    "untitledVideoList": "제목 없는 동영상 리스트",
+    "byCreator": "{{name}} 제작",
     "videoCount_one": "비디오 {{count}}개",
     "videoCount_other": "비디오 {{count}}개",
     "collaborative": "공동",
@@ -931,18 +988,15 @@
     "retry": "다시 시도",
     "peopleCount_one": "{{count}}명",
     "peopleCount_other": "{{count}}명",
-    "notFoundTitle": "대화를 찾을 수 없어요",
-    "notFoundDescription": "받은편지함으로 돌아가서 새 메시지를 시작하세요.",
-    "backToInbox": "받은편지함으로 돌아가기",
     "dmUnavailableTitle": "다이렉트 메시지를 사용할 수 없어요",
     "dmUnavailableDescription": "이 사이너는 인증은 되지만, 비공개 메시지에 필요한 NIP-44 암호화 메서드를 제공하지 않아요.",
+    "backToSupport": "지원으로 돌아가기",
     "noMessages": "아직 메시지가 없어요",
     "noMessagesHint": "첫 메시지를 보내서 대화를 시작하세요.",
-    "readyToShare": "공유 준비 완료",
-    "placeholderShare": "메모 추가 (선택)...",
     "placeholderMessage": "메시지를 입력하세요..."
   },
   "videoCommentsModal": {
+    "description": "다른 사람들의 댓글을 보고 직접 댓글을 남겨보세요.",
     "title": "댓글",
     "loading": "댓글 불러오는 중...",
     "emptyMessage": "아직 댓글이 없어요",
@@ -960,7 +1014,8 @@
   "thumbnailPlayer": {
     "videoPreview": "비디오 미리보기",
     "thumbnailAlt": "비디오 썸네일",
-    "playVideo": "비디오 재생"
+    "playVideo": "비디오 재생",
+    "openVideo": "동영상 열기"
   },
   "hashtagExplorer": {
     "heading": "해시태그 탐색",
@@ -1036,8 +1091,7 @@
       "likes": "좋아요",
       "comments": "댓글",
       "follows": "팔로우",
-      "reposts": "리포스트",
-      "zaps": "잽"
+      "reposts": "리포스트"
     },
     "empty": {
       "all": {
@@ -1063,16 +1117,33 @@
       "reposts": {
         "title": "아직 리포스트 알림이 없어요.",
         "description": "회원님 비디오의 리포스트가 여기에 표시돼요."
-      },
-      "zaps": {
-        "title": "아직 잽 알림이 없어요.",
-        "description": "회원님 비디오에 받은 잽이 여기에 표시돼요."
       }
     },
     "errorTitle": "알림을 불러오지 못했어요",
     "errorFallback": "잠시 후 다시 시도해 주세요",
     "sectionNew": "새로운 소식",
-    "sectionEarlier": "이전"
+    "sectionEarlier": "이전",
+    "message": {
+      "liked": "회원님의 비디오를 좋아합니다",
+      "commented": "회원님의 비디오에 댓글을 남겼습니다",
+      "reposted": "회원님의 비디오를 리포스트했습니다",
+      "followed": "회원님을 팔로우했습니다",
+      "andOthers_one": "외 {{count}}명",
+      "andOthers_other": "외 {{count}}명",
+      "likedTitled": "{{title}}을(를) 좋아합니다",
+      "commentedTitled": "{{title}}에 댓글을 남겼습니다",
+      "repostedTitled": "{{title}}을(를) 리포스트했습니다",
+      "likedComment": "회원님의 댓글을 좋아합니다",
+      "likedCommentTitled": "{{title}}에 남긴 회원님의 댓글을 좋아합니다"
+    },
+    "video": {
+      "untitled": "회원님의 비디오"
+    },
+    "a11y": {
+      "openVideo": "{{title}} 열기",
+      "viewProfile": "{{name}} 프로필",
+      "unread": "읽지 않음"
+    }
   },
   "getEmbedPage": {
     "title": "Divine 위젯 임베드",
@@ -1140,7 +1211,7 @@
   "trendingPage": {
     "heading": "인기",
     "subheading": "커뮤니티에서 인기 있는 콘텐츠를 발견해요",
-    "rssTitle": "DiVine - 인기",
+    "rssTitle": "Divine - 인기",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1201,7 +1272,7 @@
     "notFoundDescription": {
       "vine": "이 Vine 사용자는 아직 Nostr 네트워크로 가져오지 않았을 수 있어요.",
       "nip05": "NIP-05 식별자가 정확한지 확인해 주세요.",
-      "legacy": "이 사용자명은 레거시 Vine 프로필이나 OpenVine 핸들과 일치하지 않아요."
+      "legacy": "이 사용자명은 알려진 프로필과 일치하지 않습니다."
     }
   },
   "atUsernamePage": {
@@ -1297,14 +1368,11 @@
   "pwaInstallPrompt": {
     "close": "닫기",
     "getDivine": "Divine 받기",
-    "installDivineWeb": "Divine Web 설치",
     "descriptionNative": "최고의 Divine 경험을 위해 네이티브 앱을 설치하세요",
-    "descriptionWeb": "더 나은 경험을 위해 앱을 설치하세요",
     "appStore": "App Store",
     "appStoreAria": "App Store에서 Divine 다운로드",
     "googlePlay": "Google Play",
     "googlePlayAria": "Google Play에서 Divine 받기",
-    "install": "설치",
     "notNow": "나중에"
   },
   "relaySelector": {
@@ -1329,7 +1397,6 @@
     "muteErrorDescription": "뮤트를 저장하지 못했어요. 다시 시도해 볼까요?",
     "deleteVideo": "비디오 삭제",
     "reportVideo": "비디오 신고",
-    "sendViaMessage": "메시지로 보내기",
     "reportUser": "사용자 신고",
     "muteUser": "{{name}} 뮤트",
     "viewSource": "소스 보기",
@@ -1393,23 +1460,6 @@
     "confirm": "댓글 삭제",
     "deleting": "삭제 중..."
   },
-  "inviteCodeForm": {
-    "label": "초대 코드",
-    "placeholder": "초대 코드를 붙여넣으세요",
-    "checking": "확인 중...",
-    "continue": "계속",
-    "joinWaitlist": "초대 코드가 없나요? 대기자 명단에 등록하세요."
-  },
-  "invitesLandingPage": {
-    "seoTitle": "초대 코드 {{code}}로 diVine에 가입",
-    "seoTitleDefault": "diVine에 가입",
-    "seoDescription": "초대받았어요! 코드 {{code}}를 사용해 diVine에 가입하세요.",
-    "seoDescriptionDefault": "초대 코드를 사용해 diVine에 가입하고 동영상 공유를 시작하세요.",
-    "heading": "초대받았어요!",
-    "subheading": "diVine에 가입하려면 초대 코드를 입력하세요",
-    "alreadyHaveAccount": "이미 계정이 있나요?",
-    "signIn": "로그인"
-  },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
     "defaultDescription": "Divine 출시의 비하인드 스토리",
@@ -1418,5 +1468,99 @@
     "podcastEpisode": "팟캐스트 에피소드",
     "openInApplePodcasts": "Apple Podcasts에서 열기",
     "playEpisode": "에피소드 재생"
+  },
+  "listsPage": {
+    "createList": "리스트 만들기",
+    "createFirstList": "첫 리스트 만들기",
+    "createVideoList": "동영상 리스트",
+    "createPeopleList": "사람 리스트"
+  },
+  "createPeopleListDialog": {
+    "title": "사람 리스트 만들기",
+    "description": "사람들을 한데 모아 최신 루프를 한 곳에서 보세요.",
+    "nameLabel": "리스트 이름 *",
+    "namePlaceholder": "좋아하는 크리에이터",
+    "descriptionLabel": "설명",
+    "descriptionPlaceholder": "루프를 놓치고 싶지 않은 사람들...",
+    "imageLabel": "커버 이미지 URL",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "먼저 이름부터 지어 주세요.",
+    "reservedName": "그 이름은 시스템 리스트용으로 예약되어 있어요.",
+    "imageInvalid": "전체 이미지 URL을 입력해 주세요.",
+    "cancelButton": "취소",
+    "creatingButton": "만드는 중...",
+    "createButton": "리스트 만들기",
+    "createdTitle": "사람 리스트를 만들었어요.",
+    "createdDescription": "‘{{name}}’ 준비 완료.",
+    "failedTitle": "안 됐어요.",
+    "failedDescription": "사람 리스트를 만들다 막혔어요. 다시 해볼까요?"
+  },
+  "editPeopleListDialog": {
+    "title": "사람 리스트 편집",
+    "description": "이 리스트의 이름, 설명, 커버 이미지를 수정하세요.",
+    "nameLabel": "리스트 이름 *",
+    "namePlaceholder": "좋아하는 크리에이터",
+    "descriptionLabel": "설명",
+    "descriptionPlaceholder": "루프를 놓치고 싶지 않은 사람들...",
+    "imageLabel": "커버 이미지 URL",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "먼저 이름부터 지어 주세요.",
+    "imageInvalid": "전체 이미지 URL을 입력해 주세요.",
+    "cancelButton": "취소",
+    "savingButton": "저장 중...",
+    "saveButton": "저장",
+    "savedTitle": "저장했어요.",
+    "savedDescription": "‘{{name}}’ 업데이트했어요.",
+    "failedTitle": "저장하지 못했어요.",
+    "failedDescription": "사람 리스트를 수정하다 막혔어요. 다시 해볼까요?"
+  },
+  "deleteListDialog": {
+    "title": "리스트를 삭제할까요?",
+    "videosDescription": "‘{{name}}’ 리스트의 삭제를 요청해요. 리스트 안의 동영상은 그대로 남아요.",
+    "peopleDescription": "‘{{name}}’ 리스트의 삭제를 요청해요. 리스트 안의 사람은 그대로 남아요.",
+    "noteLabel": "참고:",
+    "relayNote": "이 작업은 릴레이에 삭제 요청을 보냅니다. 대부분의 릴레이가 요청을 따르지만 모든 릴레이에서 삭제가 보장되지는 않아요.",
+    "cancelButton": "취소",
+    "deletingButton": "삭제 중...",
+    "deleteButton": "리스트 삭제"
+  },
+  "peopleListDetailPage": {
+    "editList": "편집",
+    "delete": "삭제",
+    "share": "공유",
+    "deletedTitle": "사람 리스트를 삭제했어요.",
+    "deletedDescription": "‘{{name}}’ 삭제했어요.",
+    "deleteFailedTitle": "삭제하지 못했어요.",
+    "deleteFailedDescription": "사람 리스트를 삭제하다 막혔어요. 다시 해볼까요?"
+  },
+  "userList": {
+    "searchPlaceholder": "이름으로 검색",
+    "noMatches": "일치하는 사람이 없어요. 다른 이름으로 해볼까요?",
+    "searchHint": "글자나 숫자를 2자 이상 입력하세요.",
+    "searchUnavailable": "지금은 검색할 수 없어요. 다시 해볼까요?",
+    "noFollowers": "아직 팔로워가 없어요.",
+    "noFollowing": "아직 아무도 팔로우하지 않아요."
+  },
+  "supporters": {
+    "chip": "후원자",
+    "title": "Divine 서포터",
+    "intro": "Divine이 독립적이고 사람을 위한, 모두에게 열린 공간으로 남도록 도와주세요.",
+    "membership": "내 후원자 멤버십",
+    "thankYou": "Divine을 후원해 주셔서 감사합니다.",
+    "thanksDetail": "여러분의 후원이 이곳을 사람을 위한 공간으로 지켜줍니다. 함께해 주셔서 기쁩니다.",
+    "showChip": "프로필에 내 후원자 배지 표시",
+    "privacy": "멤버십은 기본적으로 비공개입니다. 이 옵션을 켜면 배지가 공개됩니다. 언제든 변경할 수 있습니다.",
+    "check": "후원자 상태 확인",
+    "checking": "후원자 상태 확인 중…",
+    "checkHint": "이미 후원 중이신가요? 이 계정의 멤버십을 확인하세요. 서명 도구에서 승인을 요청할 수 있습니다.",
+    "checkError": "후원자 상태를 확인할 수 없습니다. 다시 시도해 주세요.",
+    "unknown": "후원자 상태가 아직 확인되지 않았습니다. 다시 구매하기 전에 상태를 확인해 주세요.",
+    "saveError": "공개 설정을 저장할 수 없습니다. 다시 시도해 주세요.",
+    "purchaseInstructions": "Divine 모바일 앱에서 후원자가 되세요. 같은 계정으로 로그인한 다음 설정에서 후원자 항목을 여세요. 이미 구매하셨나요? 앱에서 구매를 복원한 다음 여기서 상태를 확인하세요.",
+    "getApp": "앱을 다운로드하여 후원하기",
+    "verificationPrerequisite": "인증을 신청하려면 후원자가 되어 주세요",
+    "verificationNext": "다음 단계: 인증",
+    "verificationDetail": "인증을 신청하려면 후원자 멤버십이 필요합니다. 멤버십 자체가 신원을 인증하거나 승인을 보장하지는 않습니다. 기존 계정을 연결하여 신원 증명을 공유할 수 있습니다.",
+    "linkAccounts": "연결된 계정으로 이동"
   }
 }

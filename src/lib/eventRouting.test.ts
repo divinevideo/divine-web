@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import {
+  buildAddressableRoute,
   buildAddressableEventPath,
+  buildEventPath,
   buildListPath,
+  buildPeopleListPath,
   buildResolvedEventRoute,
   buildVideoPath,
   isListEventKind,
@@ -40,7 +43,49 @@ describe('eventRouting', () => {
       tags: [['d', 'favorites']],
     });
 
-    expect(buildResolvedEventRoute(event)).toBe(buildListPath(event.pubkey, 'favorites'));
+    expect(buildResolvedEventRoute(event)).toBe(
+      buildListPath(event.pubkey, 'favorites'),
+    );
+  });
+
+  it('routes people list events to the public list page', () => {
+    const event = makeEvent({
+      kind: 30000,
+      pubkey: 'a'.repeat(64),
+      tags: [['d', 'friends']],
+    });
+
+    expect(buildAddressableRoute(30000, event.pubkey, 'friends')).toBe(
+      buildPeopleListPath(event.pubkey, 'friends'),
+    );
+    expect(buildResolvedEventRoute(event)).toBe(
+      buildPeopleListPath(event.pubkey, 'friends'),
+    );
+  });
+
+  it.each(['block', 'mutelist', ' Block ', 'denylist'])(
+    'keeps reserved people list %j on the generic event route',
+    (identifier) => {
+      const event = makeEvent({
+        id: 'b'.repeat(64),
+        kind: 30000,
+        pubkey: 'a'.repeat(64),
+        tags: [['d', identifier]],
+      });
+
+      expect(buildAddressableRoute(30000, event.pubkey, identifier)).toBe(
+        buildAddressableEventPath(30000, event.pubkey, identifier),
+      );
+      expect(buildResolvedEventRoute(event)).toBe(buildEventPath(event.id));
+    },
+  );
+
+  it('keeps people and video list paths distinct under one d tag', () => {
+    const pubkey = 'a'.repeat(64);
+
+    expect(buildListPath(pubkey, 'friends')).toBe(`/list/${pubkey}/friends`);
+    expect(buildPeopleListPath(pubkey, 'friends')).toBe(`/people-lists/${pubkey}/friends`);
+    expect(buildPeopleListPath(pubkey, 'friends')).not.toBe(buildListPath(pubkey, 'friends'));
   });
 
   it('keeps generic addressable events on the generic event route', () => {

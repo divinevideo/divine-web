@@ -2,11 +2,12 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
   test:
-    runs-on: ubuntu-24.04-16core
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         node-version: [20.x]
@@ -24,6 +25,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify pinned analytics contract
+        run: npm run analytics:contract:check
+
       - name: Run tests (includes lint, type-check, and build)
         run: npm test
-

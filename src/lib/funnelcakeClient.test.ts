@@ -27,6 +27,7 @@ const TEST_SIGNER = { signEvent: vi.fn() } as unknown as NostrSigner;
 
 describe('funnelcakeClient', () => {
   let fetchUserProfile: typeof import('./funnelcakeClient').fetchUserProfile;
+  let fetchUserLoopStats: typeof import('./funnelcakeClient').fetchUserLoopStats;
   let fetchBulkUsers: typeof import('./funnelcakeClient').fetchBulkUsers;
   let fetchBulkVideoStats: typeof import('./funnelcakeClient').fetchBulkVideoStats;
   let searchProfiles: typeof import('./funnelcakeClient').searchProfiles;
@@ -34,6 +35,7 @@ describe('funnelcakeClient', () => {
   let markNotificationsRead: typeof import('./funnelcakeClient').markNotificationsRead;
   let fetchNotifications: typeof import('./funnelcakeClient').fetchNotifications;
   let fetchVideoById: typeof import('./funnelcakeClient').fetchVideoById;
+  let fetchCreatorAnalytics: typeof import('./funnelcakeClient').fetchCreatorAnalytics;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -44,6 +46,7 @@ describe('funnelcakeClient', () => {
     // Import after mocking
     const client = await import('./funnelcakeClient');
     fetchUserProfile = client.fetchUserProfile;
+    fetchUserLoopStats = client.fetchUserLoopStats;
     fetchBulkUsers = client.fetchBulkUsers;
     fetchBulkVideoStats = client.fetchBulkVideoStats;
     searchProfiles = client.searchProfiles;
@@ -51,6 +54,7 @@ describe('funnelcakeClient', () => {
     markNotificationsRead = client.markNotificationsRead;
     fetchNotifications = client.fetchNotifications;
     fetchVideoById = client.fetchVideoById;
+    fetchCreatorAnalytics = client.fetchCreatorAnalytics;
   });
 
   afterEach(() => {
@@ -155,17 +159,36 @@ describe('funnelcakeClient', () => {
       expect(result?.follower_count).toBe(0);
     });
 
-    it('supports AbortSignal cancellation', async () => {
+    it('passes through AbortError cancellation without converting it to null', async () => {
       const controller = new AbortController();
       controller.abort();
+      const health = await import('./funnelcakeHealth');
 
       (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
         new DOMException('Aborted', 'AbortError')
       );
 
-      const result = await fetchUserProfile(API_URL, TEST_PUBKEY, controller.signal);
+      await expect(fetchUserProfile(API_URL, TEST_PUBKEY, controller.signal))
+        .rejects.toMatchObject({ name: 'AbortError' });
 
-      expect(result).toBeNull();
+      expect(health.recordFunnelcakeFailure).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('fetchUserLoopStats', () => {
+    it('passes through AbortError cancellation without converting it to null', async () => {
+      const controller = new AbortController();
+      controller.abort();
+      const health = await import('./funnelcakeHealth');
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new DOMException('Aborted', 'AbortError')
+      );
+
+      await expect(fetchUserLoopStats(API_URL, TEST_PUBKEY, controller.signal))
+        .rejects.toMatchObject({ name: 'AbortError' });
+
+      expect(health.recordFunnelcakeFailure).not.toHaveBeenCalled();
     });
   });
 
@@ -200,6 +223,67 @@ describe('funnelcakeClient', () => {
       );
     });
 
+    it('splits requests larger than the server cap into chunks and merges them', async () => {
+      // The server rejects more than 100 pubkeys with `400 Maximum 100 pubkeys
+      // allowed`, and a 400 here records a circuit-breaker failure — three of
+      // them drop the whole app to WebSocket for 30s. Chunk instead.
+      const pubkeys = Array.from({ length: 250 }, (_, index) =>
+        index.toString(16).padStart(64, '0'));
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation((_url, init) => {
+        const sent = JSON.parse(String((init as RequestInit).body)).pubkeys as string[];
+        expect(sent.length).toBeLessThanOrEqual(100);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            users: sent.slice(0, 1).map((pubkey) => ({ pubkey, profile: { name: pubkey } })),
+            missing: sent.slice(1),
+          }),
+        });
+      });
+
+      const result = await fetchBulkUsers(API_URL, pubkeys);
+
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+      expect(result.users).toHaveLength(3);
+      expect(result.missing).toHaveLength(247);
+      expect([...result.users.map((user) => user.pubkey), ...result.missing].sort())
+        .toEqual([...pubkeys].sort());
+    });
+
+    it('bounds concurrent bulk user chunks', async () => {
+      const pubkeys = Array.from({ length: 500 }, (_, index) =>
+        index.toString(16).padStart(64, '0'));
+      let activeRequests = 0;
+      let peakRequests = 0;
+      const releases: Array<() => void> = [];
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation((_url, init) => {
+        const sent = JSON.parse(String((init as RequestInit).body)).pubkeys as string[];
+        activeRequests += 1;
+        peakRequests = Math.max(peakRequests, activeRequests);
+        return new Promise((resolve) => {
+          releases.push(() => {
+            activeRequests -= 1;
+            resolve({
+              ok: true,
+              json: () => Promise.resolve({ users: [], missing: sent }),
+            });
+          });
+        });
+      });
+
+      const request = fetchBulkUsers(API_URL, pubkeys);
+      await vi.waitFor(() => expect(releases).toHaveLength(3));
+      releases.splice(0).forEach((release) => release());
+      await vi.waitFor(() => expect(releases).toHaveLength(2));
+      releases.splice(0).forEach((release) => release());
+      await request;
+
+      expect(peakRequests).toBe(3);
+      expect(global.fetch).toHaveBeenCalledTimes(5);
+    });
+
     it('handles partial results (some users not found)', async () => {
       const pubkeys = ['a'.repeat(64), 'b'.repeat(64)];
       const mockResponse = {
@@ -230,6 +314,21 @@ describe('funnelcakeClient', () => {
 
       await expect(fetchBulkUsers(API_URL, ['a'.repeat(64)]))
         .rejects.toThrow();
+    });
+
+    it('passes through AbortError cancellation without recording a circuit-breaker failure', async () => {
+      const controller = new AbortController();
+      controller.abort();
+      const health = await import('./funnelcakeHealth');
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new DOMException('Aborted', 'AbortError')
+      );
+
+      await expect(fetchBulkUsers(API_URL, ['a'.repeat(64)], controller.signal))
+        .rejects.toMatchObject({ name: 'AbortError' });
+
+      expect(health.recordFunnelcakeFailure).not.toHaveBeenCalled();
     });
 
     it('returns empty users array for empty input', async () => {
@@ -421,6 +520,20 @@ describe('funnelcakeClient', () => {
           }),
         }),
       );
+    });
+  });
+
+  describe('fetchCreatorAnalytics', () => {
+    it('throws a generic Funnelcake auth error on HTTP failure', async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        text: () => Promise.resolve('not yours'),
+      });
+
+      await expect(fetchCreatorAnalytics(API_URL, TEST_PUBKEY, TEST_SIGNER, { window: '30d' }))
+        .rejects.toThrow('Funnelcake API error: 403 Forbidden');
     });
   });
 
@@ -658,6 +771,35 @@ describe('funnelcakeClient', () => {
       expect(result.videos).toHaveLength(1);
       expect(result.has_more).toBe(true);
       expect(result.next_cursor).toBe('36');
+    });
+  });
+
+  describe('normalizeVideoArrayResponse', () => {
+    it('synthesizes an offset cursor for sorted feeds at a full page', async () => {
+      const { normalizeVideoArrayResponse } = await import('./funnelcakeClient');
+      const videos = Array.from({ length: 10 }, (_, i) => ({ id: `v${i}`, created_at: 2000 - i }));
+      const result = normalizeVideoArrayResponse(videos as never, { sort: 'loops', limit: 10 });
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('10');
+      expect(result.videos).toHaveLength(10);
+    });
+
+    it('synthesizes a timestamp cursor for chronological feeds', async () => {
+      const { normalizeVideoArrayResponse } = await import('./funnelcakeClient');
+      const videos = Array.from({ length: 10 }, (_, i) => ({ id: `v${i}`, created_at: 2000 - i }));
+      const result = normalizeVideoArrayResponse(videos as never, { sort: 'recent', limit: 10 });
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('1991');
+    });
+
+    it('marks a short page as final', async () => {
+      const { normalizeVideoArrayResponse } = await import('./funnelcakeClient');
+      const result = normalizeVideoArrayResponse([{ id: 'v0', created_at: 1 }] as never, {
+        sort: 'recent',
+        limit: 10,
+      });
+      expect(result.has_more).toBe(false);
+      expect(result.next_cursor).toBeUndefined();
     });
   });
 });

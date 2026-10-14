@@ -8,8 +8,8 @@
     "home": "Hem",
     "discover": "Utforska",
     "popular": "Popular",
+    "services": "Services",
     "search": "Sok",
-    "messages": "Meddelanden",
     "notifications": "Aviseringar",
     "profile": "Profil",
     "analytics": "Analys"
@@ -30,7 +30,9 @@
     "help": "Hjalp",
     "merch": "Merch",
     "familyResources": "Familjeresurser",
-    "kidsPolicy": "Policy for barn"
+    "kidsPolicy": "Policy for barn",
+    "accountPortability": "Account Portability",
+    "deleteAccount": "Delete Account"
   },
   "theme": {
     "lightMode": "Ljust lage",
@@ -68,6 +70,8 @@
     "classic": "Klassiskt",
     "hot": "Hett",
     "new": "Nytt",
+    "featured": "Utvalt",
+    "sponsoredBy": "Sponsrat av <bdi>{{sponsorName}}</bdi>",
     "tags": "Taggar",
     "verifiedOnly": "Skapad av manniskor",
     "verifiedOnlyHint": "Visar endast videor med ProofMode-verifiering",
@@ -101,19 +105,6 @@
     "reply": "Svara",
     "comment": "Kommentera"
   },
-  "messages": {
-    "badge": "Meddelanden",
-    "title": "Direktmeddelanden",
-    "subtitle": "Prata med support, skicka vines privat eller hall igang en trad med personer du foljer.",
-    "searchPlaceholder": "Hitta personer att skicka meddelanden till",
-    "newMessage": "Nytt meddelande",
-    "readyToShare": "Redo att dela privat.",
-    "shareWithTitle": "Ditt nasta meddelande kommer att innehalla “{{title}}”.",
-    "shareWithLink": "Ditt nasta meddelande kommer att innehalla en vine-lank.",
-    "signerUnsupported": "Din nuvarande signer kan logga in dig, men den exponerar inte NIP-44-kryptering an. Byt till en nsec, bunker eller annan signer som stodjer NIP-44 for att anvanda direktmeddelanden pa webben.",
-    "supportBadge": "Support",
-    "supportSummary": "Fraga om buggar, moderering eller kontoproblem."
-  },
   "support": {
     "title": "Support",
     "subtitle": "Behöver du hjälp? Vi finns här för att hjälpa dig.",
@@ -134,6 +125,19 @@
     "communityDescription": "Delta i våra gemenskapsdiskussioner och få kontakt med andra Divine-användare på Nostr.",
     "communityBody": "Divine är byggt på Nostr, ett decentraliserat socialt protokoll. Hitta oss i din favoritklient för Nostr."
   },
+  "servicesPage": {
+    "title": "Divine services",
+    "intro": "Divine is more than loops. These services help you make the most of it.",
+    "openService": "Open {{name}}",
+    "items": {
+      "space": "Your profile, your rules. Themes, Top 8, profile music.",
+      "sounds": "Trending sounds and a Creative Commons library for your loops.",
+      "badges": "Awards for creators who show up.",
+      "crossposter": "Post your loops to the other platforms — only when you opt in.",
+      "verifier": "Check where a video really came from.",
+      "status": "Is it us or is it you? Check here."
+    }
+  },
   "tagPage": {
     "notFoundTitle": "Tagg hittades inte",
     "notFoundDescription": "Den begarda taggen kunde inte hittas.",
@@ -146,7 +150,11 @@
     "emptyState": "Inga kategorier ar tillgangliga just nu.",
     "metaTitle": "Utforska kategorier - Divine",
     "metaDescription": "Utforska videokategorier pa Divine - komedi, musik, dans, djur, sport, mat och mer.",
+    "videoCount_zero": "{{count}} videos",
     "videoCount_one": "{{count}} video",
+    "videoCount_two": "{{count}} videos",
+    "videoCount_few": "{{count}} videos",
+    "videoCount_many": "{{count}} videos",
     "videoCount_other": "{{count}} videor"
   },
   "vineBadge": {
@@ -184,7 +192,6 @@
       "pinToProfile": "Fäst på profilen",
       "deleteVideo": "Radera video",
       "reportVideo": "Rapportera video",
-      "sendViaMessage": "Skicka via meddelande",
       "reportUser": "Rapportera användare",
       "muteUser": "Tysta {{name}}",
       "viewSource": "Visa källa"
@@ -386,7 +393,6 @@
     "message": "Meddelande",
     "reportUser": "Rapportera användare",
     "subscribeRss": "Prenumerera på RSS-flöde",
-    "videos": "Videor",
     "followers": "Följare",
     "followingStat": "Följer",
     "followingDialogTitle": "Följer",
@@ -395,17 +401,26 @@
     "originalVineLoops": "Ursprungliga Vine-loopar",
     "classicVines": "Klassiska Vines",
     "classicVineStatsCaption": "Statistik från originalplattformen Vine (2013-2017)",
-    "legacySocialLabel": "{{label}}: {{handle}}"
+    "legacySocialLabel": "{{label}}: {{handle}}",
+    "blockUser": "Blockera användare",
+    "unblockUser": "Avblockera användare",
+    "blockDialogTitle": "Blockera den här användaren?",
+    "blockDialogDescription": "{{name}} tas bort från din offentliga följningslista, och deras videor hålls borta från dina flöden.",
+    "unblockDialogTitle": "Avblockera den här användaren?",
+    "unblockDialogDescription": "Det här visar {{name}}s videor igen, men du följer dem inte igen.",
+    "blockedTitle": "Blockerad.",
+    "blockedDescription": "Borta från din följningslista och dina flöden.",
+    "unblockedTitle": "Avblockerad.",
+    "unblockedDescription": "Deras videor kan dyka upp igen. Du följer dem inte.",
+    "cancel": "Avbryt",
+    "blockFailedDescription": "Kunde inte blockera. Försök igen."
   },
   "loginDialog": {
     "title": "Logga in på Divine",
     "heading": "Kom in.",
-    "subtitleRegister": "Har du en inbjudan? Skapa ett konto.",
     "subtitleSignIn": "Logga in på login.divine.video med ditt befintliga konto.",
     "tabRegister": "Registrera",
     "tabSignIn": "Logga in",
-    "checkingInvite": "Kontrollerar inbjudningsstatus...",
-    "inviteUnavailable": "Inbjudningsregistrering är inte tillgänglig just nu. Du kan ändå logga in på nästa flik.",
     "tabExtension": "Tillägg",
     "tabExtensionShort": "Till",
     "tabKey": "Nyckel",
@@ -423,8 +438,9 @@
     "bunkerLabel": "Bunker-URI",
     "bunkerPlaceholder": "bunker://",
     "bunkerButton": "Logga in med Bunker",
+    "bunkerAuthPrompt": "Din signerare behöver ditt godkännande. Vi försökte öppna sidan men din webbläsare blockerade den — öppna den här:",
+    "bunkerAuthLink": "Godkänn i din signerare",
     "connecting": "Ansluter...",
-    "errorInviteServiceUnavailable": "Inbjudningstjänsten är inte tillgänglig",
     "errorExtensionNotFound": "Hittade inget Nostr-tillägg. Installera ett NIP-07-tillägg.",
     "errorExtensionLoginFailed": "Inloggning med tillägg misslyckades",
     "errorKeyLoginFailed": "Kunde inte logga in med den här nyckeln. Kontrollera att den är korrekt.",
@@ -436,19 +452,22 @@
     "errorFileEmpty": "Kunde inte läsa filinnehållet.",
     "errorFileNoValidKey": "Filen innehåller ingen giltig hemlig nyckel.",
     "errorFileReadFailed": "Kunde inte läsa filen.",
-    "errorInviteValidationFailed": "Kunde inte validera inbjudningskoden",
-    "errorInviteCodeUsed": "Den här inbjudningskoden har redan använts",
     "errorSignInStartFailed": "Kunde inte starta inloggning",
-    "errorWaitlistJoinFailed": "Kunde inte gå med i väntelistan"
+    "subtitleCreate": "Konfigurera ditt Divine-konto.",
+    "createAccountButton": "Skapa konto",
+    "creatingAccount": "Konfigurerar kontot...",
+    "errorSignUpStartFailed": "Det gick inte att starta registreringen"
   },
   "accountSwitcher": {
     "myProfile": "Min profil",
     "settings": "Inställningar",
     "linkedAccounts": "Länkade konton",
+    "relays": "Relays",
     "switchRelay": "Byt relä",
     "switchAccount": "Byt konto",
     "addAnotherAccount": "Lägg till ett annat konto",
-    "logOut": "Logga ut"
+    "logOut": "Logga ut",
+    "accountPortability": "Move your account"
   },
   "reportContentDialog": {
     "titleVideo": "Rapportera video",
@@ -516,6 +535,7 @@
     "signInButton": "Logga in"
   },
   "badgeDetailModal": {
+    "description": "Hela historien om det här märket — vem som delade ut det och när.",
     "title": "Märkesinformation",
     "officialBadge": "✦ Officiellt Divine-märke",
     "issuedBy": "Utfärdat av",
@@ -580,6 +600,20 @@
     "mutedKeywordsTitle_one": "Tystade nyckelord ({{count}})",
     "mutedKeywordsTitle_other": "Tystade nyckelord ({{count}})",
     "noMutedUsers": "Ingen är tystad. Lugnt.",
+    "mutedHereTitle_one": "Tystad här ({{count}})",
+    "mutedHereTitle_other": "Tystade här ({{count}})",
+    "mutedHereDescription": "Dessa tystningar lades till från webben. Att ta bort en lyfter bara den tystningen.",
+    "mutedElsewhereTitle_one": "Tystad eller blockerad någon annanstans ({{count}})",
+    "mutedElsewhereTitle_other": "Tystade eller blockerade någon annanstans ({{count}})",
+    "mutedElsewhereDescription": "De kom från en annan klient eller enhet. Vissa kan vara Blockeringar från Divine-appen.",
+    "noWebMutedUsers": "Inga webbtystningar ännu.",
+    "noUnknownMutedUsers": "Inget från andra klienter just nu.",
+    "reviewBeforeUnmute": "Granska",
+    "confirmUnmuteTitle": "Lyfta den här tystningen?",
+    "confirmUnmuteDescription": "Den här posten kan vara en Blockering satt i Divine-appen. Om du lyfter den här tas detta p-tag bort överallt där din kind 10000-lista synkas.",
+    "confirmWebUnmuteDescription": "Den här tystningen lades till från webben. Granska den innan du tar bort den, ifall en annan klient nu använder samma p-tag.",
+    "confirmUnmuteCancel": "Behåll",
+    "confirmUnmuteAction": "Lyft",
     "noMutedHashtags": "Inga hashtaggar tystade ännu.",
     "noMutedKeywords": "Inga tystade nyckelord. Ditt flöde är rått.",
     "reportHistoryTitle": "Rapporthistorik",
@@ -591,6 +625,7 @@
     "toastErrorTitle": "Fel",
     "toastErrorEnterValue": "Ange ett värde att tysta",
     "toastErrorInvalidNpub": "Ogiltigt npub-format",
+    "toastErrorMuteYourself": "Du kan inte tysta dig själv.",
     "toastMutedTitle": "Tystad",
     "toastMutedDescription": "Tillagd i tystningslistan",
     "toastMuteFailed": "Kunde inte tysta. Försök igen.",
@@ -598,7 +633,17 @@
     "toastUnmutedDescription": "Borttagen från tystningslistan",
     "toastUnmuteFailed": "Kunde inte otysta. Försök igen.",
     "toastFunnelcakeUpdatedTitle": "Funnelcake API uppdaterad",
-    "toastFunnelcakeUpdatedDescription": "Använder {{url}} för framtida REST-läsningar."
+    "toastFunnelcakeUpdatedDescription": "Använder {{url}} för framtida REST-läsningar.",
+    "unblock": "Avblockera",
+    "statusUsersBlockedSuffix": "användare blockerade",
+    "blockedUsersTitle_one": "Blockerade användare ({{count}})",
+    "blockedUsersTitle_other": "Blockerade användare ({{count}})",
+    "blockedUsersDescription": "Blockerade användare tas bort från din offentliga följningslista. Avblockering visar också deras videor igen, men följer dem inte igen.",
+    "mutedUsersDescription": "Tystade användare förblir dolda från dina flöden utan att ändra vilka du följer.",
+    "noBlockedUsers": "Inga blockerade användare.",
+    "toastUnblockedTitle": "Avblockerad",
+    "toastUnblockedDescription": "Borttagen från blockerade användare. Deras videor kan dyka upp igen.",
+    "toastUnblockFailed": "Kunde inte avblockera. Försök igen."
   },
   "linkedAccountsSettings": {
     "copy": "Kopiera",
@@ -645,10 +690,13 @@
       "mastodon": "Posta en toot som innehåller texten nedan, och klistra sedan in Post-ID:t från URL:en.",
       "telegram": "Skicka ett meddelande i en publik kanal/grupp som innehåller texten nedan, och klistra sedan in meddelandesökvägen (t.ex. channelname/123).",
       "bluesky": "Posta på Bluesky med texten nedan, och klistra sedan in record key (rkey) från inläggets URL.",
-      "discord": "Skapa en Discord-server med din npub i servernamnet eller beskrivningen, skapa en permanent inbjudningslänk och klistra in inbjudningskoden."
+      "discord": "Posta ett meddelande som innehåller texten nedan, högerklicka sedan på det och välj ”Kopiera meddelandelänk”. En serverinbjudan kan inte bevisa vem som äger ett konto. Ange ditt Discord-användarnamn — det som står på din profil, inte ditt visningsnamn."
     },
     "toastErrorTitle": "Fel",
     "toastEnterProof": "Ange bevis-URL eller -ID",
+    "toastInvalidDiscordLink": "Klistra in en länk till ett Discord-meddelande: högerklicka på ditt meddelande och välj ”Kopiera meddelandelänk”.",
+    "discordUsernameLabel": "Ditt Discord-användarnamn",
+    "discordUsernamePlaceholder": "dittanvandarnamn",
     "toastCannotDetermineUsername": "Kunde inte fastställa användarnamn från URL:en",
     "toastVerifiedTitle": "Verifierad!",
     "toastLinkedTitle": "Länkad",
@@ -810,6 +858,8 @@
     "seoDescription": "Titta på den här videon på Divine",
     "seoDescriptionWithAuthor": "Titta på den här videon av {{name}} på Divine",
     "errorTitle": "Fel",
+    "nextVideoUnavailableDescription": "Kunde inte ladda nasta video. Forsok igen?",
+    "loadMoreUnavailableDescription": "Couldn't load more videos. Try again?",
     "likedTitle": "Gillad!",
     "likedDescription": "Din reaktion har publicerats",
     "likeFailedDescription": "Kunde inte gilla videon",
@@ -831,7 +881,12 @@
     "searchPrefix": "Sök: {{query}}",
     "searchResults": "Sökresultat",
     "authorVideos": "{{name}}s videor",
+    "featuredVideos": "Utvalda videor",
+    "featuredTabWrappedDescription": "Den utvalda fliken är slut. Här är Trendande.",
+    "featuredNavigationEndedDescription": "Videon finns kvar, men den ligger inte längre i flikens laddade del.",
+    "backToFeaturedTab": "Tillbaka till {{label}}",
     "loadingMore": "Laddar fler videor...",
+    "allCaughtUp": "That's the whole haul.",
     "previousVideoAria": "Föregående video",
     "nextVideoAria": "Nästa video",
     "previousArrow": "← föregående",
@@ -903,8 +958,10 @@
     "notFoundTitle": "Listan hittades inte",
     "notFoundDescription": "Den här listan kan ha raderats eller finns inte",
     "browseLists": "Bläddra bland listor",
-    "backToLists": "Tillbaka till listor",
-    "listCreator": "Listans skapare",
+    "backToCreatorLists": "Alla listor av {{name}}",
+    "videoList": "Videolista",
+    "untitledVideoList": "Namnlös videolista",
+    "byCreator": "Av {{name}}",
     "videoCount_one": "{{count}} video",
     "videoCount_other": "{{count}} videor",
     "collaborative": "Samarbete",
@@ -931,18 +988,15 @@
     "retry": "Försök igen",
     "peopleCount_one": "{{count}} person",
     "peopleCount_other": "{{count}} personer",
-    "notFoundTitle": "Konversationen hittades inte",
-    "notFoundDescription": "Gå tillbaka till inkorgen och starta ett nytt meddelande.",
-    "backToInbox": "Tillbaka till inkorgen",
     "dmUnavailableTitle": "Direktmeddelanden är inte tillgängliga",
     "dmUnavailableDescription": "Den här signeraren kan autentisera dig, men den exponerar inte de NIP-44-krypteringsmetoder som krävs för privata meddelanden.",
+    "backToSupport": "Tillbaka till Support",
     "noMessages": "Inga meddelanden ännu",
     "noMessagesHint": "Skicka det första meddelandet för att öppna tråden.",
-    "readyToShare": "Redo att dela",
-    "placeholderShare": "Lägg till en valfri notering...",
     "placeholderMessage": "Skriv ett meddelande..."
   },
   "videoCommentsModal": {
+    "description": "Se vad folk säger och lämna en egen kommentar.",
     "title": "Kommentarer",
     "loading": "Laddar kommentarer...",
     "emptyMessage": "Inga kommentarer ännu",
@@ -960,7 +1014,8 @@
   "thumbnailPlayer": {
     "videoPreview": "Förhandsvisning av video",
     "thumbnailAlt": "Videominiatyr",
-    "playVideo": "Spela video"
+    "playVideo": "Spela video",
+    "openVideo": "Öppna video"
   },
   "hashtagExplorer": {
     "heading": "Hashtaggsutforskaren",
@@ -1036,8 +1091,7 @@
       "likes": "Gillamarkeringar",
       "comments": "Kommentarer",
       "follows": "Följare",
-      "reposts": "Återpubliceringar",
-      "zaps": "Zaps"
+      "reposts": "Återpubliceringar"
     },
     "empty": {
       "all": {
@@ -1063,16 +1117,33 @@
       "reposts": {
         "title": "Inga återpubliceringsnotiser än.",
         "description": "Återpubliceringar av dina videor dyker upp här."
-      },
-      "zaps": {
-        "title": "Inga zap-notiser än.",
-        "description": "Zaps på dina videor dyker upp här."
       }
     },
     "errorTitle": "Kunde inte ladda notiser",
     "errorFallback": "Försök igen senare",
     "sectionNew": "Nytt",
-    "sectionEarlier": "Tidigare"
+    "sectionEarlier": "Tidigare",
+    "message": {
+      "liked": "gillade din video",
+      "commented": "kommenterade din video",
+      "reposted": "delade din video",
+      "followed": "följer dig nu",
+      "andOthers_one": "och {{count}} annan",
+      "andOthers_other": "och {{count}} andra",
+      "likedTitled": "gillade {{title}}",
+      "commentedTitled": "kommenterade {{title}}",
+      "repostedTitled": "delade {{title}}",
+      "likedComment": "gillade din kommentar",
+      "likedCommentTitled": "gillade din kommentar på {{title}}"
+    },
+    "video": {
+      "untitled": "din video"
+    },
+    "a11y": {
+      "openVideo": "Öppna {{title}}",
+      "viewProfile": "{{name}}s profil",
+      "unread": "Oläst"
+    }
   },
   "getEmbedPage": {
     "title": "Bädda in Divine-widget",
@@ -1140,7 +1211,7 @@
   "trendingPage": {
     "heading": "Populärt",
     "subheading": "Upptäck vad som är populärt i communityn",
-    "rssTitle": "DiVine - Populärt",
+    "rssTitle": "Divine - Populärt",
     "rssLink": "RSS"
   },
   "merchPage": {
@@ -1201,7 +1272,7 @@
     "notFoundDescription": {
       "vine": "Den här Vine-användaren har kanske inte importerats till Nostr-nätverket än.",
       "nip05": "Kontrollera att NIP-05-identifieraren är korrekt.",
-      "legacy": "Det här användarnamnet matchar ingen äldre Vine-profil eller OpenVine-handle."
+      "legacy": "Det här användarnamnet matchar ingen känd profil."
     }
   },
   "atUsernamePage": {
@@ -1297,14 +1368,11 @@
   "pwaInstallPrompt": {
     "close": "Stäng",
     "getDivine": "Hämta Divine",
-    "installDivineWeb": "Installera Divine Web",
     "descriptionNative": "Installera den nativa appen för bästa Divine-upplevelse",
-    "descriptionWeb": "Installera vår app för en bättre upplevelse",
     "appStore": "App Store",
     "appStoreAria": "Ladda ner Divine på App Store",
     "googlePlay": "Google Play",
     "googlePlayAria": "Hämta Divine på Google Play",
-    "install": "Installera",
     "notNow": "Inte nu"
   },
   "relaySelector": {
@@ -1329,7 +1397,6 @@
     "muteErrorDescription": "Kunde inte spara tystningen. Försök igen?",
     "deleteVideo": "Radera video",
     "reportVideo": "Rapportera video",
-    "sendViaMessage": "Skicka via meddelande",
     "reportUser": "Rapportera användare",
     "muteUser": "Tysta {{name}}",
     "viewSource": "Visa källa",
@@ -1393,23 +1460,6 @@
     "confirm": "Radera kommentar",
     "deleting": "Raderar..."
   },
-  "inviteCodeForm": {
-    "label": "Inbjudningskod",
-    "placeholder": "Klistra in din inbjudningskod",
-    "checking": "Kollar...",
-    "continue": "Fortsätt",
-    "joinWaitlist": "Ingen inbjudan? Ställ dig på väntelistan."
-  },
-  "invitesLandingPage": {
-    "seoTitle": "Gå med i diVine med inbjudningskoden {{code}}",
-    "seoTitleDefault": "Gå med i diVine",
-    "seoDescription": "Du har blivit inbjuden! Använd koden {{code}} för att gå med i diVine.",
-    "seoDescriptionDefault": "Använd din inbjudningskod för att gå med i diVine och börja dela video.",
-    "heading": "Du är inbjuden!",
-    "subheading": "Ange din inbjudningskod för att gå med i diVine",
-    "alreadyHaveAccount": "Har du redan ett konto?",
-    "signIn": "Logga in"
-  },
   "applePodcastEmbed": {
     "defaultTitle": "Vine Revisited and The Fight Against AI Slop",
     "defaultDescription": "Bakom kulisserna på Divine-lanseringen",
@@ -1418,5 +1468,99 @@
     "podcastEpisode": "Podcast-avsnitt",
     "openInApplePodcasts": "Öppna i Apple Podcasts",
     "playEpisode": "Spela avsnitt"
+  },
+  "listsPage": {
+    "createList": "Skapa lista",
+    "createFirstList": "Skapa din första lista",
+    "createVideoList": "Videolista",
+    "createPeopleList": "Personlista"
+  },
+  "createPeopleListDialog": {
+    "title": "Skapa personlista",
+    "description": "Samla folk på ett ställe och se deras senaste loopar.",
+    "nameLabel": "Listnamn *",
+    "namePlaceholder": "Favoritkreatörer",
+    "descriptionLabel": "Beskrivning",
+    "descriptionPlaceholder": "Folk vars loopar du aldrig missar...",
+    "imageLabel": "URL till omslagsbild",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Ge den ett namn först.",
+    "reservedName": "Det namnet är reserverat för en systemlista.",
+    "imageInvalid": "Använd en fullständig bild-URL.",
+    "cancelButton": "Avbryt",
+    "creatingButton": "Skapar...",
+    "createButton": "Skapa lista",
+    "createdTitle": "Personlista skapad.",
+    "createdDescription": "”{{name}}” är redo.",
+    "failedTitle": "Det gick inte.",
+    "failedDescription": "Det hakade upp sig när personlistan skulle skapas. Försöka igen?"
+  },
+  "editPeopleListDialog": {
+    "title": "Redigera personlista",
+    "description": "Uppdatera namn, beskrivning eller omslagsbild för den här listan.",
+    "nameLabel": "Listnamn *",
+    "namePlaceholder": "Favoritkreatörer",
+    "descriptionLabel": "Beskrivning",
+    "descriptionPlaceholder": "Folk vars loopar du aldrig missar...",
+    "imageLabel": "URL till omslagsbild",
+    "imagePlaceholder": "https://example.com/image.jpg",
+    "nameRequired": "Ge den ett namn först.",
+    "imageInvalid": "Använd en fullständig bild-URL.",
+    "cancelButton": "Avbryt",
+    "savingButton": "Sparar...",
+    "saveButton": "Spara",
+    "savedTitle": "Sparat.",
+    "savedDescription": "”{{name}}” är uppdaterad.",
+    "failedTitle": "Sparades inte.",
+    "failedDescription": "Det hakade upp sig när personlistan skulle uppdateras. Försöka igen?"
+  },
+  "deleteListDialog": {
+    "title": "Radera listan?",
+    "videosDescription": "Det här begär radering av listan ”{{name}}”. Videorna i listan påverkas inte.",
+    "peopleDescription": "Det här begär radering av listan ”{{name}}”. Personerna i listan påverkas inte.",
+    "noteLabel": "Obs:",
+    "relayNote": "Den här åtgärden skickar en raderingsbegäran till reläer. De flesta reläer respekterar den, men radering är inte garanterad överallt.",
+    "cancelButton": "Avbryt",
+    "deletingButton": "Raderar...",
+    "deleteButton": "Radera lista"
+  },
+  "peopleListDetailPage": {
+    "editList": "Redigera",
+    "delete": "Radera",
+    "share": "Dela",
+    "deletedTitle": "Personlista raderad.",
+    "deletedDescription": "”{{name}}” har tagits bort.",
+    "deleteFailedTitle": "Raderingen misslyckades.",
+    "deleteFailedDescription": "Det hakade upp sig när personlistan skulle raderas. Försöka igen?"
+  },
+  "userList": {
+    "searchPlaceholder": "Sök på namn",
+    "noMatches": "Ingen här matchar. Testa ett annat namn?",
+    "searchHint": "Skriv minst 2 bokstäver eller siffror.",
+    "searchUnavailable": "Det gick inte att söka nu. Försöka igen?",
+    "noFollowers": "Inga följare än.",
+    "noFollowing": "Följer ingen än."
+  },
+  "supporters": {
+    "chip": "Supporter",
+    "title": "Divine-supportrar",
+    "intro": "Hjälp Divine att förbli oberoende, mänskligt och öppet för alla.",
+    "membership": "Ditt supportermedlemskap",
+    "thankYou": "Tack för att du stöttar Divine.",
+    "thanksDetail": "Ditt stöd hjälper oss att behålla den här platsen för människor. Vi är glada att du är här.",
+    "showChip": "Visa mitt supportermärke på min profil",
+    "privacy": "Ditt medlemskap är privat som standard. Aktivera detta för att visa märket offentligt. Du kan ändra det när som helst.",
+    "check": "Kontrollera supporterstatus",
+    "checking": "Kontrollerar supporterstatus…",
+    "checkHint": "Redan supporter? Kontrollera medlemskapet för det här kontot. Ditt signeringsverktyg kan be om tillåtelse.",
+    "checkError": "Vi kunde inte kontrollera din supporterstatus. Försök igen.",
+    "unknown": "Din supporterstatus är inte bekräftad än. Kontrollera igen innan du gör ett nytt köp.",
+    "saveError": "Vi kunde inte spara ditt synlighetsval. Försök igen.",
+    "purchaseInstructions": "Bli supporter i Divines mobilapp: logga in med samma konto och öppna supporterdelen i inställningarna. Redan köpt? Återställ köpet där och kontrollera din status här.",
+    "getApp": "Hämta appen för att bli supporter",
+    "verificationPrerequisite": "Bli supporter för att ansöka om verifiering",
+    "verificationNext": "Ditt nästa steg: verifiering",
+    "verificationDetail": "Supportermedlemskap krävs för att ansöka om verifiering. Det verifierar inte din identitet och garanterar inget godkännande. Du kan länka befintliga konton för att dela identitetsbevis.",
+    "linkAccounts": "Fortsätt till länkade konton"
   }
 }

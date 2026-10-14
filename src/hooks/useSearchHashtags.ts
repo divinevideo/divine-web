@@ -14,6 +14,7 @@ interface UseSearchHashtagsOptions {
 export interface HashtagResult {
   hashtag: string;
   video_count: number;
+  thumbnail?: string;
 }
 
 /**
@@ -35,18 +36,10 @@ function useDebouncedValue(value: string, delay: number): string {
 }
 
 /**
- * Filter hashtags by search query
+ * Normalize user-entered hashtag search text for Funnelcake.
  */
-function filterHashtagsByQuery(hashtags: HashtagResult[], query: string): HashtagResult[] {
-  if (!query.trim()) {
-    return hashtags;
-  }
-
-  const searchValue = query.toLowerCase();
-
-  return hashtags.filter(hashtag =>
-    hashtag.hashtag.toLowerCase().includes(searchValue)
-  );
+function normalizeHashtagQuery(query: string): string {
+  return query.trim().replace(/^#+/, '').trim().toLowerCase();
 }
 
 /**
@@ -63,10 +56,11 @@ export function useSearchHashtags(options: UseSearchHashtagsOptions) {
     queryKey: ['search-hashtags', debouncedQuery, limit],
     queryFn: async ({ signal }) => {
       const requestStartedAt = performance.now();
+      const normalizedQuery = normalizeHashtagQuery(debouncedQuery);
       const requestContext = {
-        query: debouncedQuery,
+        query: normalizedQuery,
         limit,
-        mode: debouncedQuery.trim() ? 'search' : 'popular',
+        mode: normalizedQuery ? 'search' : 'popular',
       };
 
       console.info('[search/hashtags] starting', {
@@ -77,25 +71,24 @@ export function useSearchHashtags(options: UseSearchHashtagsOptions) {
       const fetchStartedAt = performance.now();
       const hashtags = await fetchTrendingHashtags(
         getFunnelcakeBaseUrl(),
-        100,
+        normalizedQuery ? limit : 100,
         signal,
+        normalizedQuery || undefined,
       );
       const fetchCompletedAt = performance.now();
 
-      const allHashtags: HashtagResult[] = hashtags.map(hashtag => ({
+      const finalHashtags: HashtagResult[] = hashtags.map(hashtag => ({
         hashtag: hashtag.hashtag,
         video_count: hashtag.video_count,
+        thumbnail: hashtag.thumbnail,
       }));
-
-      const filteredHashtags = filterHashtagsByQuery(allHashtags, debouncedQuery);
-      const finalHashtags = filteredHashtags.slice(0, limit);
 
       console.info('[search/hashtags] completed', {
         ...requestContext,
         apiMs: Math.round(fetchCompletedAt - fetchStartedAt),
         totalMs: Math.round(fetchCompletedAt - requestStartedAt),
-        fetchedHashtagCount: allHashtags.length,
-        matchedHashtagCount: filteredHashtags.length,
+        fetchedHashtagCount: finalHashtags.length,
+        matchedHashtagCount: finalHashtags.length,
         returnedHashtagCount: finalHashtags.length,
       });
 
