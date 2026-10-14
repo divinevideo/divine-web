@@ -113,8 +113,7 @@ export function useWindowNostr(
     }
 
     console.log('[useWindowNostr] Auto-injecting window.nostr...');
-    injectWindowNostr(signer);
-    setIsInjected(true);
+    setIsInjected(injectWindowNostr(signer));
 
     // Cleanup: remove window.nostr when component unmounts or signer changes
     return () => {
@@ -131,8 +130,7 @@ export function useWindowNostr(
       return;
     }
 
-    injectWindowNostr(signer);
-    setIsInjected(true);
+    setIsInjected(injectWindowNostr(signer));
   };
 
   // Manual removal function
