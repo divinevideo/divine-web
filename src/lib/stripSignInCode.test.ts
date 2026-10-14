@@ -20,8 +20,8 @@ describe('stripSignInCode', () => {
   });
 
   afterEach(() => {
-    visit('/');
     vi.restoreAllMocks();
+    visit('/');
   });
 
   it('removes a code after the # on /app/callback as soon as it loads, and keeps the rest', async () => {
@@ -95,10 +95,42 @@ describe('stripSignInCode', () => {
     visit(`/somewhere?oauth_confirm=${CODE}#oauth_confirm=${CODE}`);
     await loadModule();
     expect(window.location.href).toContain(CODE);
-    visit(`/app/callback/?oauth_confirm=${CODE}`);
-    await loadModule();
-    expect(window.location.href).toContain(CODE);
     expect(window.__DIVINE_SIGNIN_CODE_STRIPPED__).toBeUndefined();
     expect(window.__DIVINE_ANALYTICS_DISABLED__).toBeUndefined();
   });
+  it.each(['/app/callback/', '/App/Callback', '/APP/CALLBACK///'])('strips router-matched path %s', async (path) => {
+    visit(`${path}?oauth_confirm=${CODE}`);
+    await loadModule();
+    expect(window.location.href).not.toContain(CODE);
+    expect(window.__DIVINE_ANALYTICS_DISABLED__).toBe(true);
+  });
+
+  it.each(['#section-2', '#/profile', '#next=%2Fa%20b&flag'])('preserves an unrelated fragment %s', async (hash) => {
+    visit(`/app/callback?redirect=%2Fa%20b&flag&oauth_confirm=${CODE}${hash}`);
+    await loadModule();
+    expect(window.location.search).toBe('?redirect=%2Fa%20b&flag');
+    expect(window.location.hash).toBe(hash);
+  });
+
+  it('removes repeated encoded parameter names without rewriting other pairs', async () => {
+    visit(`/app/callback?flag&oauth%5Fconfirm=${CODE}&redirect=%2Fa%20b&oauth_confirm=${CODE}#keep=%2f&oauth%5fconfirm=${CODE}`);
+    await loadModule();
+    expect(window.location.search).toBe('?flag&redirect=%2Fa%20b');
+    expect(window.location.hash).toBe('#keep=%2f');
+  });
+
+  it('keeps analytics suppressed and boot running when history rejects the strip', async () => {
+    visit(`/app/callback?oauth_confirm=${CODE}`);
+    vi.spyOn(window.history, 'replaceState').mockImplementation(() => {
+      expect(window.__DIVINE_ANALYTICS_DISABLED__).toBe(true);
+      expect(window.__DIVINE_SIGNIN_CODE_STRIPPED__).toBe(true);
+      throw new DOMException('History unavailable', 'SecurityError');
+    });
+    await expect(loadModule()).resolves.toBeDefined();
+    expect(window.__DIVINE_ANALYTICS_DISABLED__).toBe(true);
+    await import('./hubSpotLoader');
+    expect(document.getElementById(HUBSPOT_SCRIPT_ID)).toBeNull();
+    vi.restoreAllMocks();
+  });
+
 });

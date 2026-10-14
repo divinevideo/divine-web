@@ -16,7 +16,7 @@ const BENIGN_SUBTITLE_VTT_STATUS_CODES = new Set([404, 410, 422]);
 // removes it from the address bar, but the browser's navigation timing entry
 // keeps the address the page was opened with, and Sentry names page-load spans
 // and Replay entries from that entry.
-const SIGNIN_CODE_RE = /oauth_confirm=[^&#\s"'<>]*/g;
+const SIGNIN_CODE_RE = /oauth(?:_|%5[Ff])confirm=[^&#\s"'<>]*/g;
 const SIGNIN_CODE_FILTERED = 'oauth_confirm=[Filtered]';
 // rrweb's custom event type, which carries Replay's breadcrumbs and
 // performance entries. Page content events are left alone: the page never
@@ -127,7 +127,11 @@ function isPlainData(value: object): boolean {
  * objects and arrays are walked: what Sentry sends is plain data, while the
  * class instances it attaches (scopes, the client) are not sent.
  */
-export function scrubSignInCode<T>(value: T, seen = new WeakSet<object>()): T {
+export function scrubSignInCode<T>(value: T): T {
+  return scrubSignInCodeData(value, new WeakSet<object>());
+}
+
+function scrubSignInCodeData<T>(value: T, seen: WeakSet<object>): T {
   if (typeof value === 'string') {
     return value.replace(SIGNIN_CODE_RE, SIGNIN_CODE_FILTERED) as T;
   }
@@ -137,7 +141,7 @@ export function scrubSignInCode<T>(value: T, seen = new WeakSet<object>()): T {
   for (const key of Object.keys(record)) {
     const descriptor = Object.getOwnPropertyDescriptor(record, key);
     if (!descriptor?.writable) continue;
-    const scrubbed = scrubSignInCode(descriptor.value, seen);
+    const scrubbed = scrubSignInCodeData(descriptor.value, seen);
     if (scrubbed !== descriptor.value) record[key] = scrubbed;
   }
   return value;
@@ -190,7 +194,14 @@ export function initializeSentry() {
     ],
 
     beforeBreadcrumb(breadcrumb) {
-      return shouldDropKeyExportBreadcrumb(breadcrumb) ? null : scrubSignInCode(breadcrumb);
+      if (shouldDropKeyExportBreadcrumb(breadcrumb)) return null;
+      const data = breadcrumb.data ? { ...breadcrumb.data } : undefined;
+      if (data) {
+        for (const key of ['url', 'from', 'to']) {
+          if (typeof data[key] === 'string') data[key] = scrubSignInCode(data[key]);
+        }
+      }
+      return { ...breadcrumb, message: scrubSignInCode(breadcrumb.message), data };
     },
 
     beforeSendTransaction(event) {

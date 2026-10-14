@@ -57,6 +57,16 @@ function navigationSpan(op: string, description: string) {
 }
 
 describe('scrubSignInCode', () => {
+  it.each(['oauth%5Fconfirm', 'oauth%5fconfirm'])('scrubs encoded parameter name %s', (name) => {
+    expect(scrubSignInCode(`${ORIGIN}/app/callback?${name}=${CODE}`)).not.toContain(CODE);
+  });
+
+  it('can be passed directly to Array.map', () => {
+    const events = [{ url: OPENED_WITH_QUERY }, { url: OPENED_WITH_FRAGMENT }];
+    expect(() => events.map(scrubSignInCode)).not.toThrow();
+    expect(JSON.stringify(events)).not.toContain(CODE);
+  });
+
   it('replaces the code in the query, in the fragment, and in both at once', () => {
     expect(scrubSignInCode(OPENED_WITH_QUERY)).toBe(`${ORIGIN}/app/callback?signin=abc&oauth_confirm=[Filtered]`);
     expect(scrubSignInCode(OPENED_WITH_FRAGMENT)).toBe(`${ORIGIN}/app/callback?signin=abc#oauth_confirm=[Filtered]`);
@@ -131,6 +141,14 @@ describe('Sentry setup keeps the sign-in code out of what it sends', () => {
     };
 
     expect(JSON.stringify(beforeSend(error, {}))).not.toContain(CODE);
+  });
+
+  it('does not mutate the objects supplied as console arguments', () => {
+    const { beforeBreadcrumb } = startSentry();
+    const liveState = { url: OPENED_WITH_QUERY };
+    const breadcrumb = { category: 'console', data: { arguments: [liveState] } };
+    beforeBreadcrumb(breadcrumb);
+    expect(liveState.url).toBe(OPENED_WITH_QUERY);
   });
 
   it('scrubs navigation breadcrumbs as they are recorded', () => {
