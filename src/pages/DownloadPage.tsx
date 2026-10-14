@@ -2,7 +2,6 @@
 // ABOUTME: Offers store choices without redirecting visitors or requiring an account
 
 import { AppleLogo, DeviceMobile, GooglePlayLogo } from "@phosphor-icons/react";
-import { useHead } from "@unhead/react";
 import { useState } from "react";
 
 import { MarketingLayout } from "@/components/MarketingLayout";
@@ -20,12 +19,6 @@ export function DownloadPage() {
   // Google Play and Zapstore both hand out the Android build, so neither
   // has anything an iOS visitor can install.
   const showAndroidStores = platform !== "ios";
-
-  useHead({
-    title: "Download Divine",
-    link: [{ rel: "canonical", href: "https://divine.video/download" }],
-    meta: [{ name: "description", content: "Get Divine from the App Store, Google Play, or Zapstore." }],
-  });
 
   return (
     <MarketingLayout>

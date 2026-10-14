@@ -9,7 +9,6 @@ import { ZendeskWidget } from "@/components/ZendeskWidget";
 import { FamilyPageHero } from "@/components/family/FamilyPageHero";
 import { FamilyResources } from "@/components/family/FamilyResources";
 import { FamilySectionNav } from "@/components/family/FamilySectionNav";
-import { FamilySeoHead } from "@/components/family/FamilySeoHead";
 import { StoreBadgesCta } from "@/components/family/StoreBadgesCta";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/family/JsonLd";
 import {
@@ -24,7 +23,6 @@ export function SafetyToolsPage() {
 
   return (
     <MarketingLayout>
-      {seo && <FamilySeoHead seo={seo} />}
       {seo && <ArticleJsonLd seo={seo} />}
       {seo && <BreadcrumbJsonLd seo={seo} />}
       <ZendeskWidget />

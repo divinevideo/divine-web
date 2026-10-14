@@ -750,8 +750,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "Classifica - Divine",
-    "seoDescription": "I migliori video e creator per loop su Divine",
-    "seoOgDescription": "Vedi i video e i creator più popolari",
     "heading": "Classifica",
     "subheading": "I migliori video e creator per loop",
     "topVideos": "Top video",
@@ -1224,8 +1222,6 @@
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",
-    "metaDescription": "Magliette, felpe, cappellini e roba che non si prende troppo sul serio. Disegnato da Divine, stampato e spedito da Bonfire.",
-    "ogTitle": "Merch Divine",
     "headline": "Indossa i tuoi loop.",
     "body": "Magliette, felpe, cappellini e roba che non si prende troppo sul serio.",
     "storeCta": "Scopri tutto",

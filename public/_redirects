@@ -9,3 +9,7 @@
 # Redirect about page to WordPress subdomain
 /about  https://about.divine.video/  301
 /about/  https://about.divine.video/  301
+
+# /account-portability moved to /exit (#591); Fastly does the same in compute-js/src/hostRedirect.js
+/account-portability  /exit  301
+/account-portability/  /exit  301

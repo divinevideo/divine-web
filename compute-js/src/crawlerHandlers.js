@@ -5,33 +5,10 @@ import { KVStore } from 'fastly:kv-store';
 import { buildCrawlerHtml, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
-import { HOST_DEPENDENT_CRAWLER_VARY } from './templateCachePolicy.js';
 
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
 const DEFAULT_SITE_DESCRIPTION = 'Watch and share 6-second looping videos on the decentralized Nostr network.';
-
-export function handleDownloadOgTags(url, hostnameToUse) {
-  const html = buildCrawlerHtml({
-    title: 'Download Divine',
-    description: 'Get Divine from the App Store, Google Play, or Zapstore.',
-    image: DEFAULT_OG_IMAGE,
-    url: `https://${hostnameToUse}${url.pathname}`,
-    ogType: 'website',
-    twitterCard: 'summary_large_image',
-    imageWidth: 1200,
-    imageHeight: 630,
-  });
-
-  return new Response(html, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=300',
-      'Vary': HOST_DEPENDENT_CRAWLER_VARY,
-    },
-  });
-}
 
 /**
  * Fetch video metadata from Funnelcake API using Fastly backend

@@ -1,14 +1,10 @@
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import MerchPage from './MerchPage';
 import { MERCH_STORE_URL } from '@/lib/externalLinks';
 import merchProducts from '@/data/merchProducts.json';
 import { initializeI18n } from '@/lib/i18n';
-
-vi.mock('@unhead/react', () => ({
-  useHead: () => undefined,
-}));
 
 function renderPage() {
   return render(

@@ -743,8 +743,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "リーダーボード - Divine",
-    "seoDescription": "Divineのループ数によるトップ動画とクリエイター",
-    "seoOgDescription": "最も人気の動画とクリエイターをチェック",
     "heading": "リーダーボード",
     "subheading": "ループ数によるトップ動画とクリエイター",
     "topVideos": "トップ動画",
@@ -1216,8 +1214,6 @@
   },
   "merchPage": {
     "metaTitle": "グッズ — Divine",
-    "metaDescription": "Tシャツ、フーディー、キャップなど、肩の力が抜けたアイテム。デザインはDivine、印刷と発送はBonfireが担当。",
-    "ogTitle": "Divineグッズ",
     "headline": "ループを身にまとおう。",
     "body": "Tシャツ、フーディー、キャップなど、肩の力が抜けたアイテム。",
     "storeCta": "すべての商品を見る",

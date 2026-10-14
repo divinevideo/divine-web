@@ -743,8 +743,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "Lider Tablosu - Divine",
-    "seoDescription": "Divine'da loop sayısına göre en iyi videolar ve yaratıcılar",
-    "seoOgDescription": "En popüler videoları ve yaratıcıları gör",
     "heading": "Lider Tablosu",
     "subheading": "Loop sayısına göre en iyi videolar ve yaratıcılar",
     "topVideos": "En İyi Videolar",
@@ -1216,8 +1214,6 @@
   },
   "merchPage": {
     "metaTitle": "Ürünler — Divine",
-    "metaDescription": "Tişörtler, kapüşonlular, şapkalar ve kendini fazla ciddiye almayan şeyler. Divine tarafından tasarlandı, Bonfire tarafından basıldı ve gönderildi.",
-    "ogTitle": "Divine Ürünleri",
     "headline": "Döngülerini giy.",
     "body": "Tişörtler, kapüşonlular, şapkalar ve kendini fazla ciddiye almayan şeyler.",
     "storeCta": "Hepsine göz at",

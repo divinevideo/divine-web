@@ -743,8 +743,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "Leaderboard - Divine",
-    "seoDescription": "Top videos and creators by loops on Divine",
-    "seoOgDescription": "See the most popular videos and creators",
     "heading": "Leaderboard",
     "subheading": "Top videos and creators by loops",
     "topVideos": "Top Videos",
@@ -1216,8 +1214,6 @@
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",
-    "metaDescription": "Tees, hoodies, hats, and stuff that doesn't take itself too seriously. Designed by Divine, printed and shipped by Bonfire.",
-    "ogTitle": "Divine Merch",
     "headline": "Wear your loops.",
     "body": "Tees, hoodies, hats, and stuff that doesn't take itself too seriously.",
     "storeCta": "Shop everything",

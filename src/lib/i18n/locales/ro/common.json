@@ -750,8 +750,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "Clasament - Divine",
-    "seoDescription": "Cele mai bune videoclipuri și creatori după loop-uri pe Divine",
-    "seoOgDescription": "Vezi cele mai populare videoclipuri și creatori",
     "heading": "Clasament",
     "subheading": "Cele mai bune videoclipuri și creatori după loop-uri",
     "topVideos": "Videoclipuri de top",
@@ -1224,8 +1222,6 @@
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",
-    "metaDescription": "Tricouri, hanorace, șepci și alte chestii care nu se iau prea în serios. Design de Divine, imprimate și expediate de Bonfire.",
-    "ogTitle": "Merch Divine",
     "headline": "Poartă-ți buclele.",
     "body": "Tricouri, hanorace, șepci și alte chestii care nu se iau prea în serios.",
     "storeCta": "Vezi tot",

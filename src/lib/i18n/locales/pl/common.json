@@ -757,8 +757,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "Ranking - Divine",
-    "seoDescription": "Najlepsze wideo i twórcy według pętli na Divine",
-    "seoOgDescription": "Zobacz najpopularniejsze wideo i twórców",
     "heading": "Ranking",
     "subheading": "Najlepsze wideo i twórcy według pętli",
     "topVideos": "Top wideo",
@@ -1232,8 +1230,6 @@
   },
   "merchPage": {
     "metaTitle": "Gadżety — Divine",
-    "metaDescription": "Koszulki, bluzy, czapki i inne rzeczy, które nie traktują się zbyt poważnie. Projekt Divine, druk i wysyłka Bonfire.",
-    "ogTitle": "Gadżety Divine",
     "headline": "Noś swoje pętle.",
     "body": "Koszulki, bluzy, czapki i inne rzeczy, które nie traktują się zbyt poważnie.",
     "storeCta": "Zobacz wszystko",

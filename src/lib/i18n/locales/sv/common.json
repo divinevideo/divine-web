@@ -743,8 +743,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "Topplista - Divine",
-    "seoDescription": "Topplista över videor och skapare efter loopar på Divine",
-    "seoOgDescription": "Se de mest populära videorna och skaparna",
     "heading": "Topplista",
     "subheading": "Topplistans videor och skapare efter loopar",
     "topVideos": "Toppvideor",
@@ -1216,8 +1214,6 @@
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",
-    "metaDescription": "T-shirts, hoodies, kepsar och grejer som inte tar sig själva på för stort allvar. Designat av Divine, tryckt och skickat av Bonfire.",
-    "ogTitle": "Divine Merch",
     "headline": "Bär dina loopar.",
     "body": "T-shirts, hoodies, kepsar och grejer som inte tar sig själva på för stort allvar.",
     "storeCta": "Handla allt",

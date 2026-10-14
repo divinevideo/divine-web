@@ -9,7 +9,7 @@ import { I18nextProvider } from "react-i18next";
 import { createHead, UnheadProvider } from "@unhead/react/server";
 
 import { createI18nInstance } from "@/lib/i18n";
-import { getFamilySeo, type MarketingSeoRoute } from "@/seo/marketingSeo";
+import { getFamilySeo } from "@/seo/marketingSeo";
 import { FamilyHubPage } from "@/pages/family/FamilyHubPage";
 import { TalkingToYourTeenPage } from "@/pages/family/TalkingToYourTeenPage";
 import { MediaPlanPage } from "@/pages/family/MediaPlanPage";
@@ -28,7 +28,6 @@ export const MARKETING_SSG_ROUTES = Object.keys(ROUTE_COMPONENTS);
 
 export interface RenderedMarketingRoute {
   appHtml: string;
-  seo: MarketingSeoRoute;
 }
 
 export async function renderMarketingRoute(
@@ -41,7 +40,7 @@ export async function renderMarketingRoute(
   }
 
   const i18n = await createI18nInstance({ languages: ["en"] });
-  // Head collected but discarded: the prerender script bakes meta tags from marketingSeo directly
+  // Head collected but discarded: the prerender script renders the head from the shared page table (src/seo/pageSeo.ts), not from this component tree
   const head = createHead();
 
   const appHtml = renderToString(
@@ -56,5 +55,5 @@ export async function renderMarketingRoute(
     </I18nextProvider>
   );
 
-  return { appHtml, seo };
+  return { appHtml };
 }

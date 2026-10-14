@@ -1,5 +1,4 @@
 import { ArrowSquareOut } from '@phosphor-icons/react';
-import { useHead } from '@unhead/react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { MERCH_STORE_URL } from '@/lib/externalLinks';
@@ -89,20 +88,6 @@ function ProductCard({ product, accent }: { product: Product; accent: (typeof AC
 
 export default function MerchPage() {
   const { t } = useTranslation();
-  const metaDescription = t('merchPage.metaDescription');
-  useHead({
-    title: t('merchPage.metaTitle'),
-    meta: [
-      { name: 'description', content: metaDescription },
-      { property: 'og:title', content: t('merchPage.ogTitle') },
-      { property: 'og:description', content: metaDescription },
-      { property: 'og:url', content: 'https://divine.video/merch' },
-      { property: 'og:image', content: 'https://divine.video/og.png' },
-      { name: 'twitter:card', content: 'summary_large_image' },
-      { name: 'twitter:title', content: t('merchPage.ogTitle') },
-      { name: 'twitter:description', content: metaDescription },
-    ],
-  });
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 md:py-14">

@@ -750,8 +750,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "Classement - Divine",
-    "seoDescription": "Top vidéos et créateurs par loops sur Divine",
-    "seoOgDescription": "Découvre les vidéos et créateurs les plus populaires",
     "heading": "Classement",
     "subheading": "Top vidéos et créateurs par loops",
     "topVideos": "Top vidéos",
@@ -1224,8 +1222,6 @@
   },
   "merchPage": {
     "metaTitle": "Merch — Divine",
-    "metaDescription": "T-shirts, hoodies, casquettes et trucs qui ne se prennent pas trop au sérieux. Conçu par Divine, imprimé et expédié par Bonfire.",
-    "ogTitle": "Merch Divine",
     "headline": "Porte tes loops.",
     "body": "T-shirts, hoodies, casquettes et trucs qui ne se prennent pas trop au sérieux.",
     "storeCta": "Tout voir",

@@ -2,12 +2,8 @@
 // ABOUTME: Returns index.html with a 200 status for SPA routes and injects per-video OG/Twitter tags for bots
 
 import {
-  buildAgeReviewPageMeta,
   buildCategoriesIndexMeta,
   buildCategoryPageMeta,
-  buildDownloadPageMeta,
-  buildFamilyPageMeta,
-  buildKidsPolicyPageMeta,
   buildProfilePageMeta,
   buildVideoPageMeta,
   decodeNpubToHex,
@@ -328,25 +324,6 @@ async function fetchRouteMeta(url: URL): Promise<PageMeta | null> {
 
   if (url.pathname.startsWith('/@')) {
     return fetchAtUsernameMeta(url);
-  }
-
-  // Family resource hub at /family on apex.
-  if (url.pathname === '/family') {
-    return buildFamilyPageMeta(url);
-  }
-
-  // Age-review page at /age-review on apex.
-  if (url.pathname === '/age-review') {
-    return buildAgeReviewPageMeta(url);
-  }
-
-  // Kids policy page at /kids on apex.
-  if (url.pathname === '/kids') {
-    return buildKidsPolicyPageMeta(url);
-  }
-
-  if (url.pathname === '/download') {
-    return buildDownloadPageMeta(url);
   }
 
   return buildSimpleRouteMeta(url);

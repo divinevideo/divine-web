@@ -10,9 +10,9 @@ import rc from '../static-publish.rc.js';
 import { buildFunnelcakeUrl, getFunnelcakeOriginForApiHost } from './funnelcakeOrigin.js';
 import { handleAuthPersistCookie } from './authPersistCookie.js';
 import { isJsonWellKnownPath, shouldServeWellKnownBeforeWwwRedirect } from './wellKnownPaths.js';
-import { buildCrawlerHtml, escapeHtml, cleanText, truncateText } from './ogTags.js';
+import { buildCrawlerHtml, cleanText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
-import { buildWwwRedirectResponse } from './hostRedirect.js';
+import { buildAccountPortabilityRedirectResponse, buildWwwRedirectResponse } from './hostRedirect.js';
 import { applyStaticResponseHeaders } from './staticResponseHeaders.js';
 import { extractStaticAssetsFromHtml, readPublishedStaticFile } from './staticContent.js';
 import {
@@ -20,7 +20,6 @@ import {
   handleHashtagOgTags,
   handleSearchOgTags,
   handleDiscoveryOgTags,
-  handleDownloadOgTags,
   handleApexOgTags,
 } from './crawlerHandlers.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
@@ -32,10 +31,7 @@ import {
   applyEmbedWidgetHeaders,
   isEmbedWidgetPath,
 } from './embedWidget.js';
-import {
-  createEdgeTemplateHeaders,
-  HOST_DEPENDENT_CRAWLER_VARY,
-} from './templateCachePolicy.js';
+import { createEdgeTemplateHeaders } from './templateCachePolicy.js';
 import { renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
@@ -147,6 +143,13 @@ async function handleRequest(event) {
   const redirect = EXTERNAL_REDIRECTS[url.pathname];
   if (redirect) {
     return Response.redirect(redirect.url, redirect.status);
+  }
+
+  // 3a. /account-portability moved to /exit (#591). After the www redirect, so
+  // www takes one hop to the apex and then one to /exit.
+  const accountPortabilityRedirect = buildAccountPortabilityRedirectResponse(url, hostnameToUse);
+  if (accountPortabilityRedirect) {
+    return accountPortabilityRedirect;
   }
 
   // 3b. Handle /@username paths on apex domain (e.g., divine.video/@samuelgrubbs)
@@ -297,38 +300,6 @@ async function handleRequest(event) {
         : url.pathname.slice('/discovery/'.length).split('?')[0];
       const ogResponse = await handleDiscoveryOgTags(type);
       if (ogResponse) return ogResponse;
-    }
-
-    // Family resource hub and child guides at /family[/*] on apex.
-    if (url.pathname === '/family' || url.pathname.startsWith('/family/')) {
-      const ogResponse = handleFamilyOgTags(url, hostnameToUse);
-      if (ogResponse) {
-        return ogResponse;
-      }
-    }
-
-    // Age-review page at /age-review on apex.
-    if (url.pathname === '/age-review') {
-      const ogResponse = handleAgeReviewOgTags(url, hostnameToUse);
-      if (ogResponse) {
-        return ogResponse;
-      }
-    }
-
-    // Kids policy page at /kids on apex.
-    if (url.pathname === '/kids') {
-      const ogResponse = handleKidsPolicyOgTags(url, hostnameToUse);
-      if (ogResponse) {
-        return ogResponse;
-      }
-    }
-
-    // Device-aware app download page at /download on apex.
-    if (url.pathname === '/download') {
-      const ogResponse = handleDownloadOgTags(url, hostnameToUse);
-      if (ogResponse) {
-        return ogResponse;
-      }
     }
   }
 
@@ -1427,133 +1398,6 @@ async function handleCategoryOgTags(request, url, funnelcakeTarget) {
   } catch (err) {
     console.error('handleCategoryOgTags error:', err.message, err.stack);
     return await publisherServer.serveRequest(request);
-  }
-}
-
-// Mirrors src/seo/marketingSeo.ts — keep the two tables in sync.
-const FAMILY_CRAWLER_META = {
-  '/family': {
-    title: 'For Families on Divine',
-    description:
-      "Conversation over surveillance. What our safety tools do, what they can't, and how to talk with your teen about it.",
-    image: 'https://divine.video/og-family.png',
-    ogType: 'website',
-  },
-  '/family/talking-to-your-teen': {
-    title: 'How to Talk With Your Teen About Social Media',
-    description:
-      'The goal is not to win the conversation. It is to keep having one. Conversation starters and guidance drawn from youth online-safety research.',
-    image: 'https://divine.video/og-family-talking.png',
-    ogType: 'article',
-  },
-  '/family/media-plan': {
-    title: 'Creating a Family Media Plan',
-    description:
-      'A plan that everyone helped write is a plan that everyone is more likely to follow. Templates and habits for household screen use.',
-    image: 'https://divine.video/og-family-media-plan.png',
-    ogType: 'article',
-  },
-  '/family/when-something-goes-wrong': {
-    title: 'What to Do if Your Child Saw Something Upsetting Online',
-    description:
-      'What helps most is not a perfect filter. It is a parent who reacts in a way that makes the next conversation possible. Four concrete steps.',
-    image: 'https://divine.video/og-family-when-something-goes-wrong.png',
-    ogType: 'article',
-  },
-  '/family/safety-tools': {
-    title: "Divine's Safety Tools and Content Settings",
-    description:
-      'Settings are a useful layer. They are not a guarantee. How adult-content gating, filters, blocking, and reporting work on Divine.',
-    image: 'https://divine.video/og-family-safety-tools.png',
-    ogType: 'article',
-  },
-};
-
-function handleFamilyOgTags(url, hostnameToUse) {
-  try {
-    const meta = FAMILY_CRAWLER_META[url.pathname];
-    if (!meta) return null;
-    const canonical = `https://${hostnameToUse}${url.pathname}`;
-    const html = buildCrawlerHtml({
-      title: meta.title,
-      description: meta.description,
-      image: meta.image,
-      url: canonical,
-      ogType: meta.ogType,
-      twitterCard: 'summary_large_image',
-      imageWidth: 1200,
-      imageHeight: 630,
-    });
-
-    return new Response(html, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=300',
-        'Vary': HOST_DEPENDENT_CRAWLER_VARY,
-      },
-    });
-  } catch (err) {
-    console.error('handleFamilyOgTags error:', err.message, err.stack);
-    return null;
-  }
-}
-
-function handleAgeReviewOgTags(url, hostnameToUse) {
-  try {
-    const canonical = `https://${hostnameToUse}${url.pathname}`;
-    const html = buildCrawlerHtml({
-      title: 'Account review — Divine',
-      description:
-        'If your Divine account was flagged as possibly belonging to someone under 16, this page explains what to do — and the 15-day window for responding.',
-      image: DEFAULT_OG_IMAGE,
-      url: canonical,
-      ogType: 'website',
-      twitterCard: 'summary_large_image',
-      imageWidth: 1200,
-      imageHeight: 630,
-    });
-
-    return new Response(html, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=300',
-        'Vary': HOST_DEPENDENT_CRAWLER_VARY,
-      },
-    });
-  } catch (err) {
-    console.error('handleAgeReviewOgTags error:', err.message, err.stack);
-    return null;
-  }
-}
-
-function handleKidsPolicyOgTags(url, hostnameToUse) {
-  try {
-    const canonical = `https://${hostnameToUse}${url.pathname}`;
-    const html = buildCrawlerHtml({
-      title: 'Kids on Divine — How accounts work for under-16s',
-      description:
-        'How Divine handles accounts for people under 16 — the rules, the reasoning, and what families can do together regardless of age.',
-      image: DEFAULT_OG_IMAGE,
-      url: canonical,
-      ogType: 'website',
-      twitterCard: 'summary_large_image',
-      imageWidth: 1200,
-      imageHeight: 630,
-    });
-
-    return new Response(html, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=300',
-        'Vary': HOST_DEPENDENT_CRAWLER_VARY,
-      },
-    });
-  } catch (err) {
-    console.error('handleKidsPolicyOgTags error:', err.message, err.stack);
-    return null;
   }
 }
 

@@ -743,8 +743,6 @@
   },
   "leaderboardPage": {
     "seoTitle": "排行榜 - Divine",
-    "seoDescription": "Divine 上循环次数最高的视频和创作者",
-    "seoOgDescription": "看看最受欢迎的视频和创作者",
     "heading": "排行榜",
     "subheading": "按循环次数排名的热门视频和创作者",
     "topVideos": "热门视频",
@@ -1216,8 +1214,6 @@
   },
   "merchPage": {
     "metaTitle": "周边 — Divine",
-    "metaDescription": "T 恤、帽衫、帽子，还有各种不太正经的小玩意。Divine 设计，Bonfire 印制和发货。",
-    "ogTitle": "Divine 周边",
     "headline": "把循环穿在身上。",
     "body": "T 恤、帽衫、帽子，还有各种不太把自己当回事的小玩意。",
     "storeCta": "逛全部",
