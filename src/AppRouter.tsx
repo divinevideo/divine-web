@@ -2,7 +2,7 @@
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { SignInLoading } from "./components/auth/SignInLoading";
@@ -84,7 +84,7 @@ const BrandPreview = import.meta.env.DEV
   : null;
 
 export function AppRouter() {
-  const { user, isAuthPending } = useCurrentUser();
+  const { user, isAuthPending, isRenewingSession } = useCurrentUser();
 
   // Treat sign-in that is still loading (a hosted session resolving, or a saved
   // extension login waiting for the extension) as "still determining auth",
@@ -92,15 +92,12 @@ export function AppRouter() {
   // reload shows the not-found page.
   const isLoggedIn = Boolean(user) || isAuthPending;
 
-  // Until the first signed-in user appears, the protected routes show a loading
-  // state instead of the page, which would otherwise render its own signed-out
-  // fallback. After that, a hosted session renewing its token has no user for a
-  // moment too; the page stays mounted through it and keeps what it holds,
-  // such as a half-written message.
-  const [hasHadUser, setHasHadUser] = useState(false);
-  if (user && !hasHadUser) {
-    setHasHadUser(true);
-  }
+  // While sign-in loads, the protected routes show a loading state instead of
+  // the page, which would otherwise render its own signed-out fallback. A hosted
+  // session renewing its token has no user for a moment too, but for the
+  // account already on screen; the page stays mounted through that and keeps
+  // what it holds, such as a half-written message.
+  const showsProtectedPage = Boolean(user) || isRenewingSession;
 
   // Check if we're on a subdomain profile (username.divine.video)
   const subdomainUser = getSubdomainUser();
@@ -136,7 +133,7 @@ export function AppRouter() {
 
       {/* Protected routes - require login */}
       {isLoggedIn && (
-        <Route element={user || hasHadUser ? <Outlet /> : <SignInLoading />}>
+        <Route element={showsProtectedPage ? <Outlet /> : <SignInLoading />}>
           <Route path="/home" element={<HomePage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/messages" element={<MessagesPage />} />

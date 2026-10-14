@@ -278,6 +278,62 @@ describe('useCurrentUser', () => {
     expect(result.current.isAuthPending).toBe(true);
   });
 
+  // The router keeps a logged-in page mounted through a renewal, and only a
+  // renewal, so the page keeps what it holds without showing the signed-out
+  // fallback of some other pending sign-in.
+  describe('telling a token renewal apart from a new sign-in', () => {
+    it('reports a signed-in hosted session renewing its token as a renewal', async () => {
+      mockGetValidToken.mockReturnValue('token-A');
+      mockJwtSigner.getPublicKey
+        .mockResolvedValueOnce('a'.repeat(64))
+        .mockReturnValue(new Promise(() => {}));
+
+      const { result, rerender } = renderHook(() => useCurrentUser());
+      await waitFor(() => {
+        expect(result.current.user?.pubkey).toBe('a'.repeat(64));
+      });
+      expect(result.current.isRenewingSession).toBe(false);
+
+      mockGetValidToken.mockReturnValue('token-B');
+      rerender();
+
+      expect(result.current.isAuthPending).toBe(true);
+      expect(result.current.isRenewingSession).toBe(true);
+    });
+
+    it('does not report a first hosted sign-in as a renewal', () => {
+      mockGetValidToken.mockReturnValue('jwt-token');
+      mockJwtSigner.getPublicKey.mockReturnValue(new Promise(() => {}));
+
+      const { result } = renderHook(() => useCurrentUser());
+
+      expect(result.current.isAuthPending).toBe(true);
+      expect(result.current.isRenewingSession).toBe(false);
+    });
+
+    it('does not report a hosted sign-in after the session ended as a renewal', async () => {
+      mockGetValidToken.mockReturnValue('token-A');
+      mockJwtSigner.getPublicKey
+        .mockResolvedValueOnce('a'.repeat(64))
+        .mockReturnValue(new Promise(() => {}));
+
+      const { result, rerender } = renderHook(() => useCurrentUser());
+      await waitFor(() => {
+        expect(result.current.user?.pubkey).toBe('a'.repeat(64));
+      });
+
+      mockGetValidToken.mockReturnValue(null);
+      rerender();
+      expect(result.current.user).toBeUndefined();
+
+      mockGetValidToken.mockReturnValue('token-B');
+      rerender();
+
+      expect(result.current.isAuthPending).toBe(true);
+      expect(result.current.isRenewingSession).toBe(false);
+    });
+  });
+
   it('recovers an extension login when the provider injects shortly after mount', () => {
     vi.useFakeTimers();
     try {

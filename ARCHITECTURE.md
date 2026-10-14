@@ -57,9 +57,11 @@ and subscriptions against Nostr relays. Auth uses `@divinevideo/login` with
 still loading (a hosted session resolving, or a saved browser-extension login
 waiting up to two seconds for the extension to load), it returns no user and
 sets `isAuthPending`. Treat that as "still signing in", not "logged out":
-logged-in-only routes show a loading state until the first signed-in user
-appears, and code that redirects or resets state for signed-out visitors waits
-for the flag to clear. The extension check
+logged-in-only routes show a loading state until a user appears, and code that
+redirects or resets state for signed-out visitors waits for the flag to clear.
+A hosted session renewing its token is pending too, for the account already on
+screen, and also sets `isRenewingSession`; the routes keep the page mounted
+through that so it keeps what it holds. The extension check
 (`useNip07Availability`) is shared by the whole app and looks again on focus, on
 tab switch, and when a component mounts, so a slow extension still signs the
 page in. It ignores the app's own hosted signer, which is also installed as

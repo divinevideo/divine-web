@@ -10,6 +10,7 @@ import AppRouter from './AppRouter';
 interface CurrentUserMock {
   user: { pubkey: string } | undefined;
   isAuthPending: boolean;
+  isRenewingSession?: boolean;
 }
 
 const { mockUseCurrentUser, homePageMounts } = vi.hoisted(() => ({
@@ -147,7 +148,11 @@ describe('AppRouter', () => {
     window.history.pushState({}, '', '/home');
 
     const view = renderRouter();
-    mockUseCurrentUser.mockReturnValue({ user: undefined, isAuthPending: true });
+    mockUseCurrentUser.mockReturnValue({
+      user: undefined,
+      isAuthPending: true,
+      isRenewingSession: true,
+    });
     rerenderRouter(view);
 
     expect(screen.getByTestId('home-page')).toBeInTheDocument();
@@ -158,6 +163,39 @@ describe('AppRouter', () => {
 
     expect(screen.getByTestId('home-page')).toBeInTheDocument();
     expect(homePageMounts.count).toBe(1);
+  });
+
+  // Signing out into a saved login that is still loading, or switching to
+  // one, is a new sign-in rather than a renewal. Keeping the page mounted
+  // would show its signed-out fallback until the next account loads.
+  it('shows the loading state again when a later sign-in is still loading', () => {
+    const rerenderRouter = (view: ReturnType<typeof renderRouter>) =>
+      view.rerender(
+        <UnheadProvider head={createHead()}>
+          <AppRouter />
+        </UnheadProvider>,
+      );
+    mockUseCurrentUser.mockReturnValue({
+      user: { pubkey: 'a'.repeat(64) },
+      isAuthPending: false,
+    });
+    window.history.pushState({}, '', '/home');
+
+    const view = renderRouter();
+    mockUseCurrentUser.mockReturnValue({ user: undefined, isAuthPending: true });
+    rerenderRouter(view);
+
+    expect(screen.getByRole('status', { name: 'Verifying...' })).toBeInTheDocument();
+    expect(screen.queryByTestId('home-page')).not.toBeInTheDocument();
+
+    mockUseCurrentUser.mockReturnValue({
+      user: { pubkey: 'b'.repeat(64) },
+      isAuthPending: false,
+    });
+    rerenderRouter(view);
+
+    expect(screen.getByTestId('home-page')).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/home');
   });
 
   it('keeps logged-in pages unavailable once sign-in has finished without a user', () => {

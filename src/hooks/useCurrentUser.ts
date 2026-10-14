@@ -35,6 +35,11 @@ export function useCurrentUser() {
   const { getValidToken, isExpired } = useDivineSession();
   const token = getValidToken();
   const [jwtResolution, setJwtResolution] = useState<JwtResolution>();
+  // A resolution outlives its token only to mark the next one as a renewal of
+  // the same session. Once the session ends, a later token is a new sign-in.
+  if (!token && jwtResolution) {
+    setJwtResolution(undefined);
+  }
   const jwtSigner = useMemo(() => (
     token ? new DivineJWTSigner({ token }) : null
   ), [token]);
@@ -148,6 +153,10 @@ export function useCurrentUser() {
   // Sign-in is still loading, not logged out: a hosted session is resolving,
   // or the saved login that would be current is waiting for its extension.
   const isAuthPending = !user && (isResolvingJwt || isExtensionPending);
+  // The hosted session already signed in here is resolving a renewed token:
+  // still pending, but for the account already on screen, not a new sign-in.
+  const isRenewingSession =
+    isResolvingJwt && !!jwtResolution && 'pubkey' in jwtResolution;
   const signer = useMemo(() => getSafeUserSigner(user), [user]);
   const author = useAuthor(user?.pubkey);
   const isHostedAccount = !!user?.pubkey && user.pubkey === jwtPubkey;
@@ -160,6 +169,7 @@ export function useCurrentUser() {
     hostedToken,
     isHostedAccount,
     isAuthPending,
+    isRenewingSession,
     ...author.data,
   };
 }
