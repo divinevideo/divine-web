@@ -92,6 +92,7 @@ describe('prerendered terms of service', () => {
     expect(html).toContain('Verse Communications, Inc.');
     expect(html).toContain('not with Apple');
     expect(html).toContain('third-party beneficiaries');
+    expect(html).toContain('other accounts associated with the purchaser through Family Sharing or volume purchasing');
     expect(html).toContain('9450 SW Gemini Dr PMB 21667\nBeaverton, Oregon 97008-7105 US');
     expect(html).not.toContain('[postal address pending legal review]');
   });
