@@ -4,13 +4,13 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  readdirSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { SUPPORTED_LOCALES } from '@/lib/i18n/config';
 
 const REPO_ROOT = resolve(__dirname, '..');
 
@@ -107,7 +107,7 @@ describe('prerendered terms of service', () => {
     const english = JSON.parse(readFileSync(resolve(REPO_ROOT, 'src/lib/i18n/locales/en/common.json'), 'utf8')).termsPage.appleStore.developerContact;
     expect(english).toContain('Verse Communications, Inc.');
     expect(english).toContain('9450 SW Gemini Dr PMB 21667\nBeaverton, Oregon 97008-7105 US');
-    for (const locale of readdirSync(resolve(REPO_ROOT, 'src/lib/i18n/locales'))) {
+    for (const locale of SUPPORTED_LOCALES) {
       const catalog = JSON.parse(readFileSync(resolve(REPO_ROOT, 'src/lib/i18n/locales', locale, 'common.json'), 'utf8'));
       expect(catalog.termsPage.appleStore.developerContact, locale).toBe(english);
     }
