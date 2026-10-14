@@ -2,9 +2,10 @@
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import { lazy, Suspense } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { lazy, Suspense, useState } from "react";
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
+import { SignInLoading } from "./components/auth/SignInLoading";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
 import { getSubdomainUser } from "./hooks/useSubdomainUser";
@@ -89,14 +90,17 @@ export function AppRouter() {
   // extension login waiting for the extension) as "still determining auth",
   // not "logged out" — otherwise the protected routes below unmount and a
   // reload shows the not-found page.
-  //
-  // Tradeoff (intentional): while resolving, `user` is still undefined, so a
-  // protected page renders its own brief logged-out fallback (e.g. LoginArea)
-  // until the pubkey lands. That sub-second fallback is strictly better than the
-  // previous behavior, which unmounted the route entirely and discarded the URL.
-  // A resolving-aware loading state on protected pages is a possible follow-up;
-  // it's deliberately out of scope for this precedence fix.
   const isLoggedIn = Boolean(user) || isAuthPending;
+
+  // Until the first signed-in user appears, the protected routes show a loading
+  // state instead of the page, which would otherwise render its own signed-out
+  // fallback. After that, a hosted session renewing its token has no user for a
+  // moment too; the page stays mounted through it and keeps what it holds,
+  // such as a half-written message.
+  const [hasHadUser, setHasHadUser] = useState(false);
+  if (user && !hasHadUser) {
+    setHasHadUser(true);
+  }
 
   // Check if we're on a subdomain profile (username.divine.video)
   const subdomainUser = getSubdomainUser();
@@ -132,7 +136,7 @@ export function AppRouter() {
 
       {/* Protected routes - require login */}
       {isLoggedIn && (
-        <>
+        <Route element={user || hasHadUser ? <Outlet /> : <SignInLoading />}>
           <Route path="/home" element={<HomePage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/messages" element={<MessagesPage />} />
@@ -149,7 +153,7 @@ export function AppRouter() {
           <Route path="/settings/relays" element={<RelaysSettingsPage />} />
           {/* Test pages for debugging */}
           <Route path="/debug-video" element={<DebugVideoPage />} />
-        </>
+        </Route>
       )}
 
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

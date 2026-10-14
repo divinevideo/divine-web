@@ -12,11 +12,12 @@ interface CurrentUserMock {
   isAuthPending: boolean;
 }
 
-const { mockUseCurrentUser } = vi.hoisted(() => ({
+const { mockUseCurrentUser, homePageMounts } = vi.hoisted(() => ({
   mockUseCurrentUser: vi.fn<() => CurrentUserMock>(() => ({
     user: undefined,
     isAuthPending: true,
   })),
+  homePageMounts: { count: 0 },
 }));
 
 vi.mock('./hooks/useCurrentUser', () => ({
@@ -63,9 +64,17 @@ vi.mock('./pages/Index', () => ({
   default: () => <div data-testid="index-page" />,
 }));
 
-vi.mock('./pages/HomePage', () => ({
-  default: () => <div data-testid="home-page" />,
-}));
+vi.mock('./pages/HomePage', async () => {
+  const { useEffect } = await import('react');
+  return {
+    default: function HomePage() {
+      useEffect(() => {
+        homePageMounts.count += 1;
+      }, []);
+      return <div data-testid="home-page" />;
+    },
+  };
+});
 
 vi.mock('./pages/CollabsPage', () => ({
   default: () => <div data-testid="collabs-page" />,
@@ -96,13 +105,73 @@ describe('AppRouter', () => {
     await initializeI18n({ force: true, languages: ['en-US'] });
   });
 
-  it('keeps analytics routed while a saved session is restoring', () => {
+  // A reload of a logged-in page has a moment before the saved sign-in
+  // finishes loading (divine-web#266). That moment must not show the
+  // not-found page, or the page's own signed-out fallback.
+  it('shows a loading state on a logged-in page while sign-in is still loading', () => {
     window.history.pushState({}, '', '/analytics');
+
+    const view = renderRouter();
+
+    expect(screen.getByRole('status', { name: 'Verifying...' })).toBeInTheDocument();
+    expect(screen.queryByTestId('analytics-page')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('nip19-page')).not.toBeInTheDocument();
+
+    mockUseCurrentUser.mockReturnValue({
+      user: { pubkey: 'a'.repeat(64) },
+      isAuthPending: false,
+    });
+    view.rerender(
+      <UnheadProvider head={createHead()}>
+        <AppRouter />
+      </UnheadProvider>,
+    );
+
+    expect(screen.getByTestId('analytics-page')).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/analytics');
+  });
+
+  // A hosted session renews its token while the reader is on the page, and
+  // has no user until the new token resolves. Unmounting the page then would
+  // throw away what it holds, such as a half-written message.
+  it('keeps a logged-in page mounted while a hosted session renews its token', () => {
+    const signedIn = { user: { pubkey: 'a'.repeat(64) }, isAuthPending: false };
+    const rerenderRouter = (view: ReturnType<typeof renderRouter>) =>
+      view.rerender(
+        <UnheadProvider head={createHead()}>
+          <AppRouter />
+        </UnheadProvider>,
+      );
+    homePageMounts.count = 0;
+    mockUseCurrentUser.mockReturnValue(signedIn);
+    window.history.pushState({}, '', '/home');
+
+    const view = renderRouter();
+    mockUseCurrentUser.mockReturnValue({ user: undefined, isAuthPending: true });
+    rerenderRouter(view);
+
+    expect(screen.getByTestId('home-page')).toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: 'Verifying...' })).not.toBeInTheDocument();
+
+    mockUseCurrentUser.mockReturnValue(signedIn);
+    rerenderRouter(view);
+
+    expect(screen.getByTestId('home-page')).toBeInTheDocument();
+    expect(homePageMounts.count).toBe(1);
+  });
+
+  it('keeps logged-in pages unavailable once sign-in has finished without a user', () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: undefined,
+      isAuthPending: false,
+    });
+    window.history.pushState({}, '', '/home');
 
     renderRouter();
 
-    expect(screen.getByTestId('analytics-page')).toBeInTheDocument();
-    expect(screen.queryByTestId('nip19-page')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('home-page')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: 'Verifying...' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('nip19-page')).toBeInTheDocument();
   });
 
   it('redirects the retired new-video feed to hot', async () => {
@@ -183,6 +252,10 @@ describe('AppRouter', () => {
   });
 
   it('keeps collaborator invitations routed separately', () => {
+    mockUseCurrentUser.mockReturnValue({
+      user: { pubkey: 'a'.repeat(64) },
+      isAuthPending: false,
+    });
     window.history.pushState({}, '', '/collabs/invite');
 
     renderRouter();

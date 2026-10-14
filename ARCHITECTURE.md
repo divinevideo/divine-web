@@ -53,6 +53,18 @@ contexts (`AppContext`, `VideoPlaybackContext`, `FullscreenFeedContext`,
 and subscriptions against Nostr relays. Auth uses `@divinevideo/login` with
 `NostrLoginProvider`, hydrated from cross-subdomain cookies.
 
+`useCurrentUser()` only returns a user that can sign. While a saved sign-in is
+still loading (a hosted session resolving, or a saved browser-extension login
+waiting up to two seconds for the extension to load), it returns no user and
+sets `isAuthPending`. Treat that as "still signing in", not "logged out":
+logged-in-only routes show a loading state until the first signed-in user
+appears, and code that redirects or resets state for signed-out visitors waits
+for the flag to clear. The extension check
+(`useNip07Availability`) is shared by the whole app and looks again on focus, on
+tab switch, and when a component mounts, so a slow extension still signs the
+page in. It ignores the app's own hosted signer, which is also installed as
+`window.nostr`.
+
 Profile metadata remains raw through the fetch layer because `name` is also used
 as a handle. Display surfaces resolve `display_name`, then `name`, then a
 deterministic fallback through [`resolveDisplayName`](./src/lib/resolveDisplayName.ts);
