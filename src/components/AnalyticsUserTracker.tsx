@@ -7,7 +7,7 @@ import { setAnalyticsUserId, trackUserAction } from '@/lib/analytics';
 import { configureProductAnalyticsIdentity, productAnalytics } from '@/lib/analyticsClient';
 
 export function AnalyticsUserTracker() {
-  const { user, signer, isResolvingJwt } = useCurrentUser();
+  const { user, signer, isAuthPending } = useCurrentUser();
 
   useEffect(() => {
     if (user) {
@@ -21,13 +21,13 @@ export function AnalyticsUserTracker() {
       trackUserAction('login', {
         login_method: 'nostr',
       });
-    } else if (!isResolvingJwt) {
+    } else if (!isAuthPending) {
       configureProductAnalyticsIdentity({});
 
       // Clear user ID when logged out
       setAnalyticsUserId(null);
     }
-  }, [isResolvingJwt, signer, user]);
+  }, [isAuthPending, signer, user]);
 
   return null; // This component doesn't render anything
 }

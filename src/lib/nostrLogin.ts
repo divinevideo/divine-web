@@ -1,10 +1,13 @@
 import type { NostrSigner } from '@nostrify/nostrify';
 import { NUser, type NLoginType } from '@nostrify/react/login';
 import { getBunkerSigner, isUsableBunkerLogin } from '@/lib/bunkerSignerRegistry';
+import { isAppInjectedWindowNostr } from '@/lib/bunkerToWindowNostr';
 
 export function hasNip07Provider(): boolean {
   if (typeof window === 'undefined') return false;
-  return 'nostr' in window;
+  // A hosted account puts the app's own signer on window.nostr; that is not
+  // a browser extension, and it is removed again on logout.
+  return 'nostr' in window && !isAppInjectedWindowNostr();
 }
 
 export function getSafeUserSigner(

@@ -2,6 +2,7 @@ import { type NLoginType, NUser, useNostrLogin } from '@nostrify/react/login';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NostrSigner } from '@nostrify/nostrify';
 import { DivineJWTSigner } from '@/lib/DivineJWTSigner';
+import { decodeJWT } from '@/lib/jwtDecode';
 import { createUserFromLogin, getSafeUserSigner } from '@/lib/nostrLogin';
 import { releaseBunkerSignersExcept } from '@/lib/bunkerSignerRegistry';
 import { selectCurrentUsers, isJwtResolving } from '@/lib/selectCurrentUsers';
@@ -30,11 +31,32 @@ type JwtResolution =
   | { token: string; pubkey: string }
   | { token: string; error: true };
 
+// The account a hosted token was issued for. keycast access tokens are UCANs
+// whose audience is the user's DID; null when the token doesn't say.
+function hostedAccountOf(token: string): string | null {
+  try {
+    const { aud } = decodeJWT(token);
+    return typeof aud === 'string' && aud ? aud : null;
+  } catch {
+    return null;
+  }
+}
+
+function isSameHostedAccount(tokenA: string, tokenB: string): boolean {
+  const account = hostedAccountOf(tokenA);
+  return account !== null && account === hostedAccountOf(tokenB);
+}
+
 export function useCurrentUser() {
   const { logins } = useNostrLogin();
   const { getValidToken, isExpired } = useDivineSession();
   const token = getValidToken();
   const [jwtResolution, setJwtResolution] = useState<JwtResolution>();
+  // A resolution outlives its token only to mark the next one as a renewal of
+  // the same session. Once the session ends, a later token is a new sign-in.
+  if (!token && jwtResolution) {
+    setJwtResolution(undefined);
+  }
   const jwtSigner = useMemo(() => (
     token ? new DivineJWTSigner({ token }) : null
   ), [token]);
@@ -90,13 +112,18 @@ export function useCurrentUser() {
     releaseBunkerSignersExcept(loginIds ? loginIds.split(';') : []);
   }, [loginIds]);
 
-  const manualUsers = useMemo(() => {
+  const { manualUsers, isExtensionPending } = useMemo(() => {
     const users: CurrentUser[] = [];
 
     for (const login of logins) {
       // Extension content scripts can inject window.nostr after first render;
       // hold off on extension logins until the availability check settles.
       if (login.type === 'extension' && nip07Status === 'checking') {
+        // Nothing usable comes before it, so the current account is still
+        // unknown. Report no one rather than briefly showing the next one.
+        if (users.length === 0) {
+          return { manualUsers: [], isExtensionPending: true };
+        }
         continue;
       }
 
@@ -114,7 +141,7 @@ export function useCurrentUser() {
       }
     }
 
-    return users;
+    return { manualUsers: users, isExtensionPending: false };
   }, [logins, loginToUser, nip07Status]);
 
   const jwtUser = useMemo<CurrentUser | undefined>(() => {
@@ -140,6 +167,16 @@ export function useCurrentUser() {
   });
 
   const user = users[0];
+  // Sign-in is still loading, not logged out: a hosted session is resolving,
+  // or the saved login that would be current is waiting for its extension.
+  const isAuthPending = !user && (isResolvingJwt || isExtensionPending);
+  // The hosted session already signed in here is resolving a renewed token for
+  // the same account: still pending, but for the account already on screen, not
+  // a new sign-in. A token for another account, or one that doesn't name its
+  // account, is a new sign-in.
+  const isRenewingSession =
+    isResolvingJwt && !!token && !!jwtResolution && 'pubkey' in jwtResolution
+    && isSameHostedAccount(jwtResolution.token, token);
   const signer = useMemo(() => getSafeUserSigner(user), [user]);
   const author = useAuthor(user?.pubkey);
   const isHostedAccount = !!user?.pubkey && user.pubkey === jwtPubkey;
@@ -151,7 +188,8 @@ export function useCurrentUser() {
     signer,
     hostedToken,
     isHostedAccount,
-    isResolvingJwt,
+    isAuthPending,
+    isRenewingSession,
     ...author.data,
   };
 }

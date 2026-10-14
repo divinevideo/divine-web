@@ -32,7 +32,7 @@ const {
   mockCurrentUser,
   mockTrackEvent,
   mockFeaturedResolved,
-  mockResolvingJwt,
+  mockAuthPending,
   mockFeaturedApiUrl,
   mockFeaturedFeedState,
   mockUseFeaturedTabArgs,
@@ -43,7 +43,7 @@ const {
   mockFeaturedTab: { current: null as ResolvedFeaturedTab | null },
   mockFeaturedResolved: { current: true },
   mockCurrentUser: { current: null as { pubkey: string } | null },
-  mockResolvingJwt: { current: false },
+  mockAuthPending: { current: false },
   mockFeaturedApiUrl: { current: 'https://api.divine.video' },
   mockFeaturedFeedState: { current: 'normal' as 'normal' | 'empty' | 'failed' },
   mockUseFeaturedTabArgs: [] as Array<{ apiUrl?: string } | undefined>,
@@ -56,7 +56,7 @@ vi.mock('@/hooks/useSubdomainNavigate', () => ({
 vi.mock('@/hooks/useCurrentUser', () => ({
   useCurrentUser: () => ({
     user: mockCurrentUser.current,
-    isResolvingJwt: mockResolvingJwt.current,
+    isAuthPending: mockAuthPending.current,
   }),
 }));
 
@@ -130,7 +130,7 @@ describe('DiscoveryPage', () => {
     mockCategories.length = 0;
     mockFeaturedTab.current = null;
     mockFeaturedResolved.current = true;
-    mockResolvingJwt.current = false;
+    mockAuthPending.current = false;
     mockCurrentUser.current = null;
     mockFeaturedApiUrl.current = 'https://api.divine.video';
     mockFeaturedFeedState.current = 'normal';
@@ -347,10 +347,11 @@ describe('DiscoveryPage', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('keeps a logged-in foryou deep link while the hosted session is still resolving', () => {
-    // The JWT has not resolved, so there is no user yet and `foryou` is briefly
-    // absent from the tab list. Redirecting here would replace the bookmark.
-    mockResolvingJwt.current = true;
+  it('keeps a logged-in foryou deep link while sign-in is still loading', () => {
+    // A hosted session is resolving or a saved extension login is waiting for
+    // the extension, so there is no user yet and `foryou` is briefly absent
+    // from the tab list. Redirecting here would replace the bookmark.
+    mockAuthPending.current = true;
 
     render(
       <MemoryRouter initialEntries={['/discovery/foryou']}>

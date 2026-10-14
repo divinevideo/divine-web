@@ -4,7 +4,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { fetchSupporter, updateSupporterRecognition, type SupporterRecognition } from '@/lib/supportersClient';
 
 export function useSupporter() {
-  const { user, signer, isHostedAccount, isResolvingJwt } = useCurrentUser();
+  const { user, signer, isHostedAccount, isAuthPending } = useCurrentUser();
   const queryClient = useQueryClient();
   const pubkey = user?.pubkey;
   const canAutoRefresh = !!signer && (isHostedAccount || user?.method === 'nsec');
@@ -37,7 +37,7 @@ export function useSupporter() {
     ...query,
     isActive: !query.isError && !!query.data?.entitlement.isActive && ['active', 'grace'].includes(query.data.status),
     canAutoRefresh,
-    isSignedIn: !!pubkey || isResolvingJwt,
+    isSignedIn: !!pubkey || isAuthPending,
     canCheck: !!pubkey && !!signer,
     updateRecognition: mutation.mutateAsync,
     isSaving: mutation.isPending,

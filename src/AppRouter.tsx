@@ -3,8 +3,9 @@
  */
 
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
+import { SignInLoading } from "./components/auth/SignInLoading";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
 import { getSubdomainUser } from "./hooks/useSubdomainUser";
@@ -83,19 +84,20 @@ const BrandPreview = import.meta.env.DEV
   : null;
 
 export function AppRouter() {
-  const { user, isResolvingJwt } = useCurrentUser();
+  const { user, isAuthPending, isRenewingSession } = useCurrentUser();
 
-  // Treat an in-flight hosted-JWT session as "still determining auth", not
-  // "logged out" — otherwise the protected routes below unmount during the
-  // getPublicKey() round-trip and a reload bounces the user off the page.
-  //
-  // Tradeoff (intentional): while resolving, `user` is still undefined, so a
-  // protected page renders its own brief logged-out fallback (e.g. LoginArea)
-  // until the pubkey lands. That sub-second fallback is strictly better than the
-  // previous behavior, which unmounted the route entirely and discarded the URL.
-  // A resolving-aware loading state on protected pages is a possible follow-up;
-  // it's deliberately out of scope for this precedence fix.
-  const isLoggedIn = Boolean(user) || isResolvingJwt;
+  // Treat sign-in that is still loading (a hosted session resolving, or a saved
+  // extension login waiting for the extension) as "still determining auth",
+  // not "logged out" — otherwise the protected routes below unmount and a
+  // reload shows the not-found page.
+  const isLoggedIn = Boolean(user) || isAuthPending;
+
+  // While sign-in loads, the protected routes show a loading state instead of
+  // the page, which would otherwise render its own signed-out fallback. A hosted
+  // session renewing its token has no user for a moment too, but for the
+  // account already on screen; the page stays mounted through that and keeps
+  // what it holds, such as a half-written message.
+  const showsProtectedPage = Boolean(user) || isRenewingSession;
 
   // Check if we're on a subdomain profile (username.divine.video)
   const subdomainUser = getSubdomainUser();
@@ -131,7 +133,7 @@ export function AppRouter() {
 
       {/* Protected routes - require login */}
       {isLoggedIn && (
-        <>
+        <Route element={showsProtectedPage ? <Outlet /> : <SignInLoading />}>
           <Route path="/home" element={<HomePage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/messages" element={<MessagesPage />} />
@@ -148,7 +150,7 @@ export function AppRouter() {
           <Route path="/settings/relays" element={<RelaysSettingsPage />} />
           {/* Test pages for debugging */}
           <Route path="/debug-video" element={<DebugVideoPage />} />
-        </>
+        </Route>
       )}
 
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
@@ -196,7 +198,7 @@ export function AppRouter() {
           element={
             <LegacyInviteRedirectPage
               hasUser={Boolean(user)}
-              isSessionResolving={isResolvingJwt}
+              isSessionResolving={isAuthPending}
             />
           }
         />

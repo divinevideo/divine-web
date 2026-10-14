@@ -16,7 +16,7 @@ vi.mock("@/components/exit/DiscoveryPointerForm", () => ({ DiscoveryPointerForm:
 
 const signer = new FixtureSigner();
 vi.mock("@/hooks/useCurrentUser", () => ({
-  useCurrentUser: () => ({ user: { pubkey: fixturePubkey, signer }, signer, isResolvingJwt: false }),
+  useCurrentUser: () => ({ user: { pubkey: fixturePubkey, signer }, signer, isAuthPending: false }),
 }));
 
 const mockMirror = vi.fn();

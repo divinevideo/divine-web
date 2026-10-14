@@ -12,7 +12,7 @@ const { analyticsClient, currentUser } = vi.hoisted(() => ({
     value: {
       user: undefined as { pubkey: string } | undefined,
       signer: undefined as object | undefined,
-      isResolvingJwt: true,
+      isAuthPending: true,
     },
   },
 }));
@@ -37,11 +37,11 @@ describe('AnalyticsUserTracker', () => {
     currentUser.value = {
       user: undefined,
       signer: undefined,
-      isResolvingJwt: true,
+      isAuthPending: true,
     };
   });
 
-  it('preserves the stored identity while a hosted login resolves', () => {
+  it('preserves the stored identity while sign-in is still loading', () => {
     const { rerender } = render(<AnalyticsUserTracker />);
 
     expect(analyticsClient.configureIdentity).not.toHaveBeenCalled();
@@ -50,7 +50,7 @@ describe('AnalyticsUserTracker', () => {
     currentUser.value = {
       user: { pubkey: 'b'.repeat(64) },
       signer,
-      isResolvingJwt: false,
+      isAuthPending: false,
     };
     rerender(<AnalyticsUserTracker />);
 

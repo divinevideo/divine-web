@@ -107,11 +107,21 @@ export async function createWindowNostrFromBunker(
   return connectSigner;
 }
 
+// The signer this module put on window.nostr, so an extension check can tell
+// the app's own signer apart from a browser extension.
+let injectedSigner: NostrSigner | undefined;
+
+/** True when window.nostr is the app's own injected signer, not an extension. */
+export function isAppInjectedWindowNostr(): boolean {
+  return injectedSigner !== undefined && window.nostr === injectedSigner;
+}
+
 /**
- * Inject a NostrSigner as window.nostr
+ * Inject a NostrSigner as window.nostr, unless a browser extension is there
  * @param signer - NostrSigner instance to inject
+ * @returns whether the signer was injected
  */
-export function injectWindowNostr(signer: NostrSigner): void {
+export function injectWindowNostr(signer: NostrSigner): boolean {
   // Type window.nostr
   interface WindowWithNostr extends Window {
     nostr?: NostrSigner;
@@ -119,22 +129,26 @@ export function injectWindowNostr(signer: NostrSigner): void {
 
   const globalWindow = window as WindowWithNostr;
 
-  // Check if window.nostr already exists
-  if (globalWindow.nostr) {
-    console.warn('[injectWindowNostr] window.nostr already exists, overwriting...');
+  // Extension logins sign through the extension's window.nostr, so replacing
+  // it would make them sign with this signer instead.
+  if (globalWindow.nostr && !isAppInjectedWindowNostr()) {
+    console.info('[injectWindowNostr] Left the browser extension on window.nostr');
+    return false;
   }
 
   // Inject the signer
   globalWindow.nostr = signer;
+  injectedSigner = signer;
 
   console.log('[injectWindowNostr] ✅ Injected window.nostr signer');
 
   // Dispatch event so libraries can detect window.nostr became available
   window.dispatchEvent(new Event('nostr:ready'));
+  return true;
 }
 
 /**
- * Remove window.nostr
+ * Remove the signer this module injected as window.nostr
  */
 export function removeWindowNostr(): void {
   interface WindowWithNostr extends Window {
@@ -143,8 +157,11 @@ export function removeWindowNostr(): void {
 
   const globalWindow = window as WindowWithNostr;
 
-  if (globalWindow.nostr) {
+  // A browser extension that loaded after the injection has replaced it since;
+  // leave that in place.
+  if (isAppInjectedWindowNostr()) {
     delete globalWindow.nostr;
     console.log('[removeWindowNostr] ✅ Removed window.nostr');
   }
+  injectedSigner = undefined;
 }

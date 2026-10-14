@@ -55,7 +55,7 @@ function signedIn() {
     signer,
     hostedToken: null,
     isHostedAccount: false,
-    isResolvingJwt: false,
+    isAuthPending: false,
   };
 }
 
@@ -66,12 +66,12 @@ function hostedSignedIn() {
     signer,
     hostedToken: "token",
     isHostedAccount: true,
-    isResolvingJwt: false,
+    isAuthPending: false,
   };
 }
 
 function signedOut() {
-  return { user: undefined, signer: undefined, isResolvingJwt: false };
+  return { user: undefined, signer: undefined, isAuthPending: false };
 }
 
 describe("ExitStartPage", () => {
@@ -373,7 +373,7 @@ describe("ExitStartPage", () => {
     mockUseCurrentUser.mockReturnValue({
       user: { pubkey: otherFixturePubkey, signer },
       signer,
-      isResolvingJwt: false,
+      isAuthPending: false,
     });
     view.rerender(
       <TestApp>
@@ -477,7 +477,7 @@ describe("ExitStartPage", () => {
   });
 
   it("does not ask an already-signed-in visitor to sign in while the session resolves", () => {
-    mockUseCurrentUser.mockReturnValue({ user: undefined, signer: undefined, isResolvingJwt: true });
+    mockUseCurrentUser.mockReturnValue({ user: undefined, signer: undefined, isAuthPending: true });
 
     render(
       <TestApp>
@@ -493,7 +493,7 @@ describe("ExitStartPage", () => {
     mockUseCurrentUser.mockReturnValue({
       user: { pubkey: fixturePubkey },
       signer: undefined,
-      isResolvingJwt: false,
+      isAuthPending: false,
     });
 
     render(

@@ -38,6 +38,7 @@ describe('useWindowNostrJWT', () => {
 
   afterEach(() => {
     removeWindowNostr();
+    delete window.nostr;
   });
 
   it('should initialize with null signer when no token', () => {
@@ -129,6 +130,22 @@ describe('useWindowNostrJWT', () => {
       expect(result.current.isInjected).toBe(false);
     });
     expect(window.nostr).toBeUndefined();
+  });
+
+  it('does not report window.nostr as injected while a browser extension holds it', async () => {
+    const extension = { getPublicKey: vi.fn(), signEvent: vi.fn() };
+    window.nostr = extension;
+
+    const { result } = renderHook(() =>
+      useWindowNostrJWT({ token: mockToken, autoInject: true })
+    );
+
+    await waitFor(() => {
+      expect(result.current.signer).not.toBeNull();
+    });
+
+    expect(result.current.isInjected).toBe(false);
+    expect(window.nostr).toBe(extension);
   });
 
   it('should clean up window.nostr on unmount', async () => {

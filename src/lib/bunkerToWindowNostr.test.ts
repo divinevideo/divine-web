@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   parseBunkerUrl,
   injectWindowNostr,
+  isAppInjectedWindowNostr,
   removeWindowNostr,
 } from './bunkerToWindowNostr';
 import type { NostrSigner } from '@nostrify/nostrify';
@@ -73,8 +74,9 @@ describe('bunkerToWindowNostr', () => {
     });
 
     afterEach(() => {
-      // Clean up after each test
+      // Clean up after each test, including a fake browser extension
       removeWindowNostr();
+      delete window.nostr;
     });
 
     it('should inject signer into window.nostr', () => {
@@ -95,7 +97,7 @@ describe('bunkerToWindowNostr', () => {
       window.removeEventListener('nostr:ready', eventSpy);
     });
 
-    it('should overwrite existing window.nostr', () => {
+    it("replaces the app's own earlier signer", () => {
       const firstSigner = mockSigner;
       const secondSigner = {
         ...mockSigner,
@@ -108,10 +110,29 @@ describe('bunkerToWindowNostr', () => {
       injectWindowNostr(secondSigner);
       expect(window.nostr).toBe(secondSigner);
     });
+
+    // A hosted account's signer is only a fallback for code that reads
+    // window.nostr. Replacing a browser extension there would make every
+    // extension login sign with the hosted account instead.
+    it('leaves a browser extension on window.nostr in place', () => {
+      const extension: NostrSigner = { getPublicKey: vi.fn(), signEvent: vi.fn() };
+      window.nostr = extension;
+
+      const injected = injectWindowNostr(mockSigner);
+
+      expect(injected).toBe(false);
+      expect(window.nostr).toBe(extension);
+      expect(isAppInjectedWindowNostr()).toBe(false);
+    });
   });
 
   describe('removeWindowNostr', () => {
     let mockSigner: NostrSigner;
+
+    afterEach(() => {
+      removeWindowNostr();
+      delete window.nostr;
+    });
 
     beforeEach(() => {
       mockSigner = {
@@ -142,6 +163,16 @@ describe('bunkerToWindowNostr', () => {
 
       // Should not throw
       expect(() => removeWindowNostr()).not.toThrow();
+    });
+
+    it('leaves a browser extension that loaded after the app signer in place', () => {
+      injectWindowNostr(mockSigner);
+      const extension: NostrSigner = { getPublicKey: vi.fn(), signEvent: vi.fn() };
+      window.nostr = extension;
+
+      removeWindowNostr();
+
+      expect(window.nostr).toBe(extension);
     });
 
     it('should handle multiple remove calls', () => {

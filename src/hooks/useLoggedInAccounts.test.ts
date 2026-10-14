@@ -1,12 +1,14 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { generateSecretKey, nip19 } from 'nostr-tools';
 import type { NLoginType } from '@nostrify/react/login';
 
-import { NIP07_POLL_INTERVAL_MS } from './useNip07Availability';
+import { NIP07_POLL_INTERVAL_MS, resetNip07Availability } from './useNip07Availability';
 
 type MockCurrentUserResult = {
   metadata?: { name?: string };
   user?: { pubkey: string };
+  isAuthPending?: boolean;
 };
 
 const {
@@ -92,6 +94,7 @@ describe('useLoggedInAccounts', () => {
     mockUseCurrentUser.mockReset();
     mockUseCurrentUser.mockReturnValue({ user: undefined, metadata: undefined });
     resetNostrProvider();
+    resetNip07Availability();
   });
 
   afterEach(() => {
@@ -149,5 +152,37 @@ describe('useLoggedInAccounts', () => {
     });
 
     expect(result.current.currentUser?.pubkey).toBe('pub123');
+  });
+
+  // The header and the rest of the app must agree on who is signed in. While
+  // sign-in is still loading, useCurrentUser reports no one.
+  it.each([
+    ['a saved extension login waits for the extension', null],
+    ['a hosted session is still resolving', 'jwt-token'],
+  ])('shows no current account while %s', (_, token) => {
+    vi.useFakeTimers();
+    mockGetValidToken.mockReturnValue(token);
+    mockUseCurrentUser.mockReturnValue({ user: undefined, isAuthPending: true });
+    mockLogins.push(
+      {
+        id: 'extension:pub123',
+        type: 'extension',
+        pubkey: 'pub123',
+        createdAt: '2026-03-10T00:00:00.000Z',
+        data: null,
+      },
+      {
+        id: `nsec:${'b'.repeat(64)}`,
+        type: 'nsec',
+        pubkey: 'b'.repeat(64),
+        createdAt: '2026-03-10T00:00:00.000Z',
+        data: { nsec: nip19.nsecEncode(generateSecretKey()) },
+      },
+    );
+
+    const { result } = renderHook(() => useLoggedInAccounts());
+
+    expect(result.current.currentUser).toBeUndefined();
+    expect(result.current.otherUsers).toEqual([]);
   });
 });

@@ -91,7 +91,7 @@ export function ExitStartPage() {
     ],
   });
 
-  const { user, signer, hostedToken, isHostedAccount, isResolvingJwt } = useCurrentUser();
+  const { user, signer, hostedToken, isHostedAccount, isAuthPending } = useCurrentUser();
   const { logins } = useNostrLogin();
   const localNsecLogin = user ? getLocalNsecLogin(logins, user.pubkey) : null;
   const snapshotStatus = useBanSnapshotStatus({ pubkey: user?.pubkey, signer });
@@ -298,7 +298,7 @@ export function ExitStartPage() {
             lead="The archive contains events.json (your signed posts exactly as Divine returned them), manifest.json (what was collected and anything that failed), and media.json (where your media lives and how to verify it)."
           />
 
-          {!user && isResolvingJwt ? (
+          {!user && isAuthPending ? (
             <Card variant="brand" accent="green">
               <CardContent className="pt-6 flex items-center gap-3">
                 <ArrowClockwise className="h-5 w-5 animate-spin text-brand-dark-green dark:text-brand-green" aria-hidden="true" />

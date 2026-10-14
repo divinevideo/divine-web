@@ -1,9 +1,12 @@
 // ABOUTME: Tests that login -> user conversion shares bunker signers and probes without building them
 // ABOUTME: divine-web#531 — this runs in a useMemo in useCurrentUser, so a signer per call leaked sockets
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { nip19, generateSecretKey } from 'nostr-tools';
+import type { NostrSigner } from '@nostrify/nostrify';
 import type { NLoginType } from '@nostrify/react/login';
+
+import { injectWindowNostr, removeWindowNostr } from './bunkerToWindowNostr';
 
 const bunkerSignerFromLogin = vi.fn(() => ({
   connect: vi.fn(async () => {}),
@@ -144,5 +147,48 @@ describe('canCreateUserFromLogin', () => {
         data: {},
       })
     ).toBe(false);
+  });
+});
+
+// A hosted account puts the app's own signer on window.nostr. A saved
+// extension login must not mistake it for the extension (divine-web#746).
+describe('hasNip07Provider', () => {
+  const extensionLogin: NLoginType = {
+    id: `extension:${USER_PUBKEY}`,
+    type: 'extension',
+    pubkey: USER_PUBKEY,
+    createdAt: new Date(0).toISOString(),
+    data: null,
+  };
+  const hostedSigner: NostrSigner = {
+    getPublicKey: vi.fn(async () => 'c'.repeat(64)),
+    signEvent: vi.fn(),
+  };
+
+  afterEach(() => {
+    removeWindowNostr();
+    // removeWindowNostr leaves a browser extension in place.
+    delete window.nostr;
+  });
+
+  it('finds a browser extension', async () => {
+    const { hasNip07Provider } = await loadModules();
+    window.nostr = { getPublicKey: vi.fn(), signEvent: vi.fn() };
+
+    expect(hasNip07Provider()).toBe(true);
+  });
+
+  it("does not count the app's own hosted signer as an extension", async () => {
+    const { hasNip07Provider } = await loadModules();
+    injectWindowNostr(hostedSigner);
+
+    expect(hasNip07Provider()).toBe(false);
+  });
+
+  it("will not build an extension login on top of the app's own signer", async () => {
+    const { createUserFromLogin } = await loadModules();
+    injectWindowNostr(hostedSigner);
+
+    expect(() => createUserFromLogin(extensionLogin)).toThrow('Browser extension not available');
   });
 });

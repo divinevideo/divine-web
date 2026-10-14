@@ -213,7 +213,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 // --- Main Page ---
 
 export function AnalyticsPage() {
-  const { user, isResolvingJwt } = useCurrentUser();
+  const { user, isAuthPending } = useCurrentUser();
   const { t } = useTranslation();
 
   useSeoMeta({
@@ -223,7 +223,7 @@ export function AnalyticsPage() {
     ogDescription: t('analyticsPage.seoOgDescription'),
   });
 
-  if (isResolvingJwt) {
+  if (isAuthPending) {
     return (
       <div className="container mx-auto px-4 py-6" data-testid="analytics-auth-loading">
         <div className="mx-auto max-w-3xl space-y-6">
