@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { nip19 } from 'nostr-tools';
 import { SmartLink } from '@/components/SmartLink';
 
 const PROFILE_BIO_TOKEN_REGEX = /(https?:\/\/[^\s]+)|(\b[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?(?:\/[^\s]*)?)|(nostr:(?:npub1|note1|nprofile1|nevent1)[023456789acdefghjklmnpqrstuvwxyz]+)|(#([A-Za-z_][A-Za-z0-9_]*))/g;
@@ -30,6 +31,13 @@ export function normalizeExternalUrl(input: string | undefined): string | null {
   } catch {
     return null;
   }
+}
+
+// Only link references that actually decode. Imported archive text can carry a
+// mention whose bech32 checksum is broken; linking it would point the reader at
+// a profile or event that cannot exist.
+function isDecodableNostrRef(nostrRef: string): boolean {
+  return nip19.decodeNostrURI(nostrRef).type !== 'invalid';
 }
 
 export function linkifyProfileBioText(text: string): ReactNode[] {
@@ -75,15 +83,20 @@ export function linkifyProfileBioText(text: string): ReactNode[] {
       }
     } else if (nostrRef) {
       const nostrId = nostrRef.slice('nostr:'.length);
-      parts.push(
-        <SmartLink
-          key={`nostr-${keyCounter++}`}
-          to={`/${nostrId}`}
-          className="text-primary hover:underline"
-        >
-          {nostrRef}
-        </SmartLink>,
-      );
+
+      if (isDecodableNostrRef(nostrRef)) {
+        parts.push(
+          <SmartLink
+            key={`nostr-${keyCounter++}`}
+            to={`/${nostrId}`}
+            className="text-primary hover:underline"
+          >
+            {nostrRef}
+          </SmartLink>,
+        );
+      } else {
+        parts.push(nostrRef);
+      }
     } else if (hashtag) {
       const normalizedTag = hashtag.slice(1).toLowerCase();
       parts.push(
