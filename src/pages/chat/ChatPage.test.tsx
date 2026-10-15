@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import ChatPage from './ChatPage';
 
 vi.mock('@/hooks/useChatSession', () => ({
-  useChatSession: () => ({ isLoggedIn: false, isResolvingJwt: false, user: undefined, signer: undefined, store: null }),
+  useChatSession: () => ({ isLoggedIn: false, isAuthPending: false, user: undefined, signer: undefined, store: null }),
 }));
 
 vi.mock('@/components/auth/LoginArea', () => ({

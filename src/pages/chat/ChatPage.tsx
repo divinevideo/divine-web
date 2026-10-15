@@ -12,7 +12,7 @@ import { CONCORD_RELAY_URL } from '@/lib/chat/store';
 
 export default function ChatPage() {
   const { communityId, channelId, threadId } = useParams();
-  const { isLoggedIn, isResolvingJwt, user, signer, store } = useChatSession();
+  const { isLoggedIn, isAuthPending, user, signer, store } = useChatSession();
   const [rumors, setRumors] = useState<Rumor[]>([]);
   const relay = useMemo(() => {
     if (!signer || !channelId) return null;
@@ -38,7 +38,7 @@ export default function ChatPage() {
     }).catch(() => { /* a failed connect is not shown; the shell only tracks the browser's online/offline state */ });
     return () => { off?.(); relay.close(); };
   }, [relay, channelId, stream]);
-  if (isResolvingJwt) return <p role="status">Loading chat…</p>;
+  if (isAuthPending) return <p role="status">Loading chat…</p>;
   // /invite/<naddr> renders outside the app layout, whose LoginArea is what mounts the
   // login dialog, so the page brings its own; its button also reopens a dismissed dialog.
   if (!isLoggedIn) {

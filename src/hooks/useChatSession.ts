@@ -10,7 +10,7 @@ import { consumeInvite, parseInviteHash, parseInviteUrl, peekInvite, stashInvite
 import { probeSignerCapabilities } from '@/lib/chat/protocol';
 
 export function useChatSession() {
-  const { user, signer, isResolvingJwt } = useCurrentUser();
+  const { user, signer, isAuthPending } = useCurrentUser();
   const { openLoginDialog } = useLoginDialog();
   const navigate = useNavigate();
   const storeRef = useRef<ChatStore | null>(null);
@@ -28,7 +28,7 @@ export function useChatSession() {
   useEffect(() => {
     if (!pubkey) {
       storeRef.current?.dispose(); storeRef.current = null;
-      if (!isResolvingJwt && !promptedLoginRef.current) { promptedLoginRef.current = true; openLoginDialog(); }
+      if (!isAuthPending && !promptedLoginRef.current) { promptedLoginRef.current = true; openLoginDialog(); }
       return;
     }
     promptedLoginRef.current = false;
@@ -39,9 +39,9 @@ export function useChatSession() {
       navigate(`/chat/${invite!.communityId}`, { replace: true });
     }
     // Token-only spec invites stay stashed until the bundle is fetched/decrypted; the fragment never leaves the client.
-  }, [pubkey, isResolvingJwt, navigate, openLoginDialog]);
+  }, [pubkey, isAuthPending, navigate, openLoginDialog]);
 
   useEffect(() => () => { storeRef.current?.dispose(); storeRef.current = null; }, []);
   const capabilities = useMemo(() => probeSignerCapabilities(signer as never), [signer]);
-  return { user, signer, isResolvingJwt, store: storeRef.current, capabilities, isLoggedIn: Boolean(pubkey) };
+  return { user, signer, isAuthPending, store: storeRef.current, capabilities, isLoggedIn: Boolean(pubkey) };
 }

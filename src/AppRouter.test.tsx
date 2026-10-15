@@ -296,7 +296,7 @@ describe('AppRouter', () => {
   it('routes chat invite links (naddr in the path) to the chat page instead of the retired invite redirect', async () => {
     mockUseCurrentUser.mockReturnValue({
       user: undefined,
-      isResolvingJwt: false,
+      isAuthPending: false,
     });
     window.history.pushState({}, '', '/invite/naddr1xyz#AAEAESIzRFVmd4iZqrvM3e7_');
 

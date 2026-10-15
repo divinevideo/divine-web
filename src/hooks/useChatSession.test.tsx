@@ -16,9 +16,9 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 const ALICE = 'a'.repeat(64);
 const BOB = 'b'.repeat(64);
 
-function setUser(pubkey: string | undefined) {
+function setUser(pubkey: string | undefined, isAuthPending = false) {
   vi.mocked(useCurrentUser).mockReturnValue(
-    { user: pubkey ? { pubkey } : undefined, signer: undefined, isResolvingJwt: false } as ReturnType<typeof useCurrentUser>,
+    { user: pubkey ? { pubkey } : undefined, users: [], signer: undefined, hostedToken: null, isHostedAccount: false, isAuthPending, isRenewingSession: false } as ReturnType<typeof useCurrentUser>,
   );
 }
 
@@ -35,6 +35,16 @@ beforeEach(() => {
 });
 
 describe('useChatSession', () => {
+  it('waits for authentication before prompting a logged-out visitor', () => {
+    setUser(undefined, true);
+    const { result, rerender } = renderHook(() => ({ session: useChatSession(), dialog: useLoginDialog() }), { wrapper });
+    expect(result.current.dialog.isOpen).toBe(false);
+
+    setUser(undefined, false);
+    rerender();
+    expect(result.current.dialog.isOpen).toBe(true);
+  });
+
   it('opens the login dialog in place for a logged-out visitor and leaves it closed once dismissed', () => {
     setUser(undefined);
     const { result } = renderHook(() => ({ session: useChatSession(), dialog: useLoginDialog() }), { wrapper });
