@@ -20,6 +20,7 @@ import { transformNotificationsResponse } from '@/lib/notificationTransform';
 import type { NotificationsResponse } from '@/types/notification';
 import type { NostrSigner } from '@nostrify/nostrify';
 import { createNip98AuthHeader } from '@/lib/nip98Auth';
+import { looksLikeSecretKey } from '@/lib/searchUtils';
 
 /**
  * Convert a byte array to hex string
@@ -311,6 +312,10 @@ export async function searchVideos(
 ): Promise<FunnelcakeResponse> {
   const { query, tag, author, sort = 'trending', limit = 20, before, offset, classic, platform, category, signal } = options;
 
+  if ((query && looksLikeSecretKey(query)) || (tag && looksLikeSecretKey(tag))) {
+    return { videos: [], has_more: false };
+  }
+
   // Use /api/videos endpoint for hashtag searches (tag parameter)
   // Use /api/search endpoint for text searches (q parameter)
   const isHashtagSearch = !!tag && !query;
@@ -403,6 +408,10 @@ export async function searchProfiles(
     hasVideos,
     signal,
   } = options;
+
+  if (looksLikeSecretKey(query)) {
+    return [];
+  }
 
   return funnelcakeRequest<FunnelcakeProfileResult[]>(
     apiUrl,
@@ -666,6 +675,10 @@ export async function fetchTrendingHashtags(
   signal?: AbortSignal,
   query?: string
 ): Promise<FunnelcakeHashtag[]> {
+  if (query && looksLikeSecretKey(query)) {
+    return [];
+  }
+
   // API returns array directly
   return funnelcakeRequest<FunnelcakeHashtag[]>(
     apiUrl,
