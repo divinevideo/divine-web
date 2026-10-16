@@ -1567,5 +1567,8 @@
     "verificationNext": "下一步：认证",
     "verificationDetail": "支持者会员资格是申请认证的前提。会员资格本身不会验证你的身份，也不保证获批。你可以关联已有账号，分享身份证明。",
     "linkAccounts": "前往已关联账号"
+  },
+  "secretKeySearchWarning": {
+    "message": "这看起来像私钥，所以我们没有搜索。私钥只在登录时输入，千万不要分享给任何人。"
   }
 }

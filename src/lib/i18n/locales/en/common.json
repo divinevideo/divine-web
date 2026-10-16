@@ -1567,5 +1567,8 @@
     "verificationNext": "Your next step: verification",
     "verificationDetail": "Supporter membership is a prerequisite to apply for verification. It does not verify your identity or guarantee approval. You can link your existing accounts to share identity proofs.",
     "linkAccounts": "Continue to linked accounts"
+  },
+  "secretKeySearchWarning": {
+    "message": "That looks like a secret key, so we didn't search for it. Only ever enter it to sign in, and never share it."
   }
 }

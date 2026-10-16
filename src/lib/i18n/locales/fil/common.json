@@ -1567,5 +1567,8 @@
     "verificationNext": "Susunod mong hakbang: beripikasyon",
     "verificationDetail": "Kailangan ang pagiging tagasuporta para mag-apply para sa beripikasyon. Hindi nito bineberipika ang pagkakakilanlan mo o ginagarantiya ang pag-apruba. Maaari mong i-link ang mga account mo para magbahagi ng patunay ng pagkakakilanlan.",
     "linkAccounts": "Magpatuloy sa mga naka-link na account"
+  },
+  "secretKeySearchWarning": {
+    "message": "Mukhang secret key iyan, kaya hindi namin ito hinanap. Ilagay lang ito para mag-sign in, at huwag itong ibahagi kahit kanino."
   }
 }

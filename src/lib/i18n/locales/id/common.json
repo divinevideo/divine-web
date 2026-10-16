@@ -1567,5 +1567,8 @@
     "verificationNext": "Langkah berikutnya: verifikasi",
     "verificationDetail": "Keanggotaan pendukung adalah syarat untuk mengajukan verifikasi. Keanggotaan tidak memverifikasi identitasmu atau menjamin persetujuan. Kamu bisa menautkan akun yang sudah ada untuk membagikan bukti identitas.",
     "linkAccounts": "Lanjut ke akun tertaut"
+  },
+  "secretKeySearchWarning": {
+    "message": "Itu terlihat seperti kunci rahasia, jadi kami tidak mencarinya. Masukkan hanya untuk masuk, dan jangan pernah membagikannya."
   }
 }
