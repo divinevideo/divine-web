@@ -6,6 +6,7 @@ import { getAnalytics, logEvent, setUserId, setAnalyticsCollectionEnabled, type 
 import { getPerformance, trace, type FirebasePerformance } from 'firebase/performance';
 
 import { debugLog } from '@/lib/debug';
+import { looksLikeSecretKey } from '@/lib/searchUtils';
 
 import { onAnalyticsConsentChanged } from './cookieConsent';
 
@@ -247,7 +248,7 @@ export function trackUserAction(action: string, metadata?: Record<string, unknow
  * Track search query (debounced - call this after user stops typing)
  */
 export function trackSearch(query: string, filter?: string, resultCount?: number) {
-  if (!query.trim()) return;
+  if (!query.trim() || looksLikeSecretKey(query)) return;
 
   trackEvent('search', {
     search_term: query.trim(),

@@ -1563,5 +1563,8 @@
     "verificationNext": "Langkah seterusnya: pengesahan",
     "verificationDetail": "Keahlian penyokong diperlukan untuk memohon pengesahan. Keahlian tidak mengesahkan identiti anda atau menjamin kelulusan. Anda boleh memautkan akaun sedia ada untuk berkongsi bukti identiti.",
     "linkAccounts": "Teruskan ke akaun yang dipautkan"
+  },
+  "secretKeySearchWarning": {
+    "message": "Itu kelihatan seperti kunci rahsia, jadi kami tidak mencarinya. Masukkannya hanya untuk log masuk, dan jangan sesekali kongsikannya."
   }
 }

@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { NostrSigner } from '@nostrify/nostrify';
 import { createNip98AuthHeader } from './nip98Auth';
+import { SYNTHETIC_NSEC } from '@/test/secretKeyFixture';
 
 // We need to mock the health module before importing the client
 vi.mock('./funnelcakeHealth', () => ({
@@ -800,6 +801,39 @@ describe('funnelcakeClient', () => {
       });
       expect(result.has_more).toBe(false);
       expect(result.next_cursor).toBeUndefined();
+    });
+  });
+
+  describe('search input that looks like a secret key', () => {
+    it('searchProfiles sends no request and returns no profiles', async () => {
+      const profiles = await searchProfiles(API_URL, { query: `find ${SYNTHETIC_NSEC}` });
+
+      expect(profiles).toEqual([]);
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('searchVideos sends no request for a text query', async () => {
+      const { searchVideos } = await import('./funnelcakeClient');
+      const result = await searchVideos(API_URL, { query: SYNTHETIC_NSEC });
+
+      expect(result).toEqual({ videos: [], has_more: false });
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('searchVideos sends no request for a hashtag query', async () => {
+      const { searchVideos } = await import('./funnelcakeClient');
+      const result = await searchVideos(API_URL, { tag: SYNTHETIC_NSEC.toLowerCase() });
+
+      expect(result).toEqual({ videos: [], has_more: false });
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('fetchTrendingHashtags sends no request for a hashtag search', async () => {
+      const { fetchTrendingHashtags } = await import('./funnelcakeClient');
+      const hashtags = await fetchTrendingHashtags(API_URL, 20, undefined, SYNTHETIC_NSEC);
+
+      expect(hashtags).toEqual([]);
+      expect(global.fetch).not.toHaveBeenCalled();
     });
   });
 });

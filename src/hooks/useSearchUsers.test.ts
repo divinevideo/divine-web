@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import { SYNTHETIC_NSEC } from '@/test/secretKeyFixture';
 
 const mockSearchProfiles = vi.fn();
 const mockNostrQuery = vi.fn();
@@ -358,4 +359,41 @@ describe('useSearchUsers', () => {
       reason: 'profile search failed',
     }));
   }, 10000);
+});
+
+describe('useSearchUsers with input that looks like a secret key', () => {
+  it.each([
+    ['a whole key', SYNTHETIC_NSEC],
+    ['a key among other words', `who owns ${SYNTHETIC_NSEC.toUpperCase()} please`],
+  ])('skips the search for %s', async (_label, query) => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    try {
+      const { result } = renderHook(
+        () => useSearchUsers({ query, limit: 20 }),
+        { wrapper: createWrapper() }
+      );
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 20));
+      });
+
+      expect(mockSearchProfiles).not.toHaveBeenCalled();
+      expect(mockNostrQuery).not.toHaveBeenCalled();
+      expect(mockReportFunnelcakeFallback).not.toHaveBeenCalled();
+      expect(JSON.stringify(infoSpy.mock.calls).toLowerCase()).not.toContain('nsec1');
+      expect(result.current.fetchStatus).toBe('idle');
+      expect(result.current.data).toBeUndefined();
+
+      // A direct refetch skips the input as well
+      await act(async () => {
+        await result.current.refetch();
+      });
+      expect(mockSearchProfiles).not.toHaveBeenCalled();
+      expect(mockNostrQuery).not.toHaveBeenCalled();
+      expect(JSON.stringify(infoSpy.mock.calls).toLowerCase()).not.toContain('nsec1');
+    } finally {
+      infoSpy.mockRestore();
+    }
+  });
 });
