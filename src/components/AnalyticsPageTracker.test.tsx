@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AnalyticsPageTracker } from './AnalyticsPageTracker';
+import { SYNTHETIC_NSEC } from '@/test/secretKeyFixture';
 
 const trackProductEvent = vi.fn().mockResolvedValue('event-id');
 const captureProductAnalyticsUtm = vi.fn().mockReturnValue({
@@ -98,6 +99,27 @@ describe('AnalyticsPageTracker', () => {
     expect(captureProductAnalyticsUtm).not.toHaveBeenCalled();
     expect(trackProductEvent).not.toHaveBeenCalled();
     expect(trackPageView).not.toHaveBeenCalled();
+  });
+
+  it('records the address a page was opened with', () => {
+    render(
+      <MemoryRouter initialEntries={['/search?q=cats&sort=top']}>
+        <AnalyticsPageTracker />
+      </MemoryRouter>,
+    );
+
+    expect(trackPageView).toHaveBeenCalledWith('/search?q=cats&sort=top', document.title);
+  });
+
+  it('leaves a secret key in the address out of the page view', () => {
+    render(
+      <MemoryRouter initialEntries={[`/search?q=${SYNTHETIC_NSEC}&sort=top`]}>
+        <AnalyticsPageTracker />
+      </MemoryRouter>,
+    );
+
+    expect(trackPageView).toHaveBeenCalledWith('/search', document.title);
+    expect(JSON.stringify(trackPageView.mock.calls).toLowerCase()).not.toContain('nsec1');
   });
 
   it('uses the real home route for the feed and does not label invented routes', () => {
