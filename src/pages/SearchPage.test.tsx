@@ -345,6 +345,30 @@ describe('SearchPage', () => {
       expectNoKeyOutsideTheInput();
     });
 
+    it.each([
+      `https://vine.co/v/${SYNTHETIC_NSEC}`,
+      `34236:${'a'.repeat(64)}:${SYNTHETIC_NSEC}`,
+    ])('applies the warning before direct navigation for input %s', async (value) => {
+      vi.useFakeTimers();
+      renderPage();
+      const input = screen.getByRole('textbox');
+
+      fireEvent.paste(input, { clipboardData: { getData: () => value } });
+      expect(mockNavigate).not.toHaveBeenCalled();
+      fireEvent.change(input, { target: { value } });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1200);
+      });
+
+      expect(screen.getByRole('alert').textContent).toMatch(WARNING);
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(mockFetchVideoById).not.toHaveBeenCalled();
+      expect(mockFetchEventById).not.toHaveBeenCalled();
+      expect(trackSearch).not.toHaveBeenCalled();
+      expectNoKeyOutsideTheInput();
+    });
+
     it('takes the key back out of the address without adding a history entry', async () => {
       vi.useFakeTimers();
       const pushStateSpy = vi.spyOn(window.history, 'pushState');

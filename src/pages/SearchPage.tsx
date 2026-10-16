@@ -314,7 +314,7 @@ export function SearchPage() {
 
   // Handle search input changes
   const handleSearchChange = (value: string) => {
-    const directTarget = getDirectSearchTarget(value);
+    const directTarget = looksLikeSecretKey(value) ? null : getDirectSearchTarget(value);
     if (directTarget) {
       navigate(directTarget.path);
       return;
@@ -330,7 +330,7 @@ export function SearchPage() {
 
   const handleSearchPaste = (event: ClipboardEvent<HTMLInputElement>) => {
     const pastedValue = event.clipboardData.getData('text');
-    const directTarget = getDirectSearchTarget(pastedValue);
+    const directTarget = looksLikeSecretKey(pastedValue) ? null : getDirectSearchTarget(pastedValue);
     if (directTarget) {
       navigate(directTarget.path);
       return;
