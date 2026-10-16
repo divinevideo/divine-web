@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { isUrlLikeQuery } from './searchUtils';
+import { nip19 } from 'nostr-tools';
+import { SYNTHETIC_NSEC } from '@/test/secretKeyFixture';
+import { isUrlLikeQuery, looksLikeSecretKey } from './searchUtils';
 
 describe('isUrlLikeQuery', () => {
   it('detects http URLs', () => {
@@ -53,5 +55,44 @@ describe('isUrlLikeQuery', () => {
   it('rejects dotted words that are not URLs', () => {
     expect(isUrlLikeQuery('funny.cats')).toBe(false);
     expect(isUrlLikeQuery('music.video')).toBe(false);
+  });
+});
+
+describe('looksLikeSecretKey', () => {
+  it('matches a whole nsec', () => {
+    expect(looksLikeSecretKey(SYNTHETIC_NSEC)).toBe(true);
+  });
+
+  it('matches regardless of case', () => {
+    expect(looksLikeSecretKey(SYNTHETIC_NSEC.toUpperCase())).toBe(true);
+    expect(looksLikeSecretKey(`Nsec1${SYNTHETIC_NSEC.slice(5)}`)).toBe(true);
+  });
+
+  it('matches an nsec among other words', () => {
+    expect(looksLikeSecretKey(`my key ${SYNTHETIC_NSEC} thanks`)).toBe(true);
+    expect(looksLikeSecretKey(`nostr:${SYNTHETIC_NSEC}`)).toBe(true);
+    expect(looksLikeSecretKey(`key=${SYNTHETIC_NSEC}`)).toBe(true);
+  });
+
+  it('matches part of an nsec, as typed or pasted', () => {
+    expect(looksLikeSecretKey(SYNTHETIC_NSEC.slice(0, 20))).toBe(true);
+    expect(looksLikeSecretKey('nsec1')).toBe(true);
+  });
+
+  it('leaves ordinary searches alone', () => {
+    expect(looksLikeSecretKey('funny cats')).toBe(false);
+    expect(looksLikeSecretKey('nsec')).toBe(false);
+    expect(looksLikeSecretKey('insecure')).toBe(false);
+    expect(looksLikeSecretKey('nsec 1')).toBe(false);
+    expect(looksLikeSecretKey('#nostr')).toBe(false);
+    expect(looksLikeSecretKey('')).toBe(false);
+  });
+
+  it('leaves public identifiers alone', () => {
+    expect(looksLikeSecretKey(nip19.npubEncode('f'.repeat(64)))).toBe(false);
+    expect(looksLikeSecretKey(nip19.noteEncode('e'.repeat(64)))).toBe(false);
+    expect(looksLikeSecretKey(nip19.neventEncode({ id: 'e'.repeat(64), relays: ['wss://relay.example'] }))).toBe(false);
+    expect(looksLikeSecretKey(nip19.naddrEncode({ kind: 34236, pubkey: 'f'.repeat(64), identifier: 'clip-7' }))).toBe(false);
+    expect(looksLikeSecretKey('a'.repeat(64))).toBe(false);
   });
 });
