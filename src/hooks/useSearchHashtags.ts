@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { fetchTrendingHashtags } from '@/lib/funnelcakeClient';
+import { looksLikeSecretKey } from '@/lib/searchUtils';
 
 interface UseSearchHashtagsOptions {
   query: string;
@@ -51,10 +52,16 @@ export function useSearchHashtags(options: UseSearchHashtagsOptions) {
   const isTest = process.env.NODE_ENV === 'test';
   const debounceMs = isTest ? 0 : 300;
   const debouncedQuery = useDebouncedValue(query, debounceMs);
+  // Secret-key-looking input is never searched; the page shows a warning instead
+  const isSecretKeyQuery = looksLikeSecretKey(debouncedQuery);
 
   return useQuery({
     queryKey: ['search-hashtags', debouncedQuery, limit],
     queryFn: async ({ signal }) => {
+      if (isSecretKeyQuery) {
+        return [];
+      }
+
       const requestStartedAt = performance.now();
       const normalizedQuery = normalizeHashtagQuery(debouncedQuery);
       const requestContext = {
@@ -94,6 +101,7 @@ export function useSearchHashtags(options: UseSearchHashtagsOptions) {
 
       return finalHashtags;
     },
+    enabled: !isSecretKeyQuery,
     staleTime: 60_000,
     gcTime: 300_000,
   });

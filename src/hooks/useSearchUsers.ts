@@ -9,7 +9,7 @@ import { API_CONFIG } from '@/config/api';
 import { debugLog } from '@/lib/debug';
 import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
-import { isUrlLikeQuery } from '@/lib/searchUtils';
+import { isUrlLikeQuery, looksLikeSecretKey } from '@/lib/searchUtils';
 import type { NostrMetadata, NostrEvent } from '@nostrify/nostrify';
 
 interface UseSearchUsersOptions {
@@ -170,11 +170,13 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
   const isTest = process.env.NODE_ENV === 'test';
   const debounceMs = isTest ? 0 : 300;
   const debouncedQuery = useDebouncedValue(query, debounceMs);
+  // Secret-key-looking input is never searched; the page shows a warning instead
+  const isSecretKeyQuery = looksLikeSecretKey(debouncedQuery);
 
   return useQuery({
     queryKey: ['search-users', debouncedQuery, limit],
     queryFn: async ({ signal }) => {
-      if (!debouncedQuery.trim()) {
+      if (!debouncedQuery.trim() || isSecretKeyQuery) {
         return [];
       }
 
@@ -301,7 +303,7 @@ export function useSearchUsers(options: UseSearchUsersOptions) {
 
       return finalUsers;
     },
-    enabled: !!debouncedQuery.trim(),
+    enabled: !!debouncedQuery.trim() && !isSecretKeyQuery,
     staleTime: 60_000,
     gcTime: 300_000,
   });

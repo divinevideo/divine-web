@@ -2,6 +2,7 @@
 // ABOUTME: Ensures non-fatal tracking never emits warn/error console lines that Sentry re-captures
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { SYNTHETIC_NSEC } from '@/test/secretKeyFixture';
 
 const mockLogEvent = vi.fn();
 const mockSetUserId = vi.fn();
@@ -104,5 +105,33 @@ describe('setAnalyticsUserId', () => {
     expect(log).toHaveBeenCalledWith('[Analytics] User ID set:', publicKey);
     expect(log).not.toHaveBeenCalledWith('[Analytics] User ID set:', expect.stringContaining('...'));
     log.mockRestore();
+  });
+});
+
+describe('trackSearch', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  it('records an ordinary search term', async () => {
+    const mod = await loadEnabledAnalytics();
+
+    mod.trackSearch('funny cats', 'all', 3);
+
+    expect(mockLogEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      'search',
+      expect.objectContaining({ search_term: 'funny cats' }),
+    );
+  });
+
+  it('records nothing for a search that looks like a secret key', async () => {
+    const mod = await loadEnabledAnalytics();
+
+    mod.trackSearch(`cats ${SYNTHETIC_NSEC}`, 'all', 0);
+
+    expect(mockLogEvent).not.toHaveBeenCalledWith(expect.anything(), 'search', expect.anything());
+    expect(JSON.stringify(mockLogEvent.mock.calls).toLowerCase()).not.toContain('nsec1');
   });
 });
