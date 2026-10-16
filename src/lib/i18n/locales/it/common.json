@@ -1571,5 +1571,8 @@
     "verificationNext": "Il prossimo passo: la verifica",
     "verificationDetail": "L’abbonamento di sostegno è necessario per richiedere la verifica. Non verifica la tua identità e non garantisce l’approvazione. Puoi collegare i tuoi account esistenti per condividere prove d’identità.",
     "linkAccounts": "Vai agli account collegati"
+  },
+  "secretKeySearchWarning": {
+    "message": "Sembra una chiave segreta, quindi non l'abbiamo cercata. Inseriscila solo per accedere e non condividerla mai."
   }
 }

@@ -1571,5 +1571,8 @@
     "verificationNext": "Seu próximo passo: verificação",
     "verificationDetail": "A assinatura de apoiador é um requisito para solicitar a verificação. Ela não verifica sua identidade nem garante aprovação. Você pode vincular suas contas existentes para compartilhar provas de identidade.",
     "linkAccounts": "Continuar para contas vinculadas"
+  },
+  "secretKeySearchWarning": {
+    "message": "Isso parece uma chave secreta, então não buscamos. Use ela só pra entrar e nunca compartilhe."
   }
 }

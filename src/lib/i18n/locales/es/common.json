@@ -1571,5 +1571,8 @@
     "verificationNext": "Tu siguiente paso: la verificación",
     "verificationDetail": "Ser colaborador es un requisito para solicitar la verificación. No verifica tu identidad ni garantiza la aprobación. Puedes vincular tus cuentas existentes para compartir pruebas de identidad.",
     "linkAccounts": "Ir a las cuentas vinculadas"
+  },
+  "secretKeySearchWarning": {
+    "message": "Eso parece una clave secreta, así que no la buscamos. Úsala solo para iniciar sesión y nunca la compartas."
   }
 }
