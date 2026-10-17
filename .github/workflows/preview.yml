@@ -35,6 +35,8 @@ jobs:
           # Keep PR previews from signing requests to live supporter accounts.
           # Use the reserved .invalid domain until a preview service is wired in.
           VITE_SUPPORTERS_SERVICE_URL: https://supporters-preview.invalid
+          # The chat POC routes ship only in previews, never in production builds.
+          VITE_CHAT_POC_ENABLED: 'true'
 
       - name: Deploy to Cloudflare Pages
         id: deploy
