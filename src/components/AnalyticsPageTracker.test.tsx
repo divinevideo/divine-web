@@ -122,6 +122,20 @@ describe('AnalyticsPageTracker', () => {
     expect(JSON.stringify(trackPageView.mock.calls).toLowerCase()).not.toContain('nsec1');
   });
 
+  it.each([
+    `q=%6E${SYNTHETIC_NSEC.slice(1)}`,
+    `q=${Array.from(SYNTHETIC_NSEC, char => `%${char.charCodeAt(0).toString(16)}`).join('')}`,
+    `q=cats&q=my+key+%4E${SYNTHETIC_NSEC.slice(1).toUpperCase()}`,
+  ])('omits encoded secret-key input from the page view (%#)', query => {
+    render(
+      <MemoryRouter initialEntries={[`/search?${query}&sort=top`]}>
+        <AnalyticsPageTracker />
+      </MemoryRouter>,
+    );
+
+    expect(trackPageView).toHaveBeenCalledWith('/search', document.title);
+  });
+
   it('uses the real home route for the feed and does not label invented routes', () => {
     function NavigateToHome() {
       const navigate = useNavigate();
