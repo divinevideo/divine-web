@@ -1567,5 +1567,8 @@
     "verificationNext": "Je volgende stap: verificatie",
     "verificationDetail": "Een supporterlidmaatschap is vereist om verificatie aan te vragen. Het verifieert je identiteit niet en garandeert geen goedkeuring. Je kunt bestaande accounts koppelen om identiteitsbewijzen te delen.",
     "linkAccounts": "Ga naar gekoppelde accounts"
+  },
+  "secretKeySearchWarning": {
+    "message": "Dat lijkt op een geheime sleutel, dus we hebben er niet op gezocht. Vul hem alleen in om in te loggen en deel hem nooit."
   }
 }

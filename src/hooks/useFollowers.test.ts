@@ -2,7 +2,7 @@
 // ABOUTME: Covers authoritative server search and query-echo validation
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,6 +16,8 @@ vi.mock('@/lib/debug', () => ({
 }));
 
 import { getAllFollowerPubkeys, useFollowers } from './useFollowers';
+import { debugLog } from '@/lib/debug';
+import { SYNTHETIC_NSEC } from '@/test/secretKeyFixture';
 
 const PUBKEY = 'a'.repeat(64);
 
@@ -67,5 +69,33 @@ describe('useFollowers', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     expect(result.current.error).toEqual(new Error('Follow-list search unavailable'));
+  });
+});
+
+describe('useFollowers with a search that looks like a secret key', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('skips the search', async () => {
+    global.fetch = vi.fn() as unknown as typeof fetch;
+
+    const { result } = renderHook(() => useFollowers(PUBKEY, `bob ${SYNTHETIC_NSEC}`), { wrapper });
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(debugLog).not.toHaveBeenCalled();
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(result.current.data).toBeUndefined();
+
+    // A direct refetch skips the input as well
+    await act(async () => {
+      await result.current.refetch();
+    });
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(debugLog).not.toHaveBeenCalled();
   });
 });

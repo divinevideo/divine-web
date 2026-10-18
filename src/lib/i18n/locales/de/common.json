@@ -1567,5 +1567,8 @@
     "verificationNext": "Dein nächster Schritt: Verifizierung",
     "verificationDetail": "Eine Unterstützer-Mitgliedschaft ist Voraussetzung für einen Verifizierungsantrag. Sie bestätigt weder deine Identität noch garantiert sie eine Genehmigung. Du kannst bestehende Konten verknüpfen, um Identitätsnachweise zu teilen.",
     "linkAccounts": "Weiter zu verknüpften Konten"
+  },
+  "secretKeySearchWarning": {
+    "message": "Das sieht nach einem geheimen Schlüssel aus, deshalb haben wir nicht danach gesucht. Gib ihn nur zum Anmelden ein und teile ihn mit niemandem."
   }
 }

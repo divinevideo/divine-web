@@ -1575,5 +1575,8 @@
     "verificationNext": "Prochaine étape : la vérification",
     "verificationDetail": "Un abonnement de soutien est nécessaire pour demander la vérification. Il ne vérifie pas votre identité et ne garantit pas l’approbation. Vous pouvez lier vos comptes existants pour partager des preuves d’identité.",
     "linkAccounts": "Accéder aux comptes liés"
+  },
+  "secretKeySearchWarning": {
+    "message": "Ça ressemble à une clé secrète, donc on ne l’a pas recherchée. Saisis-la uniquement pour te connecter, et ne la partage jamais."
   }
 }

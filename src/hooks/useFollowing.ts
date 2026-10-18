@@ -5,6 +5,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { API_CONFIG } from '@/config/api';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
+import { looksLikeSecretKey } from '@/lib/searchUtils';
 
 interface FollowingResponse {
   pubkeys: string[];
@@ -73,10 +74,16 @@ async function fetchFollowingPage(
  */
 export function useFollowing(pubkey: string, query = '') {
   const apiUrl = API_CONFIG.funnelcake.baseUrl;
+  // Secret-key-looking input is never searched; the dialog shows a warning instead
+  const isSecretKeyQuery = looksLikeSecretKey(query);
 
   return useInfiniteQuery({
     queryKey: ['following', pubkey, query],
     queryFn: async ({ pageParam = 0, signal }) => {
+      if (isSecretKeyQuery) {
+        return { pubkeys: [], has_more: false };
+      }
+
       if (!isFunnelcakeAvailable(apiUrl)) {
         throw new Error('Funnelcake unavailable');
       }
@@ -88,7 +95,7 @@ export function useFollowing(pubkey: string, query = '') {
       return allPages.reduce((sum, page) => sum + page.pubkeys.length, 0);
     },
     initialPageParam: 0,
-    enabled: !!pubkey && isFunnelcakeAvailable(apiUrl),
+    enabled: !!pubkey && !isSecretKeyQuery && isFunnelcakeAvailable(apiUrl),
     staleTime: 60000, // 1 minute
     gcTime: 300000, // 5 minutes
   });

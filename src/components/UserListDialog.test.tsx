@@ -4,6 +4,7 @@ import { nip19 } from 'nostr-tools';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserListDialog } from './UserListDialog';
 import { initializeI18n } from '@/lib/i18n';
+import { SYNTHETIC_NSEC } from '@/test/secretKeyFixture';
 
 const {
   mockNavigate,
@@ -229,6 +230,27 @@ describe('UserListDialog', () => {
 
       expect(await screen.findByText(/at least 2/i)).toBeVisible();
       await waitFor(() => expect(onSearchQueryChange).toHaveBeenLastCalledWith(''));
+    });
+
+    it.each([
+      ['pasted on its own', '', SYNTHETIC_NSEC],
+      ['typed after other words', 'bob ', SYNTHETIC_NSEC.toUpperCase()],
+    ])('warns and sends nothing for a secret key %s', async (_label, typed, pasted) => {
+      const user = userEvent.setup();
+      const onSearchQueryChange = vi.fn();
+      mockUseBatchedAuthors.mockReturnValue({ data: authors });
+
+      render(<UserListDialog open onOpenChange={vi.fn()} title="Following" pubkeys={[alice, bob]} onSearchQueryChange={onSearchQueryChange} />);
+      const searchbox = screen.getByRole('searchbox');
+      await user.click(searchbox);
+      if (typed) await user.type(searchbox, typed);
+      await user.paste(pasted);
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/looks like a secret key/i);
+      expect(screen.queryByText(/at least 2/i)).not.toBeInTheDocument();
+      await waitFor(() => expect(onSearchQueryChange).toHaveBeenLastCalledWith(''));
+      expect(JSON.stringify(onSearchQueryChange.mock.calls).toLowerCase()).not.toContain('nsec1');
+      expect(document.body.textContent?.toLowerCase()).not.toContain('nsec1');
     });
 
     it('reports when authoritative search is unavailable', () => {

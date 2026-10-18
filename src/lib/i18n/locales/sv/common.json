@@ -1567,5 +1567,8 @@
     "verificationNext": "Ditt nästa steg: verifiering",
     "verificationDetail": "Supportermedlemskap krävs för att ansöka om verifiering. Det verifierar inte din identitet och garanterar inget godkännande. Du kan länka befintliga konton för att dela identitetsbevis.",
     "linkAccounts": "Fortsätt till länkade konton"
+  },
+  "secretKeySearchWarning": {
+    "message": "Det där ser ut som en hemlig nyckel, så vi sökte inte efter den. Ange den bara när du loggar in och dela den aldrig."
   }
 }

@@ -14,6 +14,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { SecretKeySearchWarning } from '@/components/SecretKeySearchWarning';
 import { MagnifyingGlass } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
@@ -21,6 +22,7 @@ import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { resolveDisplayName } from '@/lib/resolveDisplayName';
+import { looksLikeSecretKey } from '@/lib/searchUtils';
 import { Sentry } from '@/lib/sentry';
 
 const ESTIMATED_ROW_HEIGHT = 56;
@@ -141,7 +143,9 @@ export function UserListDialog({
 
   const [query, setQuery] = useState('');
   const trimmedQuery = query.trim();
-  const hasEligibleQuery = trimmedQuery
+  // Secret-key-looking input is never sent; the dialog shows a warning instead
+  const isSecretKeyQuery = looksLikeSecretKey(trimmedQuery);
+  const hasEligibleQuery = !isSecretKeyQuery && trimmedQuery
     .split(/\s+/)
     .some((token) => (token.match(/[\p{L}\p{N}]/gu) ?? []).length >= 2);
   const isSearching = searchQuery.length > 0;
@@ -253,7 +257,13 @@ export function UserListDialog({
           </div>
         )}
 
-        {trimmedQuery.length > 0 && !hasEligibleQuery && (
+        {isSecretKeyQuery && (
+          <div className="px-6 pb-2">
+            <SecretKeySearchWarning />
+          </div>
+        )}
+
+        {trimmedQuery.length > 0 && !hasEligibleQuery && !isSecretKeyQuery && (
           <p className="px-6 pb-2 text-xs text-muted-foreground">
             {t('userList.searchHint')}
           </p>
