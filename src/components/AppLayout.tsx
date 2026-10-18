@@ -58,7 +58,7 @@ export function AppLayout() {
         <AppHeader className="md:hidden" />
 
         {/* Main content */}
-        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+        <main className="flex-1 pb-safe-offset-16 md:pb-0">
           <Outlet />
         </main>
 

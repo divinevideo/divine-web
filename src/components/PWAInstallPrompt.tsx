@@ -93,7 +93,7 @@ export function PWAInstallPrompt({ delayMs = 10000 }: { delayMs?: number } = {})
   }
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 z-50 bg-background border-2 border-primary rounded-lg shadow-lg p-4 animate-in slide-in-from-bottom-4">
+    <div className="fixed bottom-safe-offset-20 left-safe-offset-4 right-safe-offset-4 z-50 bg-background border-2 border-primary rounded-lg shadow-lg p-4 animate-in slide-in-from-bottom-4">
       <button
         onClick={handleDismiss}
         className="absolute top-2 right-2 p-1 hover:bg-accent rounded-full transition-colors"
