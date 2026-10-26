@@ -178,6 +178,14 @@ const MUST_BE_TRANSLATED_PREFIXES = [
   'moderationSettings.noBlockedUsers',
   'moderationSettings.toastUnblockedDescription',
   'moderationSettings.toastUnblockFailed',
+  'ageVerificationOverlay.checkingAgeStatus',
+  'ageVerificationOverlay.unavailableForAccount',
+  'ageVerificationOverlay.confirmationFailed',
+  'ageVerificationOverlay.hideVideos',
+  'moderationSettings.ageRestrictedPreferenceTitle',
+  'moderationSettings.ageRestrictedPreferenceDescription',
+  'moderationSettings.showAgeRestrictedVideos',
+  'moderationSettings.hideAgeRestrictedVideos',
   // Account-linking proof copy. #712 swapped the server-invite instruction
   // for the message-link one and added the username label and the bad-link
   // toast, all in English for every locale. The instruction and the toast

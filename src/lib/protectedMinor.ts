@@ -7,6 +7,7 @@ export interface ProtectedMinorStatus {
   state: 'protected' | 'not_protected' | 'unknown';
   isKnown: boolean;
   verifiedMinorAt: Date | null;
+  isChecking?: boolean;
 }
 
 export type ProtectedMinorState = ProtectedMinorStatus['state'];

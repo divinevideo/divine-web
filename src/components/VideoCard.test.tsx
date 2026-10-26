@@ -579,6 +579,14 @@ describe('VideoCard', () => {
     expect(screen.queryByTestId(/video-player-/)).not.toBeInTheDocument();
   });
 
+  it('lets a viewer hide age-restricted cards from feeds', () => {
+    render(<VideoCard video={makeVideo({ ageRestricted: true })} mode="thumbnail" />);
+
+    fireEvent.click(screen.getByRole('button', { name: /don't show me these videos/i }));
+
+    expect(localStorage.getItem('hide-age-restricted-videos')).toBe('true');
+  });
+
   it('shows an age-verification prompt for logged-in viewers who are not verified', () => {
     authMocks.useCurrentUser.mockReturnValue({
       user: { pubkey: 'a'.repeat(64) },

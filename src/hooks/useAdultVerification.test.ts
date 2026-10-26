@@ -87,6 +87,18 @@ describe('useAdultVerification', () => {
     expect(result.current.hasSigner).toBe(false);
   });
 
+  it('refuses confirmation without a signer', async () => {
+    currentSigner = null;
+    const { result } = renderHook(() => useAdultVerification());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let accepted: boolean | undefined;
+    act(() => { accepted = result.current.confirmAdult(); });
+
+    expect(accepted).toBe(false);
+    expect(window.localStorage.getItem('adult-verification-confirmed')).toBeNull();
+  });
+
   describe('protected-minor lock (#453)', () => {
     const storeAttestation = () => {
       window.localStorage.setItem('adult-verification-confirmed', 'true');
@@ -123,10 +135,10 @@ describe('useAdultVerification', () => {
       const { result } = renderHook(() => useAdultVerification());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      act(() => {
-        result.current.confirmAdult();
-      });
+      let accepted: boolean | undefined;
+      act(() => { accepted = result.current.confirmAdult(); });
 
+      expect(accepted).toBe(false);
       expect(result.current.isVerified).toBe(false);
       expect(window.localStorage.getItem('adult-verification-confirmed')).toBeNull();
     });
@@ -148,6 +160,15 @@ describe('useAdultVerification', () => {
 
       // The adult's stored attestation must survive a transient unknown.
       expect(window.localStorage.getItem('adult-verification-confirmed')).toBe('true');
+    });
+
+    it('does not leave the age gate loading after the account check fails', async () => {
+      minorStatus = { ...UNKNOWN_PROTECTED_MINOR_STATUS, isChecking: false };
+      const { result } = renderHook(() => useAdultVerification());
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.isVerified).toBe(false);
+      expect(result.current.confirmAdult()).toBe(false);
     });
 
     it('honors the stored attestation again once the check resolves not-protected', async () => {

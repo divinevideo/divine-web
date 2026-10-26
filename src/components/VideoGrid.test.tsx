@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { ReactElement } from 'react';
 import { VideoGrid } from './VideoGrid';
 import type { ParsedVideoData } from '@/types/video';
+import { initializeI18n } from '@/lib/i18n';
 
 function renderGrid(ui: ReactElement) {
   return render(<MemoryRouter>{ui}</MemoryRouter>);
@@ -54,8 +55,10 @@ function makeVideo(overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
 }
 
 describe('VideoGrid age-restricted gating', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await initializeI18n({ force: true, languages: ['en-US'] });
     vi.clearAllMocks();
+    localStorage.clear();
     mockUseCurrentUser.mockReturnValue({ user: null });
     mockUseAdultVerification.mockReturnValue({ isVerified: false, confirmAdult: vi.fn(), getAuthHeader: vi.fn() });
     global.fetch = vi.fn().mockResolvedValue({
@@ -108,6 +111,15 @@ describe('VideoGrid age-restricted gating', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
+  it('lets a viewer hide age-restricted tiles from the feed', () => {
+    renderGrid(<VideoGrid videos={[makeVideo({ id: 'restricted-video', ageRestricted: true })]} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /don't show me these videos/i }));
+
+    expect(localStorage.getItem('hide-age-restricted-videos')).toBe('true');
+    expect(mockOpenLoginDialog).not.toHaveBeenCalled();
+  });
+
   it('shows the age-restricted gate when a thumbnail media error probes as 401', async () => {
     const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
     (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({
@@ -131,6 +143,8 @@ describe('VideoGrid age-restricted gating', () => {
     await waitFor(() => {
       expect(screen.getByText('Log in to view')).toBeInTheDocument();
     });
+
+    expect(JSON.parse(localStorage.getItem('discovered-age-restricted-video-ids') ?? '[]')).toContain('unknown-restricted-video');
 
     expect(screen.getByText('Age-restricted')).toBeInTheDocument();
     expect(screen.queryByTestId('video-thumbnail-unknown-restricted-video')).not.toBeInTheDocument();

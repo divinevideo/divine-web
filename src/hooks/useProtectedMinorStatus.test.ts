@@ -181,7 +181,9 @@ describe('useProtectedMinorStatus', () => {
 
     expect(result.current.state).toBe('unknown');
     expect(result.current.isKnown).toBe(false);
+    expect(result.current.isChecking).toBe(true);
     await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    await waitFor(() => expect(result.current.isChecking).toBe(false));
     expect(result.current.state).toBe('unknown');
   });
 

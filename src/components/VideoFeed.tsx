@@ -13,6 +13,7 @@ import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { FEED_PAGE_SIZE } from '@/config/feed';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { useContentModeration } from '@/hooks/useModeration';
+import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { useFeedPerformanceInstrumentation } from '@/hooks/useFeedPerformanceInstrumentation';
 import { useProofModeEnrichment } from '@/hooks/useProofModeEnrichment';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
@@ -88,6 +89,7 @@ export function VideoFeed({
   const featuredImpressionSentRef = useRef<string | null>(null);
 
   const { checkContent } = useContentModeration();
+  const { hideAgeRestricted, setHideAgeRestricted, shouldHideVideo } = useAgeRestrictedPreference();
   const navigate = useSubdomainNavigate();
   const { enterFullscreen } = useFullscreenFeed();
 
@@ -146,6 +148,7 @@ export function VideoFeed({
     if (!allVideos || allVideos.length === 0) return [];
 
     return allVideos.filter(video => {
+      if (shouldHideVideo(video)) return false;
       // Check moderation filters
       const moderationResult = checkContent({
         pubkey: video.pubkey,
@@ -169,7 +172,7 @@ export function VideoFeed({
 
       return true;
     });
-  }, [allVideos, checkContent, verifiedOnly]);
+  }, [allVideos, checkContent, shouldHideVideo, verifiedOnly]);
 
   useEffect(() => {
     if (!isLoading && filteredVideos.length > 0) {
@@ -288,6 +291,17 @@ export function VideoFeed({
     </div>
   ) : null;
 
+  const showHiddenVideosControl = hideAgeRestricted ? (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => setHideAgeRestricted(false)}
+      className="mb-4"
+    >
+      {t('moderationSettings.showAgeRestrictedVideos')}
+    </Button>
+  ) : null;
+
   // Redirect empty home feed to discovery (must be before ALL early returns)
   useEffect(() => {
     if (!isLoading && feedType === 'home' && !allFiltered && (!filteredVideos || filteredVideos.length === 0)) {
@@ -401,6 +415,7 @@ export function VideoFeed({
         data-hashtag-testid={hashtagTestId}
         data-profile-testid={profileTestId}
       >
+        {showHiddenVideosControl}
         <Card className="border-dashed border-2 border-brand-light-green dark:border-brand-dark-green bg-brand-light-green dark:bg-brand-dark-green">
           <CardContent className="py-16 px-8 text-center">
             <div className="max-w-md mx-auto space-y-6">
@@ -447,7 +462,7 @@ export function VideoFeed({
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {allFiltered
-                        ? "All videos from this feed match your mute filters. Adjust your moderation settings to see content."
+                        ? "All videos from this feed match your filters. Adjust your viewing preferences in moderation settings to see them."
                         : feedType === 'home'
                         ? "Follow some creators to see their videos here!"
                         : feedType === 'hashtag'
@@ -478,6 +493,7 @@ export function VideoFeed({
         data-hashtag-testid={hashtagTestId}
         data-profile-testid={profileTestId}
       >
+        {showHiddenVideosControl}
         {compilationLauncher}
         <InfiniteScroll
           dataLength={fetchedCount}
@@ -533,6 +549,7 @@ export function VideoFeed({
       data-hashtag-testid={hashtagTestId}
       data-profile-testid={profileTestId}
     >
+      {showHiddenVideosControl}
       {compilationLauncher}
       <InfiniteScroll
         dataLength={fetchedCount}

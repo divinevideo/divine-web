@@ -15,7 +15,8 @@ interface AdultVerificationState {
   isVerified: boolean;
   isLoading: boolean;
   hasSigner: boolean;
-  confirmAdult: () => void;
+  isProtectedMinor: boolean;
+  confirmAdult: () => boolean;
   revokeVerification: () => void;
   getAuthHeader: (url: string, method?: string, sha256?: string) => Promise<string | null>;
 }
@@ -67,7 +68,7 @@ export function useAdultVerification(): AdultVerificationState {
   const minorUnknown = !minorStatus.isKnown;
 
   const isVerified = !minorLocked && !minorUnknown && storedIsVerified && !!signer;
-  const isLoading = isStorageLoading || minorUnknown;
+  const isLoading = isStorageLoading || (minorUnknown && minorStatus.isChecking !== false);
 
   useEffect(() => {
     const syncFromStorage = () => {
@@ -96,15 +97,20 @@ export function useAdultVerification(): AdultVerificationState {
   const confirmAdult = useCallback(() => {
     // Locked for protected minors; unknown fails closed (no new attestation
     // until the check resolves).
-    if (minorLocked || minorUnknown) {
-      return;
+    if (minorLocked || minorUnknown || !signer) {
+      return false;
     }
-    const expiryTime = Date.now() + VERIFICATION_DURATION_MS;
-    localStorage.setItem(STORAGE_KEY, 'true');
-    localStorage.setItem(STORAGE_EXPIRY_KEY, expiryTime.toString());
-    setStoredIsVerified(true);
-    notifyVerificationChange();
-  }, [minorLocked, minorUnknown]);
+    try {
+      const expiryTime = Date.now() + VERIFICATION_DURATION_MS;
+      localStorage.setItem(STORAGE_KEY, 'true');
+      localStorage.setItem(STORAGE_EXPIRY_KEY, expiryTime.toString());
+      setStoredIsVerified(true);
+      notifyVerificationChange();
+      return true;
+    } catch {
+      return false;
+    }
+  }, [minorLocked, minorUnknown, signer]);
 
   const revokeVerification = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
@@ -141,6 +147,7 @@ export function useAdultVerification(): AdultVerificationState {
     isVerified,
     isLoading,
     hasSigner: !!signer,
+    isProtectedMinor: minorLocked,
     confirmAdult,
     revokeVerification,
     getAuthHeader,

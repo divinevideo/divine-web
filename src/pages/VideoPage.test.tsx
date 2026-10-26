@@ -481,6 +481,7 @@ function renderPage(path: string) {
 describe('VideoPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    Element.prototype.scrollIntoView = vi.fn();
     mockFetchNextFunnelcakePage.mockReset();
     mockToast.mockReset();
     mockUseVideoNavigation.mockReturnValue({

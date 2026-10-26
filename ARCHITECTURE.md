@@ -460,3 +460,13 @@ Owners see a private Supporter chip and thanks even when recognition is hidden.
 Other profile visitors read only `/v1/public/supporters?pubkeys=<full-hex-key>`;
 only active, explicitly visible supporters receive a public chip. Membership
 never creates an identity proof or changes the linked-account proof workflow.
+
+## Age-Restricted Feed Preference
+
+`useAgeRestrictedPreference` stores a browser-wide hide choice and up to 500
+video IDs whose media returned 401 or 403. `VideoFeed` filters both API-marked
+and locally discovered age-restricted videos across feed types. The age-gate
+controls, feed restore button, and moderation settings share this local
+preference, including for signed-out viewers. Direct video links still use
+`useAdultVerification` and the protected-minor lock; hiding from feeds does
+not grant media access.

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { SmartLink } from '@/components/SmartLink';
 import { cn } from '@/lib/utils';
 import { useAdultVerification, checkMediaAuth } from '@/hooks/useAdultVerification';
+import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
 import { isProtectedDivineMediaUrl, useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import { verboseLog, debugError } from '@/lib/debug';
@@ -54,6 +55,7 @@ export function ThumbnailPlayer({
   const [requiresAuth, setRequiresAuth] = useState(false);
   const [authRetryKey, setAuthRetryKey] = useState(0);
   const { isVerified: isAdultVerified } = useAdultVerification();
+  const { markAgeRestricted } = useAgeRestrictedPreference();
 
   // Handle age verification completion - retry thumbnail load
   const handleAgeVerified = useCallback(() => {
@@ -77,6 +79,7 @@ export function ThumbnailPlayer({
       verboseLog(`[ThumbnailPlayer ${videoId}] Thumbnail failed, checking if auth required`);
       const { authorized, status } = await checkMediaAuth(urlToCheck);
       if (!authorized && (status === 401 || status === 403)) {
+        markAgeRestricted(videoId);
         debugError(`[ThumbnailPlayer ${videoId}] Auth required (${status})`);
         setRequiresAuth(true);
         return;
@@ -85,7 +88,7 @@ export function ThumbnailPlayer({
 
     setThumbnailError(true);
     onError?.();
-  }, [useVideoFallback, thumbnailUrl, src, isAdultVerified, videoId, onError]);
+  }, [useVideoFallback, thumbnailUrl, src, isAdultVerified, videoId, onError, markAgeRestricted]);
 
   const handleThumbnailLoad = (e: React.SyntheticEvent<HTMLVideoElement | HTMLImageElement>) => {
     

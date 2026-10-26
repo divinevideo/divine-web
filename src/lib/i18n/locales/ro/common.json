@@ -525,6 +525,10 @@
     "close": "Închide"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "Se verifică starea de vârstă...",
+    "unavailableForAccount": "Videoclipurile cu restricții de vârstă nu sunt disponibile pentru acest cont.",
+    "confirmationFailed": "Nu am putut confirma alegerea dvs. acum. Încercați din nou mai târziu.",
+    "hideVideos": "Nu-mi arăta aceste videoclipuri",
     "restrictedHeading": "Conținut cu restricție de vârstă",
     "restrictedBody": "Conținutul ăsta s-ar putea să nu fie potrivit pentru toate audiențele.",
     "verifying": "Se verifică...",
@@ -542,6 +546,10 @@
     "awarded": "Acordată"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "Videoclipuri cu restricții de vârstă",
+    "ageRestrictedPreferenceDescription": "Alegeți dacă videoclipurile cu restricții de vârstă apar în fluxurile din acest browser. Linkurile directe necesită încă confirmarea vârstei.",
+    "showAgeRestrictedVideos": "Afișează videoclipuri cu restricții de vârstă",
+    "hideAgeRestrictedVideos": "Ascunde videoclipurile cu restricții de vârstă",
     "unmute": "Anulează muting-ul",
     "heading": "Setări de moderare",
     "subheading": "Controlează ce conținut vezi și raportează abateri",

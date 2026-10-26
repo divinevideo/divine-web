@@ -28,6 +28,7 @@ import { useIsOwnVideo } from '@/hooks/useIsOwnVideo';
 import { useIsVideoPinned, usePinVideo, useUnpinVideo } from '@/hooks/usePinnedVideos';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
+import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { enhanceAuthorData } from '@/lib/generateProfile';
@@ -267,6 +268,7 @@ export function VideoCard({
   const { mutateAsync: pinVideo } = usePinVideo();
   const { mutateAsync: unpinVideo } = useUnpinVideo();
   const { isVerified: isAdultVerified, confirmAdult } = useAdultVerification();
+  const { setHideAgeRestricted } = useAgeRestrictedPreference();
   const { openLoginDialog } = useLoginDialog();
 
   // Get reactions data for the modal
@@ -601,6 +603,7 @@ export function VideoCard({
                 <AgeRestrictedMediaPlaceholder
                   actionLabel={currentUser ? t('videoCard.verifyAgeToView') : t('videoCard.logInToView')}
                   onAction={handleAgeGateAction}
+                  onHide={() => setHideAgeRestricted(true)}
                   title={video.title || video.content}
                 />
               ) : !isPlaying ? (

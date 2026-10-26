@@ -1,10 +1,12 @@
 import { Lock } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface AgeRestrictedMediaPlaceholderProps {
   actionLabel: string;
   onAction: () => void;
+  onHide?: () => void;
   title?: string;
   className?: string;
 }
@@ -12,9 +14,11 @@ interface AgeRestrictedMediaPlaceholderProps {
 export function AgeRestrictedMediaPlaceholder({
   actionLabel,
   onAction,
+  onHide,
   title,
   className,
 }: AgeRestrictedMediaPlaceholderProps) {
+  const { t } = useTranslation();
   return (
     <div
       className={cn(
@@ -48,6 +52,20 @@ export function AgeRestrictedMediaPlaceholder({
       >
         {actionLabel}
       </Button>
+      {onHide && (
+        <Button
+          type="button"
+          variant="ghost"
+          className="text-white hover:bg-white/10 hover:text-white"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onHide();
+          }}
+        >
+          {t('ageVerificationOverlay.hideVideos')}
+        </Button>
+      )}
     </div>
   );
 }

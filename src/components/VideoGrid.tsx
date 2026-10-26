@@ -10,6 +10,7 @@ import { SmartLink } from '@/components/SmartLink';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { checkMediaAuth, useAdultVerification } from '@/hooks/useAdultVerification';
+import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import { cn } from '@/lib/utils';
 import type { ParsedVideoData } from '@/types/video';
@@ -140,6 +141,7 @@ function VideoGridMedia({
 export function VideoGrid({ videos, loading = false, className, navigationContext }: VideoGridProps) {
   const { user } = useCurrentUser();
   const { isVerified: isAdultVerified, confirmAdult } = useAdultVerification();
+  const { markAgeRestricted, setHideAgeRestricted } = useAgeRestrictedPreference();
   const { openLoginDialog } = useLoginDialog();
   const [hoveredVideo, setHoveredVideo] = useState<string | null>(null);
   const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(new Set());
@@ -167,6 +169,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
     if (urlToCheck) {
       const { authorized, status } = await checkMediaAuth(urlToCheck);
       if (!authorized && (status === 401 || status === 403)) {
+        markAgeRestricted(video.id);
         setDiscoveredAgeRestrictedVideos((prev) => new Set(prev).add(video.id));
         return;
       }
@@ -271,6 +274,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
                 <AgeRestrictedMediaPlaceholder
                   actionLabel={user ? 'Verify age to view' : 'Log in to view'}
                   onAction={handleAgeGateAction}
+                  onHide={() => setHideAgeRestricted(true)}
                   title={video.title || video.content}
                 />
               ) : (
