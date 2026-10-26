@@ -216,8 +216,8 @@ export function VideoPage() {
   // InfiniteScroll only calls next when dataLength grows. The unfiltered fetched
   // count keeps it moving after a fully filtered page; visibleVideos controls UI.
   const scrollDataLength = isUsingFunnelcakeVideos
-    ? funnelcakeFetchedCount + visibleVideos.length
-    : visibleVideos.length;
+    ? funnelcakeFetchedCount + Math.min(maxRendered, videos?.length || 0)
+    : Math.min(maxRendered, videos?.length || 0);
 
   const showMoreVideos = useCallback(async () => {
     if (hasMoreToShow) {

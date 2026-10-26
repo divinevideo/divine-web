@@ -478,3 +478,6 @@ Search results and confirmed-collaboration listings also apply the preference.
 them during next/previous navigation, preserving original source indices.
 The explicitly selected video remains visible even when hidden from browsing,
 so direct links still reach the age gate rather than becoming unavailable.
+Scroll progress counts the unfiltered rendered window so hidden-only windows
+cannot stall pagination. All-hidden search results and collaboration listings
+show the reversible viewing preference; search also offers the next result page.

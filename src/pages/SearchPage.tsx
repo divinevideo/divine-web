@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
+import { AgeRestrictedPreferenceCard } from '@/components/AgeRestrictedPreferenceCard';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { useInfiniteSearchVideos } from '@/hooks/useInfiniteSearchVideos';
 import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
@@ -94,6 +95,7 @@ export function SearchPage() {
     fetchNextPage: fetchNextVideos,
     hasNextPage: hasNextVideos,
     isLoading: isLoadingVideos,
+    isFetchingNextPage: isFetchingNextVideos,
     error: videoError,
     fetchedCount: fetchedVideoCount,
   } = useInfiniteSearchVideos({
@@ -115,6 +117,7 @@ export function SearchPage() {
   }, [videoData]);
   const videoResults = useMemo(() => allVideoResults.filter(video => !shouldHideVideo(video)), [allVideoResults, shouldHideVideo]);
   const videoIndices = useMemo(() => new Map(allVideoResults.map((video, index) => [video.id, index])), [allVideoResults]);
+  const allVideosHidden = allVideoResults.length > 0 && videoResults.length === 0;
 
   const {
     data: userResults = [],
@@ -455,6 +458,17 @@ export function SearchPage() {
     enabled: activeFilter === 'all' || activeFilter === 'videos',
   });
 
+  const hiddenVideoResults = (
+    <div className="space-y-4">
+      <AgeRestrictedPreferenceCard />
+      {hasNextVideos && (
+        <Button type="button" variant="outline" disabled={isFetchingNextVideos} onClick={() => void fetchNextVideos()}>
+          {t('uiPagination.goToNext')}
+        </Button>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       {/* Main content */}
@@ -578,7 +592,7 @@ export function SearchPage() {
                 <p className="text-muted-foreground">Searching...</p>
               ) : error ? (
                 <p className="text-destructive">Search error occurred</p>
-              ) : getResultsCount() === 0 ? (
+              ) : getResultsCount() === 0 && !(allVideosHidden && (activeFilter === 'all' || activeFilter === 'videos')) ? (
                 <p className="text-muted-foreground">Nada. Try something different?</p>
               ) : null}
               {compilationUrl && !isLoading && !error && (
@@ -605,7 +619,7 @@ export function SearchPage() {
             ) : error ? (
               <ErrorState />
             ) : !hasResults ? (
-              <NoResultsState />
+              allVideosHidden ? hiddenVideoResults : <NoResultsState />
             ) : (
               <div className="space-y-8">
                 {/* Videos section with infinite scroll */}
@@ -703,7 +717,7 @@ export function SearchPage() {
             ) : videoError ? (
               <ErrorState />
             ) : videoResults.length === 0 ? (
-              <NoResultsState />
+              allVideosHidden ? hiddenVideoResults : <NoResultsState />
             ) : (
               <InfiniteScroll
                 dataLength={fetchedVideoCount}

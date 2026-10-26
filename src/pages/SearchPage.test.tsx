@@ -78,6 +78,7 @@ vi.mock('@/components/ui/card', () => ({
   Card: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
   CardContent: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
   CardHeader: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
+  CardDescription: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
   CardTitle: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => <h3 {...props}>{children}</h3>,
 }));
 
@@ -475,6 +476,22 @@ describe('SearchPage', () => {
     expect(screen.queryByTestId('video-card-discovered')).not.toBeInTheDocument();
     fireEvent.click(screen.getAllByTestId('video-card-public')[0]!);
     expect(mockNavigate).toHaveBeenCalledWith('/video/public?source=search&q=loops&sort=top&index=2');
+  });
+
+  it('offers to restore search results when every loaded video is hidden', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    const fetchNextPage = vi.fn();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'restricted', pubkey: 'a'.repeat(64), ageRestricted: true }] }] },
+      fetchNextPage, hasNextPage: true, isLoading: false, error: null, fetchedCount: 1,
+    });
+    renderPage(['/search?q=loops&filter=videos']);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /go to next page/i })[0]!);
+    expect(fetchNextPage).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getAllByRole('button', { name: /show age-restricted videos/i })[0]!);
+
+    expect(screen.getAllByTestId('video-card-restricted').length).toBeGreaterThan(0);
   });
 
   it('renders a play-all button for video search results and navigates with source context', async () => {

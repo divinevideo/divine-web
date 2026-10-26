@@ -1,6 +1,7 @@
 import { useMyConfirmedCollabs } from '@/hooks/useMyConfirmedCollabs';
 import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { VideoCard } from '@/components/VideoCard';
+import { AgeRestrictedPreferenceCard } from '@/components/AgeRestrictedPreferenceCard';
 import { transformFunnelcakeVideo } from '@/lib/funnelcakeTransform';
 
 export function ConfirmedTab() {
@@ -28,12 +29,15 @@ export function ConfirmedTab() {
   // address it by — drop those rather than rendering a card nothing can act on.
   const videos = data.flatMap((raw) => {
     const video = transformFunnelcakeVideo(raw);
-    return video && !shouldHideVideo(video) ? [video] : [];
+    return video ? [video] : [];
   });
+  const visibleVideos = videos.filter(video => !shouldHideVideo(video));
+
+  if (videos.length > 0 && visibleVideos.length === 0) return <AgeRestrictedPreferenceCard />;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {videos.map((video) => (
+      {visibleVideos.map((video) => (
         <VideoCard key={video.id} video={video} />
       ))}
     </div>
