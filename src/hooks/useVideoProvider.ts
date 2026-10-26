@@ -316,7 +316,14 @@ export function useVideoProvider({
   );
   // Counted from the unfiltered pages on purpose (divine-web#380).
   const fetchedCount = useMemo(() => countFetchedVideos(rawData?.pages), [rawData]);
-  const fetchNextPage = useCallback(() => activeQuery.fetchNextPage({ cancelRefetch: false }), [activeQuery.fetchNextPage]);
+  // Skip only while a next page is already loading. `cancelRefetch: false` would
+  // also skip during a background refetch, and InfiniteScroll never calls next()
+  // again until dataLength grows, so the feed would stall on its loader.
+  const { fetchNextPage: fetchActiveNextPage, isFetchingNextPage } = activeQuery;
+  const fetchNextPage = useCallback(
+    () => (isFetchingNextPage ? undefined : fetchActiveNextPage()),
+    [fetchActiveNextPage, isFetchingNextPage]
+  );
 
   return {
     data: filteredData,
@@ -324,7 +331,7 @@ export function useVideoProvider({
     fetchNextPage,
     hasNextPage: activeQuery.hasNextPage,
     isLoading: activeQuery.isLoading,
-    isFetchingNextPage: activeQuery.isFetchingNextPage,
+    isFetchingNextPage,
     error: activeQuery.error,
     refetch: activeQuery.refetch,
     dataSource: activeDataSource,
