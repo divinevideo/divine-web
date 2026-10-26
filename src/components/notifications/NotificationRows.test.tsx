@@ -104,7 +104,6 @@ describe('VideoNotificationRow', () => {
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('alt', '');
     expect(container.querySelector('video')).not.toBeInTheDocument();
-
     // No overflow text (totalCount === 1)
     expect(screen.queryByText(/\+/)).not.toBeInTheDocument();
     expect(screen.queryByText(/others/)).not.toBeInTheDocument();
@@ -257,13 +256,19 @@ describe('VideoNotificationRow', () => {
       onIntersect = callback;
       return { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
     });
-    const { container } = render(<VideoNotificationRow notification={buildVideoNotification({
+    const notification = buildVideoNotification({
       videoThumbnailUrl: undefined,
       videoUrl: 'https://media.divine.video/loop.mp4',
-    })} />);
+    });
+    const { container, rerender } = render(<VideoNotificationRow notification={notification} />);
 
     expect(container.querySelector('video')).not.toBeInTheDocument();
     act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    expect(container.querySelector('video')).not.toBeInTheDocument();
+    mockUseNotificationVideoPreview.mockReturnValue({ data: {
+      videoUrl: 'https://media.divine.video/loop.mp4', ageRestricted: false,
+    } });
+    rerender(<VideoNotificationRow notification={notification} />);
     const video = container.querySelector('video');
     expect(video).toHaveAttribute('src', 'https://media.divine.video/loop.mp4#t=0.1');
     expect(video).toHaveAttribute('preload', 'metadata');
@@ -283,6 +288,9 @@ describe('VideoNotificationRow', () => {
     })} />);
 
     fireEvent.error(container.querySelector('img[src="https://example.com/thumb.jpg"]')!);
+    mockUseNotificationVideoPreview.mockReturnValue({ data: {
+      videoUrl: 'https://media.divine.video/loop.mp4', ageRestricted: false,
+    } });
     act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
     const video = container.querySelector('video');
     expect(video).toHaveAttribute('src', 'https://media.divine.video/loop.mp4#t=0.1');
@@ -309,11 +317,11 @@ describe('VideoNotificationRow', () => {
     });
     const notification = buildVideoNotification();
     const { container, rerender } = render(<VideoNotificationRow notification={notification} />);
-    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', false);
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', false, undefined);
     fireEvent.error(container.querySelector('img[src="https://example.com/thumb.jpg"]')!);
-    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', false);
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', false, undefined);
     act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
-    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', true);
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', true, undefined);
 
     mockUseNotificationVideoPreview.mockReturnValue({ data: {
       videoUrl: 'https://example.com/fallback.mp4', ageRestricted: false,
@@ -323,12 +331,18 @@ describe('VideoNotificationRow', () => {
   });
 
   it('keeps the placeholder when an on-demand fallback is age restricted', () => {
+    let onIntersect: IntersectionObserverCallback = () => {};
+    vi.mocked(IntersectionObserver).mockImplementation((callback) => {
+      onIntersect = callback;
+      return { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
+    });
     mockUseNotificationVideoPreview.mockReturnValue({ data: {
       videoUrl: 'https://example.com/restricted.mp4', ageRestricted: true,
     } });
     const { container } = render(<VideoNotificationRow notification={buildVideoNotification({
       videoThumbnailUrl: undefined,
     })} />);
+    act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
     expect(container.querySelector('video')).not.toBeInTheDocument();
     expect(screen.getByText('Divine')).toBeInTheDocument();
   });

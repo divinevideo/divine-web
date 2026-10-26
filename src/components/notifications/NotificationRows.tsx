@@ -2,9 +2,9 @@
 // ABOUTME: Renders VideoNotificationRow (like/comment/repost) and ActorNotificationRow (follow)
 
 import { useEffect, useRef, useState } from 'react';
-import { useNotificationVideoPreview } from '@/hooks/useNotificationVideoPreview';
 import { useTranslation } from 'react-i18next';
 import { Heart, Repeat, ChatCircle, UserPlus } from '@phosphor-icons/react';
+import { useNotificationVideoPreview } from '@/hooks/useNotificationVideoPreview';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
@@ -156,10 +156,10 @@ function NotificationVideoThumbnail({
   const showImage = Boolean(thumbnailUrl && !imageFailed);
   const canLoadVideo = !ageRestricted && !videoFailed;
   const fallback = useNotificationVideoPreview(
-    videoId, !showImage && !videoUrl && canLoadVideo && isNearViewport,
+    videoId, !showImage && canLoadVideo && isNearViewport, videoUrl,
   );
-  const previewUrl = videoUrl ?? fallback.data?.videoUrl;
-  const canUseVideo = Boolean(previewUrl && canLoadVideo && !fallback.data?.ageRestricted);
+  const previewUrl = fallback.data?.videoUrl;
+  const canUseVideo = Boolean(previewUrl && canLoadVideo && fallback.data?.ageRestricted === false);
 
   useEffect(() => {
     if (showImage || !canLoadVideo || isNearViewport || !buttonRef.current) return;
@@ -213,7 +213,7 @@ function NotificationVideoThumbnail({
               }}
             />
           )}
-          {!videoReady && (
+          {(!videoReady || !canUseVideo) && (
             <span className="flex h-full w-full items-center justify-center bg-muted">
               <BrandLogo className="text-[10px] text-muted-foreground dark:text-muted-foreground" />
             </span>
