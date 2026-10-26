@@ -22,8 +22,16 @@ describe('fetchVideoModerationStatus transport', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('uses the public JSON service when no proxy override is configured', async () => {
-    const result = await fetchVideoModerationStatus(hash);
+  it('preserves the default proxy path for existing callers', async () => {
+    await fetchVideoModerationStatus(hash);
+    expect(fetch).toHaveBeenCalledWith(
+      `/api/moderation/check-result/${hash}`,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it('uses the public JSON service only when explicitly requested without a proxy override', async () => {
+    const result = await fetchVideoModerationStatus(hash, undefined, { publicEndpointFallback: true });
     expect(fetch).toHaveBeenCalledWith(
       `https://moderation-api.divine.video/check-result/${hash}`,
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
@@ -33,7 +41,7 @@ describe('fetchVideoModerationStatus transport', () => {
 
   it('preserves an explicitly configured proxy origin and path', async () => {
     moderationConfig.baseUrl = 'https://proxy.example';
-    await fetchVideoModerationStatus(hash);
+    await fetchVideoModerationStatus(hash, undefined, { publicEndpointFallback: true });
     expect(fetch).toHaveBeenCalledWith(
       `https://proxy.example/api/moderation/check-result/${hash}`,
       expect.objectContaining({ signal: expect.any(AbortSignal) }),

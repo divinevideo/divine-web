@@ -21,7 +21,7 @@ export function useNotificationVideoPreview(videoId: string, enabled: boolean, k
       const hash = normalizeSha256(video.sha256) ?? normalizeSha256(imetaHash)
         ?? extractSha256FromVideoUrl(video.video_url);
       if (!hash) return null;
-      const status = await fetchVideoModerationStatus(hash, signal);
+      const status = await fetchVideoModerationStatus(hash, signal, { publicEndpointFallback: true });
       if (!status || status.blocked || status.quarantined) return null;
       return {
         videoUrl: sanitizeImageUrl(video.video_url),

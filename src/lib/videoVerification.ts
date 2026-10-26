@@ -369,6 +369,7 @@ function getAIDetectionResultFromLabels(
 export async function fetchVideoModerationStatus(
   sha256: string,
   signal?: AbortSignal,
+  options: { publicEndpointFallback?: boolean } = {},
 ): Promise<VideoModerationStatus | null> {
   const normalized = normalizeSha256(sha256);
   if (!normalized) return null;
@@ -377,7 +378,7 @@ export async function fetchVideoModerationStatus(
     ? AbortSignal.any([signal, AbortSignal.timeout(API_CONFIG.moderationService.timeout)])
     : AbortSignal.timeout(API_CONFIG.moderationService.timeout);
 
-  const url = API_CONFIG.moderationService.baseUrl
+  const url = API_CONFIG.moderationService.baseUrl || !options.publicEndpointFallback
     ? `${API_CONFIG.moderationService.baseUrl}${API_CONFIG.moderationService.endpoints.checkResult.replace('{sha256}', normalized)}`
     : `https://moderation-api.divine.video/check-result/${normalized}`;
 

@@ -80,6 +80,6 @@ describe('useNotificationVideoPreview', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual({ videoUrl: VIDEO_URL, ageRestricted: false });
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(fetch).mock.calls[0][0]).toContain(HASH);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`https://moderation-api.divine.video/check-result/${HASH}`);
   });
 });
