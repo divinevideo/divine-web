@@ -492,6 +492,8 @@ show the reversible viewing preference; search also offers the next result page.
 `VideoPlayer` keeps its age overlay mounted until the verified-state callback
 clears the auth retry gate. Parent and overlay subscribe to the same verification
 change, so unmounting solely on the parent's verified flag would skip that callback.
+The mute-resume effect cancels its owned animation frames and settle timer on
+cleanup, and checks that the captured element is still current before resuming.
 Card and grid placeholders show account-check/refusal states without granting access.
 Context cards have module-stable component identity, so hosted-account checks and
 preference events do not remount the playing card. Account status observes initial
