@@ -778,6 +778,7 @@ describe('useHydratedNotifications', () => {
       id: VIDEO_ID,
       title: 'Classic Vine',
       thumbnail: 'https://v.cdn.vine.co/r/videos/abc.mp4.jpg',
+      video_url: 'https://media.divine.video/classic.mp4',
     });
 
     const { useHydratedNotifications } = await import('./useHydratedNotifications');
@@ -797,9 +798,10 @@ describe('useHydratedNotifications', () => {
     const item = result.current.items[0];
     expect(item.kind).toBe('video');
     if (item.kind === 'video') {
-      // Title survives; the unusable thumbnail is dropped so the row falls
-      // back to the placeholder rather than rendering a broken image.
+      // Title survives; the unusable image is dropped while the playable
+      // video remains available for a still-frame preview.
       expect(item.videoThumbnailUrl).toBeUndefined();
+      expect(item.videoUrl).toBe('https://media.divine.video/classic.mp4');
     }
   });
 
@@ -877,8 +879,8 @@ describe('useHydratedNotifications', () => {
     mockUseBatchedAuthors.mockReturnValue({ data: {} });
     mockFetchBulkVideos.mockResolvedValue({
       videos: [
-        { id: VIDEO_ID, pubkey: PUBKEY_A, title: 'Bulk Video One', thumbnail: 'https://example.com/one.jpg' },
-        { id: VIDEO_ID_2, pubkey: PUBKEY_B, title: 'Bulk Video Two', thumbnail: 'https://example.com/two.jpg' },
+        { id: VIDEO_ID, pubkey: PUBKEY_A, title: 'Bulk Video One', thumbnail: 'https://example.com/one.jpg', video_url: 'https://media.divine.video/one.mp4' },
+        { id: VIDEO_ID_2, pubkey: PUBKEY_B, title: 'Bulk Video Two', thumbnail: 'https://example.com/two.jpg', video_url: 'https://media.divine.video/two.mp4', age_restricted: true },
       ],
       missing: [],
     });
@@ -904,6 +906,10 @@ describe('useHydratedNotifications', () => {
     });
 
     expect(mockFetchVideoById).not.toHaveBeenCalled();
+    const firstItem = result.current.items.find((item) => item.kind === 'video' && item.videoEventId === VIDEO_ID);
+    expect(firstItem).toMatchObject({ videoUrl: 'https://media.divine.video/one.mp4' });
+    const restrictedItem = result.current.items.find((item) => item.kind === 'video' && item.videoEventId === VIDEO_ID_2);
+    expect(restrictedItem).toMatchObject({ videoAgeRestricted: true });
   });
 
   it('falls back to per-video fetch when bulk request fails', async () => {

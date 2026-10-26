@@ -1,6 +1,7 @@
 // ABOUTME: Grouped notification row components for the new video-grouping notifications UI
 // ABOUTME: Renders VideoNotificationRow (like/comment/repost) and ActorNotificationRow (follow)
 
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Heart, Repeat, ChatCircle, UserPlus } from '@phosphor-icons/react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -132,23 +133,52 @@ function UnreadMarker({ isRead }: { isRead: boolean }) {
 
 function NotificationVideoThumbnail({
   thumbnailUrl,
+  videoUrl,
+  ageRestricted,
   title,
   onClick,
 }: {
   thumbnailUrl?: string;
+  videoUrl?: string;
+  ageRestricted?: boolean;
   title: string;
   onClick: () => void;
 }) {
   const { t } = useTranslation('common');
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [imageFailed, setImageFailed] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
+  const [isNearViewport, setIsNearViewport] = useState(false);
+  const showImage = Boolean(thumbnailUrl && !imageFailed);
+  const canUseVideo = Boolean(videoUrl && !ageRestricted && !videoFailed);
+
+  useEffect(() => {
+    if (showImage || !canUseVideo || isNearViewport || !buttonRef.current) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsNearViewport(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsNearViewport(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: '200px' });
+    observer.observe(buttonRef.current);
+    return () => observer.disconnect();
+  }, [showImage, canUseVideo, isNearViewport]);
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       aria-label={t('notificationsPage.a11y.openVideo', { title })}
       onClick={onClick}
-      className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[14px] border-2 border-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[14px] border-2 border-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
-      {thumbnailUrl ? (
+      {showImage ? (
         <img
           src={thumbnailUrl}
           alt=""
@@ -156,13 +186,31 @@ function NotificationVideoThumbnail({
           height={72}
           loading="lazy"
           className="h-full w-full object-cover"
+          onError={() => setImageFailed(true)}
         />
       ) : (
-        <span
-          className="flex h-full w-full items-center justify-center bg-muted"
-        >
-          <BrandLogo className="text-[10px] text-muted-foreground dark:text-muted-foreground" />
-        </span>
+        <>
+          {canUseVideo && isNearViewport && (
+            <video
+              src={`${videoUrl}#t=0.1`}
+              muted
+              playsInline
+              preload="metadata"
+              aria-hidden="true"
+              className={cn('absolute inset-0 h-full w-full object-cover', !videoReady && 'invisible')}
+              onLoadedData={() => setVideoReady(true)}
+              onError={() => {
+                setVideoReady(false);
+                setVideoFailed(true);
+              }}
+            />
+          )}
+          {!videoReady && (
+            <span className="flex h-full w-full items-center justify-center bg-muted">
+              <BrandLogo className="text-[10px] text-muted-foreground dark:text-muted-foreground" />
+            </span>
+          )}
+        </>
       )}
     </button>
   );
@@ -311,7 +359,10 @@ export function VideoNotificationRow({
 
       {/* Right: thumbnail */}
       <NotificationVideoThumbnail
+        key={`${notification.videoEventId}:${notification.videoThumbnailUrl ?? ''}:${notification.videoUrl ?? ''}:${notification.videoAgeRestricted ?? false}`}
         thumbnailUrl={notification.videoThumbnailUrl}
+        videoUrl={notification.videoUrl}
+        ageRestricted={notification.videoAgeRestricted}
         title={titleText}
         onClick={handleVideoActivate}
       />

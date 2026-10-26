@@ -1,7 +1,7 @@
 // ABOUTME: Tests for grouped notification row components
 // ABOUTME: Covers VideoNotificationRow and ActorNotificationRow rendering and navigation
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18n } from '@/lib/i18n';
 import { VideoNotificationRow, ActorNotificationRow } from './NotificationRows';
@@ -81,8 +81,8 @@ describe('VideoNotificationRow', () => {
   });
 
   it('single-actor like row shows one avatar, a whole-sentence message, and a thumbnail', () => {
-    const notification = buildVideoNotification();
-    render(<VideoNotificationRow notification={notification} />);
+    const notification = buildVideoNotification({ videoUrl: 'https://media.divine.video/loop.mp4' });
+    const { container } = render(<VideoNotificationRow notification={notification} />);
 
     // Actor name visible
     expect(screen.getByText('Alice')).toBeInTheDocument();
@@ -97,6 +97,7 @@ describe('VideoNotificationRow', () => {
     const img = document.querySelector('img[src="https://example.com/thumb.jpg"]');
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('alt', '');
+    expect(container.querySelector('video')).not.toBeInTheDocument();
 
     // No overflow text (totalCount === 1)
     expect(screen.queryByText(/\+/)).not.toBeInTheDocument();
@@ -242,6 +243,56 @@ describe('VideoNotificationRow', () => {
     // the placeholder span is presentational and contains the BrandLogo.
     const thumbnailButton = screen.getAllByRole('button', { name: /My Cool Loop/i }).pop()!;
     expect(thumbnailButton.textContent).toContain('Divine');
+  });
+
+  it('loads a still frame only when a thumbnail-less row approaches the viewport', () => {
+    let onIntersect: IntersectionObserverCallback = () => {};
+    vi.mocked(IntersectionObserver).mockImplementation((callback) => {
+      onIntersect = callback;
+      return { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
+    });
+    const { container } = render(<VideoNotificationRow notification={buildVideoNotification({
+      videoThumbnailUrl: undefined,
+      videoUrl: 'https://media.divine.video/loop.mp4',
+    })} />);
+
+    expect(container.querySelector('video')).not.toBeInTheDocument();
+    act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    const video = container.querySelector('video');
+    expect(video).toHaveAttribute('src', 'https://media.divine.video/loop.mp4#t=0.1');
+    expect(video).toHaveAttribute('preload', 'metadata');
+    expect(video).toHaveProperty('muted', true);
+    fireEvent.loadedData(video!);
+    expect(screen.queryByText('Divine')).not.toBeInTheDocument();
+  });
+
+  it('falls back to a still frame when a thumbnail image fails', () => {
+    let onIntersect: IntersectionObserverCallback = () => {};
+    vi.mocked(IntersectionObserver).mockImplementation((callback) => {
+      onIntersect = callback;
+      return { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
+    });
+    const { container } = render(<VideoNotificationRow notification={buildVideoNotification({
+      videoUrl: 'https://media.divine.video/loop.mp4',
+    })} />);
+
+    fireEvent.error(container.querySelector('img[src="https://example.com/thumb.jpg"]')!);
+    act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    const video = container.querySelector('video');
+    expect(video).toHaveAttribute('src', 'https://media.divine.video/loop.mp4#t=0.1');
+    fireEvent.error(video!);
+    expect(screen.getByText('Divine')).toBeInTheDocument();
+  });
+
+  it('does not load restricted video as a thumbnail fallback', () => {
+    const { container } = render(<VideoNotificationRow notification={buildVideoNotification({
+      videoThumbnailUrl: undefined,
+      videoUrl: 'https://media.divine.video/restricted.mp4',
+      videoAgeRestricted: true,
+    })} />);
+
+    expect(container.querySelector('video')).not.toBeInTheDocument();
+    expect(screen.getByText('Divine')).toBeInTheDocument();
   });
 
   it('empty-string thumbnail also renders BrandLogo placeholder (falsy check)', () => {
