@@ -141,7 +141,7 @@ function VideoGridMedia({
 export function VideoGrid({ videos, loading = false, className, navigationContext }: VideoGridProps) {
   const { user } = useCurrentUser();
   const { isVerified: isAdultVerified, confirmAdult } = useAdultVerification();
-  const { markAgeRestricted, setHideAgeRestricted } = useAgeRestrictedPreference();
+  const { markAgeRestricted, setHideAgeRestricted, shouldHideVideo } = useAgeRestrictedPreference();
   const { openLoginDialog } = useLoginDialog();
   const [hoveredVideo, setHoveredVideo] = useState<string | null>(null);
   const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(new Set());
@@ -157,6 +157,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
   // Keyboard activation for age-gated tiles only — unrestricted tiles are
   // real links, so Enter activation comes for free from the anchor element.
   const handleGatedKeyDown = (event: React.KeyboardEvent) => {
+    if (event.target !== event.currentTarget) return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       handleAgeGateAction();
@@ -214,6 +215,10 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
     }
   };
 
+  const visibleVideos = videos
+    .map((video, index) => ({ video, index }))
+    .filter(({ video }) => !shouldHideVideo(video));
+
   if (loading) {
     return (
       <div
@@ -231,7 +236,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
     );
   }
 
-  if (videos.length === 0) {
+  if (visibleVideos.length === 0) {
     return (
       <div
         className={cn("col-span-full", className)}
@@ -255,7 +260,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
       className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", className)}
       data-testid="video-grid"
     >
-      {videos.map((video, index) => {
+      {visibleVideos.map(({ video, index }) => {
         const isHovered = hoveredVideo === video.id;
         const thumbnailFailed = failedThumbnails.has(video.id);
         const isKnownAgeRestricted = video.ageRestricted === true || discoveredAgeRestrictedVideos.has(video.id);

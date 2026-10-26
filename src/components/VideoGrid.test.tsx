@@ -118,6 +118,33 @@ describe('VideoGrid age-restricted gating', () => {
 
     expect(localStorage.getItem('hide-age-restricted-videos')).toBe('true');
     expect(mockOpenLoginDialog).not.toHaveBeenCalled();
+    expect(screen.queryByText('Age-restricted')).not.toBeInTheDocument();
+  });
+
+  it('honors the browser preference when a standalone grid is opened', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['discovered-video']));
+    renderGrid(<VideoGrid videos={[
+      makeVideo({ id: 'restricted-video', ageRestricted: true }),
+      makeVideo({ id: 'discovered-video' }),
+      makeVideo({ id: 'public-video', content: 'Public video' }),
+    ]} navigationContext={{ source: 'profile', pubkey: 'f'.repeat(64) }} />);
+
+    expect(screen.queryByText('Age-restricted')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('video-thumbnail-discovered-video')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Public video' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Public video' }).getAttribute('href')).toContain('index=2');
+  });
+
+  it.each(['Enter', ' '])('does not confirm adulthood when %s is pressed on the hide button', (key) => {
+    const confirmAdult = vi.fn();
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    mockUseAdultVerification.mockReturnValue({ isVerified: false, confirmAdult, getAuthHeader: vi.fn() });
+    renderGrid(<VideoGrid videos={[makeVideo({ ageRestricted: true })]} />);
+
+    fireEvent.keyDown(screen.getByRole('button', { name: /don't show me these videos/i }), { key });
+
+    expect(confirmAdult).not.toHaveBeenCalled();
   });
 
   it('shows the age-restricted gate when a thumbnail media error probes as 401', async () => {

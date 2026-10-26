@@ -465,7 +465,9 @@ never creates an identity proof or changes the linked-account proof workflow.
 
 `useAgeRestrictedPreference` stores a browser-wide hide choice and up to 500
 video IDs whose media returned 401 or 403. `VideoFeed` filters both API-marked
-and locally discovered age-restricted videos across feed types. The age-gate
+and locally discovered age-restricted videos across feed types. Standalone
+`VideoGrid` views apply the same preference for profiles, lists, and pinned
+videos while retaining original navigation indices. The age-gate
 controls, feed restore button, and moderation settings share this local
 preference, including for signed-out viewers. Direct video links still use
 `useAdultVerification` and the protected-minor lock; hiding from feeds does
