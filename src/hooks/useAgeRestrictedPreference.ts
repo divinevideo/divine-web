@@ -5,6 +5,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 const HIDE_KEY = 'hide-age-restricted-videos';
 const DISCOVERED_IDS_KEY = 'discovered-age-restricted-video-ids';
 const MAX_DISCOVERED_IDS = 500;
+const EMPTY_DISCOVERED_IDS: string[] = [];
 
 interface AgeRestrictedVideo {
   id: string;
@@ -22,7 +23,7 @@ function readDiscoveredIds(): string[] {
 
 export function useAgeRestrictedPreference() {
   const [hideAgeRestricted, setHideAgeRestricted] = useLocalStorage(HIDE_KEY, false);
-  const [discoveredIds, setDiscoveredIds] = useLocalStorage<string[]>(DISCOVERED_IDS_KEY, []);
+  const [discoveredIds, setDiscoveredIds] = useLocalStorage<string[]>(DISCOVERED_IDS_KEY, EMPTY_DISCOVERED_IDS);
 
   const markAgeRestricted = useCallback((videoId: string) => {
     const latest = readDiscoveredIds();

@@ -13,6 +13,8 @@ import { parseVideoListFromEvent, type PlayOrder, type VideoList } from '@/lib/p
 import { EditListDialog } from '@/components/EditListDialog';
 import { DeleteListDialog } from '@/components/DeleteListDialog';
 import { VideoGrid } from '@/components/VideoGrid';
+import { AgeRestrictedPreferenceCard } from '@/components/AgeRestrictedPreferenceCard';
+import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -69,6 +71,7 @@ function getReadableAuthorName(profileName: string | undefined, pubkey: string):
 }
 
 export default function ListDetailPage() {
+  const { shouldHideVideo } = useAgeRestrictedPreference();
   const { t } = useTranslation();
   const { pubkey, listId } = useParams<{ pubkey: string; listId: string }>();
   const navigate = useNavigate();
@@ -192,6 +195,9 @@ export default function ListDetailPage() {
     },
     enabled: !!list
   });
+
+  const visibleVideos = videos?.filter(video => !shouldHideVideo(video)) ?? [];
+  const navigationIndices = new Map(videos?.map((video, index) => [video.id, index]));
 
   // Fetch author info
   const author = useAuthor(pubkey || '');
@@ -369,18 +375,19 @@ export default function ListDetailPage() {
           <section aria-labelledby="list-videos-heading" className="space-y-4">
             <div>
               <h2 id="list-videos-heading" className="font-display text-2xl font-extrabold text-brand-dark-green dark:text-brand-off-white">
-                {t('listDetailPage.videoCount', { count: videos.length })}
+                {t('listDetailPage.videoCount', { count: visibleVideos.length })}
               </h2>
               <p className="text-sm text-muted-foreground">{t('listDetailPage.videosInList')}</p>
             </div>
 
-            {permissions.canEditContent ? (
+            {visibleVideos.length === 0 ? <AgeRestrictedPreferenceCard /> : permissions.canEditContent ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {videos.map((video) => {
+                {visibleVideos.map((video) => {
                   return (
                     <div key={video.id} className="relative group">
                       <VideoGrid
                         videos={[video]}
+                        navigationIndices={navigationIndices}
                         navigationContext={{
                           source: 'video-list',
                           pubkey: listOwnerPubkey || list.pubkey,

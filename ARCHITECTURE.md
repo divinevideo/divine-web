@@ -481,3 +481,20 @@ so direct links still reach the age gate rather than becoming unavailable.
 Scroll progress counts the unfiltered rendered window so hidden-only windows
 cannot stall pagination. All-hidden search results and collaboration listings
 show the reversible viewing preference; search also offers the next result page.
+
+`VideoPlayer` keeps its age overlay mounted until the verified-state callback
+clears the auth retry gate. Parent and overlay subscribe to the same verification
+change, so unmounting solely on the parent's verified flag would skip that callback.
+Card and grid placeholders show account-check/refusal states without granting access.
+
+Editable-list counts and item controls use the same visible subset, and pinned
+sections align their grids and unpin controls before hiding a fully hidden section.
+Source navigation indices remain separate from visible metrics/analytics positions;
+search result-count analytics count raw deduped matches rather than local hiding.
+An all-hidden feed page has an explicit next-page action without changing the hide choice.
+
+The browser's discovered-ID cache deliberately uses the gate's existing 401/403
+classification and can therefore also remember a non-age authorization denial.
+It is bounded to 500 entries, oldest-first, and does not clear on adult verification:
+verification grants eligibility, not consent to undo a viewer's hide preference.
+Showing age-restricted videos reverses filtering independently of this cache.

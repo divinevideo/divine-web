@@ -2,6 +2,7 @@
 // ABOUTME: Shows video thumbnails with play overlays and metadata on hover
 
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Play, Repeat } from '@phosphor-icons/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,7 @@ interface VideoGridProps {
   loading?: boolean;
   className?: string;
   navigationContext?: VideoNavigationContext;
+  navigationIndices?: ReadonlyMap<string, number>;
 }
 
 interface VideoGridMediaProps {
@@ -138,9 +140,11 @@ function VideoGridMedia({
   );
 }
 
-export function VideoGrid({ videos, loading = false, className, navigationContext }: VideoGridProps) {
+export function VideoGrid({ videos, loading = false, className, navigationContext, navigationIndices }: VideoGridProps) {
+  const { t } = useTranslation();
   const { user } = useCurrentUser();
-  const { isVerified: isAdultVerified, confirmAdult } = useAdultVerification();
+  const { isVerified: isAdultVerified, confirmAdult, isLoading: isCheckingAge, isProtectedMinor } = useAdultVerification();
+  const [confirmationFailed, setConfirmationFailed] = useState(false);
   const { markAgeRestricted, setHideAgeRestricted, shouldHideVideo } = useAgeRestrictedPreference();
   const { openLoginDialog } = useLoginDialog();
   const [hoveredVideo, setHoveredVideo] = useState<string | null>(null);
@@ -150,7 +154,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
 
   const buildVideoUrl = (videoId: string, index: number) => {
     return navigationContext
-      ? buildVideoNavigationUrl(videoId, navigationContext, index)
+      ? buildVideoNavigationUrl(videoId, navigationContext, navigationIndices?.get(videoId) ?? index)
       : `/video/${videoId}`;
   };
 
@@ -181,7 +185,8 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
 
   const handleAgeGateAction = () => {
     if (user) {
-      confirmAdult();
+      if (isCheckingAge || isProtectedMinor) return;
+      setConfirmationFailed(confirmAdult() === false);
       return;
     }
 
@@ -277,7 +282,9 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
               {/* Video Thumbnail or Actual Video */}
               {isAgeGated ? (
                 <AgeRestrictedMediaPlaceholder
-                  actionLabel={user ? 'Verify age to view' : 'Log in to view'}
+                  actionLabel={user && isCheckingAge ? t('ageVerificationOverlay.checkingAgeStatus') : user ? 'Verify age to view' : 'Log in to view'}
+                  actionDisabled={!!user && (isCheckingAge || isProtectedMinor)}
+                  actionMessage={user && isProtectedMinor ? t('ageVerificationOverlay.unavailableForAccount') : confirmationFailed ? t('ageVerificationOverlay.confirmationFailed') : undefined}
                   onAction={handleAgeGateAction}
                   onHide={() => setHideAgeRestricted(true)}
                   title={video.title || video.content}

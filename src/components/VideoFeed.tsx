@@ -142,6 +142,7 @@ export function VideoFeed({
   // Enrich Funnelcake feed videos with ProofMode data via WebSocket
   // Feed videos from REST API don't have event tags, so proofMode is always undefined
   const allVideos = useProofModeEnrichment(dedupedVideos);
+  const navigationIndices = useMemo(() => new Map(allVideos.map((video, index) => [video.id, index])), [allVideos]);
 
   // Filter videos based on mute list and verification status
   const filteredVideos = useMemo(() => {
@@ -416,6 +417,11 @@ export function VideoFeed({
         data-profile-testid={profileTestId}
       >
         {showHiddenVideosControl}
+        {hasNextPage && (
+          <Button type="button" variant="outline" onClick={() => void fetchNextPage()} className="mb-4">
+            {t('uiPagination.goToNext')}
+          </Button>
+        )}
         <Card className="border-dashed border-2 border-brand-light-green dark:border-brand-dark-green bg-brand-light-green dark:bg-brand-dark-green">
           <CardContent className="py-16 px-8 text-center">
             <div className="max-w-md mx-auto space-y-6">
@@ -517,6 +523,7 @@ export function VideoFeed({
         >
           <VideoGrid
             videos={filteredVideos}
+            navigationIndices={navigationIndices}
             loading={false}
             navigationContext={{
               source: feedType,
@@ -577,6 +584,7 @@ export function VideoFeed({
               key={video.id}
               video={video}
               index={index}
+              navigationIndex={navigationIndices.get(video.id)}
               mode={mode}
               isPriority={index === 0}
               showComments={showCommentsForVideo === video.id}

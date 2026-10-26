@@ -1,10 +1,18 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useAgeRestrictedPreference } from './useAgeRestrictedPreference';
 
 describe('useAgeRestrictedPreference', () => {
   beforeEach(() => localStorage.clear());
+
+  it('keeps storage listeners registered across unrelated rerenders', () => {
+    const { rerender } = renderHook(() => useAgeRestrictedPreference());
+    const removeListener = vi.spyOn(window, 'removeEventListener');
+    rerender();
+    expect(removeListener).not.toHaveBeenCalled();
+    removeListener.mockRestore();
+  });
 
   it('saves the hide choice and shares it with other mounted views', async () => {
     const first = renderHook(() => useAgeRestrictedPreference());

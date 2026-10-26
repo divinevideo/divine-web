@@ -110,17 +110,19 @@ vi.mock('@/components/VideoCardWithMetrics', () => ({
     video,
     navigationContext,
     index,
+    navigationIndex,
   }: {
     video: { id: string };
     navigationContext?: { source: string; query?: string; sortMode?: string };
     index?: number;
+    navigationIndex?: number;
   }) => {
     const href = navigationContext
-      ? `/video/${video.id}?source=${navigationContext.source}&q=${navigationContext.query}&sort=${navigationContext.sortMode}&index=${index}`
+      ? `/video/${video.id}?source=${navigationContext.source}&q=${navigationContext.query}&sort=${navigationContext.sortMode}&index=${navigationIndex ?? index}`
       : `/video/${video.id}`;
 
     return (
-      <button data-testid={`video-card-${video.id}`} onClick={() => mockNavigate(href)}>
+      <button data-testid={`video-card-${video.id}`} data-position={index} onClick={() => mockNavigate(href)}>
         open {video.id}
       </button>
     );
@@ -474,8 +476,24 @@ describe('SearchPage', () => {
 
     expect(screen.queryByTestId('video-card-restricted')).not.toBeInTheDocument();
     expect(screen.queryByTestId('video-card-discovered')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('video-card-public')[0]).toHaveAttribute('data-position', '0');
     fireEvent.click(screen.getAllByTestId('video-card-public')[0]!);
     expect(mockNavigate).toHaveBeenCalledWith('/video/public?source=search&q=loops&sort=top&index=2');
+  });
+
+  it('reports raw query result count independently of browser hiding', async () => {
+    vi.useFakeTimers();
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [
+        { id: 'restricted', pubkey: 'a'.repeat(64), ageRestricted: true },
+        { id: 'public', pubkey: 'b'.repeat(64) },
+      ] }] },
+      fetchNextPage: vi.fn(), hasNextPage: false, isLoading: false, error: null, fetchedCount: 2,
+    });
+    renderPage(['/search?q=loops&filter=videos']);
+    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
+    expect(trackSearch).toHaveBeenLastCalledWith('loops', 'videos', 2);
   });
 
   it('offers to restore search results when every loaded video is hidden', () => {

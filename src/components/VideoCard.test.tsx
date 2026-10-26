@@ -528,6 +528,12 @@ describe('VideoCard', () => {
     expect(screen.queryByTestId('thumbnail-link')).not.toBeInTheDocument();
   });
 
+  it('uses a distinct raw navigation index without changing the visible position', () => {
+    render(<VideoCard video={baseVideo} mode="thumbnail"
+      navigationContext={{ source: 'search', query: 'cats' }} videoIndex={0} navigationIndex={12} />);
+    expect(screen.getByTestId('thumbnail-link').getAttribute('href')).toContain('index=12');
+  });
+
   it('marks a thumbnail-mode video active when inline playback starts', () => {
     render(<VideoCard video={baseVideo} mode="thumbnail" />);
 
@@ -605,6 +611,14 @@ describe('VideoCard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Verify age to view' }));
     expect(authMocks.confirmAdult).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows refusal feedback when the card cannot confirm adulthood', () => {
+    authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    authMocks.confirmAdult.mockReturnValueOnce(false);
+    render(<VideoCard video={makeVideo({ ageRestricted: true })} mode="thumbnail" />);
+    fireEvent.click(screen.getByRole('button', { name: /verify age to view/i }));
+    expect(screen.getByRole('alert')).toHaveTextContent(/couldn't confirm/i);
   });
 
   it('still renders the thumbnail player for unrestricted videos', () => {

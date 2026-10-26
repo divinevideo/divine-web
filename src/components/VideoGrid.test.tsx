@@ -147,6 +147,25 @@ describe('VideoGrid age-restricted gating', () => {
     expect(confirmAdult).not.toHaveBeenCalled();
   });
 
+  it('explains a refused age confirmation rather than silently doing nothing', () => {
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    mockUseAdultVerification.mockReturnValue({ isVerified: false, confirmAdult: vi.fn(() => false), getAuthHeader: vi.fn() });
+    renderGrid(<VideoGrid videos={[makeVideo({ ageRestricted: true })]} />);
+    fireEvent.click(screen.getByRole('button', { name: /verify age to view/i }));
+    expect(screen.getByRole('alert')).toHaveTextContent(/couldn't confirm/i);
+  });
+
+  it('disables protected-minor confirmation and guards tile activation too', () => {
+    const confirmAdult = vi.fn();
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    mockUseAdultVerification.mockReturnValue({ isVerified: false, isProtectedMinor: true, confirmAdult, getAuthHeader: vi.fn() });
+    renderGrid(<VideoGrid videos={[makeVideo({ ageRestricted: true })]} />);
+    expect(screen.getByRole('button', { name: /verify age to view/i })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent(/aren't available/i);
+    fireEvent.keyDown(screen.getByTestId('video-grid-item'), { key: 'Enter' });
+    expect(confirmAdult).not.toHaveBeenCalled();
+  });
+
   it('shows the age-restricted gate when a thumbnail media error probes as 401', async () => {
     const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
     (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({

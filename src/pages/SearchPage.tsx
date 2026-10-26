@@ -219,7 +219,7 @@ export function SearchPage() {
     }
 
     analyticsTimerRef.current = setTimeout(() => {
-      const totalResults = videoResults.length + userResults.length + hashtagResults.length;
+      const totalResults = allVideoResults.length + userResults.length + hashtagResults.length;
       trackSearch(searchQuery, activeFilter, totalResults);
       lastTrackedSearchRef.current = trackingKey;
     }, 500);
@@ -237,7 +237,7 @@ export function SearchPage() {
     isLoadingVideos,
     searchQuery,
     userResults.length,
-    videoResults.length,
+    allVideoResults.length,
   ]);
 
   useEffect(() => {
@@ -639,11 +639,12 @@ export function SearchPage() {
                       </Button>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {videoResults.slice(0, 6).map((video) => (
+                      {videoResults.slice(0, 6).map((video, index) => (
                         <VideoCardWithMetrics
                           key={video.id}
                           video={video}
-                          index={videoIndices.get(video.id)!}
+                          index={index}
+                          navigationIndex={videoIndices.get(video.id)}
                           mode="thumbnail"
                           showComments={false}
                           onOpenComments={() => undefined}
@@ -737,11 +738,12 @@ export function SearchPage() {
                 }
               >
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {videoResults.map((video) => (
+                  {videoResults.map((video, index) => (
                     <VideoCardWithMetrics
                       key={video.id}
                       video={video}
-                      index={videoIndices.get(video.id)!}
+                      index={index}
+                      navigationIndex={videoIndices.get(video.id)}
                       mode="thumbnail"
                       showComments={false}
                       onOpenComments={() => undefined}

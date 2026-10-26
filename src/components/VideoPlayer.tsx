@@ -1169,7 +1169,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         )}
 
         {/* Age verification required (401/403) */}
-        {requiresAuth && !isAdultVerified && (
+        {requiresAuth && (
           <AgeVerificationOverlay
             onVerified={handleAgeVerified}
             thumbnailUrl={overlayPosterUrl}

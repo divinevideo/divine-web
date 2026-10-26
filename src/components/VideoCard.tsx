@@ -80,6 +80,7 @@ interface VideoCardProps {
   // Navigation context for maintaining feed position
   navigationContext?: VideoNavigationContext;
   videoIndex?: number;
+  navigationIndex?: number;
   trafficSource?: ViewTrafficSource;
   /**
    * Brand accent color that drives the card's offset shadow. Used to
@@ -112,6 +113,7 @@ export function VideoCard({
   showComments = false,
   navigationContext,
   videoIndex,
+  navigationIndex,
   trafficSource,
   accent = 'green',
 }: VideoCardProps) {
@@ -267,7 +269,8 @@ export function VideoCard({
   const isPinned = useIsVideoPinned(coordinate);
   const { mutateAsync: pinVideo } = usePinVideo();
   const { mutateAsync: unpinVideo } = useUnpinVideo();
-  const { isVerified: isAdultVerified, confirmAdult } = useAdultVerification();
+  const { isVerified: isAdultVerified, confirmAdult, isLoading: isCheckingAge, isProtectedMinor } = useAdultVerification();
+  const [confirmationFailed, setConfirmationFailed] = useState(false);
   const { setHideAgeRestricted } = useAgeRestrictedPreference();
   const { openLoginDialog } = useLoginDialog();
 
@@ -335,7 +338,8 @@ export function VideoCard({
 
   const handleAgeGateAction = () => {
     if (currentUser) {
-      confirmAdult();
+      if (isCheckingAge || isProtectedMinor) return;
+      setConfirmationFailed(confirmAdult() === false);
       return;
     }
 
@@ -352,7 +356,7 @@ export function VideoCard({
   // page so native browser behaviors (middle-click, open in new tab) work.
   const thumbnailLinkTo = mode === 'thumbnail'
     ? (navigationContext
-        ? buildVideoNavigationUrl(video.id, navigationContext, videoIndex)
+        ? buildVideoNavigationUrl(video.id, navigationContext, navigationIndex ?? videoIndex)
         : `/video/${video.id}`)
     : undefined;
 
@@ -601,7 +605,9 @@ export function VideoCard({
             >
               {isAgeGated ? (
                 <AgeRestrictedMediaPlaceholder
-                  actionLabel={currentUser ? t('videoCard.verifyAgeToView') : t('videoCard.logInToView')}
+                  actionLabel={currentUser && isCheckingAge ? t('ageVerificationOverlay.checkingAgeStatus') : currentUser ? t('videoCard.verifyAgeToView') : t('videoCard.logInToView')}
+                  actionDisabled={!!currentUser && (isCheckingAge || isProtectedMinor)}
+                  actionMessage={currentUser && isProtectedMinor ? t('ageVerificationOverlay.unavailableForAccount') : confirmationFailed ? t('ageVerificationOverlay.confirmationFailed') : undefined}
                   onAction={handleAgeGateAction}
                   onHide={() => setHideAgeRestricted(true)}
                   title={video.title || video.content}

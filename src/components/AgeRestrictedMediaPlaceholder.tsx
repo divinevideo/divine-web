@@ -7,6 +7,8 @@ interface AgeRestrictedMediaPlaceholderProps {
   actionLabel: string;
   onAction: () => void;
   onHide?: () => void;
+  actionDisabled?: boolean;
+  actionMessage?: string;
   title?: string;
   className?: string;
 }
@@ -15,6 +17,8 @@ export function AgeRestrictedMediaPlaceholder({
   actionLabel,
   onAction,
   onHide,
+  actionDisabled,
+  actionMessage,
   title,
   className,
 }: AgeRestrictedMediaPlaceholderProps) {
@@ -43,6 +47,7 @@ export function AgeRestrictedMediaPlaceholder({
       <Button
         type="button"
         variant="secondary"
+        disabled={actionDisabled}
         className="bg-white text-black hover:bg-white/90"
         onClick={(event) => {
           event.preventDefault();
@@ -52,6 +57,7 @@ export function AgeRestrictedMediaPlaceholder({
       >
         {actionLabel}
       </Button>
+      {actionMessage && <p role="alert" className="max-w-xs text-sm text-white/85">{actionMessage}</p>}
       {onHide && (
         <Button
           type="button"
