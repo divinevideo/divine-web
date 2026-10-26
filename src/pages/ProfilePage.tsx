@@ -538,6 +538,7 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
             >
               <VideoGrid
                 videos={videos || []}
+                onLoadMore={hasNextPage ? () => void fetchNextPage() : undefined}
                 loading={videosLoading}
                 className="min-h-[200px]"
                 navigationContext={{

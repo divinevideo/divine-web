@@ -2,7 +2,7 @@
 // ABOUTME: divine-web#380 — a page that dedupes away must still re-arm the trigger
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { TestApp } from '@/test/TestApp';
 
 const PUBKEY = 'a'.repeat(64);
@@ -108,8 +108,10 @@ vi.mock('@/components/ProfileListsSection', () => ({
 }));
 
 vi.mock('@/components/VideoGrid', () => ({
-  VideoGrid: ({ videos }: { videos: unknown[] }) => (
-    <div data-testid="video-grid" data-count={videos.length} />
+  VideoGrid: ({ videos, onLoadMore }: { videos: unknown[]; onLoadMore?: () => void }) => (
+    <div data-testid="video-grid" data-count={videos.length}>
+      {onLoadMore && <button onClick={onLoadMore}>fetch-next-profile-page</button>}
+    </div>
   ),
 }));
 
@@ -122,6 +124,13 @@ describe('ProfilePage infinite scroll', () => {
     infiniteScrollProps.length = 0;
     vi.clearAllMocks();
   });
+
+  it('supplies explicit next-page recovery to the default grid', async () => {
+    const { ProfilePage } = await import('./ProfilePage');
+    render(<TestApp><ProfilePage pubkeyOverride={PUBKEY} /></TestApp>);
+    fireEvent.click(screen.getByRole('button', { name: 'fetch-next-profile-page' }));
+    expect(videoProviderResult.fetchNextPage).toHaveBeenCalledOnce();
+  }, 20_000);
 
   it('passes the fetched row count as dataLength, not the deduplicated length', async () => {
     const { ProfilePage } = await import('./ProfilePage');

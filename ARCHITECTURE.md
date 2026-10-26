@@ -492,6 +492,8 @@ sections align their grids and unpin controls before hiding a fully hidden secti
 Source navigation indices remain separate from visible metrics/analytics positions;
 search result-count analytics count raw deduped matches rather than local hiding.
 An all-hidden feed page has an explicit next-page action without changing the hide choice.
+Standalone grids show the reversible preference rather than claiming the list is empty;
+the default profile grid supplies an explicit next-page callback for hidden-only pages.
 
 The browser's discovered-ID cache deliberately uses the gate's existing 401/403
 classification and can therefore also remember a non-age authorization denial.

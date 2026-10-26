@@ -7,6 +7,8 @@ import { Play, Repeat } from '@phosphor-icons/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
+import { AgeRestrictedPreferenceCard } from '@/components/AgeRestrictedPreferenceCard';
+import { Button } from '@/components/ui/button';
 import { SmartLink } from '@/components/SmartLink';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -24,6 +26,7 @@ interface VideoGridProps {
   className?: string;
   navigationContext?: VideoNavigationContext;
   navigationIndices?: ReadonlyMap<string, number>;
+  onLoadMore?: () => void;
 }
 
 interface VideoGridMediaProps {
@@ -140,7 +143,7 @@ function VideoGridMedia({
   );
 }
 
-export function VideoGrid({ videos, loading = false, className, navigationContext, navigationIndices }: VideoGridProps) {
+export function VideoGrid({ videos, loading = false, className, navigationContext, navigationIndices, onLoadMore }: VideoGridProps) {
   const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { isVerified: isAdultVerified, confirmAdult, isLoading: isCheckingAge, isProtectedMinor } = useAdultVerification();
@@ -242,6 +245,18 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
   }
 
   if (visibleVideos.length === 0) {
+    if (videos.length > 0) {
+      return (
+        <div className={cn('col-span-full space-y-4', className)} data-testid="video-grid-empty">
+          <AgeRestrictedPreferenceCard />
+          {onLoadMore && (
+            <Button type="button" variant="outline" onClick={onLoadMore}>
+              {t('uiPagination.goToNext')}
+            </Button>
+          )}
+        </div>
+      );
+    }
     return (
       <div
         className={cn("col-span-full", className)}

@@ -136,6 +136,17 @@ describe('VideoGrid age-restricted gating', () => {
     expect(screen.getByRole('link', { name: 'Public video' }).getAttribute('href')).toContain('index=2');
   });
 
+  it('restores an all-hidden standalone grid and can request another page without scrolling', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    const onLoadMore = vi.fn();
+    renderGrid(<VideoGrid videos={[makeVideo({ ageRestricted: true })]} onLoadMore={onLoadMore} />);
+    fireEvent.click(screen.getByRole('button', { name: /go to next page/i }));
+    expect(onLoadMore).toHaveBeenCalledOnce();
+    expect(screen.queryByText('No videos to display')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /show age-restricted videos/i }));
+    expect(screen.getByRole('button', { name: /log in to view/i })).toBeInTheDocument();
+  });
+
   it.each(['Enter', ' '])('does not confirm adulthood when %s is pressed on the hide button', (key) => {
     const confirmAdult = vi.fn();
     mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
