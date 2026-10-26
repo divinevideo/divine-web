@@ -481,7 +481,9 @@ The explicitly selected video remains visible even when hidden from browsing,
 so direct links still reach the age gate rather than becoming unavailable.
 Scroll progress counts the unfiltered rendered window to re-arm scroll pagination.
 Explicit next-page actions also cover short partially hidden context/search/profile
-windows that cannot produce a scroll event. The existing bounded navigation paging
+windows that cannot produce a scroll event, only when hiding removed rows; they do
+not change default no-hiding controls. Recovery actions follow their list. Search's
+All-tab recovery stops once its six displayed video slots are filled. The existing bounded navigation paging
 loop skips hidden-only pages while preserving the selected target and raw indices.
 All-hidden search results and collaboration listings
 show the reversible viewing preference; search also offers the next result page.

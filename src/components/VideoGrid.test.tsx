@@ -147,6 +147,11 @@ describe('VideoGrid age-restricted gating', () => {
     expect(screen.getByRole('button', { name: /log in to view/i })).toBeInTheDocument();
   });
 
+  it('does not add a recovery paging control when no rows were hidden', () => {
+    renderGrid(<VideoGrid videos={[makeVideo()]} onLoadMore={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /go to next page/i })).not.toBeInTheDocument();
+  });
+
   it.each(['Enter', ' '])('does not confirm adulthood when %s is pressed on the hide button', (key) => {
     const confirmAdult = vi.fn();
     mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });

@@ -611,12 +611,6 @@ export function SearchPage() {
           )}
 
           {/* All results tab */}
-          {videoResults.length > 0 && hasNextVideos && (activeFilter === 'all' || activeFilter === 'videos') && (
-            <Button type="button" variant="outline" disabled={isFetchingNextVideos} aria-busy={isFetchingNextVideos}
-              onClick={() => void fetchNextVideos({ cancelRefetch: false })}>
-              {isFetchingNextVideos ? t('profilePage.loadingMore') : t('uiPagination.goToNext')}
-            </Button>
-          )}
           <TabsContent value="all" className="mt-0">
             {!searchQuery.trim() ? (
               <EmptySearchState />
@@ -801,6 +795,13 @@ export function SearchPage() {
             )}
           </TabsContent>
         </Tabs>
+        {videoResults.length > 0 && videoResults.length < allVideoResults.length && hasNextVideos &&
+          (activeFilter === 'videos' || (activeFilter === 'all' && videoResults.length < 6)) && (
+          <Button type="button" variant="outline" disabled={isFetchingNextVideos} aria-busy={isFetchingNextVideos}
+            onClick={() => void fetchNextVideos({ cancelRefetch: false })}>
+            {isFetchingNextVideos ? t('profilePage.loadingMore') : t('uiPagination.goToNext')}
+          </Button>
+        )}
       </main>
     </div>
   );

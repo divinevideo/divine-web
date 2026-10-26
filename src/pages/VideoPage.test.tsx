@@ -727,6 +727,11 @@ describe('VideoPage', () => {
     await waitFor(() => expect(screen.getByTestId('infinite-scroll')).toHaveAttribute('data-length', '24'));
   });
 
+  it('preserves the default context-feed controls when hiding removed no videos', () => {
+    renderPage('/video/scroll-video-1?source=search&q=scroll-window&index=0');
+    expect(screen.queryByRole('button', { name: /go to next page/i })).not.toBeInTheDocument();
+  });
+
   it('fetches the next Funnelcake page when the rendered window is exhausted', async () => {
     mockFetchNextFunnelcakePage.mockResolvedValueOnce([]);
 

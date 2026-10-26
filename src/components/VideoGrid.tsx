@@ -228,7 +228,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
   const visibleVideos = videos
     .map((video, index) => ({ video, index }))
     .filter(({ video }) => !shouldHideVideo(video));
-  const pagingControl = onLoadMore ? (
+  const pagingControl = onLoadMore && visibleVideos.length < videos.length ? (
     <Button type="button" variant="outline" disabled={isLoadingMore} aria-busy={isLoadingMore} onClick={onLoadMore}>
       {isLoadingMore ? t('profilePage.loadingMore') : t('uiPagination.goToNext')}
     </Button>

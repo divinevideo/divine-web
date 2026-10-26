@@ -255,6 +255,7 @@ export function VideoPage() {
   }, [videos, maxRendered, currentIndex, shouldHideVideo]);
 
   const hasMoreToShow = maxRendered < (videos?.length || 0);
+  const hiddenRowsInWindow = visibleVideos.length < Math.min(maxRendered, videos?.length || 0);
   const hasMoreFeedVideos = hasMoreToShow || (isUsingFunnelcakeVideos && funnelcakeHasNextPage);
   // InfiniteScroll only calls next when dataLength grows. The unfiltered fetched
   // count keeps it moving after a fully filtered page; visibleVideos controls UI.
@@ -791,13 +792,6 @@ export function VideoPage() {
         )}
 
         {/* Scrollable video feed - progressive rendering */}
-        {hasMoreFeedVideos && (
-          <div className="mb-4 flex justify-center">
-            <Button type="button" variant="outline" disabled={isFetchingNextFunnelcakePage} onClick={() => void showMoreVideos()}>
-              {isFetchingNextFunnelcakePage ? t('videoPage.loadingMore') : t('uiPagination.goToNext')}
-            </Button>
-          </div>
-        )}
         <InfiniteScroll
           dataLength={scrollDataLength}
           next={showMoreVideos}
@@ -855,6 +849,13 @@ export function VideoPage() {
             );
           })}
         </InfiniteScroll>
+        {hasMoreFeedVideos && hiddenRowsInWindow && (
+          <div className="mt-4 flex justify-center">
+            <Button type="button" variant="outline" disabled={isFetchingNextFunnelcakePage} onClick={() => void showMoreVideos()}>
+              {isFetchingNextFunnelcakePage ? t('videoPage.loadingMore') : t('uiPagination.goToNext')}
+            </Button>
+          </div>
+        )}
       </div>
     );
   }

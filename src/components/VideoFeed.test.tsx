@@ -234,6 +234,25 @@ describe('VideoFeed', () => {
     expect(localStorage.getItem('hide-age-restricted-videos')).toBe('true');
   });
 
+  it('lets a short partially hidden feed page without changing the default feed controls', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    const fetchNextPage = vi.fn();
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: [
+        { id: 'hidden', pubkey: 'a'.repeat(64), ageRestricted: true },
+        { id: 'public', pubkey: 'b'.repeat(64) },
+      ] }] }, fetchNextPage, hasNextPage: true, isLoading: false, error: null,
+      refetch: vi.fn(), fetchedCount: 2, dataSource: 'funnelcake',
+    });
+    const { unmount } = render(<MemoryRouter><VideoFeed feedType="popular" /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: /go to next page/i }));
+    expect(fetchNextPage).toHaveBeenCalledOnce();
+    unmount();
+    localStorage.setItem('hide-age-restricted-videos', 'false');
+    render(<MemoryRouter><VideoFeed feedType="popular" /></MemoryRouter>);
+    expect(screen.queryByRole('button', { name: /go to next page/i })).not.toBeInTheDocument();
+  });
+
   it('disables next-page recovery and shows progress while that page is loading', () => {
     localStorage.setItem('hide-age-restricted-videos', 'true');
     const fetchNextPage = vi.fn();

@@ -524,6 +524,27 @@ describe('SearchPage', () => {
     expect(fetchNextPage).toHaveBeenCalledOnce();
   });
 
+  it('does not add recovery paging on the default unfiltered search path', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'public', pubkey: 'a'.repeat(64) }] }] },
+      fetchNextPage: vi.fn(), hasNextPage: true, isLoading: false, error: null, fetchedCount: 1,
+    });
+    renderPage(['/search?q=loops&filter=videos']);
+    expect(screen.queryByRole('button', { name: /go to next page/i })).not.toBeInTheDocument();
+  });
+
+  it('does not page unseen extra rows once the All tab already shows six videos', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: Array.from({ length: 9 }, (_, index) => ({
+        id: `result-${index}`, pubkey: 'a'.repeat(64), ageRestricted: index === 0,
+      })) }] },
+      fetchNextPage: vi.fn(), hasNextPage: true, isLoading: false, error: null, fetchedCount: 9,
+    });
+    renderPage(['/search?q=loops']);
+    expect(screen.queryByRole('button', { name: /go to next page/i })).not.toBeInTheDocument();
+  });
+
   it('explains fully hidden videos inside the All tab even when users also match', () => {
     localStorage.setItem('hide-age-restricted-videos', 'true');
     mockUseInfiniteSearchVideos.mockReturnValue({

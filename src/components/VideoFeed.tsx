@@ -303,6 +303,11 @@ export function VideoFeed({
       {t('moderationSettings.showAgeRestrictedVideos')}
     </Button>
   ) : null;
+  const recoveryPagingControl = hasNextPage && filteredVideos.length > 0 && filteredVideos.length < moderationVideos.length ? (
+    <Button type="button" variant="outline" disabled={isFetchingNextPage} aria-busy={isFetchingNextPage} onClick={() => void fetchNextPage()} className="mt-4">
+      {isFetchingNextPage ? t('profilePage.loadingMore') : t('uiPagination.goToNext')}
+    </Button>
+  ) : null;
 
   // Redirect empty home feed to discovery (must be before ALL early returns)
   useEffect(() => {
@@ -534,6 +539,7 @@ export function VideoFeed({
             }}
           />
         </InfiniteScroll>
+        {recoveryPagingControl}
 
         {/* Add to List Dialog */}
         {showListDialog && (
@@ -604,6 +610,7 @@ export function VideoFeed({
           ))}
         </div>
       </InfiniteScroll>
+      {recoveryPagingControl}
 
       {/* Add to List Dialog */}
       {showListDialog && (
