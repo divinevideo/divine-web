@@ -72,6 +72,15 @@ describe('useNotificationVideoPreview', () => {
     expect(result.current.data).toBeNull();
   });
 
+  it.each(['blocked', 'quarantined'])('keeps the placeholder when moderation reports the video %s', async (flag) => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ age_restricted: false, [flag]: true }), { status: 200 }));
+    const { result } = renderHook(() => useNotificationVideoPreview(VIDEO_ID, true, VIDEO_URL), {
+      wrapper: createWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toBeNull();
+  });
+
   it('uses a hydrated hashed URL without another video lookup', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ age_restricted: false }), { status: 200 }));
     const { result } = renderHook(() => useNotificationVideoPreview(VIDEO_ID, true, VIDEO_URL), {
