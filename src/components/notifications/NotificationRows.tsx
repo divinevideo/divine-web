@@ -2,6 +2,7 @@
 // ABOUTME: Renders VideoNotificationRow (like/comment/repost) and ActorNotificationRow (follow)
 
 import { useEffect, useRef, useState } from 'react';
+import { useNotificationVideoPreview } from '@/hooks/useNotificationVideoPreview';
 import { useTranslation } from 'react-i18next';
 import { Heart, Repeat, ChatCircle, UserPlus } from '@phosphor-icons/react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -132,12 +133,14 @@ function UnreadMarker({ isRead }: { isRead: boolean }) {
 }
 
 function NotificationVideoThumbnail({
+  videoId,
   thumbnailUrl,
   videoUrl,
   ageRestricted,
   title,
   onClick,
 }: {
+  videoId: string;
   thumbnailUrl?: string;
   videoUrl?: string;
   ageRestricted?: boolean;
@@ -151,10 +154,15 @@ function NotificationVideoThumbnail({
   const [videoReady, setVideoReady] = useState(false);
   const [isNearViewport, setIsNearViewport] = useState(false);
   const showImage = Boolean(thumbnailUrl && !imageFailed);
-  const canUseVideo = Boolean(videoUrl && !ageRestricted && !videoFailed);
+  const canLoadVideo = !ageRestricted && !videoFailed;
+  const fallback = useNotificationVideoPreview(
+    videoId, !showImage && !videoUrl && canLoadVideo && isNearViewport,
+  );
+  const previewUrl = videoUrl ?? fallback.data?.videoUrl;
+  const canUseVideo = Boolean(previewUrl && canLoadVideo && !fallback.data?.ageRestricted);
 
   useEffect(() => {
-    if (showImage || !canUseVideo || isNearViewport || !buttonRef.current) return;
+    if (showImage || !canLoadVideo || isNearViewport || !buttonRef.current) return;
     if (typeof IntersectionObserver === 'undefined') {
       setIsNearViewport(true);
       return;
@@ -168,7 +176,7 @@ function NotificationVideoThumbnail({
     }, { rootMargin: '200px' });
     observer.observe(buttonRef.current);
     return () => observer.disconnect();
-  }, [showImage, canUseVideo, isNearViewport]);
+  }, [showImage, canLoadVideo, isNearViewport]);
 
   return (
     <button
@@ -192,7 +200,7 @@ function NotificationVideoThumbnail({
         <>
           {canUseVideo && isNearViewport && (
             <video
-              src={`${videoUrl}#t=0.1`}
+              src={`${previewUrl}#t=0.1`}
               muted
               playsInline
               preload="metadata"
@@ -360,6 +368,7 @@ export function VideoNotificationRow({
       {/* Right: thumbnail */}
       <NotificationVideoThumbnail
         key={`${notification.videoEventId}:${notification.videoThumbnailUrl ?? ''}:${notification.videoUrl ?? ''}:${notification.videoAgeRestricted ?? false}`}
+        videoId={notification.videoEventId}
         thumbnailUrl={notification.videoThumbnailUrl}
         videoUrl={notification.videoUrl}
         ageRestricted={notification.videoAgeRestricted}

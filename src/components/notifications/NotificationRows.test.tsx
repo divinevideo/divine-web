@@ -7,8 +7,13 @@ import { initializeI18n } from '@/lib/i18n';
 import { VideoNotificationRow, ActorNotificationRow } from './NotificationRows';
 import type { VideoNotification, ActorNotification } from '@/types/notification';
 
-const { mockNavigate } = vi.hoisted(() => ({
+const { mockNavigate, mockUseNotificationVideoPreview } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
+  mockUseNotificationVideoPreview: vi.fn(() => ({ data: undefined as { videoUrl?: string; ageRestricted: boolean } | undefined })),
+}));
+
+vi.mock('@/hooks/useNotificationVideoPreview', () => ({
+  useNotificationVideoPreview: mockUseNotificationVideoPreview,
 }));
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
@@ -66,6 +71,7 @@ function buildActorNotification(
 describe('VideoNotificationRow', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    mockUseNotificationVideoPreview.mockReturnValue({ data: undefined });
 
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
@@ -291,6 +297,38 @@ describe('VideoNotificationRow', () => {
       videoAgeRestricted: true,
     })} />);
 
+    expect(container.querySelector('video')).not.toBeInTheDocument();
+    expect(screen.getByText('Divine')).toBeInTheDocument();
+  });
+
+  it('looks up a fallback only after an embedded thumbnail fails near the viewport', () => {
+    let onIntersect: IntersectionObserverCallback = () => {};
+    vi.mocked(IntersectionObserver).mockImplementation((callback) => {
+      onIntersect = callback;
+      return { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
+    });
+    const notification = buildVideoNotification();
+    const { container, rerender } = render(<VideoNotificationRow notification={notification} />);
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', false);
+    fireEvent.error(container.querySelector('img[src="https://example.com/thumb.jpg"]')!);
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', false);
+    act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', true);
+
+    mockUseNotificationVideoPreview.mockReturnValue({ data: {
+      videoUrl: 'https://example.com/fallback.mp4', ageRestricted: false,
+    } });
+    rerender(<VideoNotificationRow notification={notification} />);
+    expect(container.querySelector('video')).toHaveAttribute('src', 'https://example.com/fallback.mp4#t=0.1');
+  });
+
+  it('keeps the placeholder when an on-demand fallback is age restricted', () => {
+    mockUseNotificationVideoPreview.mockReturnValue({ data: {
+      videoUrl: 'https://example.com/restricted.mp4', ageRestricted: true,
+    } });
+    const { container } = render(<VideoNotificationRow notification={buildVideoNotification({
+      videoThumbnailUrl: undefined,
+    })} />);
     expect(container.querySelector('video')).not.toBeInTheDocument();
     expect(screen.getByText('Divine')).toBeInTheDocument();
   });
