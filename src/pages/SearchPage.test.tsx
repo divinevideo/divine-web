@@ -457,6 +457,26 @@ describe('SearchPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/video/video-2?source=search&q=twerking&sort=top&index=1');
   });
 
+  it('hides restricted search results without changing original navigation indices', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['discovered']));
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [
+        { id: 'restricted', pubkey: 'a'.repeat(64), ageRestricted: true },
+        { id: 'discovered', pubkey: 'b'.repeat(64) },
+        { id: 'public', pubkey: 'c'.repeat(64) },
+      ] }] },
+      fetchNextPage: vi.fn(), hasNextPage: false, isLoading: false, error: null, fetchedCount: 3,
+    });
+
+    renderPage(['/search?q=loops&filter=videos&sort=top']);
+
+    expect(screen.queryByTestId('video-card-restricted')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('video-card-discovered')).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByTestId('video-card-public')[0]!);
+    expect(mockNavigate).toHaveBeenCalledWith('/video/public?source=search&q=loops&sort=top&index=2');
+  });
+
   it('renders a play-all button for video search results and navigates with source context', async () => {
     const user = userEvent.setup();
     mockUseInfiniteSearchVideos.mockReturnValue({

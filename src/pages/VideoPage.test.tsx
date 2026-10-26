@@ -526,6 +526,34 @@ describe('VideoPage', () => {
     expect(url.searchParams.get('index')).toBe('2');
   });
 
+  it('skips hidden videos during context navigation while preserving source indices', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['video-2']));
+    renderPage('/video/video-1?source=search&q=twerking&sort=top&index=0');
+
+    fireEvent.keyDown(document.body, { key: 'ArrowDown' });
+
+    expect(mockNavigate).toHaveBeenCalledWith('/video/video-3?source=search&q=twerking&sort=top&index=2');
+  });
+
+  it('retains a hidden video explicitly opened by its direct link', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['video-2']));
+    renderPage('/video/video-2');
+
+    expect(screen.getByTestId('video-card')).toHaveTextContent('video-2');
+  });
+
+  it('omits hidden neighbors from the context scrolling feed', async () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['video-2']));
+    renderPage('/video/video-1?source=search&q=twerking&sort=top&index=0');
+
+    await waitFor(() => expect(screen.getByText('video-3')).toBeInTheDocument());
+    expect(screen.queryByText('video-2')).not.toBeInTheDocument();
+    expect(screen.getByText('video-1')).toBeInTheDocument();
+  });
+
   it('fetches the next featured page at the boundary while preserving featured params', async () => {
     renderPage('/video/video-2?source=featured&featuredTabId=ft_1234abcd&index=1');
 

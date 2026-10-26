@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { VideoCard } from '@/components/VideoCard';
 import { buildVideoNavigationUrl, parseVideoNavigationContext, useVideoNavigation, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useVideoByIdFunnelcake } from '@/hooks/useVideoByIdFunnelcake';
+import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useBatchedVideoInteractions } from '@/hooks/useBatchedVideoInteractions';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
@@ -40,6 +41,7 @@ export function VideoPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useSubdomainNavigate();
+  const { shouldHideVideo } = useAgeRestrictedPreference();
 
   // Parse navigation context from URL params
   const context: VideoNavigationContext | null = useMemo(() => {
@@ -112,9 +114,12 @@ export function VideoPage() {
   const navigationIndexBase = videos === funnelcakeVideos ? funnelcakeWindowOffset : 0;
 
   const isUsingFunnelcakeVideos = videos === funnelcakeVideos;
-  const hasNextLoaded = currentIndex >= 0 && currentIndex < (videos?.length || 0) - 1;
+  const nextLoadedIndex = videos?.findIndex((video, index) => index > currentIndex && !shouldHideVideo(video)) ?? -1;
+  const previousLoadedIndex = videos?.reduce((previous, video, index) =>
+    index < currentIndex && !shouldHideVideo(video) ? index : previous, -1) ?? -1;
+  const hasNextLoaded = currentIndex >= 0 && nextLoadedIndex >= 0;
   const hasNext = hasNextLoaded || (isUsingFunnelcakeVideos && currentIndex >= 0 && funnelcakeHasNextPage);
-  const hasPrevious = currentIndex > 0;
+  const hasPrevious = previousLoadedIndex >= 0;
   const nextNavigationInFlightRef = useRef(false);
 
   // Build navigation URL
@@ -144,7 +149,8 @@ export function VideoPage() {
       }
     }
 
-    const nextVideo = nextVideos[currentIndex + 1];
+    const nextIndex = nextVideos.findIndex((video, index) => index > currentIndex && !shouldHideVideo(video));
+    const nextVideo = nextVideos[nextIndex];
     if (!nextVideo) {
       toast({
         title: t('videoPage.errorTitle'),
@@ -154,7 +160,7 @@ export function VideoPage() {
       return;
     }
 
-    navigate(buildNavigationUrl(nextVideo, getNavigationIndex(nextVideo, navigationIndexBase + currentIndex + 1)));
+    navigate(buildNavigationUrl(nextVideo, getNavigationIndex(nextVideo, navigationIndexBase + nextIndex)));
   }, [
     hasNext,
     videos,
@@ -169,13 +175,14 @@ export function VideoPage() {
     navigationIndexBase,
     toast,
     t,
+    shouldHideVideo,
   ]);
 
   const goToPrevious = useCallback(() => {
     if (!hasPrevious || !videos) return;
-    const prevVideo = videos[currentIndex - 1];
-    navigate(buildNavigationUrl(prevVideo, getNavigationIndex(prevVideo, navigationIndexBase + currentIndex - 1)));
-  }, [hasPrevious, videos, currentIndex, navigate, buildNavigationUrl, navigationIndexBase]);
+    const prevVideo = videos[previousLoadedIndex];
+    navigate(buildNavigationUrl(prevVideo, getNavigationIndex(prevVideo, navigationIndexBase + previousLoadedIndex)));
+  }, [hasPrevious, videos, previousLoadedIndex, navigate, buildNavigationUrl, navigationIndexBase]);
 
   // Get author data for profile context
   // Prefer cached author name from video/Funnelcake, then fetched profile, then generated fallback
@@ -201,8 +208,8 @@ export function VideoPage() {
 
   const visibleVideos = useMemo(() => {
     if (!videos) return [];
-    return videos.slice(0, maxRendered);
-  }, [videos, maxRendered]);
+    return videos.slice(0, maxRendered).filter((video, index) => index === currentIndex || !shouldHideVideo(video));
+  }, [videos, maxRendered, currentIndex, shouldHideVideo]);
 
   const hasMoreToShow = maxRendered < (videos?.length || 0);
   const hasMoreFeedVideos = hasMoreToShow || (isUsingFunnelcakeVideos && funnelcakeHasNextPage);
@@ -827,8 +834,8 @@ export function VideoPage() {
           }
           className="space-y-6 max-w-xl mx-auto"
         >
-          {visibleVideos.map((video, index) => {
-            const isCurrentVideo = index === currentIndex;
+          {visibleVideos.map((video) => {
+            const isCurrentVideo = video.id === videos?.[currentIndex]?.id;
             // Only render current video immediately, others wait until primary is loaded
             const shouldRender = isCurrentVideo || primaryVideoLoaded;
 

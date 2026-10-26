@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { useInfiniteSearchVideos } from '@/hooks/useInfiniteSearchVideos';
+import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
 import { useSearchUsers } from '@/hooks/useSearchUsers';
 import { useSearchHashtags, type HashtagResult } from '@/hooks/useSearchHashtags';
@@ -102,7 +103,8 @@ export function SearchPage() {
   });
 
   // Deduplicate videos by ID (React Strict Mode can cause duplicate fetches)
-  const videoResults = useMemo(() => {
+  const { shouldHideVideo } = useAgeRestrictedPreference();
+  const allVideoResults = useMemo(() => {
     const videos = videoData?.pages.flatMap(page => page.videos) ?? [];
     const seen = new Set<string>();
     return videos.filter(video => {
@@ -111,6 +113,8 @@ export function SearchPage() {
       return true;
     });
   }, [videoData]);
+  const videoResults = useMemo(() => allVideoResults.filter(video => !shouldHideVideo(video)), [allVideoResults, shouldHideVideo]);
+  const videoIndices = useMemo(() => new Map(allVideoResults.map((video, index) => [video.id, index])), [allVideoResults]);
 
   const {
     data: userResults = [],
@@ -621,11 +625,11 @@ export function SearchPage() {
                       </Button>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {videoResults.slice(0, 6).map((video, index) => (
+                      {videoResults.slice(0, 6).map((video) => (
                         <VideoCardWithMetrics
                           key={video.id}
                           video={video}
-                          index={index}
+                          index={videoIndices.get(video.id)!}
                           mode="thumbnail"
                           showComments={false}
                           onOpenComments={() => undefined}
@@ -719,11 +723,11 @@ export function SearchPage() {
                 }
               >
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {videoResults.map((video, index) => (
+                  {videoResults.map((video) => (
                     <VideoCardWithMetrics
                       key={video.id}
                       video={video}
-                      index={index}
+                      index={videoIndices.get(video.id)!}
                       mode="thumbnail"
                       showComments={false}
                       onOpenComments={() => undefined}

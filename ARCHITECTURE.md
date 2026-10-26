@@ -472,3 +472,9 @@ controls, feed restore button, and moderation settings share this local
 preference, including for signed-out viewers. Direct video links still use
 `useAdultVerification` and the protected-minor lock; hiding from feeds does
 not grant media access.
+
+Search results and confirmed-collaboration listings also apply the preference.
+`VideoPage` omits hidden neighboring videos from its context feed and skips
+them during next/previous navigation, preserving original source indices.
+The explicitly selected video remains visible even when hidden from browsing,
+so direct links still reach the age gate rather than becoming unavailable.
