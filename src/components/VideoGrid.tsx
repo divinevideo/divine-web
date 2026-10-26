@@ -13,6 +13,7 @@ import { SmartLink } from '@/components/SmartLink';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { checkMediaAuth, useAdultVerification } from '@/hooks/useAdultVerification';
+import { useAgeConfirmationFeedback } from '@/hooks/useAgeConfirmationFeedback';
 import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ interface VideoGridProps {
   navigationContext?: VideoNavigationContext;
   navigationIndices?: ReadonlyMap<string, number>;
   onLoadMore?: () => void;
+  isLoadingMore?: boolean;
 }
 
 interface VideoGridMediaProps {
@@ -143,12 +145,12 @@ function VideoGridMedia({
   );
 }
 
-export function VideoGrid({ videos, loading = false, className, navigationContext, navigationIndices, onLoadMore }: VideoGridProps) {
+export function VideoGrid({ videos, loading = false, className, navigationContext, navigationIndices, onLoadMore, isLoadingMore }: VideoGridProps) {
   const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { isVerified: isAdultVerified, confirmAdult, isLoading: isCheckingAge, isProtectedMinor } = useAdultVerification();
-  const [confirmationFailed, setConfirmationFailed] = useState(false);
-  const { markAgeRestricted, setHideAgeRestricted, shouldHideVideo } = useAgeRestrictedPreference();
+  const { confirmFor, failedFor } = useAgeConfirmationFeedback(confirmAdult, `${user?.pubkey ?? ''}:${isCheckingAge}:${isProtectedMinor}`);
+  const { markAgeRestricted, hideAgeRestricted, setHideAgeRestricted, shouldHideVideo } = useAgeRestrictedPreference();
   const { openLoginDialog } = useLoginDialog();
   const [hoveredVideo, setHoveredVideo] = useState<string | null>(null);
   const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(new Set());
@@ -163,11 +165,11 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
 
   // Keyboard activation for age-gated tiles only — unrestricted tiles are
   // real links, so Enter activation comes for free from the anchor element.
-  const handleGatedKeyDown = (event: React.KeyboardEvent) => {
+  const handleGatedKeyDown = (event: React.KeyboardEvent, videoId: string) => {
     if (event.target !== event.currentTarget) return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      handleAgeGateAction();
+      handleAgeGateAction(videoId);
     }
   };
 
@@ -177,7 +179,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
     if (urlToCheck) {
       const { authorized, status } = await checkMediaAuth(urlToCheck);
       if (!authorized && (status === 401 || status === 403)) {
-        markAgeRestricted(video.id);
+        markAgeRestricted(video);
         setDiscoveredAgeRestrictedVideos((prev) => new Set(prev).add(video.id));
         return;
       }
@@ -186,10 +188,10 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
     setFailedThumbnails((prev) => new Set(prev).add(video.id));
   };
 
-  const handleAgeGateAction = () => {
+  const handleAgeGateAction = (videoId: string) => {
     if (user) {
       if (isCheckingAge || isProtectedMinor) return;
-      setConfirmationFailed(confirmAdult() === false);
+      confirmFor(videoId);
       return;
     }
 
@@ -226,6 +228,11 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
   const visibleVideos = videos
     .map((video, index) => ({ video, index }))
     .filter(({ video }) => !shouldHideVideo(video));
+  const pagingControl = onLoadMore ? (
+    <Button type="button" variant="outline" disabled={isLoadingMore} aria-busy={isLoadingMore} onClick={onLoadMore}>
+      {isLoadingMore ? t('profilePage.loadingMore') : t('uiPagination.goToNext')}
+    </Button>
+  ) : null;
 
   if (loading) {
     return (
@@ -249,11 +256,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
       return (
         <div className={cn('col-span-full space-y-4', className)} data-testid="video-grid-empty">
           <AgeRestrictedPreferenceCard />
-          {onLoadMore && (
-            <Button type="button" variant="outline" onClick={onLoadMore}>
-              {t('uiPagination.goToNext')}
-            </Button>
-          )}
+          {pagingControl}
         </div>
       );
     }
@@ -297,11 +300,13 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
               {/* Video Thumbnail or Actual Video */}
               {isAgeGated ? (
                 <AgeRestrictedMediaPlaceholder
-                  actionLabel={user && isCheckingAge ? t('ageVerificationOverlay.checkingAgeStatus') : user ? 'Verify age to view' : 'Log in to view'}
+                  actionLabel={user && isCheckingAge ? t('ageVerificationOverlay.checkingAgeStatus') : user ? t('videoCard.verifyAgeToView') : t('videoCard.logInToView')}
                   actionDisabled={!!user && (isCheckingAge || isProtectedMinor)}
-                  actionMessage={user && isProtectedMinor ? t('ageVerificationOverlay.unavailableForAccount') : confirmationFailed ? t('ageVerificationOverlay.confirmationFailed') : undefined}
-                  onAction={handleAgeGateAction}
-                  onHide={() => setHideAgeRestricted(true)}
+                  actionMessage={user && isProtectedMinor ? t('ageVerificationOverlay.unavailableForAccount') : failedFor(video.id) ? t('ageVerificationOverlay.confirmationFailed') : undefined}
+                  actionMessageRole={failedFor(video.id) ? 'alert' : undefined}
+                  onAction={() => handleAgeGateAction(video.id)}
+                  onHide={() => setHideAgeRestricted(!hideAgeRestricted)}
+                  hideLabel={hideAgeRestricted ? t('moderationSettings.showAgeRestrictedVideos') : undefined}
                   title={video.title || video.content}
                 />
               ) : (
@@ -370,8 +375,8 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
             data-video-id={video.id}
             {...(isAgeGated
               ? {
-                  onClick: handleAgeGateAction,
-                  onKeyDown: handleGatedKeyDown,
+                  onClick: () => handleAgeGateAction(video.id),
+                  onKeyDown: (event: React.KeyboardEvent) => handleGatedKeyDown(event, video.id),
                   tabIndex: 0,
                 }
               : {})}
@@ -393,6 +398,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
           </Card>
         );
       })}
+      {pagingControl && <div className="col-span-full">{pagingControl}</div>}
     </div>
   );
 }

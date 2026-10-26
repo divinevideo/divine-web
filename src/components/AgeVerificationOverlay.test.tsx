@@ -13,10 +13,12 @@ vi.mock('@/contexts/LoginDialogContext', () => ({
 const confirmAdult = vi.fn();
 const isVerifiedRef = { current: false };
 const isLoadingRef = { current: false };
+const isProtectedRef = { current: false };
 vi.mock('@/hooks/useAdultVerification', () => ({
   useAdultVerification: () => ({
     get isVerified() { return isVerifiedRef.current; },
     get isLoading() { return isLoadingRef.current; },
+    get isProtectedMinor() { return isProtectedRef.current; },
     hasSigner: true,
     confirmAdult,
     revokeVerification: vi.fn(),
@@ -49,6 +51,7 @@ describe('AgeVerificationOverlay', () => {
     useCurrentUserMock.mockReset();
     isVerifiedRef.current = false;
     isLoadingRef.current = false;
+    isProtectedRef.current = false;
     confirmAdult.mockReturnValue(true);
   });
 
@@ -109,6 +112,24 @@ describe('AgeVerificationOverlay', () => {
     fireEvent.click(button);
     expect(confirmAdult).not.toHaveBeenCalled();
     expect(onVerified).not.toHaveBeenCalled();
+  });
+
+  it('disables protected-minor confirmation and explains the account restriction without an alert', () => {
+    isProtectedRef.current = true;
+    useCurrentUserMock.mockReturnValue({ user: { pubkey: 'pub' }, signer: {} });
+    render(<AgeVerificationOverlay onVerified={vi.fn()} />);
+    expect(screen.getByRole('button', { name: /18 or older/i })).toBeDisabled();
+    expect(screen.getByText(/aren't available for this account/i)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /18 or older/i }));
+    expect(confirmAdult).not.toHaveBeenCalled();
+  });
+
+  it('uses an action label rather than a contradictory pressed state for restoring videos', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    useCurrentUserMock.mockReturnValue({ user: null });
+    render(<AgeVerificationOverlay onVerified={vi.fn()} />);
+    expect(screen.getByRole('button', { name: /show age-restricted videos/i })).not.toHaveAttribute('aria-pressed');
   });
 
   it('allows another attempt when confirmation is refused', () => {

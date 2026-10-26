@@ -166,13 +166,36 @@ describe('VideoGrid age-restricted gating', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/couldn't confirm/i);
   });
 
+  it('keeps refusal feedback on the selected tile and clears it after an account change', () => {
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    mockUseAdultVerification.mockReturnValue({ isVerified: false, confirmAdult: vi.fn(() => false) });
+    const videos = [makeVideo({ id: 'one', ageRestricted: true }), makeVideo({ id: 'two', ageRestricted: true })];
+    const { rerender } = renderGrid(<VideoGrid videos={videos} />);
+    fireEvent.click(screen.getAllByRole('button', { name: /verify age to view/i })[0]);
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'b'.repeat(64) } });
+    rerender(<MemoryRouter><VideoGrid videos={videos} /></MemoryRouter>);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('shows in-flight paging feedback and refuses repeated next-page clicks', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    const onLoadMore = vi.fn();
+    renderGrid(<VideoGrid videos={[makeVideo({ ageRestricted: true })]} onLoadMore={onLoadMore} isLoadingMore />);
+    const button = screen.getByRole('button', { name: /loading more videos/i });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(onLoadMore).not.toHaveBeenCalled();
+  });
+
   it('disables protected-minor confirmation and guards tile activation too', () => {
     const confirmAdult = vi.fn();
     mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
     mockUseAdultVerification.mockReturnValue({ isVerified: false, isProtectedMinor: true, confirmAdult, getAuthHeader: vi.fn() });
     renderGrid(<VideoGrid videos={[makeVideo({ ageRestricted: true })]} />);
     expect(screen.getByRole('button', { name: /verify age to view/i })).toBeDisabled();
-    expect(screen.getByRole('alert')).toHaveTextContent(/aren't available/i);
+    expect(screen.getByText(/aren't available/i)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     fireEvent.keyDown(screen.getByTestId('video-grid-item'), { key: 'Enter' });
     expect(confirmAdult).not.toHaveBeenCalled();
   });
@@ -201,7 +224,7 @@ describe('VideoGrid age-restricted gating', () => {
       expect(screen.getByText('Log in to view')).toBeInTheDocument();
     });
 
-    expect(JSON.parse(localStorage.getItem('discovered-age-restricted-video-ids') ?? '[]')).toContain('unknown-restricted-video');
+    expect(JSON.parse(localStorage.getItem('discovered-age-restricted-video-ids') ?? '[]')).toContain(`${'f'.repeat(64)}:34236:vine-id-1`);
 
     expect(screen.getByText('Age-restricted')).toBeInTheDocument();
     expect(screen.queryByTestId('video-thumbnail-unknown-restricted-video')).not.toBeInTheDocument();

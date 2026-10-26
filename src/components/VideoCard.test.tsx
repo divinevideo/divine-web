@@ -621,6 +621,24 @@ describe('VideoCard', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/couldn't confirm/i);
   });
 
+  it('disables protected-minor cards and shows a noninterrupting account notice', () => {
+    authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    authMocks.useAdultVerification.mockReturnValue({ isVerified: false, isProtectedMinor: true, confirmAdult: authMocks.confirmAdult });
+    render(<VideoCard video={makeVideo({ ageRestricted: true })} mode="thumbnail" />);
+    expect(screen.getByRole('button', { name: /verify age to view/i })).toBeDisabled();
+    expect(screen.getByText(/aren't available/i)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /verify age to view/i }));
+    expect(authMocks.confirmAdult).not.toHaveBeenCalled();
+  });
+
+  it('offers a working restore action on a direct card when hiding is already enabled', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    render(<VideoCard video={makeVideo({ ageRestricted: true })} mode="thumbnail" />);
+    fireEvent.click(screen.getByRole('button', { name: /show age-restricted videos/i }));
+    expect(localStorage.getItem('hide-age-restricted-videos')).toBe('false');
+  });
+
   it('still renders the thumbnail player for unrestricted videos', () => {
     render(
       <VideoCard

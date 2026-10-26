@@ -462,7 +462,7 @@ export function SearchPage() {
     <div className="space-y-4">
       <AgeRestrictedPreferenceCard />
       {hasNextVideos && (
-        <Button type="button" variant="outline" disabled={isFetchingNextVideos} onClick={() => void fetchNextVideos()}>
+        <Button type="button" variant="outline" disabled={isFetchingNextVideos} onClick={() => void fetchNextVideos({ cancelRefetch: false })}>
           {t('uiPagination.goToNext')}
         </Button>
       )}
@@ -611,6 +611,12 @@ export function SearchPage() {
           )}
 
           {/* All results tab */}
+          {videoResults.length > 0 && hasNextVideos && (activeFilter === 'all' || activeFilter === 'videos') && (
+            <Button type="button" variant="outline" disabled={isFetchingNextVideos} aria-busy={isFetchingNextVideos}
+              onClick={() => void fetchNextVideos({ cancelRefetch: false })}>
+              {isFetchingNextVideos ? t('profilePage.loadingMore') : t('uiPagination.goToNext')}
+            </Button>
+          )}
           <TabsContent value="all" className="mt-0">
             {!searchQuery.trim() ? (
               <EmptySearchState />
@@ -623,7 +629,7 @@ export function SearchPage() {
             ) : (
               <div className="space-y-8">
                 {/* Videos section with infinite scroll */}
-                {videoResults.length > 0 && (
+                {(videoResults.length > 0 || allVideosHidden) && (
                   <section>
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -638,7 +644,7 @@ export function SearchPage() {
                         View all
                       </Button>
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {allVideosHidden ? hiddenVideoResults : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {videoResults.slice(0, 6).map((video, index) => (
                         <VideoCardWithMetrics
                           key={video.id}
@@ -652,7 +658,7 @@ export function SearchPage() {
                           navigationContext={searchNavigationContext}
                         />
                       ))}
-                    </div>
+                    </div>}
                   </section>
                 )}
 

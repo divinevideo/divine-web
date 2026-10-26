@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter, MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -63,7 +63,7 @@ vi.mock('@/components/ui/tabs', () => ({
   Tabs: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   TabsList: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   TabsTrigger: ({ children, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button>,
-  TabsContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  TabsContent: ({ children, value }: { children: ReactNode; value: string }) => <div data-testid={`tab-${value}`}>{children}</div>,
 }));
 
 vi.mock('@/components/ui/select', () => ({
@@ -510,6 +510,29 @@ describe('SearchPage', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /show age-restricted videos/i })[0]!);
 
     expect(screen.getAllByTestId('video-card-restricted').length).toBeGreaterThan(0);
+  });
+
+  it('can page a short partially hidden result set without requiring a scroll event', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    const fetchNextPage = vi.fn();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'hidden', ageRestricted: true }, { id: 'public', pubkey: 'a'.repeat(64) }] }] },
+      fetchNextPage, hasNextPage: true, isLoading: false, isFetchingNextPage: false, error: null, fetchedCount: 2,
+    });
+    renderPage(['/search?q=loops&filter=videos']);
+    fireEvent.click(screen.getAllByRole('button', { name: /go to next page/i })[0]);
+    expect(fetchNextPage).toHaveBeenCalledOnce();
+  });
+
+  it('explains fully hidden videos inside the All tab even when users also match', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'hidden', ageRestricted: true }] }] },
+      fetchNextPage: vi.fn(), hasNextPage: true, isLoading: false, error: null, fetchedCount: 1,
+    });
+    mockUseSearchUsers.mockReturnValue({ data: [{ pubkey: 'a'.repeat(64), name: 'Example' }], isLoading: false, error: null });
+    renderPage(['/search?q=loops']);
+    expect(within(screen.getByTestId('tab-all')).getByRole('button', { name: /show age-restricted videos/i })).toBeInTheDocument();
   });
 
   it('renders a play-all button for video search results and navigates with source context', async () => {

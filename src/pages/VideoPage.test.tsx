@@ -719,6 +719,14 @@ describe('VideoPage', () => {
     await waitFor(() => expect(screen.getByTestId('infinite-scroll')).toHaveAttribute('data-length', '24'));
   });
 
+  it('has an explicit paging action when a partially hidden window is too short to scroll', async () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(Array.from({ length: 9 }, (_, index) => `scroll-video-${index + 2}`)));
+    renderPage('/video/scroll-video-1?source=search&q=scroll-window&index=0');
+    fireEvent.click(screen.getByRole('button', { name: /go to next page/i }));
+    await waitFor(() => expect(screen.getByTestId('infinite-scroll')).toHaveAttribute('data-length', '24'));
+  });
+
   it('fetches the next Funnelcake page when the rendered window is exhausted', async () => {
     mockFetchNextFunnelcakePage.mockResolvedValueOnce([]);
 

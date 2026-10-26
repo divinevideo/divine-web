@@ -63,8 +63,8 @@ export function useAdultVerification(): AdultVerificationState {
   const minorLocked = minorStatus.state === 'protected';
   // Unknown only occurs for authenticated sessions (signed-out resolves to
   // not-protected), and the check was designed for #175 to fail closed on it.
-  // Unknown is also exposed through isLoading for consumers that can surface
-  // that state, but today's gate decisions still key off isVerified.
+  // Initial unresolved checks expose loading; a settled unknown is retryable
+  // but still fails closed through isVerified and confirmAdult.
   const minorUnknown = !minorStatus.isKnown;
 
   const isVerified = !minorLocked && !minorUnknown && storedIsVerified && !!signer;

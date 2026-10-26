@@ -54,7 +54,7 @@ export function useProtectedMinorStatus(): ProtectedMinorStatus {
   // queryFn never throws, so a transient failure resolves to an explicit unknown
   // state. staleTime 0 + refetch-on-focus keep the LIVE value fresh; the sticky
   // store below (not React Query) provides the fail-safe persistence.
-  const { data, isFetching } = useQuery({
+  const { data, isPending } = useQuery({
     queryKey: ['protected-minor', token],
     enabled: !!token,
     staleTime: 0,
@@ -91,5 +91,5 @@ export function useProtectedMinorStatus(): ProtectedMinorStatus {
     if (lastKnown === 'protected') return PROTECTED_STICKY;
     if (lastKnown === 'not_protected') return NOT_PROTECTED;
   }
-  return { ...UNKNOWN_PROTECTED_MINOR_STATUS, isChecking: isFetching };
+  return { ...UNKNOWN_PROTECTED_MINOR_STATUS, isChecking: isPending };
 }

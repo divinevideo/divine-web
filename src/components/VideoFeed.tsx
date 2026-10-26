@@ -99,6 +99,7 @@ export function VideoFeed({
     fetchNextPage,
     hasNextPage,
     isLoading,
+    isFetchingNextPage,
     error,
     refetch,
     fetchedCount,
@@ -145,11 +146,10 @@ export function VideoFeed({
   const navigationIndices = useMemo(() => new Map(allVideos.map((video, index) => [video.id, index])), [allVideos]);
 
   // Filter videos based on mute list and verification status
-  const filteredVideos = useMemo(() => {
+  const moderationVideos = useMemo(() => {
     if (!allVideos || allVideos.length === 0) return [];
 
     return allVideos.filter(video => {
-      if (shouldHideVideo(video)) return false;
       // Check moderation filters
       const moderationResult = checkContent({
         pubkey: video.pubkey,
@@ -173,7 +173,8 @@ export function VideoFeed({
 
       return true;
     });
-  }, [allVideos, checkContent, shouldHideVideo, verifiedOnly]);
+  }, [allVideos, checkContent, verifiedOnly]);
+  const filteredVideos = useMemo(() => moderationVideos.filter(video => !shouldHideVideo(video)), [moderationVideos, shouldHideVideo]);
 
   useEffect(() => {
     if (!isLoading && filteredVideos.length > 0) {
@@ -216,9 +217,9 @@ export function VideoFeed({
 
   // Collect all unique pubkeys for batched author fetching
   const authorPubkeys = useMemo(() => {
-    if (!filteredVideos || filteredVideos.length === 0) return [];
+    if (moderationVideos.length === 0) return [];
     const pubkeys = new Set<string>();
-    filteredVideos.forEach(video => {
+    moderationVideos.forEach(video => {
       pubkeys.add(video.pubkey);
       // Add all reposters' pubkeys
       if (video.reposts) {
@@ -226,7 +227,7 @@ export function VideoFeed({
       }
     });
     return Array.from(pubkeys);
-  }, [filteredVideos]);
+  }, [moderationVideos]);
 
   // Prefetch all authors in a single query
   useBatchedAuthors(authorPubkeys);
@@ -418,8 +419,8 @@ export function VideoFeed({
       >
         {showHiddenVideosControl}
         {hasNextPage && (
-          <Button type="button" variant="outline" onClick={() => void fetchNextPage()} className="mb-4">
-            {t('uiPagination.goToNext')}
+          <Button type="button" variant="outline" disabled={isFetchingNextPage} aria-busy={isFetchingNextPage} onClick={() => void fetchNextPage()} className="mb-4">
+            {isFetchingNextPage ? t('profilePage.loadingMore') : t('uiPagination.goToNext')}
           </Button>
         )}
         <Card className="border-dashed border-2 border-brand-light-green dark:border-brand-dark-green bg-brand-light-green dark:bg-brand-dark-green">

@@ -110,6 +110,7 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
   const {
     data: videosData,
     isLoading: videosLoading,
+    isFetchingNextPage,
     error: videosError,
     fetchNextPage,
     hasNextPage,
@@ -539,6 +540,7 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
               <VideoGrid
                 videos={videos || []}
                 onLoadMore={hasNextPage ? () => void fetchNextPage() : undefined}
+                isLoadingMore={isFetchingNextPage}
                 loading={videosLoading}
                 className="min-h-[200px]"
                 navigationContext={{

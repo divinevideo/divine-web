@@ -35,6 +35,47 @@ function getNavigationIndex(video: ParsedVideoData, fallbackIndex: number): numb
   return typeof navigationIndex === 'number' ? navigationIndex : fallbackIndex;
 }
 
+interface VideoPageCardActions {
+  handleLike: (video: ParsedVideoData) => Promise<unknown>;
+  handleUnlike: (id: string) => Promise<unknown>;
+  handleRepost: (video: ParsedVideoData) => Promise<unknown>;
+  handleUnrepost: (id: string) => Promise<unknown>;
+  handleOpenComments: (video: ParsedVideoData) => void;
+  handleCloseComments: () => void;
+}
+
+function VideoCardWithMetrics({ video, userInteractions, actions, showComments, navigationContext }: {
+  video: ParsedVideoData;
+  userInteractions?: UserInteractions;
+  actions: VideoPageCardActions;
+  showComments: boolean;
+  navigationContext: VideoNavigationContext | null;
+}) {
+  const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, { enabled: true });
+  const loopCount = video.isVineMigrated ? (video.loopCount ?? 0) : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
+  const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
+  const displayCount = getVisiblePlaybackCount({ isVineMigrated: video.isVineMigrated, loopCount, viewStartCount });
+  const videoForCard = useMemo(() => loopCount !== (video.loopCount ?? 0) ? { ...video, loopCount } : video, [loopCount, video]);
+  const handleVideoLike = async () => {
+    if (userInteractions?.hasLiked) {
+      if (userInteractions.likeEventId) await actions.handleUnlike(userInteractions.likeEventId);
+    } else await actions.handleLike(video);
+  };
+  const handleVideoRepost = async () => {
+    if (userInteractions?.hasReposted) {
+      if (userInteractions.repostEventId) await actions.handleUnrepost(userInteractions.repostEventId);
+    } else await actions.handleRepost(video);
+  };
+  return (
+    <VideoCard video={videoForCard} className="max-w-xl mx-auto" layout="vertical"
+      onLike={handleVideoLike} onRepost={handleVideoRepost}
+      onOpenComments={() => actions.handleOpenComments(video)} onCloseComments={actions.handleCloseComments}
+      isLiked={userInteractions?.hasLiked || false} isReposted={userInteractions?.hasReposted || false}
+      likeCount={video.likeCount ?? 0} repostCount={video.repostCount ?? 0} commentCount={video.commentCount ?? 0}
+      viewCount={displayCount} showComments={showComments} navigationContext={navigationContext || undefined} />
+  );
+}
+
 export function VideoPage() {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -42,6 +83,7 @@ export function VideoPage() {
   const [searchParams] = useSearchParams();
   const navigate = useSubdomainNavigate();
   const { shouldHideVideo } = useAgeRestrictedPreference();
+  const isVideoVisible = useCallback((video: ParsedVideoData) => video.id === id || video.vineId === id || !shouldHideVideo(video), [id, shouldHideVideo]);
 
   // Parse navigation context from URL params
   const context: VideoNavigationContext | null = useMemo(() => {
@@ -71,6 +113,7 @@ export function VideoPage() {
     sortMode: context?.sortMode,
     currentIndex: context?.currentIndex,
     enabled: !!id,
+    isVideoVisible,
   });
 
   const isFeaturedTabUnavailable = featuredNavigationState === 'tab-unavailable';
@@ -287,12 +330,12 @@ export function VideoPage() {
 
   // Batch fetch user interactions only for VISIBLE videos (not all)
   const videosForInteractions = useMemo(() => {
-    return visibleVideos.map(v => ({
+    return (videos?.slice(0, maxRendered) ?? []).map(v => ({
       id: v.id,
       pubkey: v.pubkey,
       vineId: v.vineId,
     }));
-  }, [visibleVideos]);
+  }, [videos, maxRendered]);
 
   // Social interaction hooks
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
@@ -556,72 +599,7 @@ export function VideoPage() {
     setShowCommentsForVideo(null);
   };
 
-  // Helper component to provide social metrics data for the video
-  // Uses pre-fetched batched interactions instead of individual queries per video
-  function VideoCardWithMetrics({ video, userInteractions }: { video: ParsedVideoData; userInteractions?: UserInteractions }) {
-    const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, {
-      enabled: true,
-    });
-    const loopCount = video.isVineMigrated
-      ? (video.loopCount ?? 0)
-      : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
-    const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
-    const displayCount = getVisiblePlaybackCount({
-      isVineMigrated: video.isVineMigrated,
-      loopCount,
-      viewStartCount,
-    });
-    const videoForCard = useMemo(
-      () => loopCount !== (video.loopCount ?? 0)
-        ? { ...video, loopCount }
-        : video,
-      [loopCount, video]
-    );
-
-    const handleVideoLike = async () => {
-      if (userInteractions?.hasLiked) {
-        // Unlike - delete the like event
-        if (userInteractions.likeEventId) {
-          await handleUnlike(userInteractions.likeEventId);
-        }
-      } else {
-        // Like the video
-        await handleLike(video);
-      }
-    };
-
-    const handleVideoRepost = async () => {
-      if (userInteractions?.hasReposted) {
-        // Un-repost - delete the repost event
-        if (userInteractions.repostEventId) {
-          await handleUnrepost(userInteractions.repostEventId);
-        }
-      } else {
-        // Repost the video
-        await handleRepost(video);
-      }
-    };
-
-    return (
-      <VideoCard
-        video={videoForCard}
-        className="max-w-xl mx-auto"
-        layout="vertical"
-        onLike={handleVideoLike}
-        onRepost={handleVideoRepost}
-        onOpenComments={() => handleOpenComments(video)}
-        onCloseComments={handleCloseComments}
-        isLiked={userInteractions?.hasLiked || false}
-        isReposted={userInteractions?.hasReposted || false}
-        likeCount={video.likeCount ?? 0}
-        repostCount={video.repostCount ?? 0}
-        commentCount={video.commentCount ?? 0}
-        viewCount={displayCount}
-        showComments={showCommentsForVideo === video.id}
-        navigationContext={effectiveNavigationContext || undefined}
-      />
-    );
-  }
+  const videoCardActions = { handleLike, handleUnlike, handleRepost, handleUnrepost, handleOpenComments, handleCloseComments };
 
   // Ref for scrolling to the initial video
   const initialVideoRef = useRef<HTMLDivElement>(null);
@@ -813,6 +791,13 @@ export function VideoPage() {
         )}
 
         {/* Scrollable video feed - progressive rendering */}
+        {hasMoreFeedVideos && (
+          <div className="mb-4 flex justify-center">
+            <Button type="button" variant="outline" disabled={isFetchingNextFunnelcakePage} onClick={() => void showMoreVideos()}>
+              {isFetchingNextFunnelcakePage ? t('videoPage.loadingMore') : t('uiPagination.goToNext')}
+            </Button>
+          </div>
+        )}
         <InfiniteScroll
           dataLength={scrollDataLength}
           next={showMoreVideos}
@@ -848,6 +833,9 @@ export function VideoPage() {
                 {shouldRender ? (
                   <VideoCardWithMetrics
                     video={video}
+                    actions={videoCardActions}
+                    showComments={showCommentsForVideo === video.id}
+                    navigationContext={effectiveNavigationContext}
                     userInteractions={batchedInteractions.get(video.id)}
                   />
                 ) : (
@@ -1003,6 +991,9 @@ export function VideoPage() {
         {currentVideo && (
           <VideoCardWithMetrics
             video={currentVideo}
+            actions={videoCardActions}
+            showComments={showCommentsForVideo === currentVideo.id}
+            navigationContext={effectiveNavigationContext}
             userInteractions={batchedInteractions.get(currentVideo.id)}
           />
         )}

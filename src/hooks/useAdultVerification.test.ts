@@ -139,6 +139,7 @@ describe('useAdultVerification', () => {
       act(() => { accepted = result.current.confirmAdult(); });
 
       expect(accepted).toBe(false);
+      expect(result.current.isProtectedMinor).toBe(true);
       expect(result.current.isVerified).toBe(false);
       expect(window.localStorage.getItem('adult-verification-confirmed')).toBeNull();
     });

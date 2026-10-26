@@ -7,8 +7,10 @@ interface AgeRestrictedMediaPlaceholderProps {
   actionLabel: string;
   onAction: () => void;
   onHide?: () => void;
+  hideLabel?: string;
   actionDisabled?: boolean;
   actionMessage?: string;
+  actionMessageRole?: 'alert' | 'status';
   title?: string;
   className?: string;
 }
@@ -17,8 +19,10 @@ export function AgeRestrictedMediaPlaceholder({
   actionLabel,
   onAction,
   onHide,
+  hideLabel,
   actionDisabled,
   actionMessage,
+  actionMessageRole,
   title,
   className,
 }: AgeRestrictedMediaPlaceholderProps) {
@@ -57,7 +61,7 @@ export function AgeRestrictedMediaPlaceholder({
       >
         {actionLabel}
       </Button>
-      {actionMessage && <p role="alert" className="max-w-xs text-sm text-white/85">{actionMessage}</p>}
+      {actionMessage && <p role={actionMessageRole} className="max-w-xs text-sm text-white/85">{actionMessage}</p>}
       {onHide && (
         <Button
           type="button"
@@ -69,7 +73,7 @@ export function AgeRestrictedMediaPlaceholder({
             onHide();
           }}
         >
-          {t('ageVerificationOverlay.hideVideos')}
+          {hideLabel ?? t('ageVerificationOverlay.hideVideos')}
         </Button>
       )}
     </div>

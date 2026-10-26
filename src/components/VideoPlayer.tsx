@@ -16,7 +16,7 @@ import type { ParsedVideoData } from '@/types/video';
 import type { VttCue } from '@/lib/vttParser';
 import { BlurhashPlaceholder, isValidBlurhash } from '@/components/BlurhashImage';
 import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
-import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
+import { markAgeRestricted } from '@/hooks/useAgeRestrictedPreference';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 import { SubtitleOverlay } from '@/components/SubtitleOverlay';
 import { createAuthLoader } from '@/lib/hlsAuthLoader';
@@ -136,10 +136,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     // Adult verification hook
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
-    const { markAgeRestricted } = useAgeRestrictedPreference();
     useEffect(() => {
-      if (requiresAuth || discoveredAgeRestricted) markAgeRestricted(videoId);
-    }, [requiresAuth, discoveredAgeRestricted, markAgeRestricted, videoId]);
+      if (requiresAuth || discoveredAgeRestricted) markAgeRestricted(videoData ?? videoId);
+    }, [requiresAuth, discoveredAgeRestricted, videoData, videoId]);
     // Keep the latest auth-header generator in a ref. getAuthHeader is keyed on the
     // signer, so a late-resolving signer (e.g. a browser extension that injects after
     // load) hands us a new reference. Reading it through a ref keeps it out of the load

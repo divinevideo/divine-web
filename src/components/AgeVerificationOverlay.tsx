@@ -1,11 +1,12 @@
 // ABOUTME: Overlay component shown when video requires age verification
 // ABOUTME: Displays a confirmation button that unlocks age-restricted content
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Warning as AlertTriangle, ShieldCheck } from '@phosphor-icons/react';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
+import { useAgeConfirmationFeedback } from '@/hooks/useAgeConfirmationFeedback';
 import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
@@ -29,15 +30,15 @@ export function AgeVerificationOverlay({
   const { hideAgeRestricted, setHideAgeRestricted } = useAgeRestrictedPreference();
   const { user } = useCurrentUser();
   const { openLoginDialog } = useLoginDialog();
-  const [confirmationFailed, setConfirmationFailed] = useState(false);
+  const { confirmFor, failedFor } = useAgeConfirmationFeedback(confirmAdult, `${user?.pubkey ?? ''}:${isLoading}:${isProtectedMinor}`);
+  const confirmationFailed = failedFor('overlay');
   const hasCalledOnVerified = useRef(false);
 
   const handleConfirm = () => {
-    setConfirmationFailed(!confirmAdult());
+    confirmFor('overlay');
   };
 
-  // If already verified on mount, call onVerified once
-  // This handles the case where user is already verified from localStorage
+  // Advance once when verification becomes effective, including after confirmation.
   useEffect(() => {
     if (isVerified && !hasCalledOnVerified.current) {
       hasCalledOnVerified.current = true;
@@ -124,7 +125,6 @@ export function AgeVerificationOverlay({
         type="button"
         variant="ghost"
         onClick={() => setHideAgeRestricted(!hideAgeRestricted)}
-        aria-pressed={hideAgeRestricted}
         className="relative z-10 text-white hover:bg-white/10 hover:text-white"
       >
         {hideAgeRestricted

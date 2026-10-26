@@ -28,7 +28,8 @@ import { useIsOwnVideo } from '@/hooks/useIsOwnVideo';
 import { useIsVideoPinned, usePinVideo, useUnpinVideo } from '@/hooks/usePinnedVideos';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
-import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
+import { useAgeConfirmationFeedback } from '@/hooks/useAgeConfirmationFeedback';
+import { useAgeRestrictedHideChoice } from '@/hooks/useAgeRestrictedHideChoice';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { enhanceAuthorData } from '@/lib/generateProfile';
@@ -270,8 +271,9 @@ export function VideoCard({
   const { mutateAsync: pinVideo } = usePinVideo();
   const { mutateAsync: unpinVideo } = useUnpinVideo();
   const { isVerified: isAdultVerified, confirmAdult, isLoading: isCheckingAge, isProtectedMinor } = useAdultVerification();
-  const [confirmationFailed, setConfirmationFailed] = useState(false);
-  const { setHideAgeRestricted } = useAgeRestrictedPreference();
+  const { confirmFor, failedFor } = useAgeConfirmationFeedback(confirmAdult, `${currentUser?.pubkey ?? ''}:${isCheckingAge}:${isProtectedMinor}`);
+  const confirmationFailed = failedFor(video.id);
+  const { hideAgeRestricted, setHideAgeRestricted } = useAgeRestrictedHideChoice();
   const { openLoginDialog } = useLoginDialog();
 
   // Get reactions data for the modal
@@ -339,7 +341,7 @@ export function VideoCard({
   const handleAgeGateAction = () => {
     if (currentUser) {
       if (isCheckingAge || isProtectedMinor) return;
-      setConfirmationFailed(confirmAdult() === false);
+      confirmFor(video.id);
       return;
     }
 
@@ -608,12 +610,15 @@ export function VideoCard({
                   actionLabel={currentUser && isCheckingAge ? t('ageVerificationOverlay.checkingAgeStatus') : currentUser ? t('videoCard.verifyAgeToView') : t('videoCard.logInToView')}
                   actionDisabled={!!currentUser && (isCheckingAge || isProtectedMinor)}
                   actionMessage={currentUser && isProtectedMinor ? t('ageVerificationOverlay.unavailableForAccount') : confirmationFailed ? t('ageVerificationOverlay.confirmationFailed') : undefined}
+                  actionMessageRole={confirmationFailed ? 'alert' : undefined}
                   onAction={handleAgeGateAction}
-                  onHide={() => setHideAgeRestricted(true)}
+                  onHide={() => setHideAgeRestricted(!hideAgeRestricted)}
+                  hideLabel={hideAgeRestricted ? t('moderationSettings.showAgeRestrictedVideos') : undefined}
                   title={video.title || video.content}
                 />
               ) : !isPlaying ? (
                 <ThumbnailPlayer
+                  videoData={video}
                   videoId={video.id}
                   src={video.videoUrl}
                   thumbnailUrl={video.thumbnailUrl}
@@ -655,6 +660,7 @@ export function VideoCard({
                   {mode === 'thumbnail' && showThumbnailDuringStartup && (
                     <div className="absolute inset-0 z-20 pointer-events-none">
                       <ThumbnailPlayer
+                        videoData={video}
                         videoId={video.id}
                         src={video.videoUrl}
                         thumbnailUrl={video.thumbnailUrl}

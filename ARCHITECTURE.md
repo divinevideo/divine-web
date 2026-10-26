@@ -464,7 +464,8 @@ never creates an identity proof or changes the linked-account proof workflow.
 ## Age-Restricted Feed Preference
 
 `useAgeRestrictedPreference` stores a browser-wide hide choice and up to 500
-video IDs whose media returned 401 or 403. `VideoFeed` filters both API-marked
+video identities whose media returned 401 or 403 (addressable pubkey/kind/d-tag
+when available, with legacy event-ID fallback). `VideoFeed` filters both API-marked
 and locally discovered age-restricted videos across feed types. Standalone
 `VideoGrid` views apply the same preference for profiles, lists, and pinned
 videos while retaining original navigation indices. The age-gate
@@ -478,14 +479,23 @@ Search results and confirmed-collaboration listings also apply the preference.
 them during next/previous navigation, preserving original source indices.
 The explicitly selected video remains visible even when hidden from browsing,
 so direct links still reach the age gate rather than becoming unavailable.
-Scroll progress counts the unfiltered rendered window so hidden-only windows
-cannot stall pagination. All-hidden search results and collaboration listings
+Scroll progress counts the unfiltered rendered window to re-arm scroll pagination.
+Explicit next-page actions also cover short partially hidden context/search/profile
+windows that cannot produce a scroll event. The existing bounded navigation paging
+loop skips hidden-only pages while preserving the selected target and raw indices.
+All-hidden search results and collaboration listings
 show the reversible viewing preference; search also offers the next result page.
 
 `VideoPlayer` keeps its age overlay mounted until the verified-state callback
 clears the auth retry gate. Parent and overlay subscribe to the same verification
 change, so unmounting solely on the parent's verified flag would skip that callback.
 Card and grid placeholders show account-check/refusal states without granting access.
+Context cards have module-stable component identity, so hosted-account checks and
+preference events do not remount the playing card. Account status observes initial
+pending state, not background fetch transitions; requests and response parsing have
+an eight-second deadline that aborts and returns fail-closed unknown. Transient
+refusal feedback belongs to the attempted video/current account and eligibility
+callback; permanent protected-minor notices are noninterrupting text.
 
 Editable-list counts and item controls use the same visible subset, and pinned
 sections align their grids and unpin controls before hiding a fully hidden section.
@@ -494,9 +504,19 @@ search result-count analytics count raw deduped matches rather than local hiding
 An all-hidden feed page has an explicit next-page action without changing the hide choice.
 Standalone grids show the reversible preference rather than claiming the list is empty;
 the default profile grid supplies an explicit next-page callback for hidden-only pages.
+Paging actions expose in-flight state and do not cancel an existing page request.
+Player/thumbnail discovery writers do not subscribe to discovery state; readers
+ignore discoveries while hiding is off, with a stable false filter predicate.
+Author/interaction batch inputs do not change merely because local hiding changes.
 
 The browser's discovered-ID cache deliberately uses the gate's existing 401/403
 classification and can therefore also remember a non-age authorization denial.
 It is bounded to 500 entries, oldest-first, and does not clear on adult verification:
 verification grants eligibility, not consent to undo a viewer's hide preference.
 Showing age-restricted videos reverses filtering independently of this cache.
+Raw WebSocket events may lack server moderation labels; this preference does not
+promise automatic moderation-API enrichment for every relay/list/pinned row. Such
+unlabelled videos become known through media discovery, including addressable
+republishes once their logical identity has been recorded. The setting is view-only
+and browser-wide, including one's own content; it never removes list membership or
+publishing/edit permissions, and can be reversed or bypassed by a gated direct link.

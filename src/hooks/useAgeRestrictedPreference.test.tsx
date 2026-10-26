@@ -59,4 +59,24 @@ describe('useAgeRestrictedPreference', () => {
     expect(first.result.current.shouldHideVideo({ id: 'video-a' })).toBe(true);
     expect(first.result.current.shouldHideVideo({ id: 'video-b' })).toBe(true);
   });
+
+  it('remembers an addressable video across republished event IDs', () => {
+    const { result } = renderHook(() => useAgeRestrictedPreference());
+    const original = { id: 'old-event', pubkey: 'a'.repeat(64), kind: 34236, vineId: 'stable-tag' };
+    act(() => {
+      result.current.markAgeRestricted(original);
+      result.current.setHideAgeRestricted(true);
+    });
+    expect(result.current.shouldHideVideo({ ...original, id: 'replacement-event' })).toBe(true);
+  });
+
+  it('does not subscribe readers to discoveries or change their predicate while hiding is off', () => {
+    const render = vi.fn();
+    const { result } = renderHook(() => { render(); return useAgeRestrictedPreference(); });
+    const predicate = result.current.shouldHideVideo;
+    const count = render.mock.calls.length;
+    act(() => result.current.markAgeRestricted('new-discovery'));
+    expect(render).toHaveBeenCalledTimes(count);
+    expect(result.current.shouldHideVideo).toBe(predicate);
+  });
 });

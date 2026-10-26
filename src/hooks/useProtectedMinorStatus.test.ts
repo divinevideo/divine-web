@@ -4,7 +4,7 @@ import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useProtectedMinorStatus } from './useProtectedMinorStatus';
 
@@ -68,6 +68,7 @@ describe('useProtectedMinorStatus', () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     focusManager.setFocused(undefined); // back to default focus tracking
+    vi.useRealTimers();
   });
 
   it('is not protected and does not fetch when signed out', () => {
@@ -82,6 +83,31 @@ describe('useProtectedMinorStatus', () => {
     expect(result.current.state).toBe('not_protected');
     expect(result.current.isKnown).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not rerender settled observers for background fetching transitions', async () => {
+    vi.useFakeTimers();
+    mockUseDivineSession.mockReturnValue({ session: { token: 'test-session' } });
+    const response = { ok: true, json: async () => ({ verified_minor: false }) };
+    let finishBackground: (value: typeof response) => void = () => {};
+    const fetchSpy = vi.fn().mockResolvedValueOnce(response).mockImplementationOnce(() =>
+      new Promise(resolve => { finishBackground = resolve; }));
+    vi.stubGlobal('fetch', fetchSpy);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => createElement(QueryClientProvider, { client }, children);
+    const renders = vi.fn();
+    const { result } = renderHook(() => { renders(); return useProtectedMinorStatus(); }, { wrapper });
+    await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+    expect(result.current.state).toBe('not_protected');
+    const count = renders.mock.calls.length;
+    let pending: Promise<void>;
+    act(() => { pending = client.refetchQueries({ queryKey: ['protected-minor'] }); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(renders).toHaveBeenCalledTimes(count);
+    await act(async () => { finishBackground(response); await pending!; await vi.advanceTimersByTimeAsync(1); });
+    expect(renders).toHaveBeenCalledTimes(count);
+    client.clear();
   });
 
   it('is protected when an authenticated session reports verified_minor', async () => {
