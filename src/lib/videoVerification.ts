@@ -377,7 +377,9 @@ export async function fetchVideoModerationStatus(
     ? AbortSignal.any([signal, AbortSignal.timeout(API_CONFIG.moderationService.timeout)])
     : AbortSignal.timeout(API_CONFIG.moderationService.timeout);
 
-  const url = `${API_CONFIG.moderationService.baseUrl}${API_CONFIG.moderationService.endpoints.checkResult.replace('{sha256}', normalized)}`;
+  const url = API_CONFIG.moderationService.baseUrl
+    ? `${API_CONFIG.moderationService.baseUrl}${API_CONFIG.moderationService.endpoints.checkResult.replace('{sha256}', normalized)}`
+    : `https://moderation-api.divine.video/check-result/${normalized}`;
 
   try {
     const response = await fetch(url, { signal: controllerSignal });
