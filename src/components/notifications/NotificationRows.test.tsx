@@ -256,19 +256,25 @@ describe('VideoNotificationRow', () => {
       onIntersect = callback;
       return { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
     });
+    // Preview data can already be cached by another row for the same video;
+    // an off-screen row must still not mount a video element.
+    mockUseNotificationVideoPreview.mockReturnValue({ data: {
+      videoUrl: 'https://media.divine.video/loop.mp4', ageRestricted: false,
+    } });
     const notification = buildVideoNotification({
       videoThumbnailUrl: undefined,
       videoUrl: 'https://media.divine.video/loop.mp4',
     });
-    const { container, rerender } = render(<VideoNotificationRow notification={notification} />);
+    const { container } = render(<VideoNotificationRow notification={notification} />);
 
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith(
+      'event-abc123', false, 'https://media.divine.video/loop.mp4',
+    );
     expect(container.querySelector('video')).not.toBeInTheDocument();
     act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
-    expect(container.querySelector('video')).not.toBeInTheDocument();
-    mockUseNotificationVideoPreview.mockReturnValue({ data: {
-      videoUrl: 'https://media.divine.video/loop.mp4', ageRestricted: false,
-    } });
-    rerender(<VideoNotificationRow notification={notification} />);
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith(
+      'event-abc123', true, 'https://media.divine.video/loop.mp4',
+    );
     const video = container.querySelector('video');
     expect(video).toHaveAttribute('src', 'https://media.divine.video/loop.mp4#t=0.1');
     expect(video).toHaveAttribute('preload', 'metadata');
