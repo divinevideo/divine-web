@@ -481,8 +481,9 @@ The explicitly selected video remains visible even when hidden from browsing,
 so direct links still reach the age gate rather than becoming unavailable.
 Scroll progress counts the unfiltered rendered window to re-arm scroll pagination.
 Explicit next-page actions also cover short partially hidden context/search/profile
-windows that cannot produce a scroll event, only when hiding removed rows; they do
-not change default no-hiding controls. Recovery actions follow their list. Search's
+windows that cannot produce a scroll event, only when hiding removed rows from a
+nonempty window. Empty-feed recovery also remains available for other filtered or
+empty pages. Recovery actions follow their list. Search's
 All-tab recovery stops once its six displayed video slots are filled. The existing bounded navigation paging
 loop skips hidden-only pages while preserving the selected target and raw indices.
 All-hidden search results and collaboration listings
@@ -506,7 +507,9 @@ search result-count analytics count raw deduped matches rather than local hiding
 An all-hidden feed page has an explicit next-page action without changing the hide choice.
 Standalone grids show the reversible preference rather than claiming the list is empty;
 the default profile grid supplies an explicit next-page callback for hidden-only pages.
-Paging actions expose in-flight state and do not cancel an existing page request.
+Paging actions expose in-flight state. The provider skips only while a forward
+page is already loading; a scroll during a background refresh still starts the
+next page normally, so unchanged refresh counts cannot leave the trigger disarmed.
 Player/thumbnail discovery writers do not subscribe to discovery state; readers
 ignore discoveries while hiding is off, with a stable false filter predicate.
 Author/interaction batch inputs do not change merely because local hiding changes.
