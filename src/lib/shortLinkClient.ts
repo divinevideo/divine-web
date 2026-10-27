@@ -34,7 +34,7 @@ async function readMapping(response: Response, target: string): Promise<string> 
       if (length > 4096) throw new Error('short_link_too_large');
       chunks.push(value);
     }
-  } finally { void reader.cancel(); reader.releaseLock(); }
+  } finally { await reader.cancel().catch(() => undefined); reader.releaseLock(); }
   const bytes = new Uint8Array(length);
   let offset = 0;
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }

@@ -38,7 +38,7 @@ describe('ShortLinkClient', () => {
   });
 
   it('falls back on quota, malformed, mismatched, oversized and offline responses without caching failures', async () => {
-    for (const response of [() => new Response('{}', { status: 401 }), () => new Response('{}', { status: 429 }), () => new Response('{}', { status: 503 }), () => new Response('', { status: 302 }), () => mapping('https://divine.video/video/other'), () => new Response('{'), () => new Response(' '.repeat(4097)), () => Promise.reject(new Error('offline'))]) {
+    for (const response of [() => new Response('{}', { status: 401 }), () => new Response('{}', { status: 429 }), () => new Response('{}', { status: 503 }), () => new Response('', { status: 302 }), () => mapping('https://divine.video/video/other'), () => new Response('{'), () => new Response(' '.repeat(4097)), () => Promise.reject(new Error('offline')), () => new Response(new ReadableStream({ start(controller) { controller.error(new Error('body-stream-failed')); } }))]) {
       const fetcher = vi.fn().mockImplementationOnce(response).mockImplementationOnce(async () => mapping());
       const client = new ShortLinkClient({ enabled: true, authorize: async () => 'Nostr synthetic', fetcher });
       expect(await client.prepare(target)).toBe(target);
