@@ -50,6 +50,8 @@ export interface VideoNotification extends BaseGroupedNotification {
   videoEventId: string;
   videoTitle?: string;
   videoThumbnailUrl?: string;
+  videoUrl?: string;
+  videoAgeRestricted?: boolean;
   actors: ActorInfo[];
   totalCount: number;
   commentText?: string;
