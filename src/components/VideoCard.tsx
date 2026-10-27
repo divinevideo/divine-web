@@ -43,7 +43,7 @@ import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
-import { useShare } from '@/hooks/useShare';
+import { useShortLinkShare } from '@/hooks/useShortLinkShare';
 import { getVideoShareData } from '@/lib/shareUtils';
 import { SmartLink } from '@/components/SmartLink';
 import { MuteType } from '@/types/moderation';
@@ -251,7 +251,6 @@ export function VideoCard({
   const effectiveLayout = layout ?? 'vertical';
   const isHorizontal = effectiveLayout === 'horizontal';
   const { toast } = useToast();
-  const { share } = useShare();
   const muteUser = useMuteItem();
   const { activeVideoId, setActiveVideo, globalMuted, setGlobalMuted } = useVideoPlayback();
   const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
@@ -262,6 +261,7 @@ export function VideoCard({
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const isOwnVideo = useIsOwnVideo(video);
   const { user: currentUser } = useCurrentUser();
+  const { share, prepare } = useShortLinkShare(currentUser?.signer);
   const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
   const isPinned = useIsVideoPinned(coordinate);
   const { mutateAsync: pinVideo } = usePinVideo();
@@ -957,6 +957,8 @@ export function VideoCard({
               "gap-2",
               !isHorizontal && "px-2"
             )}
+            onPointerDown={(event) => { if (event.button === 0) void prepare(getVideoShareData(video).url); }}
+            onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') void prepare(getVideoShareData(video).url); }}
             onClick={handleShare}
             aria-label={t('videoCard.ariaShare')}
           >
