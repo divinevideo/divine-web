@@ -530,7 +530,7 @@ publishing/edit permissions, and can be reversed or bypassed by a gated direct l
 ## External short links
 
 Video share controls call useShortLinkShare with the current signer. The public
-VITE_SHORT_LINKS_ENABLED build switch defaults off. Explicit pointer/key presses
+VITE_SHORT_LINKS_ENABLED build switch defaults on; set it to false to disable sending. Explicit pointer/key presses
 on the share control prepare a mapping through the existing NIP-98 utility and
 https://gateway.divine.video/api/links. Rendering or scrolling a feed never
 creates mappings. Lists and other unsupported targets keep their full URLs.
@@ -544,5 +544,4 @@ browser. Account changes clear pending work and cached mappings.
 The final share click calls navigator.share through useShare synchronously with
 a cached mapping or the full URL. It never awaits preparation; a first share may
 therefore use the full URL. Clipboard fallback and cancellation behavior remain
-owned by useShare. Activation follows the cross-repository native compatibility,
-backup and canary gates; this code does not publish Apple association changes.
+owned by useShare. Public redirects remain available when sending is disabled.

@@ -29,6 +29,17 @@ describe('useShortLinkShare', () => {
     expect(authorize).toHaveBeenCalledWith(signer, 'https://gateway.divine.video/api/links', 'POST', JSON.stringify({ url: target }));
   });
 
+  it('prepares a short URL for a signed-in user without an explicit flag', async () => {
+    vi.stubEnv('VITE_SHORT_LINKS_ENABLED', undefined);
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ code: 'Abc12345', short_url: 'https://divine.video/l/Abc12345', url: target }), { status: 201 }));
+    vi.stubGlobal('fetch', fetcher);
+    const { result } = renderHook(() => useShortLinkShare(signer));
+    await act(async () => { await result.current.prepare(target); });
+    await result.current.share({ url: target });
+    expect(share).toHaveBeenLastCalledWith({ url: 'https://divine.video/l/Abc12345' });
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+
   it('keeps the full URL and makes no request for signed-out or disabled sharing', async () => {
     const fetcher = vi.fn(); vi.stubGlobal('fetch', fetcher);
     const { result, rerender } = renderHook(({ current }) => useShortLinkShare(current), { initialProps: { current: undefined as NostrSigner | undefined } });

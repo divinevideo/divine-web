@@ -7,7 +7,7 @@ import { ShortLinkClient } from '@/lib/shortLinkClient';
 
 export function useShortLinkShare(signer?: NostrSigner) {
   const { share } = useShare();
-  const enabled = import.meta.env.VITE_SHORT_LINKS_ENABLED === 'true' && !!signer;
+  const enabled = import.meta.env.VITE_SHORT_LINKS_ENABLED !== 'false' && !!signer;
   const client = useMemo(() => new ShortLinkClient({
     enabled,
     authorize: (endpoint, body) => signer
