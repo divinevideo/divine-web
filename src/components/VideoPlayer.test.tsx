@@ -529,6 +529,8 @@ describe('VideoPlayer', () => {
         expect(screen.getByText(/age-restricted content/i)).toBeInTheDocument();
       });
 
+      expect(JSON.parse(localStorage.getItem('discovered-age-restricted-video-ids') ?? '[]')).toContain('unknown-age-restricted');
+
       expect(screen.queryByText('Failed to load video')).not.toBeInTheDocument();
     });
 

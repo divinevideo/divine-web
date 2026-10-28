@@ -525,6 +525,10 @@
     "close": "关闭"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "检查年龄状况...",
+    "unavailableForAccount": "此帐户无法播放有年龄限制的视频。",
+    "confirmationFailed": "我们目前无法确认您的选择。稍后再试。",
+    "hideVideos": "不要给我看这些视频",
     "restrictedHeading": "年龄限制内容",
     "restrictedBody": "该内容可能不适合所有观众。",
     "verifying": "验证中…",
@@ -542,6 +546,10 @@
     "awarded": "获得于"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "有年龄限制的视频",
+    "ageRestrictedPreferenceDescription": "选择是否在此浏览器的供稿中显示有年龄限制的视频。直接链接仍然需要年龄确认。",
+    "showAgeRestrictedVideos": "显示有年龄限制的视频",
+    "hideAgeRestrictedVideos": "隐藏有年龄限制的视频",
     "unmute": "取消屏蔽",
     "heading": "内容管理设置",
     "subheading": "控制你看到的内容，并举报违规",

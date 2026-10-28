@@ -13,6 +13,7 @@ import { useVideoProvider } from '@/hooks/useVideoProvider';
 import { FEED_PAGE_SIZE } from '@/config/feed';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import { useContentModeration } from '@/hooks/useModeration';
+import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { useFeedPerformanceInstrumentation } from '@/hooks/useFeedPerformanceInstrumentation';
 import { useProofModeEnrichment } from '@/hooks/useProofModeEnrichment';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
@@ -88,6 +89,7 @@ export function VideoFeed({
   const featuredImpressionSentRef = useRef<string | null>(null);
 
   const { checkContent } = useContentModeration();
+  const { hideAgeRestricted, setHideAgeRestricted, shouldHideVideo } = useAgeRestrictedPreference();
   const navigate = useSubdomainNavigate();
   const { enterFullscreen } = useFullscreenFeed();
 
@@ -97,6 +99,7 @@ export function VideoFeed({
     fetchNextPage,
     hasNextPage,
     isLoading,
+    isFetchingNextPage,
     error,
     refetch,
     fetchedCount,
@@ -140,9 +143,10 @@ export function VideoFeed({
   // Enrich Funnelcake feed videos with ProofMode data via WebSocket
   // Feed videos from REST API don't have event tags, so proofMode is always undefined
   const allVideos = useProofModeEnrichment(dedupedVideos);
+  const navigationIndices = useMemo(() => new Map(allVideos.map((video, index) => [video.id, index])), [allVideos]);
 
   // Filter videos based on mute list and verification status
-  const filteredVideos = useMemo(() => {
+  const moderationVideos = useMemo(() => {
     if (!allVideos || allVideos.length === 0) return [];
 
     return allVideos.filter(video => {
@@ -170,6 +174,7 @@ export function VideoFeed({
       return true;
     });
   }, [allVideos, checkContent, verifiedOnly]);
+  const filteredVideos = useMemo(() => moderationVideos.filter(video => !shouldHideVideo(video)), [moderationVideos, shouldHideVideo]);
 
   useEffect(() => {
     if (!isLoading && filteredVideos.length > 0) {
@@ -212,9 +217,9 @@ export function VideoFeed({
 
   // Collect all unique pubkeys for batched author fetching
   const authorPubkeys = useMemo(() => {
-    if (!filteredVideos || filteredVideos.length === 0) return [];
+    if (moderationVideos.length === 0) return [];
     const pubkeys = new Set<string>();
-    filteredVideos.forEach(video => {
+    moderationVideos.forEach(video => {
       pubkeys.add(video.pubkey);
       // Add all reposters' pubkeys
       if (video.reposts) {
@@ -222,7 +227,7 @@ export function VideoFeed({
       }
     });
     return Array.from(pubkeys);
-  }, [filteredVideos]);
+  }, [moderationVideos]);
 
   // Prefetch all authors in a single query
   useBatchedAuthors(authorPubkeys);
@@ -286,6 +291,22 @@ export function VideoFeed({
         {t('common.playAll')}
       </Button>
     </div>
+  ) : null;
+
+  const showHiddenVideosControl = hideAgeRestricted ? (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => setHideAgeRestricted(false)}
+      className="mb-4"
+    >
+      {t('moderationSettings.showAgeRestrictedVideos')}
+    </Button>
+  ) : null;
+  const recoveryPagingControl = hasNextPage && filteredVideos.length > 0 && filteredVideos.length < moderationVideos.length ? (
+    <Button type="button" variant="outline" disabled={isFetchingNextPage} aria-busy={isFetchingNextPage} onClick={() => void fetchNextPage()} className="mt-4">
+      {isFetchingNextPage ? t('profilePage.loadingMore') : t('uiPagination.goToNext')}
+    </Button>
   ) : null;
 
   // Redirect empty home feed to discovery (must be before ALL early returns)
@@ -401,6 +422,12 @@ export function VideoFeed({
         data-hashtag-testid={hashtagTestId}
         data-profile-testid={profileTestId}
       >
+        {showHiddenVideosControl}
+        {hasNextPage && (
+          <Button type="button" variant="outline" disabled={isFetchingNextPage} aria-busy={isFetchingNextPage} onClick={() => void fetchNextPage()} className="mb-4">
+            {isFetchingNextPage ? t('profilePage.loadingMore') : t('uiPagination.goToNext')}
+          </Button>
+        )}
         <Card className="border-dashed border-2 border-brand-light-green dark:border-brand-dark-green bg-brand-light-green dark:bg-brand-dark-green">
           <CardContent className="py-16 px-8 text-center">
             <div className="max-w-md mx-auto space-y-6">
@@ -447,7 +474,7 @@ export function VideoFeed({
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {allFiltered
-                        ? "All videos from this feed match your mute filters. Adjust your moderation settings to see content."
+                        ? "All videos from this feed match your filters. Adjust your viewing preferences in moderation settings to see them."
                         : feedType === 'home'
                         ? "Follow some creators to see their videos here!"
                         : feedType === 'hashtag'
@@ -478,6 +505,7 @@ export function VideoFeed({
         data-hashtag-testid={hashtagTestId}
         data-profile-testid={profileTestId}
       >
+        {showHiddenVideosControl}
         {compilationLauncher}
         <InfiniteScroll
           dataLength={fetchedCount}
@@ -501,6 +529,7 @@ export function VideoFeed({
         >
           <VideoGrid
             videos={filteredVideos}
+            navigationIndices={navigationIndices}
             loading={false}
             navigationContext={{
               source: feedType,
@@ -510,6 +539,7 @@ export function VideoFeed({
             }}
           />
         </InfiniteScroll>
+        {recoveryPagingControl}
 
         {/* Add to List Dialog */}
         {showListDialog && (
@@ -533,6 +563,7 @@ export function VideoFeed({
       data-hashtag-testid={hashtagTestId}
       data-profile-testid={profileTestId}
     >
+      {showHiddenVideosControl}
       {compilationLauncher}
       <InfiniteScroll
         dataLength={fetchedCount}
@@ -560,6 +591,7 @@ export function VideoFeed({
               key={video.id}
               video={video}
               index={index}
+              navigationIndex={navigationIndices.get(video.id)}
               mode={mode}
               isPriority={index === 0}
               showComments={showCommentsForVideo === video.id}
@@ -578,6 +610,7 @@ export function VideoFeed({
           ))}
         </div>
       </InfiniteScroll>
+      {recoveryPagingControl}
 
       {/* Add to List Dialog */}
       {showListDialog && (

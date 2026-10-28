@@ -481,6 +481,7 @@ function renderPage(path: string) {
 describe('VideoPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    Element.prototype.scrollIntoView = vi.fn();
     mockFetchNextFunnelcakePage.mockReset();
     mockToast.mockReset();
     mockUseVideoNavigation.mockReturnValue({
@@ -523,6 +524,34 @@ describe('VideoPage', () => {
     expect(url.searchParams.get('q')).toBe('twerking');
     expect(url.searchParams.get('sort')).toBe('top');
     expect(url.searchParams.get('index')).toBe('2');
+  });
+
+  it('skips hidden videos during context navigation while preserving source indices', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['video-2']));
+    renderPage('/video/video-1?source=search&q=twerking&sort=top&index=0');
+
+    fireEvent.keyDown(document.body, { key: 'ArrowDown' });
+
+    expect(mockNavigate).toHaveBeenCalledWith('/video/video-3?source=search&q=twerking&sort=top&index=2');
+  });
+
+  it('retains a hidden video explicitly opened by its direct link', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['video-2']));
+    renderPage('/video/video-2');
+
+    expect(screen.getByTestId('video-card')).toHaveTextContent('video-2');
+  });
+
+  it('omits hidden neighbors from the context scrolling feed', async () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['video-2']));
+    renderPage('/video/video-1?source=search&q=twerking&sort=top&index=0');
+
+    await waitFor(() => expect(screen.getByText('video-3')).toBeInTheDocument());
+    expect(screen.queryByText('video-2')).not.toBeInTheDocument();
+    expect(screen.getByText('video-1')).toBeInTheDocument();
   });
 
   it('fetches the next featured page at the boundary while preserving featured params', async () => {
@@ -677,6 +706,30 @@ describe('VideoPage', () => {
       expect(screen.getByTestId('infinite-scroll')).toHaveAttribute('data-length', '24');
     });
     expect(mockFetchNextFunnelcakePage).not.toHaveBeenCalled();
+  });
+
+  it('advances scroll progress even when the expanded window contains only hidden videos', async () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['scroll-video-11', 'scroll-video-12']));
+    renderPage('/video/scroll-video-1?source=search&q=scroll-window&index=0');
+
+    expect(screen.getByTestId('infinite-scroll')).toHaveAttribute('data-length', '22');
+    fireEvent.click(screen.getByRole('button', { name: /load more/i }));
+
+    await waitFor(() => expect(screen.getByTestId('infinite-scroll')).toHaveAttribute('data-length', '24'));
+  });
+
+  it('has an explicit paging action when a partially hidden window is too short to scroll', async () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(Array.from({ length: 9 }, (_, index) => `scroll-video-${index + 2}`)));
+    renderPage('/video/scroll-video-1?source=search&q=scroll-window&index=0');
+    fireEvent.click(screen.getByRole('button', { name: /go to next page/i }));
+    await waitFor(() => expect(screen.getByTestId('infinite-scroll')).toHaveAttribute('data-length', '24'));
+  });
+
+  it('preserves the default context-feed controls when hiding removed no videos', () => {
+    renderPage('/video/scroll-video-1?source=search&q=scroll-window&index=0');
+    expect(screen.queryByRole('button', { name: /go to next page/i })).not.toBeInTheDocument();
   });
 
   it('fetches the next Funnelcake page when the rendered window is exhausted', async () => {

@@ -1,7 +1,7 @@
 // ABOUTME: Unified video provider hook that selects between Funnelcake and WebSocket
 // ABOUTME: Uses an explicit support matrix so unsupported feeds never collapse into generic queries
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAppContext } from '@/hooks/useAppContext';
 import { getFunnelcakeBaseUrl } from '@/config/api';
 import { useInfiniteVideos } from '@/hooks/useInfiniteVideos';
@@ -40,6 +40,7 @@ interface VideoProviderResult {
   fetchNextPage: () => void;
   hasNextPage: boolean | undefined;
   isLoading: boolean;
+  isFetchingNextPage: boolean;
   error: Error | null;
   refetch: () => void;
   /**
@@ -315,13 +316,22 @@ export function useVideoProvider({
   );
   // Counted from the unfiltered pages on purpose (divine-web#380).
   const fetchedCount = useMemo(() => countFetchedVideos(rawData?.pages), [rawData]);
+  // Skip only while a next page is already loading. `cancelRefetch: false` would
+  // also skip during a background refetch, and InfiniteScroll never calls next()
+  // again until dataLength grows, so the feed would stall on its loader.
+  const { fetchNextPage: fetchActiveNextPage, isFetchingNextPage } = activeQuery;
+  const fetchNextPage = useCallback(
+    () => (isFetchingNextPage ? undefined : fetchActiveNextPage()),
+    [fetchActiveNextPage, isFetchingNextPage]
+  );
 
   return {
     data: filteredData,
     fetchedCount,
-    fetchNextPage: activeQuery.fetchNextPage,
+    fetchNextPage,
     hasNextPage: activeQuery.hasNextPage,
     isLoading: activeQuery.isLoading,
+    isFetchingNextPage,
     error: activeQuery.error,
     refetch: activeQuery.refetch,
     dataSource: activeDataSource,

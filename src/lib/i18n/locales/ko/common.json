@@ -525,6 +525,10 @@
     "close": "닫기"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "연령 상태 확인 중...",
+    "unavailableForAccount": "이 계정에서는 연령 제한 동영상을 사용할 수 없습니다.",
+    "confirmationFailed": "지금은 귀하의 선택을 확인할 수 없습니다. 나중에 다시 시도하세요.",
+    "hideVideos": "이 동영상을 표시하지 않음",
     "restrictedHeading": "연령 제한 콘텐츠",
     "restrictedBody": "이 콘텐츠는 모든 시청자에게 적합하지 않을 수 있어요.",
     "verifying": "확인 중...",
@@ -542,6 +546,10 @@
     "awarded": "수여됨"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "연령 제한 동영상",
+    "ageRestrictedPreferenceDescription": "이 브라우저의 피드에 연령 제한 동영상을 표시할지 선택하세요. 직접 링크에는 여전히 연령 확인이 필요합니다.",
+    "showAgeRestrictedVideos": "연령 제한 동영상 표시",
+    "hideAgeRestrictedVideos": "연령 제한 동영상 숨기기",
     "unmute": "음소거 해제",
     "heading": "모더레이션 설정",
     "subheading": "보이는 콘텐츠를 관리하고 위반을 신고하세요",

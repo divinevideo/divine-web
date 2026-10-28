@@ -7,6 +7,7 @@ export interface ProtectedMinorStatus {
   state: 'protected' | 'not_protected' | 'unknown';
   isKnown: boolean;
   verifiedMinorAt: Date | null;
+  isChecking?: boolean;
 }
 
 export type ProtectedMinorState = ProtectedMinorStatus['state'];
@@ -76,14 +77,23 @@ export async function fetchProtectedMinorStatus(
   signal?: AbortSignal,
 ): Promise<ProtectedMinorStatus> {
   if (!token) return NOT_PROTECTED;
+  const controller = new AbortController();
+  const requestSignal = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
+  let timeout: ReturnType<typeof setTimeout>;
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timeout = setTimeout(() => {
+      controller.abort();
+      reject(new Error('Account age check timed out'));
+    }, 8000);
+  });
   try {
-    const response = await fetchImpl(`${DIVINE_LOGIN_ORIGIN}/api/user/account`, {
+    const response = await Promise.race([fetchImpl(`${DIVINE_LOGIN_ORIGIN}/api/user/account`, {
       headers: { Authorization: `Bearer ${token}` },
-      signal,
-    });
+      signal: requestSignal,
+    }), deadline]);
     if (!response.ok) return UNKNOWN_PROTECTED_MINOR_STATUS;
 
-    const body = (await response.json()) as unknown;
+    const body = (await Promise.race([response.json(), deadline])) as unknown;
     // A malformed 200 (non-object body — an error page, truncated response, or
     // a bare primitive) carries no trustworthy signal. Only a well-formed object
     // with an explicit verified_minor is authoritative; otherwise stay unknown
@@ -112,5 +122,7 @@ export async function fetchProtectedMinorStatus(
       : NOT_PROTECTED;
   } catch {
     return UNKNOWN_PROTECTED_MINOR_STATUS;
+  } finally {
+    clearTimeout(timeout!);
   }
 }

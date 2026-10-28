@@ -525,6 +525,10 @@
     "close": "Tutup"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "Menyemak status umur...",
+    "unavailableForAccount": "Video sekatan umur tidak tersedia untuk akaun ini.",
+    "confirmationFailed": "Kami tidak dapat mengesahkan pilihan anda sekarang. Cuba lagi nanti.",
+    "hideVideos": "Jangan tunjukkan saya video ini",
     "restrictedHeading": "Kandungan Had Umur",
     "restrictedBody": "Kandungan ini mungkin tidak sesuai untuk semua khalayak.",
     "verifying": "Mengesahkan...",
@@ -542,6 +546,10 @@
     "awarded": "Dianugerahkan"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "Video sekatan umur",
+    "ageRestrictedPreferenceDescription": "Pilih sama ada video sekatan umur muncul dalam suapan pada penyemak imbas ini. Pautan langsung masih memerlukan pengesahan umur.",
+    "showAgeRestrictedVideos": "Tunjukkan video sekatan umur",
+    "hideAgeRestrictedVideos": "Sembunyikan video sekatan umur",
     "unmute": "Batal senyap",
     "heading": "Tetapan Moderasi",
     "subheading": "Kawal kandungan yang anda lihat dan laporkan pelanggaran",

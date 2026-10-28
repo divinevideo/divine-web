@@ -221,6 +221,15 @@ describe('ModerationSettingsPage', () => {
     expect(mockInvalidateQueries).toHaveBeenCalled();
   });
 
+  it('restores age-restricted videos after the viewer changes the browser preference', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /show age-restricted videos/i }));
+
+    expect(localStorage.getItem('hide-age-restricted-videos')).toBe('false');
+  });
+
   it('splits explicit blocked users out of the muted users card', async () => {
     mockMuteList.push(
       { type: 'p', value: 'a'.repeat(64), createdAt: 1 },

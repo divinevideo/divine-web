@@ -1,10 +1,16 @@
 import { Lock } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface AgeRestrictedMediaPlaceholderProps {
   actionLabel: string;
   onAction: () => void;
+  onHide?: () => void;
+  hideLabel?: string;
+  actionDisabled?: boolean;
+  actionMessage?: string;
+  actionMessageRole?: 'alert' | 'status';
   title?: string;
   className?: string;
 }
@@ -12,9 +18,15 @@ interface AgeRestrictedMediaPlaceholderProps {
 export function AgeRestrictedMediaPlaceholder({
   actionLabel,
   onAction,
+  onHide,
+  hideLabel,
+  actionDisabled,
+  actionMessage,
+  actionMessageRole,
   title,
   className,
 }: AgeRestrictedMediaPlaceholderProps) {
+  const { t } = useTranslation();
   return (
     <div
       className={cn(
@@ -39,6 +51,7 @@ export function AgeRestrictedMediaPlaceholder({
       <Button
         type="button"
         variant="secondary"
+        disabled={actionDisabled}
         className="bg-white text-black hover:bg-white/90"
         onClick={(event) => {
           event.preventDefault();
@@ -48,6 +61,21 @@ export function AgeRestrictedMediaPlaceholder({
       >
         {actionLabel}
       </Button>
+      {actionMessage && <p role={actionMessageRole} className="max-w-xs text-sm text-white/85">{actionMessage}</p>}
+      {onHide && (
+        <Button
+          type="button"
+          variant="ghost"
+          className="text-white hover:bg-white/10 hover:text-white"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onHide();
+          }}
+        >
+          {hideLabel ?? t('ageVerificationOverlay.hideVideos')}
+        </Button>
+      )}
     </div>
   );
 }

@@ -804,4 +804,20 @@ describe('useVideoByIdFunnelcake', () => {
       expect.objectContaining({ offset: 32 })
     );
   });
+
+  it('walks past a hidden-only page within the existing bounded paging budget', async () => {
+    mockSearchVideos.mockResolvedValueOnce({
+      videos: [{ id: 'target-video', pubkey: 'p'.repeat(64) }], has_more: true, next_cursor: '16',
+    }).mockResolvedValueOnce({
+      videos: [{ id: 'hidden-video', pubkey: 'h'.repeat(64) }], has_more: true, next_cursor: '32',
+    }).mockResolvedValueOnce({ videos: [{ id: 'visible-next', pubkey: 'v'.repeat(64) }], has_more: false });
+    const { result } = renderHook(() => useVideoByIdFunnelcake({
+      videoId: 'target-video', query: 'cats', isVideoVisible: video => video.id !== 'hidden-video',
+    }), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.videos?.[0]?.id).toBe('target-video'));
+    let pagedIds: string[] | undefined;
+    await act(async () => { pagedIds = (await result.current.fetchNextPage())?.map(video => video.id); });
+    expect(pagedIds).toContain('visible-next');
+    expect(mockSearchVideos).toHaveBeenCalledTimes(3);
+  });
 });
