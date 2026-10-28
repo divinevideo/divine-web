@@ -530,13 +530,14 @@ publishing/edit permissions, and can be reversed or bypassed by a gated direct l
 ## External short links
 
 Video share controls call useShortLinkShare with the current signer. The public
-VITE_SHORT_LINKS_ENABLED build switch defaults on; set it to false to disable sending. Explicit pointer/key presses
-on the share control prepare a mapping through the existing NIP-98 utility and
-https://gateway.divine.video/api/links. Rendering or scrolling a feed never
-creates mappings. Lists and other unsupported targets keep their full URLs.
+VITE_SHORT_LINKS_ENABLED build switch defaults on; set it to false to disable
+sending. Explicit pointer/key presses on the share control prepare a mapping
+through the existing NIP-98 utility and https://gateway.divine.video/api/links.
+Rendering or scrolling a feed never creates mappings. Lists and other
+unsupported targets keep their full URLs.
 
 ShortLinkClient bounds signing plus HTTP work to two seconds, deduplicates work
-per target, validates the complete mapping and keeps at most100 successful
+per target, validates the complete mapping and keeps at most 100 successful
 mappings in memory. Signing refusal, timeout, quota, offline and malformed
 responses leave the canonical URL available. No server bearer is present in the
 browser. Account changes clear pending work and cached mappings.
