@@ -527,3 +527,22 @@ unlabelled videos become known through media discovery, including addressable
 republishes once their logical identity has been recorded. The setting is view-only
 and browser-wide, including one's own content; it never removes list membership or
 publishing/edit permissions, and can be reversed or bypassed by a gated direct link.
+## External short links
+
+Video share controls call useShortLinkShare with the current signer. The public
+VITE_SHORT_LINKS_ENABLED build switch defaults off. Explicit pointer/key presses
+on the share control prepare a mapping through the existing NIP-98 utility and
+https://gateway.divine.video/api/links. Rendering or scrolling a feed never
+creates mappings. Lists and other unsupported targets keep their full URLs.
+
+ShortLinkClient bounds signing plus HTTP work to two seconds, deduplicates work
+per target, validates the complete mapping and keeps at most100 successful
+mappings in memory. Signing refusal, timeout, quota, offline and malformed
+responses leave the canonical URL available. No server bearer is present in the
+browser. Account changes clear pending work and cached mappings.
+
+The final share click calls navigator.share through useShare synchronously with
+a cached mapping or the full URL. It never awaits preparation; a first share may
+therefore use the full URL. Clipboard fallback and cancellation behavior remain
+owned by useShare. Activation follows the cross-repository native compatibility,
+backup and canary gates; this code does not publish Apple association changes.
