@@ -546,3 +546,8 @@ The final share click calls navigator.share through useShare synchronously with
 a cached mapping or the full URL. It never awaits preparation; a first share may
 therefore use the full URL. Clipboard fallback and cancellation behavior remain
 owned by useShare. Public redirects remain available when sending is disabled.
+
+The Actions PR preview build explicitly disables short-link sending because its
+pages.dev origin is not allowed by the production gateway. Those previews share
+canonical URLs without requesting a signature. Other preview build integrations
+must set the same build override to opt out of production shortening.
