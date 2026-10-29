@@ -32,6 +32,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
+          VITE_SHORT_LINKS_ENABLED: 'false'
           # Keep PR previews from signing requests to live supporter accounts.
           # Use the reserved .invalid domain until a preview service is wired in.
           VITE_SUPPORTERS_SERVICE_URL: https://supporters-preview.invalid
