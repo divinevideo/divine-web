@@ -536,7 +536,8 @@ publishing/edit permissions, and can be reversed or bypassed by a gated direct l
 Video share controls call useShortLinkShare without requiring a login. The public
 VITE_SHORT_LINKS_ENABLED build switch defaults on; set it to false to disable
 sending. Explicit pointer/key presses on the share control prepare a mapping
-through the existing NIP-98 utility and https://gateway.divine.video/api/links.
+through a public JSON POST to https://gateway.divine.video/api/links without
+an Authorization header.
 Rendering or scrolling a feed never creates mappings. Lists and other
 unsupported targets keep their full URLs.
 
