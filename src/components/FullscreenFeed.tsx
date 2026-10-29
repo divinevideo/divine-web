@@ -47,7 +47,7 @@ function FullscreenVideoWithMetrics({
   const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { toast } = useToast();
-  const { share, prepare } = useShortLinkShare(user?.signer);
+  const { share, prepare } = useShortLinkShare();
   const { toggleLike } = useOptimisticLike();
   const { toggleRepost } = useOptimisticRepost();
   const { openLoginDialog } = useLoginDialog();

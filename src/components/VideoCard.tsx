@@ -265,7 +265,7 @@ export function VideoCard({
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const isOwnVideo = useIsOwnVideo(video);
   const { user: currentUser } = useCurrentUser();
-  const { share, prepare } = useShortLinkShare(currentUser?.signer);
+  const { share, prepare } = useShortLinkShare();
   const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
   const isPinned = useIsVideoPinned(coordinate);
   const { mutateAsync: pinVideo } = usePinVideo();
