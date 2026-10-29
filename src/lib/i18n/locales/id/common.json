@@ -525,6 +525,10 @@
     "close": "Tutup"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "Memeriksa status usia...",
+    "unavailableForAccount": "Video dengan batasan usia tidak tersedia untuk akun ini.",
+    "confirmationFailed": "Kami tidak dapat mengonfirmasi pilihan Anda saat ini. Coba lagi nanti.",
+    "hideVideos": "Jangan tunjukkan padaku video-video ini",
     "restrictedHeading": "Konten Dibatasi Usia",
     "restrictedBody": "Konten ini mungkin tidak cocok untuk semua audiens.",
     "verifying": "Memverifikasi...",
@@ -542,6 +546,10 @@
     "awarded": "Diberikan"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "Video dengan batasan usia",
+    "ageRestrictedPreferenceDescription": "Pilih apakah video dengan batasan usia muncul di feed pada browser ini. Tautan langsung masih memerlukan konfirmasi usia.",
+    "showAgeRestrictedVideos": "Tampilkan video dengan batasan usia",
+    "hideAgeRestrictedVideos": "Sembunyikan video yang dikenai pembatasan usia",
     "unmute": "Bunyikan",
     "heading": "Pengaturan Moderasi",
     "subheading": "Kontrol konten yang kamu lihat dan laporkan pelanggaran",
@@ -754,6 +762,10 @@
     "thisWeek": "Minggu Ini",
     "thisMonth": "Bulan Ini",
     "thisYear": "Tahun Ini",
+    "sourceFilterLabel": "Asalnya",
+    "sourceAll": "Semua",
+    "sourceClassic": "Vine klasik",
+    "sourceNew": "Dibuat di Divine",
     "plays": "play",
     "loops": "loop",
     "totalLabel": "total {{label}}",

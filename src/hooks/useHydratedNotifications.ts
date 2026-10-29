@@ -7,7 +7,7 @@ import { API_CONFIG } from '@/config/api';
 import { fetchBulkVideos, fetchVideoById } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { resolveDisplayName } from '@/lib/resolveDisplayName';
-import { getSafeProfileImage, getSafeThumbnailUrl } from '@/lib/imageUtils';
+import { getSafeProfileImage, getSafeThumbnailUrl, sanitizeImageUrl } from '@/lib/imageUtils';
 import { groupRawNotifications, type NotificationVideoMeta } from '@/lib/notificationGrouping';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
@@ -144,6 +144,8 @@ export function useHydratedNotifications(
               {
                 title: video.title || undefined,
                 thumbnailUrl: getSafeThumbnailUrl(video.thumbnail || undefined),
+                videoUrl: sanitizeImageUrl(video.video_url),
+                ageRestricted: video.age_restricted === true || video.moderation_status === 'age_restricted',
               },
             );
           }
@@ -165,6 +167,8 @@ export function useHydratedNotifications(
                 return {
                   title: video.title,
                   thumbnailUrl: getSafeThumbnailUrl(video.thumbnail),
+                  videoUrl: sanitizeImageUrl(video.video_url),
+                  ageRestricted: video.age_restricted === true || video.moderation_status === 'age_restricted',
                 };
               },
               staleTime: 10 * 60 * 1000,
@@ -204,6 +208,8 @@ export function useHydratedNotifications(
       merged.set(id, {
         title: fetched.title ?? embedded?.title,
         thumbnailUrl: fetched.thumbnailUrl ?? embedded?.thumbnailUrl,
+        videoUrl: fetched.videoUrl ?? embedded?.videoUrl,
+        ageRestricted: fetched.ageRestricted ?? embedded?.ageRestricted,
       });
     }
     return merged;

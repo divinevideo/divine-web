@@ -1,11 +1,13 @@
 // ABOUTME: Overlay component shown when video requires age verification
 // ABOUTME: Displays a confirmation button that unlocks age-restricted content
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Warning as AlertTriangle, ShieldCheck } from '@phosphor-icons/react';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
+import { useAgeConfirmationFeedback } from '@/hooks/useAgeConfirmationFeedback';
+import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { cn } from '@/lib/utils';
@@ -24,30 +26,19 @@ export function AgeVerificationOverlay({
   blurhash: _blurhash,
 }: AgeVerificationOverlayProps) {
   const { t } = useTranslation();
-  const { confirmAdult, isVerified } = useAdultVerification();
+  const { confirmAdult, isVerified, isLoading, isProtectedMinor } = useAdultVerification();
+  const { hideAgeRestricted, setHideAgeRestricted } = useAgeRestrictedPreference();
   const { user } = useCurrentUser();
   const { openLoginDialog } = useLoginDialog();
-  const [isConfirming, setIsConfirming] = useState(false);
+  const { confirmFor, failedFor } = useAgeConfirmationFeedback(confirmAdult, `${user?.pubkey ?? ''}:${isLoading}:${isProtectedMinor}`);
+  const confirmationFailed = failedFor('overlay');
   const hasCalledOnVerified = useRef(false);
-  const isConfirmingRef = useRef(false);
 
   const handleConfirm = () => {
-    // Prevent double-clicks
-    if (isConfirmingRef.current) return;
-    
-    isConfirmingRef.current = true;
-    setIsConfirming(true);
-    confirmAdult();
-    
-    // Call onVerified synchronously with guard to prevent multiple calls
-    if (!hasCalledOnVerified.current) {
-      hasCalledOnVerified.current = true;
-      onVerified();
-    }
+    confirmFor('overlay');
   };
 
-  // If already verified on mount, call onVerified once
-  // This handles the case where user is already verified from localStorage
+  // Advance once when verification becomes effective, including after confirmation.
   useEffect(() => {
     if (isVerified && !hasCalledOnVerified.current) {
       hasCalledOnVerified.current = true;
@@ -95,11 +86,11 @@ export function AgeVerificationOverlay({
             </div>
             <Button
               onClick={handleConfirm}
-              disabled={isConfirming}
+              disabled={isLoading || isProtectedMinor}
               className="gap-2 bg-white text-black hover:bg-gray-200 touch-manipulation"
             >
-              {isConfirming ? (
-                <>{t('ageVerificationOverlay.verifying')}</>
+              {isLoading ? (
+                <>{t('ageVerificationOverlay.checkingAgeStatus')}</>
               ) : (
                 <>
                   <ShieldCheck className="w-4 h-4" />
@@ -107,6 +98,8 @@ export function AgeVerificationOverlay({
                 </>
               )}
             </Button>
+            {isProtectedMinor && <p className="text-sm text-gray-300">{t('ageVerificationOverlay.unavailableForAccount')}</p>}
+            {confirmationFailed && <p role="alert" className="text-sm text-gray-300">{t('ageVerificationOverlay.confirmationFailed')}</p>}
             <p className="text-xs text-gray-500 max-w-xs">
               {t('ageVerificationOverlay.rememberNote')}
             </p>
@@ -128,6 +121,16 @@ export function AgeVerificationOverlay({
           </>
         )}
       </div>
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={() => setHideAgeRestricted(!hideAgeRestricted)}
+        className="relative z-10 text-white hover:bg-white/10 hover:text-white"
+      >
+        {hideAgeRestricted
+          ? t('moderationSettings.showAgeRestrictedVideos')
+          : t('ageVerificationOverlay.hideVideos')}
+      </Button>
     </div>
   );
 }

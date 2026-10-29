@@ -525,6 +525,10 @@
     "close": "Chiudi"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "Verifica dello stato dell'età...",
+    "unavailableForAccount": "I video soggetti a limiti di età non sono disponibili per questo account.",
+    "confirmationFailed": "Non è stato possibile confermare la tua scelta in questo momento. Riprova più tardi.",
+    "hideVideos": "Non mostrarmi questi video",
     "restrictedHeading": "Contenuto con restrizioni d'età",
     "restrictedBody": "Questo contenuto potrebbe non essere adatto a tutti gli utenti.",
     "verifying": "Verifica...",
@@ -542,6 +546,10 @@
     "awarded": "Assegnato"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "Video soggetti a limiti di età",
+    "ageRestrictedPreferenceDescription": "Scegli se visualizzare i video soggetti a limiti di età nei feed di questo browser. I collegamenti diretti richiedono ancora la conferma dell'età.",
+    "showAgeRestrictedVideos": "Mostra video soggetti a limiti di età",
+    "hideAgeRestrictedVideos": "Nascondi video soggetti a limiti di età",
     "unmute": "Riattiva",
     "heading": "Impostazioni moderazione",
     "subheading": "Controlla quali contenuti vedi e segnala violazioni",
@@ -761,6 +769,10 @@
     "thisWeek": "Questa settimana",
     "thisMonth": "Questo mese",
     "thisYear": "Quest'anno",
+    "sourceFilterLabel": "Provenienza",
+    "sourceAll": "Tutto",
+    "sourceClassic": "Vine classico",
+    "sourceNew": "Fatto su Divine",
     "plays": "riproduzioni",
     "loops": "loop",
     "totalLabel": "{{label}} totali",

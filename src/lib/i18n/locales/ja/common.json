@@ -525,6 +525,10 @@
     "close": "閉じる"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "年齢ステータスを確認しています...",
+    "unavailableForAccount": "このアカウントでは年齢制限のある動画を利用できません。",
+    "confirmationFailed": "現在、あなたの選択を確認できませんでした。後でもう一度試してください。",
+    "hideVideos": "これらのビデオを見せないでください",
     "restrictedHeading": "年齢制限コンテンツ",
     "restrictedBody": "このコンテンツはすべての視聴者に適しているわけではありません。",
     "verifying": "確認中...",
@@ -542,6 +546,10 @@
     "awarded": "授与日"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "年齢制限のある動画",
+    "ageRestrictedPreferenceDescription": "このブラウザのフィードに年齢制限のある動画を表示するかどうかを選択します。直接リンクするには引き続き年齢確認が必要です。",
+    "showAgeRestrictedVideos": "年齢制限のある動画を表示する",
+    "hideAgeRestrictedVideos": "年齢制限のある動画を非表示にする",
     "unmute": "ミュート解除",
     "heading": "モデレーション設定",
     "subheading": "表示するコンテンツを管理し、違反を報告します",
@@ -754,6 +762,10 @@
     "thisWeek": "今週",
     "thisMonth": "今月",
     "thisYear": "今年",
+    "sourceFilterLabel": "投稿元",
+    "sourceAll": "すべて",
+    "sourceClassic": "クラシックVine",
+    "sourceNew": "Divineで制作",
     "plays": "再生",
     "loops": "ループ",
     "totalLabel": "合計{{label}}",

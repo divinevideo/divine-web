@@ -528,6 +528,12 @@ describe('VideoCard', () => {
     expect(screen.queryByTestId('thumbnail-link')).not.toBeInTheDocument();
   });
 
+  it('uses a distinct raw navigation index without changing the visible position', () => {
+    render(<VideoCard video={baseVideo} mode="thumbnail"
+      navigationContext={{ source: 'search', query: 'cats' }} videoIndex={0} navigationIndex={12} />);
+    expect(screen.getByTestId('thumbnail-link').getAttribute('href')).toContain('index=12');
+  });
+
   it('marks a thumbnail-mode video active when inline playback starts', () => {
     render(<VideoCard video={baseVideo} mode="thumbnail" />);
 
@@ -579,6 +585,14 @@ describe('VideoCard', () => {
     expect(screen.queryByTestId(/video-player-/)).not.toBeInTheDocument();
   });
 
+  it('lets a viewer hide age-restricted cards from feeds', () => {
+    render(<VideoCard video={makeVideo({ ageRestricted: true })} mode="thumbnail" />);
+
+    fireEvent.click(screen.getByRole('button', { name: /don't show me these videos/i }));
+
+    expect(localStorage.getItem('hide-age-restricted-videos')).toBe('true');
+  });
+
   it('shows an age-verification prompt for logged-in viewers who are not verified', () => {
     authMocks.useCurrentUser.mockReturnValue({
       user: { pubkey: 'a'.repeat(64) },
@@ -597,6 +611,32 @@ describe('VideoCard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Verify age to view' }));
     expect(authMocks.confirmAdult).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows refusal feedback when the card cannot confirm adulthood', () => {
+    authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    authMocks.confirmAdult.mockReturnValueOnce(false);
+    render(<VideoCard video={makeVideo({ ageRestricted: true })} mode="thumbnail" />);
+    fireEvent.click(screen.getByRole('button', { name: /verify age to view/i }));
+    expect(screen.getByRole('alert')).toHaveTextContent(/couldn't confirm/i);
+  });
+
+  it('disables protected-minor cards and shows a noninterrupting account notice', () => {
+    authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    authMocks.useAdultVerification.mockReturnValue({ isVerified: false, isProtectedMinor: true, confirmAdult: authMocks.confirmAdult });
+    render(<VideoCard video={makeVideo({ ageRestricted: true })} mode="thumbnail" />);
+    expect(screen.getByRole('button', { name: /verify age to view/i })).toBeDisabled();
+    expect(screen.getByText(/aren't available/i)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /verify age to view/i }));
+    expect(authMocks.confirmAdult).not.toHaveBeenCalled();
+  });
+
+  it('offers a working restore action on a direct card when hiding is already enabled', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    render(<VideoCard video={makeVideo({ ageRestricted: true })} mode="thumbnail" />);
+    fireEvent.click(screen.getByRole('button', { name: /show age-restricted videos/i }));
+    expect(localStorage.getItem('hide-age-restricted-videos')).toBe('false');
   });
 
   it('still renders the thumbnail player for unrestricted videos', () => {

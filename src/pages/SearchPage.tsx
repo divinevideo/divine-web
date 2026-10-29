@@ -16,8 +16,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
+import { AgeRestrictedPreferenceCard } from '@/components/AgeRestrictedPreferenceCard';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { useInfiniteSearchVideos } from '@/hooks/useInfiniteSearchVideos';
+import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { useCompilationFullscreen } from '@/hooks/useCompilationFullscreen';
 import { useSearchUsers } from '@/hooks/useSearchUsers';
 import { useSearchHashtags, type HashtagResult } from '@/hooks/useSearchHashtags';
@@ -93,6 +95,7 @@ export function SearchPage() {
     fetchNextPage: fetchNextVideos,
     hasNextPage: hasNextVideos,
     isLoading: isLoadingVideos,
+    isFetchingNextPage: isFetchingNextVideos,
     error: videoError,
     fetchedCount: fetchedVideoCount,
   } = useInfiniteSearchVideos({
@@ -102,7 +105,8 @@ export function SearchPage() {
   });
 
   // Deduplicate videos by ID (React Strict Mode can cause duplicate fetches)
-  const videoResults = useMemo(() => {
+  const { shouldHideVideo } = useAgeRestrictedPreference();
+  const allVideoResults = useMemo(() => {
     const videos = videoData?.pages.flatMap(page => page.videos) ?? [];
     const seen = new Set<string>();
     return videos.filter(video => {
@@ -111,6 +115,9 @@ export function SearchPage() {
       return true;
     });
   }, [videoData]);
+  const videoResults = useMemo(() => allVideoResults.filter(video => !shouldHideVideo(video)), [allVideoResults, shouldHideVideo]);
+  const videoIndices = useMemo(() => new Map(allVideoResults.map((video, index) => [video.id, index])), [allVideoResults]);
+  const allVideosHidden = allVideoResults.length > 0 && videoResults.length === 0;
 
   const {
     data: userResults = [],
@@ -212,7 +219,7 @@ export function SearchPage() {
     }
 
     analyticsTimerRef.current = setTimeout(() => {
-      const totalResults = videoResults.length + userResults.length + hashtagResults.length;
+      const totalResults = allVideoResults.length + userResults.length + hashtagResults.length;
       trackSearch(searchQuery, activeFilter, totalResults);
       lastTrackedSearchRef.current = trackingKey;
     }, 500);
@@ -230,7 +237,7 @@ export function SearchPage() {
     isLoadingVideos,
     searchQuery,
     userResults.length,
-    videoResults.length,
+    allVideoResults.length,
   ]);
 
   useEffect(() => {
@@ -451,6 +458,17 @@ export function SearchPage() {
     enabled: activeFilter === 'all' || activeFilter === 'videos',
   });
 
+  const hiddenVideoResults = (
+    <div className="space-y-4">
+      <AgeRestrictedPreferenceCard />
+      {hasNextVideos && (
+        <Button type="button" variant="outline" disabled={isFetchingNextVideos} onClick={() => void fetchNextVideos({ cancelRefetch: false })}>
+          {t('uiPagination.goToNext')}
+        </Button>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       {/* Main content */}
@@ -574,7 +592,7 @@ export function SearchPage() {
                 <p className="text-muted-foreground">Searching...</p>
               ) : error ? (
                 <p className="text-destructive">Search error occurred</p>
-              ) : getResultsCount() === 0 ? (
+              ) : getResultsCount() === 0 && !(allVideosHidden && (activeFilter === 'all' || activeFilter === 'videos')) ? (
                 <p className="text-muted-foreground">Nada. Try something different?</p>
               ) : null}
               {compilationUrl && !isLoading && !error && (
@@ -601,11 +619,11 @@ export function SearchPage() {
             ) : error ? (
               <ErrorState />
             ) : !hasResults ? (
-              <NoResultsState />
+              allVideosHidden ? hiddenVideoResults : <NoResultsState />
             ) : (
               <div className="space-y-8">
                 {/* Videos section with infinite scroll */}
-                {videoResults.length > 0 && (
+                {(videoResults.length > 0 || allVideosHidden) && (
                   <section>
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -620,12 +638,13 @@ export function SearchPage() {
                         View all
                       </Button>
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {allVideosHidden ? hiddenVideoResults : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {videoResults.slice(0, 6).map((video, index) => (
                         <VideoCardWithMetrics
                           key={video.id}
                           video={video}
                           index={index}
+                          navigationIndex={videoIndices.get(video.id)}
                           mode="thumbnail"
                           showComments={false}
                           onOpenComments={() => undefined}
@@ -633,7 +652,7 @@ export function SearchPage() {
                           navigationContext={searchNavigationContext}
                         />
                       ))}
-                    </div>
+                    </div>}
                   </section>
                 )}
 
@@ -699,7 +718,7 @@ export function SearchPage() {
             ) : videoError ? (
               <ErrorState />
             ) : videoResults.length === 0 ? (
-              <NoResultsState />
+              allVideosHidden ? hiddenVideoResults : <NoResultsState />
             ) : (
               <InfiniteScroll
                 dataLength={fetchedVideoCount}
@@ -724,6 +743,7 @@ export function SearchPage() {
                       key={video.id}
                       video={video}
                       index={index}
+                      navigationIndex={videoIndices.get(video.id)}
                       mode="thumbnail"
                       showComments={false}
                       onOpenComments={() => undefined}
@@ -775,6 +795,13 @@ export function SearchPage() {
             )}
           </TabsContent>
         </Tabs>
+        {videoResults.length > 0 && videoResults.length < allVideoResults.length && hasNextVideos &&
+          (activeFilter === 'videos' || (activeFilter === 'all' && videoResults.length < 6)) && (
+          <Button type="button" variant="outline" disabled={isFetchingNextVideos} aria-busy={isFetchingNextVideos}
+            onClick={() => void fetchNextVideos({ cancelRefetch: false })}>
+            {isFetchingNextVideos ? t('profilePage.loadingMore') : t('uiPagination.goToNext')}
+          </Button>
+        )}
       </main>
     </div>
   );

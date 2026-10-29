@@ -525,6 +525,10 @@
     "close": "Kapat"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "Yaş durumu kontrol ediliyor...",
+    "unavailableForAccount": "Bu hesapta yaş kısıtlamalı videolar kullanılamaz.",
+    "confirmationFailed": "Şu anda seçiminizi onaylayamadık. Daha sonra tekrar deneyin.",
+    "hideVideos": "Bana bu videoları gösterme",
     "restrictedHeading": "Yaş Kısıtlamalı İçerik",
     "restrictedBody": "Bu içerik her kitle için uygun olmayabilir.",
     "verifying": "Doğrulanıyor...",
@@ -542,6 +546,10 @@
     "awarded": "Verilme tarihi"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "Yaş kısıtlamalı videolar",
+    "ageRestrictedPreferenceDescription": "Bu tarayıcıdaki yayınlarda yaş kısıtlamalı videoların görünüp görünmeyeceğini seçin. Doğrudan bağlantılar hâlâ yaş onayı gerektiriyor.",
+    "showAgeRestrictedVideos": "Yaş kısıtlamalı videoları göster",
+    "hideAgeRestrictedVideos": "Yaş kısıtlamalı videoları gizle",
     "unmute": "Susturmayı kaldır",
     "heading": "Moderasyon Ayarları",
     "subheading": "Hangi içerikleri göreceğini kontrol et ve ihlalleri bildir",
@@ -754,6 +762,10 @@
     "thisWeek": "Bu Hafta",
     "thisMonth": "Bu Ay",
     "thisYear": "Bu Yıl",
+    "sourceFilterLabel": "Nereden geliyor",
+    "sourceAll": "Hepsi",
+    "sourceClassic": "Klasik Vine",
+    "sourceNew": "Divine'da yapıldı",
     "plays": "oynatma",
     "loops": "loop",
     "totalLabel": "toplam {{label}}",

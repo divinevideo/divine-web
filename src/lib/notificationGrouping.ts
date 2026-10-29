@@ -16,6 +16,8 @@ const HEX_EVENT_ID = /^[0-9a-f]{64}$/i;
 export interface NotificationVideoMeta {
   title?: string;
   thumbnailUrl?: string;
+  videoUrl?: string;
+  ageRestricted?: boolean;
 }
 
 /**
@@ -108,6 +110,8 @@ export function groupRawNotifications(
       videoEventId: targetEventId,
       videoTitle: videoMeta?.title,
       videoThumbnailUrl: videoMeta?.thumbnailUrl,
+      videoUrl: videoMeta?.videoUrl,
+      videoAgeRestricted: videoMeta?.ageRestricted,
       actors: uniqueActors.slice(0, 3),
       totalCount: seenPubkeys.size,
       commentText: type === 'comment' ? newestRow.commentText : undefined,

@@ -525,6 +525,10 @@
     "close": "بند کریں"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "عمر کا اسٹیٹس چیک کیا جا رہا ہے...",
+    "unavailableForAccount": "اس اکاؤنٹ کے لیے عمر کی پابندی والی ویڈیوز دستیاب نہیں ہیں۔",
+    "confirmationFailed": "ہم ابھی آپ کے انتخاب کی تصدیق نہیں کر سکے۔ بعد میں دوبارہ کوشش کریں۔",
+    "hideVideos": "مجھے یہ ویڈیوز مت دکھائیں۔",
     "restrictedHeading": "عمر کی پابندی والا مواد",
     "restrictedBody": "یہ مواد ہر قسم کے سامعین کے لیے موزوں نہیں ہو سکتا۔",
     "verifying": "تصدیق ہو رہی ہے...",
@@ -542,6 +546,10 @@
     "awarded": "عطا کردہ"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "عمر کی پابندی والی ویڈیوز",
+    "ageRestrictedPreferenceDescription": "منتخب کریں کہ آیا عمر کی پابندی والی ویڈیوز اس براؤزر پر فیڈز میں نظر آتی ہیں۔ براہ راست روابط اب بھی عمر کی تصدیق کی ضرورت ہے.",
+    "showAgeRestrictedVideos": "عمر کی پابندی والی ویڈیوز دکھائیں۔",
+    "hideAgeRestrictedVideos": "عمر کی پابندی والی ویڈیوز چھپائیں۔",
     "unmute": "انمیوٹ",
     "heading": "ماڈریشن ترتیبات",
     "subheading": "کنٹرول کریں کہ آپ کیا مواد دیکھیں اور خلاف ورزیاں رپورٹ کریں",
@@ -754,6 +762,10 @@
     "thisWeek": "اس ہفتے",
     "thisMonth": "اس مہینے",
     "thisYear": "اس سال",
+    "sourceFilterLabel": "ماخذ",
+    "sourceAll": "سب کچھ",
+    "sourceClassic": "کلاسک Vine",
+    "sourceNew": "Divine پر بنایا گیا",
     "plays": "پلے",
     "loops": "لوپس",
     "totalLabel": "کل {{label}}",

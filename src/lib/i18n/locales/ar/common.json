@@ -545,6 +545,10 @@
     "close": "إغلاق"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "جارٍ التحقق من الحالة العمرية...",
+    "unavailableForAccount": "مقاطع الفيديو المقيدة بالفئة العمرية غير متاحة لهذا الحساب.",
+    "confirmationFailed": "لم نتمكن من تأكيد اختيارك الآن. حاول مرة أخرى لاحقًا.",
+    "hideVideos": "لا تريني هذه الفيديوهات",
     "restrictedHeading": "محتوى مقيد بالعمر",
     "restrictedBody": "قد لا يكون هذا المحتوى مناسباً لجميع الفئات.",
     "verifying": "جارٍ التحقق...",
@@ -562,6 +566,10 @@
     "awarded": "مُنحت في"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "مقاطع فيديو مقيدة بالفئة العمرية",
+    "ageRestrictedPreferenceDescription": "اختر ما إذا كانت مقاطع الفيديو المقيدة بالفئة العمرية ستظهر في الخلاصات الموجودة على هذا المتصفح. لا تزال الروابط المباشرة تتطلب تأكيد العمر.",
+    "showAgeRestrictedVideos": "عرض مقاطع الفيديو المقيدة بالفئة العمرية",
+    "hideAgeRestrictedVideos": "إخفاء مقاطع الفيديو المقيدة بالفئة العمرية",
     "unmute": "إلغاء الكتم",
     "heading": "إعدادات الإشراف",
     "subheading": "تحكّم في المحتوى الذي تراه وأبلغ عن المخالفات",
@@ -806,6 +814,10 @@
     "thisWeek": "هذا الأسبوع",
     "thisMonth": "هذا الشهر",
     "thisYear": "هذه السنة",
+    "sourceFilterLabel": "المصدر",
+    "sourceAll": "الكل",
+    "sourceClassic": "Vine الكلاسيكي",
+    "sourceNew": "صُنع على Divine",
     "plays": "تشغيل",
     "loops": "حلقة",
     "totalLabel": "إجمالي {{label}}",

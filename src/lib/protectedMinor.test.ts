@@ -17,7 +17,7 @@ function fetchReturning(body: unknown, ok = true): typeof fetch {
 }
 
 describe('fetchProtectedMinorStatus', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 
   it('is protected with a timestamp when verified_minor is true', async () => {
     const fetchImpl = fetchReturning({
@@ -46,6 +46,20 @@ describe('fetchProtectedMinorStatus', () => {
     expect(status.state).toBe('not_protected');
     expect(status.isKnown).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('bounds an account check that never settles and fails closed', async () => {
+    vi.useFakeTimers();
+    let requestSignal: AbortSignal | undefined;
+    const fetchImpl = vi.fn((_url: unknown, options?: RequestInit) => {
+      requestSignal = options?.signal ?? undefined;
+      return new Promise<Response>(() => {});
+    }) as typeof fetch;
+    const pending = fetchProtectedMinorStatus('test-session', fetchImpl);
+    await vi.advanceTimersByTimeAsync(8000);
+    expect(requestSignal?.aborted).toBe(true);
+    expect(await pending).toMatchObject({ state: 'unknown', isKnown: false });
+    vi.useRealTimers();
   });
 
   it('fails closed on a truthy non-boolean verified_minor (schema drift)', async () => {

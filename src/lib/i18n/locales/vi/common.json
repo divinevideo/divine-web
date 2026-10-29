@@ -525,6 +525,10 @@
     "close": "Đóng"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "Đang kiểm tra tình trạng tuổi...",
+    "unavailableForAccount": "Các video bị giới hạn độ tuổi không có sẵn cho tài khoản này.",
+    "confirmationFailed": "Chúng tôi không thể xác nhận lựa chọn của bạn ngay bây giờ. Hãy thử lại sau.",
+    "hideVideos": "Đừng cho tôi xem những video này",
     "restrictedHeading": "Nội dung giới hạn độ tuổi",
     "restrictedBody": "Nội dung này có thể không phù hợp với mọi đối tượng.",
     "verifying": "Đang xác minh...",
@@ -542,6 +546,10 @@
     "awarded": "Đã trao"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "Video bị giới hạn độ tuổi",
+    "ageRestrictedPreferenceDescription": "Chọn xem video bị giới hạn độ tuổi có xuất hiện trong nguồn cấp dữ liệu trên trình duyệt này hay không. Liên kết trực tiếp vẫn yêu cầu xác nhận độ tuổi.",
+    "showAgeRestrictedVideos": "Hiển thị video bị giới hạn độ tuổi",
+    "hideAgeRestrictedVideos": "Ẩn video bị giới hạn độ tuổi",
     "unmute": "Bật tiếng",
     "heading": "Cài đặt kiểm duyệt",
     "subheading": "Kiểm soát nội dung bạn thấy và báo cáo vi phạm",
@@ -754,6 +762,10 @@
     "thisWeek": "Tuần này",
     "thisMonth": "Tháng này",
     "thisYear": "Năm nay",
+    "sourceFilterLabel": "Nguồn",
+    "sourceAll": "Tất cả",
+    "sourceClassic": "Vine cổ điển",
+    "sourceNew": "Làm trên Divine",
     "plays": "lượt phát",
     "loops": "vòng lặp",
     "totalLabel": "tổng {{label}}",

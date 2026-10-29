@@ -29,7 +29,8 @@ every consumer inherits the lock with no per-component changes:
 4. Fail-safe: unknown/loading protected-minor state **fails closed for
    granting**: `isVerified` is forced false, `confirmAdult` no-ops, and the
    stored attestation is NOT purged (purge only on known-true). The hook also
-   exposes unknown through `isLoading` for consumers that can surface it, but
+   exposes the initial unresolved check through `isLoading`; a failed or timed-out
+   check settles as unknown without granting access and permits another attempt, but
    the current adult-content consumers key their gate decisions off
    `isVerified`, `confirmAdult`, and `getAuthHeader`, so confirmed adults may
    see a brief locked state while the protected-minor check resolves. Smoothing

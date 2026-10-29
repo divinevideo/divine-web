@@ -52,6 +52,7 @@ interface FullscreenVideoItemProps {
   onLike: () => void;
   onRepost: () => void;
   onShare: () => void;
+  onShareIntent?: () => void;
   onDownload: () => void;
   isLiked: boolean;
   isReposted: boolean;
@@ -71,6 +72,7 @@ export function FullscreenVideoItem({
   onLike,
   onRepost,
   onShare,
+  onShareIntent,
   onDownload,
   isLiked,
   isReposted,
@@ -471,6 +473,8 @@ export function FullscreenVideoItem({
 
               {/* Share button */}
               <button
+                onPointerDown={(event) => { if (event.button === 0) onShareIntent?.(); }}
+                onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onShareIntent?.(); }}
                 onClick={(e) => { e.stopPropagation(); onShare(); }}
                 className="flex flex-col items-center"
               >

@@ -9,10 +9,16 @@ import ListDetailPage from './ListDetailPage';
 const OWNER = 'a'.repeat(64);
 const COLLABORATOR = 'b'.repeat(64);
 const OUTSIDER = 'c'.repeat(64);
-const { mockCurrentUser, mockDeleteVideoList, mockQuery } = vi.hoisted(() => ({
+const { mockCurrentUser, mockDeleteVideoList, mockQuery, mockFetchListVideos } = vi.hoisted(() => ({
   mockCurrentUser: vi.fn(),
   mockDeleteVideoList: vi.fn(),
   mockQuery: vi.fn(),
+  mockFetchListVideos: vi.fn(),
+}));
+
+vi.mock('@/lib/listVideos', () => ({ fetchListVideos: mockFetchListVideos }));
+vi.mock('@/components/VideoGrid', () => ({
+  VideoGrid: ({ videos }: { videos: Array<{ id: string }> }) => <div>{videos.map(video => <span key={video.id}>{video.id}</span>)}</div>,
 }));
 
 vi.mock('@nostrify/react', () => ({
@@ -125,6 +131,21 @@ function renderPage(currentUserPubkey: string) {
 describe('ListDetailPage permissions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    mockFetchListVideos.mockResolvedValue([]);
+  });
+
+  it('filters the editable grid and count together instead of leaving hidden item menus', async () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    mockFetchListVideos.mockResolvedValue([
+      { id: 'hidden-video', ageRestricted: true },
+      { id: 'public-video', ageRestricted: false },
+    ]);
+    renderPage(OWNER);
+
+    expect(await screen.findByText('1 videos')).toBeInTheDocument();
+    expect(screen.getByText('public-video')).toBeInTheDocument();
+    expect(screen.queryByText('hidden-video')).not.toBeInTheDocument();
   });
 
   it('lets the owner edit metadata, delete the list, and edit content', async () => {

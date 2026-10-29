@@ -1,5 +1,5 @@
 // ABOUTME: Leaderboard page showing top videos and creators by loops/views
-// ABOUTME: Supports time filters: all time, today, this week, this month, this year
+// ABOUTME: Supports time filters (all time to today) and, for videos, Classic Vine vs Made on Divine
 
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -17,17 +17,40 @@ import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath
 
 type TimePeriod = 'alltime' | 'day' | 'week' | 'month' | 'year';
 type LeaderboardType = 'videos' | 'creators';
+// 'classic' = archived Vine imports; 'new' = everything posted on Divine, including
+// new posts from restored Viners. Only the videos endpoint can split on this today.
+type VideoSource = 'all' | 'classic' | 'new';
 
 const VALID_TYPES: LeaderboardType[] = ['videos', 'creators'];
 const VALID_PERIODS: TimePeriod[] = ['alltime', 'day', 'week', 'month', 'year'];
+const VALID_SOURCES: VideoSource[] = ['all', 'classic', 'new'];
 
-function parseLeaderboardHash(hash: string): { type?: LeaderboardType; period?: TimePeriod } {
+function parseLeaderboardHash(hash: string): { type?: LeaderboardType; period?: TimePeriod; source?: VideoSource } {
   const cleaned = hash.replace(/^#/, '');
   if (!cleaned) return {};
-  const [rawType, rawPeriod] = cleaned.split('-');
+  const [rawType, rawPeriod, rawSource] = cleaned.split('-');
   const type = VALID_TYPES.includes(rawType as LeaderboardType) ? (rawType as LeaderboardType) : undefined;
   const period = VALID_PERIODS.includes(rawPeriod as TimePeriod) ? (rawPeriod as TimePeriod) : undefined;
-  return { type, period };
+  const source = VALID_SOURCES.includes(rawSource as VideoSource) ? (rawSource as VideoSource) : undefined;
+  return { type, period, source };
+}
+
+// 'all' is left out of the hash so existing links like #videos-day stay canonical.
+function buildLeaderboardHash(type: LeaderboardType, period: TimePeriod, source: VideoSource): string {
+  return source === 'all' ? `#${type}-${period}` : `#${type}-${period}-${source}`;
+}
+
+function applySourceParams(params: URLSearchParams, source: VideoSource) {
+  if (source === 'classic') params.set('platform', 'vine');
+  if (source === 'new') params.set('exclude_platform', 'vine');
+}
+
+function getSourceLabel(source: VideoSource, t: (key: string) => string): string {
+  switch (source) {
+    case 'all': return t('leaderboardPage.sourceAll');
+    case 'classic': return t('leaderboardPage.sourceClassic');
+    case 'new': return t('leaderboardPage.sourceNew');
+  }
 }
 
 interface VideoLeaderboardItem {
@@ -157,16 +180,17 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
-function VideoLeaderboard({ period }: { period: TimePeriod }) {
+function VideoLeaderboard({ period, source }: { period: TimePeriod; source: VideoSource }) {
   const { t } = useTranslation();
   const { data: videos, isLoading, error } = useQuery({
-    queryKey: ['leaderboard-videos', period],
+    queryKey: ['leaderboard-videos', period, source],
     queryFn: async ({ signal }) => {
       // Use the dedicated leaderboard endpoint
       const params = new URLSearchParams({
         period: period,
         limit: '50',
       });
+      applySourceParams(params, source);
 
       const response = await fetch(
         `${getFunnelcakeBaseUrl()}/api/leaderboard/videos?${params}`,
@@ -420,22 +444,27 @@ export function LeaderboardPage() {
     if (typeof window === 'undefined') return 'alltime';
     return parseLeaderboardHash(window.location.hash).period ?? 'alltime';
   });
+  const [videoSource, setVideoSource] = useState<VideoSource>(() => {
+    if (typeof window === 'undefined') return 'all';
+    return parseLeaderboardHash(window.location.hash).source ?? 'all';
+  });
 
   // Sync state -> hash without scrolling or polluting history.
-  // No element has id="<type>-<period>", so the browser won't auto-scroll.
+  // No element has id="<type>-<period>[-<source>]", so the browser won't auto-scroll.
   useEffect(() => {
-    const next = `#${leaderboardType}-${timePeriod}`;
+    const next = buildLeaderboardHash(leaderboardType, timePeriod, videoSource);
     if (window.location.hash !== next) {
       window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${next}`);
     }
-  }, [leaderboardType, timePeriod]);
+  }, [leaderboardType, timePeriod, videoSource]);
 
   // Sync hash -> state on back/forward.
   useEffect(() => {
     const onHashChange = () => {
-      const { type, period } = parseLeaderboardHash(window.location.hash);
+      const { type, period, source } = parseLeaderboardHash(window.location.hash);
       if (type) setLeaderboardType(type);
       if (period) setTimePeriod(period);
+      setVideoSource(source ?? 'all');
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
@@ -506,6 +535,32 @@ export function LeaderboardPage() {
                   );
                 })}
               </div>
+
+              {leaderboardType === 'videos' && (
+                <div
+                  role="group"
+                  aria-label={t('leaderboardPage.sourceFilterLabel')}
+                  className="flex flex-wrap gap-2 mt-3 pt-3 border-t"
+                >
+                  {VALID_SOURCES.map((source) => (
+                    <button
+                      key={source}
+                      type="button"
+                      aria-pressed={videoSource === source}
+                      onClick={() => setVideoSource(source)}
+                      className={`
+                        px-3 py-1.5 rounded-full text-sm font-medium transition-colors
+                        ${videoSource === source
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted hover:bg-brand-light-green dark:hover:bg-brand-dark-green text-muted-foreground'
+                        }
+                      `}
+                    >
+                      {getSourceLabel(source, t)}
+                    </button>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -513,7 +568,7 @@ export function LeaderboardPage() {
           <TabsContent value="videos" className="mt-4">
             <Card>
               <CardContent className="pt-6">
-                <VideoLeaderboard period={timePeriod} />
+                <VideoLeaderboard period={timePeriod} source={videoSource} />
               </CardContent>
             </Card>
           </TabsContent>

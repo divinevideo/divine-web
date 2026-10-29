@@ -12,10 +12,13 @@ vi.mock('@/contexts/LoginDialogContext', () => ({
 
 const confirmAdult = vi.fn();
 const isVerifiedRef = { current: false };
+const isLoadingRef = { current: false };
+const isProtectedRef = { current: false };
 vi.mock('@/hooks/useAdultVerification', () => ({
   useAdultVerification: () => ({
     get isVerified() { return isVerifiedRef.current; },
-    isLoading: false,
+    get isLoading() { return isLoadingRef.current; },
+    get isProtectedMinor() { return isProtectedRef.current; },
     hasSigner: true,
     confirmAdult,
     revokeVerification: vi.fn(),
@@ -47,6 +50,9 @@ describe('AgeVerificationOverlay', () => {
     confirmAdult.mockClear();
     useCurrentUserMock.mockReset();
     isVerifiedRef.current = false;
+    isLoadingRef.current = false;
+    isProtectedRef.current = false;
+    confirmAdult.mockReturnValue(true);
   });
 
   it('shows "Sign in to view this content" heading when no user is logged in', () => {
@@ -66,19 +72,78 @@ describe('AgeVerificationOverlay', () => {
     expect(openLoginDialog).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the existing "I\'m 18 or older" flow when a user IS logged in', () => {
+  it('lets a signed-out viewer hide age-restricted videos in this browser', () => {
+    useCurrentUserMock.mockReturnValue({ user: null, signer: null });
+    render(<AgeVerificationOverlay onVerified={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /don't show me these videos/i }));
+
+    expect(localStorage.getItem('hide-age-restricted-videos')).toBe('true');
+    expect(screen.getByRole('button', { name: /show age-restricted videos/i })).toBeInTheDocument();
+  });
+
+  it('only reports success after adult verification becomes effective', () => {
     useCurrentUserMock.mockReturnValue({
       user: { pubkey: 'pub' },
       signer: { signEvent: vi.fn(), getPublicKey: vi.fn() },
     });
     const onVerified = vi.fn();
-    render(<AgeVerificationOverlay onVerified={onVerified} />);
+    const { rerender } = render(<AgeVerificationOverlay onVerified={onVerified} />);
 
     expect(screen.queryByText(/sign in to view this content/i)).toBeNull();
     const confirmButton = screen.getByRole('button', { name: /18 or older/i });
     fireEvent.click(confirmButton);
     expect(confirmAdult).toHaveBeenCalledTimes(1);
+    expect(onVerified).not.toHaveBeenCalled();
+
+    isVerifiedRef.current = true;
+    rerender(<AgeVerificationOverlay onVerified={onVerified} />);
     expect(onVerified).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for the account age check before accepting confirmation', () => {
+    isLoadingRef.current = true;
+    useCurrentUserMock.mockReturnValue({ user: { pubkey: 'pub' }, signer: {} });
+    const onVerified = vi.fn();
+    render(<AgeVerificationOverlay onVerified={onVerified} />);
+
+    const button = screen.getByRole('button', { name: /checking age status/i });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(confirmAdult).not.toHaveBeenCalled();
+    expect(onVerified).not.toHaveBeenCalled();
+  });
+
+  it('disables protected-minor confirmation and explains the account restriction without an alert', () => {
+    isProtectedRef.current = true;
+    useCurrentUserMock.mockReturnValue({ user: { pubkey: 'pub' }, signer: {} });
+    render(<AgeVerificationOverlay onVerified={vi.fn()} />);
+    expect(screen.getByRole('button', { name: /18 or older/i })).toBeDisabled();
+    expect(screen.getByText(/aren't available for this account/i)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /18 or older/i }));
+    expect(confirmAdult).not.toHaveBeenCalled();
+  });
+
+  it('uses an action label rather than a contradictory pressed state for restoring videos', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    useCurrentUserMock.mockReturnValue({ user: null });
+    render(<AgeVerificationOverlay onVerified={vi.fn()} />);
+    expect(screen.getByRole('button', { name: /show age-restricted videos/i })).not.toHaveAttribute('aria-pressed');
+  });
+
+  it('allows another attempt when confirmation is refused', () => {
+    confirmAdult.mockReturnValue(false);
+    useCurrentUserMock.mockReturnValue({ user: { pubkey: 'pub' }, signer: {} });
+    const onVerified = vi.fn();
+    render(<AgeVerificationOverlay onVerified={onVerified} />);
+
+    const button = screen.getByRole('button', { name: /18 or older/i });
+    fireEvent.click(button);
+    expect(button).toBeEnabled();
+    expect(onVerified).not.toHaveBeenCalled();
+    fireEvent.click(button);
+    expect(confirmAdult).toHaveBeenCalledTimes(2);
   });
 
   it('renders nothing when isVerified is true (preserves existing early-return)', () => {
