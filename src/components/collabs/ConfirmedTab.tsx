@@ -1,9 +1,12 @@
 import { useMyConfirmedCollabs } from '@/hooks/useMyConfirmedCollabs';
+import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { VideoCard } from '@/components/VideoCard';
+import { AgeRestrictedPreferenceCard } from '@/components/AgeRestrictedPreferenceCard';
 import { transformFunnelcakeVideo } from '@/lib/funnelcakeTransform';
 
 export function ConfirmedTab() {
   const { data, isPending, isError } = useMyConfirmedCollabs();
+  const { shouldHideVideo } = useAgeRestrictedPreference();
 
   if (isPending) {
     return (
@@ -28,10 +31,13 @@ export function ConfirmedTab() {
     const video = transformFunnelcakeVideo(raw);
     return video ? [video] : [];
   });
+  const visibleVideos = videos.filter(video => !shouldHideVideo(video));
+
+  if (videos.length > 0 && visibleVideos.length === 0) return <AgeRestrictedPreferenceCard />;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {videos.map((video) => (
+      {visibleVideos.map((video) => (
         <VideoCard key={video.id} video={video} />
       ))}
     </div>

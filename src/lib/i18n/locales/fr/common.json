@@ -525,6 +525,10 @@
     "close": "Fermer"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "Vérification de l'âge...",
+    "unavailableForAccount": "Les vidéos soumises à une limite d'âge ne sont pas disponibles pour ce compte.",
+    "confirmationFailed": "On ne peut pas confirmer ton choix pour le moment. Réessaie plus tard.",
+    "hideVideos": "Ne me montre pas ces vidéos",
     "restrictedHeading": "Contenu réservé aux adultes",
     "restrictedBody": "Ce contenu peut ne pas être adapté à tous les publics.",
     "verifying": "Vérification...",
@@ -542,6 +546,10 @@
     "awarded": "Attribué"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "Vidéos soumises à une limite d'âge",
+    "ageRestrictedPreferenceDescription": "Choisis si les vidéos réservées aux adultes apparaissent dans les fils de ce navigateur. Les liens directs demandent toujours de confirmer ton âge.",
+    "showAgeRestrictedVideos": "Afficher des vidéos soumises à une limite d'âge",
+    "hideAgeRestrictedVideos": "Masquer les vidéos soumises à une limite d'âge",
     "unmute": "Réactiver",
     "heading": "Paramètres de modération",
     "subheading": "Contrôle ce que tu vois et signale les abus",

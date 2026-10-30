@@ -525,6 +525,10 @@
     "close": "Stäng"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "Kontrollerar åldersstatus...",
+    "unavailableForAccount": "Åldersbegränsade videor är inte tillgängliga för det här kontot.",
+    "confirmationFailed": "Vi kunde inte bekräfta ditt val just nu. Försök igen senare.",
+    "hideVideos": "Visa mig inte de här videorna",
     "restrictedHeading": "Åldersbegränsat innehåll",
     "restrictedBody": "Det här innehållet kanske inte passar alla.",
     "verifying": "Verifierar...",
@@ -542,6 +546,10 @@
     "awarded": "Tilldelat"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "Åldersbegränsade videor",
+    "ageRestrictedPreferenceDescription": "Välj om åldersbegränsade videor ska visas i flöden i den här webbläsaren. Direktlänkar kräver fortfarande åldersbekräftelse.",
+    "showAgeRestrictedVideos": "Visa åldersbegränsade videor",
+    "hideAgeRestrictedVideos": "Dölj åldersbegränsade videor",
     "unmute": "Slå på ljudet",
     "heading": "Modereringsinställningar",
     "subheading": "Styr vad du ser och rapportera överträdelser",

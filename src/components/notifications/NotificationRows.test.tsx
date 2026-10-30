@@ -1,14 +1,19 @@
 // ABOUTME: Tests for grouped notification row components
 // ABOUTME: Covers VideoNotificationRow and ActorNotificationRow rendering and navigation
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18n } from '@/lib/i18n';
 import { VideoNotificationRow, ActorNotificationRow } from './NotificationRows';
 import type { VideoNotification, ActorNotification } from '@/types/notification';
 
-const { mockNavigate } = vi.hoisted(() => ({
+const { mockNavigate, mockUseNotificationVideoPreview } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
+  mockUseNotificationVideoPreview: vi.fn(() => ({ data: undefined as { videoUrl?: string; ageRestricted: boolean } | undefined })),
+}));
+
+vi.mock('@/hooks/useNotificationVideoPreview', () => ({
+  useNotificationVideoPreview: mockUseNotificationVideoPreview,
 }));
 
 vi.mock('@/hooks/useSubdomainNavigate', () => ({
@@ -66,6 +71,7 @@ function buildActorNotification(
 describe('VideoNotificationRow', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    mockUseNotificationVideoPreview.mockReturnValue({ data: undefined });
 
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
@@ -81,8 +87,8 @@ describe('VideoNotificationRow', () => {
   });
 
   it('single-actor like row shows one avatar, a whole-sentence message, and a thumbnail', () => {
-    const notification = buildVideoNotification();
-    render(<VideoNotificationRow notification={notification} />);
+    const notification = buildVideoNotification({ videoUrl: 'https://media.divine.video/loop.mp4' });
+    const { container } = render(<VideoNotificationRow notification={notification} />);
 
     // Actor name visible
     expect(screen.getByText('Alice')).toBeInTheDocument();
@@ -97,7 +103,7 @@ describe('VideoNotificationRow', () => {
     const img = document.querySelector('img[src="https://example.com/thumb.jpg"]');
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('alt', '');
-
+    expect(container.querySelector('video')).not.toBeInTheDocument();
     // No overflow text (totalCount === 1)
     expect(screen.queryByText(/\+/)).not.toBeInTheDocument();
     expect(screen.queryByText(/others/)).not.toBeInTheDocument();
@@ -242,6 +248,109 @@ describe('VideoNotificationRow', () => {
     // the placeholder span is presentational and contains the BrandLogo.
     const thumbnailButton = screen.getAllByRole('button', { name: /My Cool Loop/i }).pop()!;
     expect(thumbnailButton.textContent).toContain('Divine');
+  });
+
+  it('loads a still frame only when a thumbnail-less row approaches the viewport', () => {
+    let onIntersect: IntersectionObserverCallback = () => {};
+    vi.mocked(IntersectionObserver).mockImplementation((callback) => {
+      onIntersect = callback;
+      return { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
+    });
+    // Preview data can already be cached by another row for the same video;
+    // an off-screen row must still not mount a video element.
+    mockUseNotificationVideoPreview.mockReturnValue({ data: {
+      videoUrl: 'https://media.divine.video/loop.mp4', ageRestricted: false,
+    } });
+    const notification = buildVideoNotification({
+      videoThumbnailUrl: undefined,
+      videoUrl: 'https://media.divine.video/loop.mp4',
+    });
+    const { container } = render(<VideoNotificationRow notification={notification} />);
+
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith(
+      'event-abc123', false, 'https://media.divine.video/loop.mp4',
+    );
+    expect(container.querySelector('video')).not.toBeInTheDocument();
+    act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith(
+      'event-abc123', true, 'https://media.divine.video/loop.mp4',
+    );
+    const video = container.querySelector('video');
+    expect(video).toHaveAttribute('src', 'https://media.divine.video/loop.mp4#t=0.1');
+    expect(video).toHaveAttribute('preload', 'metadata');
+    expect(video).toHaveProperty('muted', true);
+    fireEvent.loadedData(video!);
+    expect(screen.queryByText('Divine')).not.toBeInTheDocument();
+  });
+
+  it('falls back to a still frame when a thumbnail image fails', () => {
+    let onIntersect: IntersectionObserverCallback = () => {};
+    vi.mocked(IntersectionObserver).mockImplementation((callback) => {
+      onIntersect = callback;
+      return { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
+    });
+    const { container } = render(<VideoNotificationRow notification={buildVideoNotification({
+      videoUrl: 'https://media.divine.video/loop.mp4',
+    })} />);
+
+    fireEvent.error(container.querySelector('img[src="https://example.com/thumb.jpg"]')!);
+    mockUseNotificationVideoPreview.mockReturnValue({ data: {
+      videoUrl: 'https://media.divine.video/loop.mp4', ageRestricted: false,
+    } });
+    act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    const video = container.querySelector('video');
+    expect(video).toHaveAttribute('src', 'https://media.divine.video/loop.mp4#t=0.1');
+    fireEvent.error(video!);
+    expect(screen.getByText('Divine')).toBeInTheDocument();
+  });
+
+  it('does not load restricted video as a thumbnail fallback', () => {
+    const { container } = render(<VideoNotificationRow notification={buildVideoNotification({
+      videoThumbnailUrl: undefined,
+      videoUrl: 'https://media.divine.video/restricted.mp4',
+      videoAgeRestricted: true,
+    })} />);
+
+    expect(container.querySelector('video')).not.toBeInTheDocument();
+    expect(screen.getByText('Divine')).toBeInTheDocument();
+  });
+
+  it('looks up a fallback only after an embedded thumbnail fails near the viewport', () => {
+    let onIntersect: IntersectionObserverCallback = () => {};
+    vi.mocked(IntersectionObserver).mockImplementation((callback) => {
+      onIntersect = callback;
+      return { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
+    });
+    const notification = buildVideoNotification();
+    const { container, rerender } = render(<VideoNotificationRow notification={notification} />);
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', false, undefined);
+    fireEvent.error(container.querySelector('img[src="https://example.com/thumb.jpg"]')!);
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', false, undefined);
+    act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', true, undefined);
+
+    mockUseNotificationVideoPreview.mockReturnValue({ data: {
+      videoUrl: 'https://example.com/fallback.mp4', ageRestricted: false,
+    } });
+    rerender(<VideoNotificationRow notification={notification} />);
+    expect(container.querySelector('video')).toHaveAttribute('src', 'https://example.com/fallback.mp4#t=0.1');
+  });
+
+  it('keeps the placeholder when an on-demand fallback is age restricted', () => {
+    let onIntersect: IntersectionObserverCallback = () => {};
+    vi.mocked(IntersectionObserver).mockImplementation((callback) => {
+      onIntersect = callback;
+      return { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
+    });
+    mockUseNotificationVideoPreview.mockReturnValue({ data: {
+      videoUrl: 'https://example.com/restricted.mp4', ageRestricted: true,
+    } });
+    const { container } = render(<VideoNotificationRow notification={buildVideoNotification({
+      videoThumbnailUrl: undefined,
+    })} />);
+    act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    expect(container.querySelector('video')).not.toBeInTheDocument();
+    expect(screen.getByText('Divine')).toBeInTheDocument();
   });
 
   it('empty-string thumbnail also renders BrandLogo placeholder (falsy check)', () => {

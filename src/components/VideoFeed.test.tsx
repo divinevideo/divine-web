@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
@@ -176,6 +176,111 @@ describe('VideoFeed', () => {
     await user.click(button);
 
     expect(mockNavigate).toHaveBeenCalledWith('/discovery/classics?play=compilation&start=0');
+  });
+
+  it.each(['home', 'popular', 'discovery'] as const)('omits age-restricted videos from the %s feed when hidden', (feedType) => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: [
+        { id: 'restricted', pubkey: 'a'.repeat(64), videoUrl: 'https://example.com/restricted.mp4', ageRestricted: true },
+        { id: 'public', pubkey: 'b'.repeat(64), videoUrl: 'https://example.com/public.mp4', ageRestricted: false },
+      ] }] },
+      fetchNextPage: vi.fn(), hasNextPage: false, isLoading: false, error: null,
+      refetch: vi.fn(), fetchedCount: 2, dataSource: 'funnelcake',
+    });
+
+    render(<MemoryRouter><VideoFeed feedType={feedType} /></MemoryRouter>);
+
+    expect(mockVideoCardWithMetrics).toHaveBeenCalledWith(expect.objectContaining({ video: expect.objectContaining({ id: 'public' }) }));
+    expect(mockVideoCardWithMetrics).not.toHaveBeenCalledWith(expect.objectContaining({ video: expect.objectContaining({ id: 'restricted' }) }));
+  });
+
+  it('omits a video whose age restriction was discovered from a media rejection', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['video-1']));
+    render(<MemoryRouter><VideoFeed feedType="popular" /></MemoryRouter>);
+    expect(mockVideoCardWithMetrics).not.toHaveBeenCalled();
+    expect(screen.getByText(/adjust your viewing preferences/i)).toBeInTheDocument();
+  });
+
+  it('lets a viewer restore hidden age-restricted videos directly from the feed', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: [{
+        id: 'restricted', pubkey: 'a'.repeat(64), videoUrl: 'https://example.com/restricted.mp4', ageRestricted: true,
+      }] }] },
+      fetchNextPage: vi.fn(), hasNextPage: false, isLoading: false, error: null,
+      refetch: vi.fn(), fetchedCount: 1, dataSource: 'funnelcake',
+    });
+
+    render(<MemoryRouter><VideoFeed feedType="popular" /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: /show age-restricted videos/i }));
+
+    expect(localStorage.getItem('hide-age-restricted-videos')).toBe('false');
+    expect(mockVideoCardWithMetrics).toHaveBeenCalledWith(expect.objectContaining({ video: expect.objectContaining({ id: 'restricted' }) }));
+  });
+
+  it('can fetch beyond an all-hidden page without unhiding', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    const fetchNextPage = vi.fn();
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'hidden', pubkey: 'a'.repeat(64), ageRestricted: true }] }] },
+      fetchNextPage, hasNextPage: true, isLoading: false, isFetchingNextPage: false,
+      error: null, refetch: vi.fn(), fetchedCount: 1, dataSource: 'funnelcake',
+    });
+    render(<MemoryRouter><VideoFeed feedType="popular" /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: /go to next page/i }));
+    expect(fetchNextPage).toHaveBeenCalledOnce();
+    expect(localStorage.getItem('hide-age-restricted-videos')).toBe('true');
+  });
+
+  it('lets a short partially hidden feed page without changing the default feed controls', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    const fetchNextPage = vi.fn();
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: [
+        { id: 'hidden', pubkey: 'a'.repeat(64), ageRestricted: true },
+        { id: 'public', pubkey: 'b'.repeat(64) },
+      ] }] }, fetchNextPage, hasNextPage: true, isLoading: false, error: null,
+      refetch: vi.fn(), fetchedCount: 2, dataSource: 'funnelcake',
+    });
+    const { unmount } = render(<MemoryRouter><VideoFeed feedType="popular" /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: /go to next page/i }));
+    expect(fetchNextPage).toHaveBeenCalledOnce();
+    unmount();
+    localStorage.setItem('hide-age-restricted-videos', 'false');
+    render(<MemoryRouter><VideoFeed feedType="popular" /></MemoryRouter>);
+    expect(screen.queryByRole('button', { name: /go to next page/i })).not.toBeInTheDocument();
+  });
+
+  it('disables next-page recovery and shows progress while that page is loading', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    const fetchNextPage = vi.fn();
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'hidden', ageRestricted: true }] }] },
+      fetchNextPage, hasNextPage: true, isLoading: false, isFetchingNextPage: true,
+      error: null, refetch: vi.fn(), fetchedCount: 1, dataSource: 'funnelcake',
+    });
+    render(<MemoryRouter><VideoFeed feedType="popular" /></MemoryRouter>);
+    const button = screen.getByRole('button', { name: /loading more videos/i });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(fetchNextPage).not.toHaveBeenCalled();
+  });
+
+  it('keeps navigation source indices separate from visible feed positions', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: Array.from({ length: 11 }, (_, index) => ({
+        id: `video-${index}`, pubkey: `${index}`.padStart(64, '0'), ageRestricted: index < 10,
+      })) }] },
+      fetchNextPage: vi.fn(), hasNextPage: false, isLoading: false,
+      error: null, refetch: vi.fn(), fetchedCount: 11, dataSource: 'funnelcake',
+    });
+    render(<MemoryRouter><VideoFeed feedType="popular" /></MemoryRouter>);
+    expect(mockVideoCardWithMetrics).toHaveBeenCalledWith(expect.objectContaining({
+      video: expect.objectContaining({ id: 'video-10' }), index: 0, navigationIndex: 10,
+    }));
   });
 
   it('preserves discovery tab context in the compilation url', async () => {

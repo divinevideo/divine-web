@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter, MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -65,7 +65,7 @@ vi.mock('@/components/ui/tabs', () => ({
   Tabs: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   TabsList: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   TabsTrigger: ({ children, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button>,
-  TabsContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  TabsContent: ({ children, value }: { children: ReactNode; value: string }) => <div data-testid={`tab-${value}`}>{children}</div>,
 }));
 
 vi.mock('@/components/ui/select', () => ({
@@ -80,6 +80,7 @@ vi.mock('@/components/ui/card', () => ({
   Card: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
   CardContent: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
   CardHeader: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
+  CardDescription: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
   CardTitle: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => <h3 {...props}>{children}</h3>,
 }));
 
@@ -111,17 +112,19 @@ vi.mock('@/components/VideoCardWithMetrics', () => ({
     video,
     navigationContext,
     index,
+    navigationIndex,
   }: {
     video: { id: string };
     navigationContext?: { source: string; query?: string; sortMode?: string };
     index?: number;
+    navigationIndex?: number;
   }) => {
     const href = navigationContext
-      ? `/video/${video.id}?source=${navigationContext.source}&q=${navigationContext.query}&sort=${navigationContext.sortMode}&index=${index}`
+      ? `/video/${video.id}?source=${navigationContext.source}&q=${navigationContext.query}&sort=${navigationContext.sortMode}&index=${navigationIndex ?? index}`
       : `/video/${video.id}`;
 
     return (
-      <button data-testid={`video-card-${video.id}`} onClick={() => mockNavigate(href)}>
+      <button data-testid={`video-card-${video.id}`} data-position={index} onClick={() => mockNavigate(href)}>
         open {video.id}
       </button>
     );
@@ -587,6 +590,102 @@ describe('SearchPage', () => {
     fireEvent.click(screen.getAllByTestId('video-card-video-2')[0]!);
 
     expect(mockNavigate).toHaveBeenCalledWith('/video/video-2?source=search&q=twerking&sort=top&index=1');
+  });
+
+  it('hides restricted search results without changing original navigation indices', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['discovered']));
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [
+        { id: 'restricted', pubkey: 'a'.repeat(64), ageRestricted: true },
+        { id: 'discovered', pubkey: 'b'.repeat(64) },
+        { id: 'public', pubkey: 'c'.repeat(64) },
+      ] }] },
+      fetchNextPage: vi.fn(), hasNextPage: false, isLoading: false, error: null, fetchedCount: 3,
+    });
+
+    renderPage(['/search?q=loops&filter=videos&sort=top']);
+
+    expect(screen.queryByTestId('video-card-restricted')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('video-card-discovered')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('video-card-public')[0]).toHaveAttribute('data-position', '0');
+    fireEvent.click(screen.getAllByTestId('video-card-public')[0]!);
+    expect(mockNavigate).toHaveBeenCalledWith('/video/public?source=search&q=loops&sort=top&index=2');
+  });
+
+  it('reports raw query result count independently of browser hiding', async () => {
+    vi.useFakeTimers();
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [
+        { id: 'restricted', pubkey: 'a'.repeat(64), ageRestricted: true },
+        { id: 'public', pubkey: 'b'.repeat(64) },
+      ] }] },
+      fetchNextPage: vi.fn(), hasNextPage: false, isLoading: false, error: null, fetchedCount: 2,
+    });
+    renderPage(['/search?q=loops&filter=videos']);
+    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
+    expect(trackSearch).toHaveBeenLastCalledWith('loops', 'videos', 2);
+  });
+
+  it('offers to restore search results when every loaded video is hidden', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    const fetchNextPage = vi.fn();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'restricted', pubkey: 'a'.repeat(64), ageRestricted: true }] }] },
+      fetchNextPage, hasNextPage: true, isLoading: false, error: null, fetchedCount: 1,
+    });
+    renderPage(['/search?q=loops&filter=videos']);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /go to next page/i })[0]!);
+    expect(fetchNextPage).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getAllByRole('button', { name: /show age-restricted videos/i })[0]!);
+
+    expect(screen.getAllByTestId('video-card-restricted').length).toBeGreaterThan(0);
+  });
+
+  it('can page a short partially hidden result set without requiring a scroll event', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    const fetchNextPage = vi.fn();
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'hidden', ageRestricted: true }, { id: 'public', pubkey: 'a'.repeat(64) }] }] },
+      fetchNextPage, hasNextPage: true, isLoading: false, isFetchingNextPage: false, error: null, fetchedCount: 2,
+    });
+    renderPage(['/search?q=loops&filter=videos']);
+    fireEvent.click(screen.getAllByRole('button', { name: /go to next page/i })[0]);
+    expect(fetchNextPage).toHaveBeenCalledOnce();
+  });
+
+  it('does not add recovery paging on the default unfiltered search path', () => {
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'public', pubkey: 'a'.repeat(64) }] }] },
+      fetchNextPage: vi.fn(), hasNextPage: true, isLoading: false, error: null, fetchedCount: 1,
+    });
+    renderPage(['/search?q=loops&filter=videos']);
+    expect(screen.queryByRole('button', { name: /go to next page/i })).not.toBeInTheDocument();
+  });
+
+  it('does not page unseen extra rows once the All tab already shows six videos', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: Array.from({ length: 9 }, (_, index) => ({
+        id: `result-${index}`, pubkey: 'a'.repeat(64), ageRestricted: index === 0,
+      })) }] },
+      fetchNextPage: vi.fn(), hasNextPage: true, isLoading: false, error: null, fetchedCount: 9,
+    });
+    renderPage(['/search?q=loops']);
+    expect(screen.queryByRole('button', { name: /go to next page/i })).not.toBeInTheDocument();
+  });
+
+  it('explains fully hidden videos inside the All tab even when users also match', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    mockUseInfiniteSearchVideos.mockReturnValue({
+      data: { pages: [{ videos: [{ id: 'hidden', ageRestricted: true }] }] },
+      fetchNextPage: vi.fn(), hasNextPage: true, isLoading: false, error: null, fetchedCount: 1,
+    });
+    mockUseSearchUsers.mockReturnValue({ data: [{ pubkey: 'a'.repeat(64), name: 'Example' }], isLoading: false, error: null });
+    renderPage(['/search?q=loops']);
+    expect(within(screen.getByTestId('tab-all')).getByRole('button', { name: /show age-restricted videos/i })).toBeInTheDocument();
   });
 
   it('renders a play-all button for video search results and navigates with source context', async () => {

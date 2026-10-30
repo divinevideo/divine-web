@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PushPin as Pin, PushPinSlash as PinOff } from '@phosphor-icons/react';
 import { usePinnedVideos, useUnpinVideo } from '@/hooks/usePinnedVideos';
 import { VideoGrid } from '@/components/VideoGrid';
+import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
 import { SectionHeader } from '@/components/brand/SectionHeader';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/useToast';
@@ -21,6 +22,7 @@ interface PinnedVideosSectionProps {
 }
 
 export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectionProps) {
+  const { shouldHideVideo } = useAgeRestrictedPreference();
   const { t } = useTranslation();
   const { nostr } = useNostr();
   const { data: coordinates = [], isLoading: coordsLoading } = usePinnedVideos(pubkey);
@@ -49,6 +51,9 @@ export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectio
     gcTime: 300000,
   });
 
+  const visiblePinnedVideos = pinnedVideos.filter(video => !shouldHideVideo(video));
+  const navigationIndices = new Map(pinnedVideos.map((video, index) => [video.id, index]));
+
   // Memoize the coordinate lookup for unpin
   const coordinateForVideo = useMemo(() => {
     const map = new Map<string, string>();
@@ -74,6 +79,7 @@ export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectio
   // Don't render anything if no pins (or still loading and no cached data)
   if (coordinates.length === 0 && !coordsLoading) return null;
   if (coordsLoading && coordinates.length === 0) return null;
+  if (!videosLoading && pinnedVideos.length > 0 && visiblePinnedVideos.length === 0) return null;
 
   return (
     <div className="space-y-3">
@@ -88,16 +94,17 @@ export function PinnedVideosSection({ pubkey, isOwnProfile }: PinnedVideosSectio
             <div key={i} className="aspect-square bg-muted animate-pulse rounded-lg" />
           ))}
         </div>
-      ) : pinnedVideos.length > 0 ? (
+      ) : visiblePinnedVideos.length > 0 ? (
         <div className="relative">
           <VideoGrid
-            videos={pinnedVideos}
+            videos={visiblePinnedVideos}
+            navigationIndices={navigationIndices}
             navigationContext={{ source: 'profile', pubkey }}
           />
           {/* Unpin overlay buttons for own profile */}
           {isOwnProfile && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
-              {pinnedVideos.map(video => (
+              {visiblePinnedVideos.map(video => (
                 <Button
                   key={video.id}
                   variant="ghost"

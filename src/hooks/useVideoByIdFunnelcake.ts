@@ -28,6 +28,7 @@ interface UseVideoByIdOptions {
   sortMode?: SortMode | 'relevance';
   currentIndex?: number; // Optional global index from feed context for neighbor windowing
   enabled?: boolean;
+  isVideoVisible?: (video: ParsedVideoData) => boolean;
 }
 
 interface UseVideoByIdResult {
@@ -46,6 +47,7 @@ interface UseVideoByIdResult {
 
 const NAVIGATION_WINDOW_SIZE = 16;
 const NAVIGATION_PAGE_BUDGET = 5;
+const ALL_VIDEOS_VISIBLE = () => true;
 
 type NavigationVideo = ParsedVideoData & { navigationIndex?: number };
 export type FeaturedNavigationState = 'not-featured' | 'ok' | 'unresolved' | 'tab-unavailable' | 'target-out-of-range';
@@ -130,7 +132,7 @@ function visibleVideosFromResult(
 }
 
 async function fetchVisiblePagePastBlocked(
-  fetchNextPage: () => Promise<{
+  fetchNextPage: (options?: { cancelRefetch?: boolean }) => Promise<{
     data?: { pages: VideoNavigationPage[] };
     hasNextPage?: boolean;
     isError?: boolean;
@@ -138,10 +140,11 @@ async function fetchVisiblePagePastBlocked(
   }>,
   currentVideos: ParsedVideoData[] | null,
   blockedPubkeys: ReadonlySet<string>,
+  isVideoVisible: (video: ParsedVideoData) => boolean = ALL_VIDEOS_VISIBLE,
   pageBudget: number = NAVIGATION_PAGE_BUDGET
 ): Promise<ParsedVideoData[] | null> {
-  const startCount = currentVideos?.length ?? 0;
-  let result = await fetchNextPage();
+  const startCount = currentVideos?.filter(isVideoVisible).length ?? 0;
+  let result = await fetchNextPage({ cancelRefetch: false });
   if (result.isError) throw result.error ?? new Error('Could not load more videos');
 
   let visible = visibleVideosFromResult(result.data, blockedPubkeys) ?? currentVideos;
@@ -149,11 +152,11 @@ async function fetchVisiblePagePastBlocked(
   let skipped = 0;
 
   while (
-    (visible?.length ?? 0) <= startCount &&
+    (visible?.filter(isVideoVisible).length ?? 0) <= startCount &&
     result.hasNextPage &&
     skipped < pageBudget
   ) {
-    result = await fetchNextPage();
+    result = await fetchNextPage({ cancelRefetch: false });
     if (result.isError) throw result.error ?? new Error('Could not load more videos');
 
     const nextLoadedPages = result.data?.pages.length ?? 0;
@@ -174,7 +177,7 @@ async function fetchVisiblePagePastBlocked(
  * The single video lookup is faster than WebSocket queries.
  */
 export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoByIdResult {
-  const { videoId, pubkey, hashtag, query, featuredTabId, sortMode = 'relevance', currentIndex, enabled = true } = options;
+  const { videoId, pubkey, hashtag, query, featuredTabId, sortMode = 'relevance', currentIndex, enabled = true, isVideoVisible } = options;
   const { config } = useAppContext();
   const blockedPubkeys = useFeedBlocklist();
   const windowOffset = getNavigationWindowOffset(currentIndex);
@@ -445,21 +448,21 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
     fetchNextPage: async () => {
       if (pubkey) {
         if (!userVideosQuery.hasNextPage) return userVideos;
-        return fetchVisiblePagePastBlocked(userVideosQuery.fetchNextPage, userVideos, blockedPubkeys);
+        return fetchVisiblePagePastBlocked(userVideosQuery.fetchNextPage, userVideos, blockedPubkeys, isVideoVisible);
       }
 
       if (hashtag) {
         if (!hashtagVideosQuery.hasNextPage) return hashtagVideos;
-        return fetchVisiblePagePastBlocked(hashtagVideosQuery.fetchNextPage, hashtagVideos, blockedPubkeys);
+        return fetchVisiblePagePastBlocked(hashtagVideosQuery.fetchNextPage, hashtagVideos, blockedPubkeys, isVideoVisible);
       }
 
       if (searchValue) {
         if (!searchVideosQuery.hasNextPage) return searchVideosForContext;
-        return fetchVisiblePagePastBlocked(searchVideosQuery.fetchNextPage, searchVideosForContext, blockedPubkeys);
+        return fetchVisiblePagePastBlocked(searchVideosQuery.fetchNextPage, searchVideosForContext, blockedPubkeys, isVideoVisible);
       }
 
       if (!eligibleFeaturedTabId || !featuredHasNextPage) return featuredVideos;
-      return fetchVisiblePagePastBlocked(fetchNextFeaturedPage, featuredVideos, blockedPubkeys);
+      return fetchVisiblePagePastBlocked(fetchNextFeaturedPage, featuredVideos, blockedPubkeys, isVideoVisible);
     },
     isLoading,
     error,

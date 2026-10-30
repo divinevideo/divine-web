@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SectionHeader } from '@/components/brand/SectionHeader';
+import { AgeRestrictedPreferenceCard } from '@/components/AgeRestrictedPreferenceCard';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -334,7 +335,8 @@ export default function ModerationSettingsPage() {
 
   if (!user) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-8">
+      <div className="container max-w-4xl mx-auto px-4 py-8 space-y-6">
+        <AgeRestrictedPreferenceCard />
         <Card>
           <CardContent className="py-12 text-center">
             <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -463,6 +465,10 @@ export default function ModerationSettingsPage() {
             </CardContent>
           </Card>
         )}
+      </div>
+
+      <div className="mb-6">
+        <AgeRestrictedPreferenceCard />
       </div>
 
       {/* Status Card */}

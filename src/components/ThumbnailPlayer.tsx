@@ -8,12 +8,15 @@ import { Button } from '@/components/ui/button';
 import { SmartLink } from '@/components/SmartLink';
 import { cn } from '@/lib/utils';
 import { useAdultVerification, checkMediaAuth } from '@/hooks/useAdultVerification';
+import { markAgeRestricted } from '@/hooks/useAgeRestrictedPreference';
+import type { ParsedVideoData } from '@/types/video';
 import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
 import { isProtectedDivineMediaUrl, useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import { verboseLog, debugError } from '@/lib/debug';
 
 interface ThumbnailPlayerProps {
   videoId: string;
+  videoData?: ParsedVideoData;
   src: string;
   thumbnailUrl?: string;
   duration?: number;
@@ -36,6 +39,7 @@ interface ThumbnailPlayerProps {
 
 export function ThumbnailPlayer({
   videoId,
+  videoData,
   src,
   thumbnailUrl,
   duration: _duration,
@@ -77,6 +81,7 @@ export function ThumbnailPlayer({
       verboseLog(`[ThumbnailPlayer ${videoId}] Thumbnail failed, checking if auth required`);
       const { authorized, status } = await checkMediaAuth(urlToCheck);
       if (!authorized && (status === 401 || status === 403)) {
+        markAgeRestricted(videoData ?? videoId);
         debugError(`[ThumbnailPlayer ${videoId}] Auth required (${status})`);
         setRequiresAuth(true);
         return;
@@ -85,7 +90,7 @@ export function ThumbnailPlayer({
 
     setThumbnailError(true);
     onError?.();
-  }, [useVideoFallback, thumbnailUrl, src, isAdultVerified, videoId, onError]);
+  }, [useVideoFallback, thumbnailUrl, src, isAdultVerified, videoId, videoData, onError]);
 
   const handleThumbnailLoad = (e: React.SyntheticEvent<HTMLVideoElement | HTMLImageElement>) => {
     

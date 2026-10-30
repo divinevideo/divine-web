@@ -525,6 +525,10 @@
     "close": "Schließen"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "Altersstatus wird überprüft...",
+    "unavailableForAccount": "Für dieses Konto sind keine Videos mit Altersbeschränkung verfügbar.",
+    "confirmationFailed": "Wir konnten Ihre Auswahl derzeit nicht bestätigen. Versuchen Sie es später noch einmal.",
+    "hideVideos": "Zeig mir diese Videos nicht",
     "restrictedHeading": "Altersbeschränkter Inhalt",
     "restrictedBody": "Dieser Inhalt ist möglicherweise nicht für alle Zuschauer geeignet.",
     "verifying": "Wird geprüft...",
@@ -542,6 +546,10 @@
     "awarded": "Verliehen"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "Videos mit Altersbeschränkung",
+    "ageRestrictedPreferenceDescription": "Wählen Sie aus, ob Videos mit Altersbeschränkung in Feeds in diesem Browser angezeigt werden sollen. Für direkte Links ist weiterhin eine Altersbestätigung erforderlich.",
+    "showAgeRestrictedVideos": "Videos mit Altersbeschränkung anzeigen",
+    "hideAgeRestrictedVideos": "Videos mit Altersbeschränkung ausblenden",
     "unmute": "Stummschaltung aufheben",
     "heading": "Moderationseinstellungen",
     "subheading": "Bestimme, welche Inhalte du siehst, und melde Verstöße",

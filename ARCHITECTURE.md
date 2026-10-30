@@ -121,6 +121,10 @@ The retired `/discovery/new` chronological feed redirects to
 `/discovery/hot`; Discovery does not expose or mount an all-new-video feed.
 Retired `/invite/:code` links discard the obsolete code and redirect signed-out
 visitors to ordinary registration; signed-in visitors return to `/home`.
+The Concord chat proof of concept (`/chat/*`, and `/invite/<naddr>` links whose
+code starts with `naddr1`) is routed only in dev builds and in builds with
+`VITE_CHAT_POC_ENABLED=true`, which PR previews set; production builds keep
+every `/invite/:code` link on the retired-invite redirect.
 `/discovery/:tab` accepts the built-in Discovery tabs plus the currently
 eligible server-configured featured tab slug, when Funnelcake serves one.
 Public profiles expose a compact mixed NIP-51 list shelf and a filterable
@@ -460,3 +464,95 @@ Owners see a private Supporter chip and thanks even when recognition is hidden.
 Other profile visitors read only `/v1/public/supporters?pubkeys=<full-hex-key>`;
 only active, explicitly visible supporters receive a public chip. Membership
 never creates an identity proof or changes the linked-account proof workflow.
+
+## Age-Restricted Feed Preference
+
+`useAgeRestrictedPreference` stores a browser-wide hide choice and up to 500
+video identities whose media returned 401 or 403 (addressable pubkey/kind/d-tag
+when available, with legacy event-ID fallback). `VideoFeed` filters both API-marked
+and locally discovered age-restricted videos across feed types. Standalone
+`VideoGrid` views apply the same preference for profiles, lists, and pinned
+videos while retaining original navigation indices. The age-gate
+controls, feed restore button, and moderation settings share this local
+preference, including for signed-out viewers. Direct video links still use
+`useAdultVerification` and the protected-minor lock; hiding from feeds does
+not grant media access.
+
+Search results and confirmed-collaboration listings also apply the preference.
+`VideoPage` omits hidden neighboring videos from its context feed and skips
+them during next/previous navigation, preserving original source indices.
+The explicitly selected video remains visible even when hidden from browsing,
+so direct links still reach the age gate rather than becoming unavailable.
+Scroll progress counts the unfiltered rendered window to re-arm scroll pagination.
+Explicit next-page actions also cover short partially hidden context/search/profile
+windows that cannot produce a scroll event, only when hiding removed rows from a
+nonempty window. Empty-feed recovery also remains available for other filtered or
+empty pages. Recovery actions follow their list. Search's
+All-tab recovery stops once its six displayed video slots are filled. The existing bounded navigation paging
+loop skips hidden-only pages while preserving the selected target and raw indices.
+All-hidden search results and collaboration listings
+show the reversible viewing preference; search also offers the next result page.
+
+`VideoPlayer` keeps its age overlay mounted until the verified-state callback
+clears the auth retry gate. Parent and overlay subscribe to the same verification
+change, so unmounting solely on the parent's verified flag would skip that callback.
+The mute-resume effect cancels its owned animation frames and settle timer on
+cleanup, and checks that the captured element is still current before resuming.
+Card and grid placeholders show account-check/refusal states without granting access.
+Context cards have module-stable component identity, so hosted-account checks and
+preference events do not remount the playing card. Account status observes initial
+pending state, not background fetch transitions; requests and response parsing have
+an eight-second deadline that aborts and returns fail-closed unknown. Transient
+refusal feedback belongs to the attempted video/current account and eligibility
+callback; permanent protected-minor notices are noninterrupting text.
+
+Editable-list counts and item controls use the same visible subset, and pinned
+sections align their grids and unpin controls before hiding a fully hidden section.
+Source navigation indices remain separate from visible metrics/analytics positions;
+search result-count analytics count raw deduped matches rather than local hiding.
+An all-hidden feed page has an explicit next-page action without changing the hide choice.
+Standalone grids show the reversible preference rather than claiming the list is empty;
+the default profile grid supplies an explicit next-page callback for hidden-only pages.
+Paging actions expose in-flight state. The provider skips only while a forward
+page is already loading; a scroll during a background refresh still starts the
+next page normally, so unchanged refresh counts cannot leave the trigger disarmed.
+Player/thumbnail discovery writers do not subscribe to discovery state; readers
+ignore discoveries while hiding is off, with a stable false filter predicate.
+Author/interaction batch inputs do not change merely because local hiding changes.
+
+The browser's discovered-ID cache deliberately uses the gate's existing 401/403
+classification and can therefore also remember a non-age authorization denial.
+It is bounded to 500 entries, oldest-first, and does not clear on adult verification:
+verification grants eligibility, not consent to undo a viewer's hide preference.
+Showing age-restricted videos reverses filtering independently of this cache.
+Raw WebSocket events may lack server moderation labels; this preference does not
+promise automatic moderation-API enrichment for every relay/list/pinned row. Such
+unlabelled videos become known through media discovery, including addressable
+republishes once their logical identity has been recorded. The setting is view-only
+and browser-wide, including one's own content; it never removes list membership or
+publishing/edit permissions, and can be reversed or bypassed by a gated direct link.
+## External short links
+
+Video share controls call useShortLinkShare without requiring a login. The public
+VITE_SHORT_LINKS_ENABLED build switch defaults on; set it to false to disable
+sending. Explicit pointer/key presses on the share control prepare a mapping
+through a public JSON POST to https://gateway.divine.video/api/links without
+an Authorization header.
+Rendering or scrolling a feed never creates mappings. Lists and other
+unsupported targets keep their full URLs.
+
+ShortLinkClient bounds HTTP work to two seconds, deduplicates work
+per target, validates the complete mapping and keeps at most 100 successful
+mappings in memory. Timeout, quota, offline and malformed
+responses leave the canonical URL available. No server bearer is present in the
+browser. Unmounting the sharing hook clears pending work and cached mappings.
+
+The final share click calls navigator.share through useShare synchronously with
+a cached mapping or the full URL. It never awaits preparation; a first share may
+therefore use the full URL. Clipboard fallback and cancellation behavior remain
+owned by useShare. Public redirects remain available when sending is disabled.
+
+The Actions PR preview build explicitly disables short-link sending because its
+pages.dev origin is not allowed by the production gateway. Those previews share
+canonical URLs without requesting a signature. Other preview build integrations
+must set the same build override to opt out of production shortening.

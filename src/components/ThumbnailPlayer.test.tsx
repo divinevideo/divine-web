@@ -78,6 +78,19 @@ describe('ThumbnailPlayer', () => {
     expect(handleThumbnailClick).not.toHaveBeenCalled();
   });
 
+  it('remembers a thumbnail whose media requires age authorization', async () => {
+    const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
+    (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({ authorized: false, status: 401 });
+    mockUseAdultVerification.mockReturnValue({ isVerified: false, getAuthHeader: vi.fn() });
+
+    render(<ThumbnailPlayer videoId="thumbnail-restricted" src="https://example.com/video.mp4" thumbnailUrl="https://example.com/thumb.jpg" />);
+    fireEvent.error(screen.getByTestId('video-thumbnail'));
+    fireEvent.error(screen.getByTestId('video-thumbnail'));
+
+    await waitFor(() => expect(screen.getByTestId('age-verification-overlay')).toBeInTheDocument());
+    expect(JSON.parse(localStorage.getItem('discovered-age-restricted-video-ids') ?? '[]')).toContain('thumbnail-restricted');
+  });
+
   it('still delegates container clicks to the thumbnail click action', () => {
     const handleThumbnailClick = vi.fn();
 

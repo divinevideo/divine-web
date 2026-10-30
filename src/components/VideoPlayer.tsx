@@ -16,6 +16,7 @@ import type { ParsedVideoData } from '@/types/video';
 import type { VttCue } from '@/lib/vttParser';
 import { BlurhashPlaceholder, isValidBlurhash } from '@/components/BlurhashImage';
 import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
+import { markAgeRestricted } from '@/hooks/useAgeRestrictedPreference';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 import { SubtitleOverlay } from '@/components/SubtitleOverlay';
 import { createAuthLoader } from '@/lib/hlsAuthLoader';
@@ -135,6 +136,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     // Adult verification hook
     const { isVerified: isAdultVerified, getAuthHeader } = useAdultVerification();
+    useEffect(() => {
+      if (requiresAuth || discoveredAgeRestricted) markAgeRestricted(videoData ?? videoId);
+    }, [requiresAuth, discoveredAgeRestricted, videoData, videoId]);
     // Keep the latest auth-header generator in a ref. getAuthHeader is keyed on the
     // signer, so a late-resolving signer (e.g. a browser extension that injects after
     // load) hands us a new reference. Reading it through a ref keeps it out of the load
@@ -315,6 +319,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       if (videoRef.current) {
         const video = videoRef.current;
         const shouldBePlayingCheck = isActive && !isUserPaused && !hasError;
+        let outerFrame: number | undefined;
+        let innerFrame: number | undefined;
+        let settleTimer: ReturnType<typeof setTimeout> | undefined;
 
         verboseLog(`[VideoPlayer ${videoId}] Syncing muted state to: ${globalMuted}, isActive: ${isActive}, shouldBePlaying: ${shouldBePlayingCheck}`);
 
@@ -327,9 +334,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         // If this video should be playing (is active and ready), ensure it stays playing
         if (shouldBePlayingCheck) {
           // Use requestAnimationFrame to let browser process the mute change first
-          requestAnimationFrame(() => {
+          outerFrame = requestAnimationFrame(() => {
+            outerFrame = undefined;
+            if (videoRef.current !== video) return;
             // Then use another one to ensure we're after any browser-triggered events
-            requestAnimationFrame(() => {
+            innerFrame = requestAnimationFrame(() => {
+              innerFrame = undefined;
+              if (videoRef.current !== video) return;
               if (video.paused && shouldBePlayingRef.current) {
                 verboseLog(`[VideoPlayer ${videoId}] Video paused after mute change, resuming...`);
                 video.play().catch(error => {
@@ -345,10 +356,17 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           });
         } else {
           // Not active, just clear the flag after events settle
-          setTimeout(() => {
+          settleTimer = setTimeout(() => {
+            settleTimer = undefined;
             isChangingMuteState.current = false;
           }, 100);
         }
+        return () => {
+          if (outerFrame !== undefined) cancelAnimationFrame(outerFrame);
+          if (innerFrame !== undefined) cancelAnimationFrame(innerFrame);
+          if (settleTimer !== undefined) clearTimeout(settleTimer);
+          isChangingMuteState.current = false;
+        };
       }
     }, [globalMuted, videoId, isActive, isUserPaused, hasError]);
 
@@ -1164,7 +1182,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         )}
 
         {/* Age verification required (401/403) */}
-        {requiresAuth && !isAdultVerified && (
+        {requiresAuth && (
           <AgeVerificationOverlay
             onVerified={handleAgeVerified}
             thumbnailUrl={overlayPosterUrl}

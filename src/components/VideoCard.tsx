@@ -28,6 +28,8 @@ import { useIsOwnVideo } from '@/hooks/useIsOwnVideo';
 import { useIsVideoPinned, usePinVideo, useUnpinVideo } from '@/hooks/usePinnedVideos';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAdultVerification } from '@/hooks/useAdultVerification';
+import { useAgeConfirmationFeedback } from '@/hooks/useAgeConfirmationFeedback';
+import { useAgeRestrictedHideChoice } from '@/hooks/useAgeRestrictedHideChoice';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useVideosInLists } from '@/hooks/useVideoLists';
 import { enhanceAuthorData } from '@/lib/generateProfile';
@@ -43,7 +45,7 @@ import { getSafeProfileImage } from '@/lib/imageUtils';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useToast } from '@/hooks/useToast';
-import { useShare } from '@/hooks/useShare';
+import { useShortLinkShare } from '@/hooks/useShortLinkShare';
 import { getVideoShareData } from '@/lib/shareUtils';
 import { SmartLink } from '@/components/SmartLink';
 import { MuteType } from '@/types/moderation';
@@ -79,6 +81,7 @@ interface VideoCardProps {
   // Navigation context for maintaining feed position
   navigationContext?: VideoNavigationContext;
   videoIndex?: number;
+  navigationIndex?: number;
   trafficSource?: ViewTrafficSource;
   /**
    * Brand accent color that drives the card's offset shadow. Used to
@@ -111,6 +114,7 @@ export function VideoCard({
   showComments = false,
   navigationContext,
   videoIndex,
+  navigationIndex,
   trafficSource,
   accent = 'green',
 }: VideoCardProps) {
@@ -251,7 +255,6 @@ export function VideoCard({
   const effectiveLayout = layout ?? 'vertical';
   const isHorizontal = effectiveLayout === 'horizontal';
   const { toast } = useToast();
-  const { share } = useShare();
   const muteUser = useMuteItem();
   const { activeVideoId, setActiveVideo, globalMuted, setGlobalMuted } = useVideoPlayback();
   const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
@@ -262,11 +265,15 @@ export function VideoCard({
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const isOwnVideo = useIsOwnVideo(video);
   const { user: currentUser } = useCurrentUser();
+  const { share, prepare } = useShortLinkShare();
   const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
   const isPinned = useIsVideoPinned(coordinate);
   const { mutateAsync: pinVideo } = usePinVideo();
   const { mutateAsync: unpinVideo } = useUnpinVideo();
-  const { isVerified: isAdultVerified, confirmAdult } = useAdultVerification();
+  const { isVerified: isAdultVerified, confirmAdult, isLoading: isCheckingAge, isProtectedMinor } = useAdultVerification();
+  const { confirmFor, failedFor } = useAgeConfirmationFeedback(confirmAdult, `${currentUser?.pubkey ?? ''}:${isCheckingAge}:${isProtectedMinor}`);
+  const confirmationFailed = failedFor(video.id);
+  const { hideAgeRestricted, setHideAgeRestricted } = useAgeRestrictedHideChoice();
   const { openLoginDialog } = useLoginDialog();
 
   // Get reactions data for the modal
@@ -333,7 +340,8 @@ export function VideoCard({
 
   const handleAgeGateAction = () => {
     if (currentUser) {
-      confirmAdult();
+      if (isCheckingAge || isProtectedMinor) return;
+      confirmFor(video.id);
       return;
     }
 
@@ -350,7 +358,7 @@ export function VideoCard({
   // page so native browser behaviors (middle-click, open in new tab) work.
   const thumbnailLinkTo = mode === 'thumbnail'
     ? (navigationContext
-        ? buildVideoNavigationUrl(video.id, navigationContext, videoIndex)
+        ? buildVideoNavigationUrl(video.id, navigationContext, navigationIndex ?? videoIndex)
         : `/video/${video.id}`)
     : undefined;
 
@@ -599,12 +607,18 @@ export function VideoCard({
             >
               {isAgeGated ? (
                 <AgeRestrictedMediaPlaceholder
-                  actionLabel={currentUser ? t('videoCard.verifyAgeToView') : t('videoCard.logInToView')}
+                  actionLabel={currentUser && isCheckingAge ? t('ageVerificationOverlay.checkingAgeStatus') : currentUser ? t('videoCard.verifyAgeToView') : t('videoCard.logInToView')}
+                  actionDisabled={!!currentUser && (isCheckingAge || isProtectedMinor)}
+                  actionMessage={currentUser && isProtectedMinor ? t('ageVerificationOverlay.unavailableForAccount') : confirmationFailed ? t('ageVerificationOverlay.confirmationFailed') : undefined}
+                  actionMessageRole={confirmationFailed ? 'alert' : undefined}
                   onAction={handleAgeGateAction}
+                  onHide={() => setHideAgeRestricted(!hideAgeRestricted)}
+                  hideLabel={hideAgeRestricted ? t('moderationSettings.showAgeRestrictedVideos') : undefined}
                   title={video.title || video.content}
                 />
               ) : !isPlaying ? (
                 <ThumbnailPlayer
+                  videoData={video}
                   videoId={video.id}
                   src={video.videoUrl}
                   thumbnailUrl={video.thumbnailUrl}
@@ -646,6 +660,7 @@ export function VideoCard({
                   {mode === 'thumbnail' && showThumbnailDuringStartup && (
                     <div className="absolute inset-0 z-20 pointer-events-none">
                       <ThumbnailPlayer
+                        videoData={video}
                         videoId={video.id}
                         src={video.videoUrl}
                         thumbnailUrl={video.thumbnailUrl}
@@ -957,6 +972,8 @@ export function VideoCard({
               "gap-2",
               !isHorizontal && "px-2"
             )}
+            onPointerDown={(event) => { if (event.button === 0) void prepare(getVideoShareData(video).url); }}
+            onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') void prepare(getVideoShareData(video).url); }}
             onClick={handleShare}
             aria-label={t('videoCard.ariaShare')}
           >

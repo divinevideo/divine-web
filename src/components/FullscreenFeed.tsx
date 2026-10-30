@@ -12,7 +12,7 @@ import { useOptimisticRepost } from '@/hooks/useOptimisticRepost';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useToast } from '@/hooks/useToast';
-import { useShare } from '@/hooks/useShare';
+import { useShortLinkShare } from '@/hooks/useShortLinkShare';
 import { getVideoShareData } from '@/lib/shareUtils';
 import { debugLog } from '@/lib/debug';
 import { getVisiblePlaybackCount } from '@/lib/playbackCount';
@@ -47,7 +47,7 @@ function FullscreenVideoWithMetrics({
   const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { toast } = useToast();
-  const { share } = useShare();
+  const { share, prepare } = useShortLinkShare();
   const { toggleLike } = useOptimisticLike();
   const { toggleRepost } = useOptimisticRepost();
   const { openLoginDialog } = useLoginDialog();
@@ -162,6 +162,7 @@ function FullscreenVideoWithMetrics({
       onLike={handleLike}
       onRepost={handleRepost}
       onShare={handleShare}
+      onShareIntent={() => { void prepare(getVideoShareData(video).url); }}
       onDownload={handleDownload}
       isLiked={userInteractions.data?.hasLiked || false}
       isReposted={userInteractions.data?.hasReposted || false}

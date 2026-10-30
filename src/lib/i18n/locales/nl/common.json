@@ -525,6 +525,10 @@
     "close": "Sluiten"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "Leeftijdsstatus controleren...",
+    "unavailableForAccount": "Video's met een leeftijdsbeperking zijn niet beschikbaar voor dit account.",
+    "confirmationFailed": "We kunnen uw keuze momenteel niet bevestigen. Probeer het later opnieuw.",
+    "hideVideos": "Laat mij deze video's niet zien",
     "restrictedHeading": "Leeftijdsbeperkte content",
     "restrictedBody": "Deze content is mogelijk niet geschikt voor alle kijkers.",
     "verifying": "Verifiëren...",
@@ -542,6 +546,10 @@
     "awarded": "Toegekend"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "Video's met een leeftijdsbeperking",
+    "ageRestrictedPreferenceDescription": "Kies of video's met een leeftijdsbeperking in feeds in deze browser worden weergegeven. Voor directe links is nog steeds een leeftijdsbevestiging vereist.",
+    "showAgeRestrictedVideos": "Toon video's met een leeftijdsbeperking",
+    "hideAgeRestrictedVideos": "Video's met een leeftijdsbeperking verbergen",
     "unmute": "Demping opheffen",
     "heading": "Moderatie-instellingen",
     "subheading": "Bepaal welke content je ziet en meld overtredingen",

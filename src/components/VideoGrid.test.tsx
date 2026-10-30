@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { ReactElement } from 'react';
 import { VideoGrid } from './VideoGrid';
 import type { ParsedVideoData } from '@/types/video';
+import { initializeI18n } from '@/lib/i18n';
 
 function renderGrid(ui: ReactElement) {
   return render(<MemoryRouter>{ui}</MemoryRouter>);
@@ -54,8 +55,10 @@ function makeVideo(overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
 }
 
 describe('VideoGrid age-restricted gating', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await initializeI18n({ force: true, languages: ['en-US'] });
     vi.clearAllMocks();
+    localStorage.clear();
     mockUseCurrentUser.mockReturnValue({ user: null });
     mockUseAdultVerification.mockReturnValue({ isVerified: false, confirmAdult: vi.fn(), getAuthHeader: vi.fn() });
     global.fetch = vi.fn().mockResolvedValue({
@@ -108,6 +111,100 @@ describe('VideoGrid age-restricted gating', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
+  it('lets a viewer hide age-restricted tiles from the feed', () => {
+    renderGrid(<VideoGrid videos={[makeVideo({ id: 'restricted-video', ageRestricted: true })]} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /don't show me these videos/i }));
+
+    expect(localStorage.getItem('hide-age-restricted-videos')).toBe('true');
+    expect(mockOpenLoginDialog).not.toHaveBeenCalled();
+    expect(screen.queryByText('Age-restricted')).not.toBeInTheDocument();
+  });
+
+  it('honors the browser preference when a standalone grid is opened', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['discovered-video']));
+    renderGrid(<VideoGrid videos={[
+      makeVideo({ id: 'restricted-video', ageRestricted: true }),
+      makeVideo({ id: 'discovered-video' }),
+      makeVideo({ id: 'public-video', content: 'Public video' }),
+    ]} navigationContext={{ source: 'profile', pubkey: 'f'.repeat(64) }} />);
+
+    expect(screen.queryByText('Age-restricted')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('video-thumbnail-discovered-video')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Public video' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Public video' }).getAttribute('href')).toContain('index=2');
+  });
+
+  it('restores an all-hidden standalone grid and can request another page without scrolling', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    const onLoadMore = vi.fn();
+    renderGrid(<VideoGrid videos={[makeVideo({ ageRestricted: true })]} onLoadMore={onLoadMore} />);
+    fireEvent.click(screen.getByRole('button', { name: /go to next page/i }));
+    expect(onLoadMore).toHaveBeenCalledOnce();
+    expect(screen.queryByText('No videos to display')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /show age-restricted videos/i }));
+    expect(screen.getByRole('button', { name: /log in to view/i })).toBeInTheDocument();
+  });
+
+  it('does not add a recovery paging control when no rows were hidden', () => {
+    renderGrid(<VideoGrid videos={[makeVideo()]} onLoadMore={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /go to next page/i })).not.toBeInTheDocument();
+  });
+
+  it.each(['Enter', ' '])('does not confirm adulthood when %s is pressed on the hide button', (key) => {
+    const confirmAdult = vi.fn();
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    mockUseAdultVerification.mockReturnValue({ isVerified: false, confirmAdult, getAuthHeader: vi.fn() });
+    renderGrid(<VideoGrid videos={[makeVideo({ ageRestricted: true })]} />);
+
+    fireEvent.keyDown(screen.getByRole('button', { name: /don't show me these videos/i }), { key });
+
+    expect(confirmAdult).not.toHaveBeenCalled();
+  });
+
+  it('explains a refused age confirmation rather than silently doing nothing', () => {
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    mockUseAdultVerification.mockReturnValue({ isVerified: false, confirmAdult: vi.fn(() => false), getAuthHeader: vi.fn() });
+    renderGrid(<VideoGrid videos={[makeVideo({ ageRestricted: true })]} />);
+    fireEvent.click(screen.getByRole('button', { name: /verify age to view/i }));
+    expect(screen.getByRole('alert')).toHaveTextContent(/couldn't confirm/i);
+  });
+
+  it('keeps refusal feedback on the selected tile and clears it after an account change', () => {
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    mockUseAdultVerification.mockReturnValue({ isVerified: false, confirmAdult: vi.fn(() => false) });
+    const videos = [makeVideo({ id: 'one', ageRestricted: true }), makeVideo({ id: 'two', ageRestricted: true })];
+    const { rerender } = renderGrid(<VideoGrid videos={videos} />);
+    fireEvent.click(screen.getAllByRole('button', { name: /verify age to view/i })[0]);
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'b'.repeat(64) } });
+    rerender(<MemoryRouter><VideoGrid videos={videos} /></MemoryRouter>);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('shows in-flight paging feedback and refuses repeated next-page clicks', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    const onLoadMore = vi.fn();
+    renderGrid(<VideoGrid videos={[makeVideo({ ageRestricted: true })]} onLoadMore={onLoadMore} isLoadingMore />);
+    const button = screen.getByRole('button', { name: /loading more videos/i });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(onLoadMore).not.toHaveBeenCalled();
+  });
+
+  it('disables protected-minor confirmation and guards tile activation too', () => {
+    const confirmAdult = vi.fn();
+    mockUseCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    mockUseAdultVerification.mockReturnValue({ isVerified: false, isProtectedMinor: true, confirmAdult, getAuthHeader: vi.fn() });
+    renderGrid(<VideoGrid videos={[makeVideo({ ageRestricted: true })]} />);
+    expect(screen.getByRole('button', { name: /verify age to view/i })).toBeDisabled();
+    expect(screen.getByText(/aren't available/i)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getByTestId('video-grid-item'), { key: 'Enter' });
+    expect(confirmAdult).not.toHaveBeenCalled();
+  });
+
   it('shows the age-restricted gate when a thumbnail media error probes as 401', async () => {
     const { checkMediaAuth } = await import('@/hooks/useAdultVerification');
     (checkMediaAuth as ReturnType<typeof vi.fn>).mockResolvedValue({
@@ -131,6 +228,8 @@ describe('VideoGrid age-restricted gating', () => {
     await waitFor(() => {
       expect(screen.getByText('Log in to view')).toBeInTheDocument();
     });
+
+    expect(JSON.parse(localStorage.getItem('discovered-age-restricted-video-ids') ?? '[]')).toContain(`${'f'.repeat(64)}:34236:vine-id-1`);
 
     expect(screen.getByText('Age-restricted')).toBeInTheDocument();
     expect(screen.queryByTestId('video-thumbnail-unknown-restricted-video')).not.toBeInTheDocument();

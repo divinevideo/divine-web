@@ -19,6 +19,7 @@ import React from 'react';
 interface VideoCardWithMetricsProps {
   video: ParsedVideoData;
   index: number;
+  navigationIndex?: number;
   mode?: 'auto-play' | 'thumbnail';
   isPriority?: boolean;
   showComments: boolean;
@@ -36,6 +37,7 @@ interface VideoCardWithMetricsProps {
 function VideoCardWithMetricsInner({
   video,
   index,
+  navigationIndex,
   mode = 'auto-play',
   isPriority,
   showComments,
@@ -146,6 +148,7 @@ function VideoCardWithMetricsInner({
       showComments={showComments}
       navigationContext={navigationContext}
       videoIndex={index}
+      navigationIndex={navigationIndex}
       accent={accent}
       data-testid="video-card"
     />

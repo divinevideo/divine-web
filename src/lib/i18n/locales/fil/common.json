@@ -525,6 +525,10 @@
     "close": "Isara"
   },
   "ageVerificationOverlay": {
+    "checkingAgeStatus": "Sinusuri ang status ng edad...",
+    "unavailableForAccount": "Hindi available ang mga video na pinaghihigpitan ayon sa edad para sa account na ito.",
+    "confirmationFailed": "Hindi namin makumpirma ang iyong pinili sa ngayon. Subukan ulit mamaya.",
+    "hideVideos": "Huwag ipakita sa akin ang mga video na ito",
     "restrictedHeading": "Age-Restricted na Content",
     "restrictedBody": "Ang content na ito ay maaaring hindi angkop sa lahat ng manonood.",
     "verifying": "Bina-verify...",
@@ -542,6 +546,10 @@
     "awarded": "Iginawad"
   },
   "moderationSettings": {
+    "ageRestrictedPreferenceTitle": "Mga video na pinaghihigpitan sa edad",
+    "ageRestrictedPreferenceDescription": "Piliin kung lalabas ang mga video na pinaghihigpitan ayon sa edad sa mga feed sa browser na ito. Ang mga direktang link ay nangangailangan pa rin ng kumpirmasyon sa edad.",
+    "showAgeRestrictedVideos": "Magpakita ng mga video na pinaghihigpitan ayon sa edad",
+    "hideAgeRestrictedVideos": "Itago ang mga video na pinaghihigpitan ayon sa edad",
     "unmute": "I-unmute",
     "heading": "Mga Setting ng Moderation",
     "subheading": "Kontrolin kung anong content ang nakikita mo at i-report ang mga paglabag",
