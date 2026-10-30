@@ -13,7 +13,7 @@ export function TermsPage() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
         <h1 className="text-4xl font-extrabold mb-4">{t('termsPage.title')}</h1>
-        <p className="text-muted-foreground mb-8">{t('termsPage.lastUpdated', { date: 'May 9, 2026' })}</p>
+        <p className="text-muted-foreground mb-8">{t('termsPage.lastUpdated', { date: 'September 25, 2026' })}</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Acceptance of Terms */}
@@ -24,7 +24,7 @@ export function TermsPage() {
               (&ldquo;Terms&rdquo;). If you do not agree, do not use the Service.
             </p>
             <p className="mb-3">
-              The Service is provided by Verse Communications PBC dba Divine (&ldquo;Divine,&rdquo;
+              The Service is provided by Verse Communications, Inc. (&ldquo;Divine,&rdquo;
               &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;). These Terms form a binding agreement
               between you and Divine.
             </p>
@@ -622,6 +622,63 @@ export function TermsPage() {
               </a>.
             </p>
           </section>
+
+          {/* 23. Subscriptions and In-App Purchases */}
+          <section id="subscriptions">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
+              {t('termsPage.subscriptions.heading')}
+            </h2>
+            <p className="mb-3">{t('termsPage.subscriptions.intro')}</p>
+            <p className="mb-3">{t('termsPage.subscriptions.plans')}</p>
+            {/* TODO(legal): Divine Founding Supporter's billing period is
+                unconfirmed. Confirm it, then state it in the plan list. The list
+                deliberately does not state a period for it today. */}
+            <p className="mb-3">{t('termsPage.subscriptions.payment')}</p>
+            <p className="mb-3">{t('termsPage.subscriptions.autoRenewal')}</p>
+            {/* TODO(legal): Confirm whether Divine offers a free trial or
+                introductory offer. If it does, add the standard wording that any
+                unused trial time is forfeited when a subscription is purchased.
+                Omitted because no such offer is confirmed today. */}
+            <h3 className="text-lg font-bold text-foreground mb-3">
+              {t('termsPage.subscriptions.manageHeading')}
+            </h3>
+            <ul className="list-disc pl-6 mb-3 space-y-1">
+              <li>{t('termsPage.subscriptions.manageIos')}</li>
+              <li>{t('termsPage.subscriptions.manageAndroid')}</li>
+            </ul>
+            <p className="mb-3">{t('termsPage.subscriptions.manageEffect')}</p>
+            <p className="mb-3">{t('termsPage.subscriptions.priceChanges')}</p>
+            <p className="mb-3">{t('termsPage.subscriptions.refunds')}</p>
+            <h3 className="text-lg font-bold text-foreground mb-3">
+              {t('termsPage.subscriptions.recognitionHeading')}
+            </h3>
+            <p className="mb-3">{t('termsPage.subscriptions.recognition')}</p>
+            <p>{t('termsPage.subscriptions.restore')}</p>
+          </section>
+
+          {/* 24. Apple App Store Additional Terms */}
+          <section id="apple-app-store">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">
+              {t('termsPage.appleStore.heading')}
+            </h2>
+            <p className="mb-3">{t('termsPage.appleStore.intro')}</p>
+            <p className="mb-3">{t('termsPage.appleStore.acknowledgement')}</p>
+            <p className="mb-3">{t('termsPage.appleStore.scope')}</p>
+            <p className="mb-3">{t('termsPage.appleStore.maintenance')}</p>
+            <p className="mb-3">{t('termsPage.appleStore.warranty')}</p>
+            <p className="mb-3">{t('termsPage.appleStore.productClaims')}</p>
+            <p className="mb-3">{t('termsPage.appleStore.ip')}</p>
+            <p className="mb-3">{t('termsPage.appleStore.legalCompliance')}</p>
+            <p className="mb-3 whitespace-pre-line">{t('termsPage.appleStore.developerContact')}</p>
+            <p className="mb-3">{t('termsPage.appleStore.thirdPartyTerms')}</p>
+            <p className="mb-3">{t('termsPage.appleStore.thirdPartyBeneficiary')}</p>
+            <p>{t('termsPage.appleStore.googlePlay')}</p>
+          </section>
+          {/* TODO(legal): If this custom EULA replaces Apple's standard EULA in
+              App Store Connect, confirm that Apple's standard EULA link is
+              removed there and this page is the EULA in use. */}
+          {/* TODO(legal): Confirm whether Sections 23 and 24 belong in the
+              Section 12 survival list, or leave Section 12 as it is. */}
         </div>
       </div>
     </MarketingLayout>
