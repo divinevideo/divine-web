@@ -5,7 +5,6 @@ const TARGET_PREFIX = 'https://divine.video/';
 
 type Options = {
   enabled: boolean;
-  authorize: (endpoint: string, body: string) => Promise<string | null>;
   fetcher?: typeof fetch;
 };
 
@@ -93,11 +92,10 @@ export class ShortLinkClient {
 
   private async create(target: string, signal: AbortSignal): Promise<string> {
     const body = JSON.stringify({ url: target });
-    const authorization = await this.options.authorize(ENDPOINT, body);
-    if (!authorization || signal.aborted) return target;
+    if (signal.aborted) return target;
     const response = await (this.options.fetcher ?? fetch)(ENDPOINT, {
       method: 'POST', body, signal, redirect: 'error', cache: 'no-store', credentials: 'omit',
-      headers: { 'Content-Type': 'application/json', Authorization: authorization },
+      headers: { 'Content-Type': 'application/json' },
     });
     return readMapping(response, target);
   }

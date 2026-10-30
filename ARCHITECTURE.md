@@ -533,18 +533,19 @@ and browser-wide, including one's own content; it never removes list membership 
 publishing/edit permissions, and can be reversed or bypassed by a gated direct link.
 ## External short links
 
-Video share controls call useShortLinkShare with the current signer. The public
+Video share controls call useShortLinkShare without requiring a login. The public
 VITE_SHORT_LINKS_ENABLED build switch defaults on; set it to false to disable
 sending. Explicit pointer/key presses on the share control prepare a mapping
-through the existing NIP-98 utility and https://gateway.divine.video/api/links.
+through a public JSON POST to https://gateway.divine.video/api/links without
+an Authorization header.
 Rendering or scrolling a feed never creates mappings. Lists and other
 unsupported targets keep their full URLs.
 
-ShortLinkClient bounds signing plus HTTP work to two seconds, deduplicates work
+ShortLinkClient bounds HTTP work to two seconds, deduplicates work
 per target, validates the complete mapping and keeps at most 100 successful
-mappings in memory. Signing refusal, timeout, quota, offline and malformed
+mappings in memory. Timeout, quota, offline and malformed
 responses leave the canonical URL available. No server bearer is present in the
-browser. Account changes clear pending work and cached mappings.
+browser. Unmounting the sharing hook clears pending work and cached mappings.
 
 The final share click calls navigator.share through useShare synchronously with
 a cached mapping or the full URL. It never awaits preparation; a first share may
