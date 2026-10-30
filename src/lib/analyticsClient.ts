@@ -17,6 +17,7 @@ import {
   type ProductEventQueueRecord,
 } from '@/lib/eventQueue';
 import { createNip98AuthHeader } from '@/lib/nip98Auth';
+import { looksLikeSecretKey } from '@/lib/searchUtils';
 import { createUuid } from '@/lib/uuid';
 
 interface ProductAnalyticsIdentity {
@@ -142,7 +143,7 @@ export function captureProductAnalyticsUtm(search: string): ProductAnalyticsUtm 
 
   for (const key of UTM_KEYS) {
     const value = params.get(key)?.toLowerCase();
-    if (value && UTM_VALUE.test(value)) captured[key] = value;
+    if (value && UTM_VALUE.test(value) && !looksLikeSecretKey(value)) captured[key] = value;
   }
 
   if (Object.keys(captured).length > 0) {
