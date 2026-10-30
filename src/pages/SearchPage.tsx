@@ -71,7 +71,10 @@ export function SearchPage() {
   const { nostr } = useNostr();
   const navigate = useSubdomainNavigate();
   const { config } = useAppContext();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  // A repeated ?q= hides a key behind an earlier value, so start from the key.
+  const [searchQuery, setSearchQuery] = useState(
+    () => searchParams.getAll('q').find(looksLikeSecretKey) ?? searchParams.get('q') ?? ''
+  );
   // Secret-key-looking input is not looked up, tracked, or put in the address or
   // title, and the page shows a warning instead of results. The search hooks
   // below get the raw input and skip it themselves.
@@ -806,7 +809,7 @@ export function SearchPage() {
             )}
           </TabsContent>
         </Tabs>
-        {videoResults.length > 0 && videoResults.length < allVideoResults.length && hasNextVideos &&
+        {Boolean(searchableQuery.trim()) && videoResults.length > 0 && videoResults.length < allVideoResults.length && hasNextVideos &&
           (activeFilter === 'videos' || (activeFilter === 'all' && videoResults.length < 6)) && (
           <Button type="button" variant="outline" disabled={isFetchingNextVideos} aria-busy={isFetchingNextVideos}
             onClick={() => void fetchNextVideos({ cancelRefetch: false })}>

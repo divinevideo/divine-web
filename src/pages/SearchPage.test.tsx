@@ -167,6 +167,23 @@ vi.mock('@/hooks/useAppContext', () => ({
   }),
 }));
 
+const ageRestrictedOverride = vi.hoisted(() => ({
+  hide: null as ((video: { id: string }) => boolean) | null,
+}));
+
+// Passes through to the real hook unless a test sets which videos it hides.
+vi.mock('@/hooks/useAgeRestrictedPreference', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/hooks/useAgeRestrictedPreference')>();
+  return {
+    ...actual,
+    useAgeRestrictedPreference: () => {
+      const preference = actual.useAgeRestrictedPreference();
+      const hide = ageRestrictedOverride.hide;
+      return hide ? { ...preference, shouldHideVideo: hide } : preference;
+    },
+  };
+});
+
 vi.mock('@/hooks/useInfiniteSearchVideos', () => ({
   useInfiniteSearchVideos: mockUseInfiniteSearchVideos,
 }));
@@ -252,6 +269,7 @@ describe('SearchPage', () => {
     });
     await initializeI18n({ force: true, languages: ['en-US'] });
     vi.clearAllMocks();
+    ageRestrictedOverride.hide = null;
     mockUseInfiniteSearchVideos.mockReturnValue({
       data: { pages: [{ videos: [] }] },
       fetchNextPage: vi.fn(),
@@ -393,6 +411,45 @@ describe('SearchPage', () => {
       } finally {
         pushStateSpy.mockRestore();
       }
+    });
+
+    it('shows no next-page button for earlier results under the warning', () => {
+      // The video query is debounced, so earlier results with hidden
+      // age-restricted videos are still loaded when the key is entered.
+      ageRestrictedOverride.hide = video => video.id === 'hidden-video';
+      mockUseInfiniteSearchVideos.mockReturnValue({
+        data: {
+          pages: [{
+            videos: [
+              { id: 'shown-video', pubkey: 'a'.repeat(64) },
+              { id: 'hidden-video', pubkey: 'b'.repeat(64) },
+            ],
+          }],
+        },
+        fetchNextPage: vi.fn(),
+        hasNextPage: true,
+        isLoading: false,
+        error: null,
+        fetchedCount: 2,
+      });
+
+      renderPage([`/search?q=${SYNTHETIC_NSEC}&filter=videos`]);
+
+      expect(screen.getByRole('alert').textContent).toMatch(WARNING);
+      expect(screen.queryByRole('button', { name: 'Go to next page' })).toBeNull();
+    });
+
+    it('takes a key in a repeated q back out of the address at once', async () => {
+      vi.useFakeTimers();
+
+      renderPageInBrowser(`/search?q=cats&q=${SYNTHETIC_NSEC}&sort=top`);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      expect(screen.getByRole('alert').textContent).toMatch(WARNING);
+      expect(window.location.search).toBe('?sort=top');
+      expect(trackSearch).not.toHaveBeenCalled();
     });
 
     it('searches normally again once the key is gone', async () => {
