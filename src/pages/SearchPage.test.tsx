@@ -13,6 +13,8 @@ import type {
 import { nip19 } from 'nostr-tools';
 import { initializeI18n } from '@/lib/i18n';
 import { trackSearch } from '@/lib/analytics';
+import { useSeoMeta } from '@unhead/react';
+import { SYNTHETIC_NSEC } from '@/test/secretKeyFixture';
 import SearchPage from './SearchPage';
 
 const {
@@ -165,6 +167,23 @@ vi.mock('@/hooks/useAppContext', () => ({
   }),
 }));
 
+const ageRestrictedOverride = vi.hoisted(() => ({
+  hide: null as ((video: { id: string }) => boolean) | null,
+}));
+
+// Passes through to the real hook unless a test sets which videos it hides.
+vi.mock('@/hooks/useAgeRestrictedPreference', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/hooks/useAgeRestrictedPreference')>();
+  return {
+    ...actual,
+    useAgeRestrictedPreference: () => {
+      const preference = actual.useAgeRestrictedPreference();
+      const hide = ageRestrictedOverride.hide;
+      return hide ? { ...preference, shouldHideVideo: hide } : preference;
+    },
+  };
+});
+
 vi.mock('@/hooks/useInfiniteSearchVideos', () => ({
   useInfiniteSearchVideos: mockUseInfiniteSearchVideos,
 }));
@@ -250,6 +269,7 @@ describe('SearchPage', () => {
     });
     await initializeI18n({ force: true, languages: ['en-US'] });
     vi.clearAllMocks();
+    ageRestrictedOverride.hide = null;
     mockUseInfiniteSearchVideos.mockReturnValue({
       data: { pages: [{ videos: [] }] },
       fetchNextPage: vi.fn(),
@@ -281,6 +301,175 @@ describe('SearchPage', () => {
   afterEach(() => {
     vi.useRealTimers();
     window.history.pushState(null, '', '/');
+  });
+
+  describe('with input that looks like a secret key', () => {
+    const WARNING = /looks like a secret key/i;
+
+    function expectNoKeyOutsideTheInput() {
+      expect(document.body.textContent?.toLowerCase()).not.toContain('nsec1');
+      expect(screen.getByTestId('location-display').textContent?.toLowerCase()).not.toContain('nsec1');
+      expect(JSON.stringify(vi.mocked(useSeoMeta).mock.calls).toLowerCase()).not.toContain('nsec1');
+    }
+
+    it('warns without echoing the key, and searches, looks up, tracks and navigates nothing', async () => {
+      vi.useFakeTimers();
+      mockUseInfiniteSearchVideos.mockReturnValue({
+        data: { pages: [{ videos: [{ id: 'video-1', pubkey: 'a'.repeat(64) }] }] },
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isLoading: false,
+        error: null,
+        fetchedCount: 1,
+      });
+
+      renderPage();
+      const input = screen.getByRole('textbox');
+
+      fireEvent.paste(input, {
+        clipboardData: {
+          getData: () => SYNTHETIC_NSEC,
+        },
+      });
+      fireEvent.change(input, { target: { value: SYNTHETIC_NSEC } });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1200);
+      });
+
+      expect(screen.getByRole('alert').textContent).toMatch(WARNING);
+      expect(screen.queryByTestId('video-card-video-1')).not.toBeInTheDocument();
+      expect(screen.queryByText('Play all')).not.toBeInTheDocument();
+      expect(mockFetchVideoById).not.toHaveBeenCalled();
+      expect(mockFetchEventById).not.toHaveBeenCalled();
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(trackSearch).not.toHaveBeenCalled();
+      expect(screen.getByTestId('location-display').textContent).toBe('/search');
+      expectNoKeyOutsideTheInput();
+    });
+
+    it('warns for a key typed among other words', async () => {
+      vi.useFakeTimers();
+
+      renderPage();
+      fireEvent.change(screen.getByRole('textbox'), {
+        target: { value: `is this ${SYNTHETIC_NSEC.toUpperCase()} safe` },
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1200);
+      });
+
+      expect(screen.getByRole('alert').textContent).toMatch(WARNING);
+      expect(trackSearch).not.toHaveBeenCalled();
+      expect(screen.getByTestId('location-display').textContent).toBe('/search');
+      expectNoKeyOutsideTheInput();
+    });
+
+    it.each([
+      `https://vine.co/v/${SYNTHETIC_NSEC}`,
+      `34236:${'a'.repeat(64)}:${SYNTHETIC_NSEC}`,
+    ])('applies the warning before direct navigation for input %s', async (value) => {
+      vi.useFakeTimers();
+      renderPage();
+      const input = screen.getByRole('textbox');
+
+      fireEvent.paste(input, { clipboardData: { getData: () => value } });
+      expect(mockNavigate).not.toHaveBeenCalled();
+      fireEvent.change(input, { target: { value } });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1200);
+      });
+
+      expect(screen.getByRole('alert').textContent).toMatch(WARNING);
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(mockFetchVideoById).not.toHaveBeenCalled();
+      expect(mockFetchEventById).not.toHaveBeenCalled();
+      expect(trackSearch).not.toHaveBeenCalled();
+      expectNoKeyOutsideTheInput();
+    });
+
+    it('takes the key back out of the address without adding a history entry', async () => {
+      vi.useFakeTimers();
+      const pushStateSpy = vi.spyOn(window.history, 'pushState');
+
+      try {
+        renderPageInBrowser(`/search?q=${SYNTHETIC_NSEC}&sort=top`);
+        pushStateSpy.mockClear();
+
+        // Removed at once, without waiting out the usual typing debounce
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(50);
+        });
+
+        expect(screen.getByRole('alert').textContent).toMatch(WARNING);
+        expect(window.location.search).toBe('?sort=top');
+        expect(pushStateSpy).not.toHaveBeenCalled();
+        expect(trackSearch).not.toHaveBeenCalled();
+        expectNoKeyOutsideTheInput();
+      } finally {
+        pushStateSpy.mockRestore();
+      }
+    });
+
+    it('shows no next-page button for earlier results under the warning', () => {
+      // The video query is debounced, so earlier results with hidden
+      // age-restricted videos are still loaded when the key is entered.
+      ageRestrictedOverride.hide = video => video.id === 'hidden-video';
+      mockUseInfiniteSearchVideos.mockReturnValue({
+        data: {
+          pages: [{
+            videos: [
+              { id: 'shown-video', pubkey: 'a'.repeat(64) },
+              { id: 'hidden-video', pubkey: 'b'.repeat(64) },
+            ],
+          }],
+        },
+        fetchNextPage: vi.fn(),
+        hasNextPage: true,
+        isLoading: false,
+        error: null,
+        fetchedCount: 2,
+      });
+
+      renderPage([`/search?q=${SYNTHETIC_NSEC}&filter=videos`]);
+
+      expect(screen.getByRole('alert').textContent).toMatch(WARNING);
+      expect(screen.queryByRole('button', { name: 'Go to next page' })).toBeNull();
+    });
+
+    it('takes a key in a repeated q back out of the address at once', async () => {
+      vi.useFakeTimers();
+
+      renderPageInBrowser(`/search?q=cats&q=${SYNTHETIC_NSEC}&sort=top`);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      expect(screen.getByRole('alert').textContent).toMatch(WARNING);
+      expect(window.location.search).toBe('?sort=top');
+      expect(trackSearch).not.toHaveBeenCalled();
+    });
+
+    it('searches normally again once the key is gone', async () => {
+      vi.useFakeTimers();
+
+      renderPage();
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: SYNTHETIC_NSEC } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600);
+      });
+      fireEvent.change(input, { target: { value: 'cats' } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1200);
+      });
+
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.getByTestId('location-display').textContent).toBe('/search?q=cats');
+      expect(trackSearch).toHaveBeenCalledWith('cats', 'all', 0);
+    });
   });
 
   it('clears the blur suggestion timeout on unmount', async () => {

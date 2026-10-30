@@ -1575,5 +1575,8 @@
     "verificationNext": "Bước tiếp theo: xác minh",
     "verificationDetail": "Bạn cần là thành viên ủng hộ để đăng ký xác minh. Tư cách thành viên không xác minh danh tính hay bảo đảm được chấp thuận. Bạn có thể liên kết các tài khoản hiện có để chia sẻ bằng chứng danh tính.",
     "linkAccounts": "Tiếp tục đến tài khoản đã liên kết"
+  },
+  "secretKeySearchWarning": {
+    "message": "Trông giống khóa bí mật nên chúng tôi không tìm kiếm. Chỉ nhập khóa này khi đăng nhập và đừng bao giờ chia sẻ nó."
   }
 }

@@ -5,6 +5,7 @@ import React from 'react';
 
 import type { NostrEvent } from '@nostrify/nostrify';
 import type { ParsedVideoData } from '@/types/video';
+import { SYNTHETIC_NSEC } from '@/test/secretKeyFixture';
 
 const mockNostrQuery = vi.fn();
 const mockSearchVideos = vi.fn();
@@ -618,6 +619,51 @@ describe('useInfiniteSearchVideos', () => {
 
     expect(result.current.hasNextPage).toBe(false);
     expect(mockNostrQuery).not.toHaveBeenCalled();
+  });
+});
+
+describe('useInfiniteSearchVideos with input that looks like a secret key', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsFunnelcakeAvailable.mockReturnValue(true);
+  });
+
+  it.each([
+    ['a text search', 'auto', `funny ${SYNTHETIC_NSEC}`],
+    ['a hashtag search', 'auto', `#${SYNTHETIC_NSEC}`],
+    ['an author search', 'author', SYNTHETIC_NSEC.toUpperCase()],
+  ] as const)('skips the search for %s', async (_label, searchType, query) => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    try {
+      const { result } = renderHook(
+        () => useInfiniteSearchVideos({ query, searchType, sortMode: 'hot', pageSize: 20 }),
+        { wrapper: createWrapper() }
+      );
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 20));
+      });
+
+      expect(mockSearchVideos).not.toHaveBeenCalled();
+      expect(mockSearchProfiles).not.toHaveBeenCalled();
+      expect(mockNostrQuery).not.toHaveBeenCalled();
+      expect(mockReportFunnelcakeFallback).not.toHaveBeenCalled();
+      expect(JSON.stringify(infoSpy.mock.calls).toLowerCase()).not.toContain('nsec1');
+      expect(result.current.fetchStatus).toBe('idle');
+      expect(result.current.data).toBeUndefined();
+
+      // A direct refetch skips the input as well
+      await act(async () => {
+        await result.current.refetch();
+      });
+      expect(mockSearchVideos).not.toHaveBeenCalled();
+      expect(mockSearchProfiles).not.toHaveBeenCalled();
+      expect(mockNostrQuery).not.toHaveBeenCalled();
+      expect(JSON.stringify(infoSpy.mock.calls).toLowerCase()).not.toContain('nsec1');
+    } finally {
+      infoSpy.mockRestore();
+    }
   });
 });
 

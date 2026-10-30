@@ -1575,5 +1575,8 @@
     "verificationNext": "Sonraki adımın: doğrulama",
     "verificationDetail": "Doğrulamaya başvurmak için destekçi üyeliği gerekir. Üyelik kimliğini doğrulamaz veya onay garantisi vermez. Kimlik kanıtlarını paylaşmak için mevcut hesaplarını bağlayabilirsin.",
     "linkAccounts": "Bağlı hesaplara devam et"
+  },
+  "secretKeySearchWarning": {
+    "message": "Bu bir gizli anahtara benziyor, bu yüzden aramadık. Onu yalnızca giriş yaparken gir ve asla kimseyle paylaşma."
   }
 }

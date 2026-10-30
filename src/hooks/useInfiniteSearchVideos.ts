@@ -14,7 +14,7 @@ import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
 import { transformToVideoPage } from '@/lib/funnelcakeTransform';
 import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
-import { isUrlLikeQuery } from '@/lib/searchUtils';
+import { isUrlLikeQuery, looksLikeSecretKey } from '@/lib/searchUtils';
 import { FEED_PAGE_SIZE } from '@/config/feed';
 import {
   nextSortedOffset,
@@ -208,11 +208,13 @@ export function useInfiniteSearchVideos({
   const isTest = process.env.NODE_ENV === 'test';
   const debounceMs = isTest ? 0 : 300;
   const debouncedQuery = useDebouncedValue(query, debounceMs);
+  // Secret-key-looking input is never searched; the page shows a warning instead
+  const isSecretKeyQuery = looksLikeSecretKey(debouncedQuery);
 
   const queryResult = useInfiniteQuery<VideoPage, Error>({
     queryKey: ['infinite-search-videos', debouncedQuery, searchType, sortMode, pageSize],
     queryFn: async ({ pageParam, signal }) => {
-      if (!debouncedQuery.trim()) {
+      if (!debouncedQuery.trim() || isSecretKeyQuery) {
         return { videos: [] };
       }
 
@@ -468,7 +470,7 @@ export function useInfiniteSearchVideos({
     },
     getNextPageParam: lastPage => lastPage.nextPageParam,
     initialPageParam: undefined,
-    enabled: !!debouncedQuery.trim() && !!nostr,
+    enabled: !!debouncedQuery.trim() && !isSecretKeyQuery && !!nostr,
     staleTime: 60_000,
     gcTime: 300_000,
   });

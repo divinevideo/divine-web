@@ -1,5 +1,6 @@
 import type { NostrSigner } from '@nostrify/nostrify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SYNTHETIC_NSEC } from '@/test/secretKeyFixture';
 
 import eventIdVectorsJson from '../../analytics-event-id-vectors.json?raw';
 
@@ -387,6 +388,15 @@ describe('analyticsClient', () => {
 
     await expect(client.flush()).resolves.toBeUndefined();
     client.dispose();
+  });
+
+  it('never keeps a campaign value that looks like a secret key', async () => {
+    const { captureProductAnalyticsUtm } = await import('./analyticsClient');
+
+    expect(captureProductAnalyticsUtm(`?utm_source=${SYNTHETIC_NSEC}&utm_medium=email`)).toEqual({
+      utm_medium: 'email',
+    });
+    expect(JSON.stringify(vi.mocked(window.sessionStorage.setItem).mock.calls)).not.toContain('nsec1');
   });
 
   it('purges queued records and stored acquisition data on consent withdrawal', async () => {

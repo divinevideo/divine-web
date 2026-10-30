@@ -23,3 +23,14 @@ export function isUrlLikeQuery(query: string): boolean {
 
   return false;
 }
+
+/**
+ * Detect input that contains a Nostr secret key (nsec), anywhere in the text
+ * and in any case. Search skips such input and shows a warning instead.
+ * Matches from the "nsec1" prefix on, so part of a key is handled the same
+ * as a whole one. Bech32 data never contains "1", so npub, note, nevent and
+ * naddr strings cannot match.
+ */
+export function looksLikeSecretKey(text: string): boolean {
+  return /nsec1/i.test(text);
+}

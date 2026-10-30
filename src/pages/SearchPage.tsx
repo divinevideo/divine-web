@@ -9,6 +9,7 @@ import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useSeoMeta } from '@unhead/react';
 import { ArrowRight, MagnifyingGlass as Search, Hash, Play, Users, VideoCamera as Video, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { trackSearch } from '@/lib/analytics';
+import { looksLikeSecretKey } from '@/lib/searchUtils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
+import { SecretKeySearchWarning } from '@/components/SecretKeySearchWarning';
 import { AgeRestrictedPreferenceCard } from '@/components/AgeRestrictedPreferenceCard';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { useInfiniteSearchVideos } from '@/hooks/useInfiniteSearchVideos';
@@ -69,7 +71,15 @@ export function SearchPage() {
   const { nostr } = useNostr();
   const navigate = useSubdomainNavigate();
   const { config } = useAppContext();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  // A repeated ?q= hides a key behind an earlier value, so start from the key.
+  const [searchQuery, setSearchQuery] = useState(
+    () => searchParams.getAll('q').find(looksLikeSecretKey) ?? searchParams.get('q') ?? ''
+  );
+  // Secret-key-looking input is not looked up, tracked, or put in the address or
+  // title, and the page shows a warning instead of results. The search hooks
+  // below get the raw input and skip it themselves.
+  const isSecretKeyQuery = looksLikeSecretKey(searchQuery);
+  const searchableQuery = isSecretKeyQuery ? '' : searchQuery;
   const [sortMode, setSortMode] = useState<SortMode | 'relevance'>(() =>
     getValidSearchSortMode(searchParams.get('sort'))
   );
@@ -146,7 +156,7 @@ export function SearchPage() {
   });
 
   useSeoMeta({
-    title: searchQuery ? `Search: ${searchQuery} - Divine Web` : 'Search - Divine Web',
+    title: searchableQuery ? `Search: ${searchableQuery} - Divine Web` : 'Search - Divine Web',
     description: 'Search for videos, users, and hashtags on Divine Web',
   });
 
@@ -162,10 +172,11 @@ export function SearchPage() {
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Set new timer to update URL after 500ms of no typing
+    // Set new timer to update URL after 500ms of no typing, or at once when
+    // secret-key-looking input needs to come back out of the address
     debounceTimerRef.current = setTimeout(() => {
       const params = new URLSearchParams();
-      if (searchQuery) params.set('q', searchQuery);
+      if (searchableQuery) params.set('q', searchableQuery);
       if (sortMode !== 'hot') params.set('sort', sortMode);
       if (activeFilter !== 'all') params.set('filter', activeFilter);
       if (compilationRequest.play) {
@@ -180,7 +191,7 @@ export function SearchPage() {
       if (params.toString() !== searchParams.toString()) {
         setSearchParams(params, { replace: true });
       }
-    }, 500);
+    }, isSecretKeyQuery ? 0 : 500);
 
     return () => {
       if (debounceTimerRef.current) {
@@ -192,8 +203,9 @@ export function SearchPage() {
     compilationRequest.play,
     compilationRequest.start,
     compilationRequest.videoId,
+    isSecretKeyQuery,
     searchParams,
-    searchQuery,
+    searchableQuery,
     setSearchParams,
     sortMode,
   ]);
@@ -203,7 +215,7 @@ export function SearchPage() {
       clearTimeout(analyticsTimerRef.current);
     }
 
-    const trimmedQuery = searchQuery.trim();
+    const trimmedQuery = searchableQuery.trim();
     if (!trimmedQuery) {
       lastTrackedSearchRef.current = null;
       return;
@@ -220,7 +232,7 @@ export function SearchPage() {
 
     analyticsTimerRef.current = setTimeout(() => {
       const totalResults = allVideoResults.length + userResults.length + hashtagResults.length;
-      trackSearch(searchQuery, activeFilter, totalResults);
+      trackSearch(searchableQuery, activeFilter, totalResults);
       lastTrackedSearchRef.current = trackingKey;
     }, 500);
 
@@ -235,7 +247,7 @@ export function SearchPage() {
     isLoadingHashtags,
     isLoadingUsers,
     isLoadingVideos,
-    searchQuery,
+    searchableQuery,
     userResults.length,
     allVideoResults.length,
   ]);
@@ -248,7 +260,7 @@ export function SearchPage() {
   }, []);
 
   useEffect(() => {
-    const normalized = normalizeDirectSearchInput(searchQuery);
+    const normalized = normalizeDirectSearchInput(searchableQuery);
     const allowShortTokens = pastedLookupQueryRef.current === normalized;
 
     if (!isLikelyOpaqueVideoIdentifier(normalized, allowShortTokens)) {
@@ -308,11 +320,11 @@ export function SearchPage() {
       clearTimeout(timer);
       directLookupAbortRef.current?.abort();
     };
-  }, [config.relayUrl, config.relayUrls, navigate, nostr, searchQuery]);
+  }, [config.relayUrl, config.relayUrls, navigate, nostr, searchableQuery]);
 
   // Handle search input changes
   const handleSearchChange = (value: string) => {
-    const directTarget = getDirectSearchTarget(value);
+    const directTarget = looksLikeSecretKey(value) ? null : getDirectSearchTarget(value);
     if (directTarget) {
       navigate(directTarget.path);
       return;
@@ -328,7 +340,7 @@ export function SearchPage() {
 
   const handleSearchPaste = (event: ClipboardEvent<HTMLInputElement>) => {
     const pastedValue = event.clipboardData.getData('text');
-    const directTarget = getDirectSearchTarget(pastedValue);
+    const directTarget = looksLikeSecretKey(pastedValue) ? null : getDirectSearchTarget(pastedValue);
     if (directTarget) {
       navigate(directTarget.path);
       return;
@@ -420,12 +432,12 @@ export function SearchPage() {
   // Check if we have any results
   const hasResults = videoResults.length > 0 || userResults.length > 0 || hashtagResults.length > 0;
   const showCompilationButton =
-    searchQuery.trim().length > 0 &&
+    searchableQuery.trim().length > 0 &&
     videoResults.length > 0 &&
     (activeFilter === 'all' || activeFilter === 'videos');
   const compilationReturnPath = useMemo(() => {
     const params = new URLSearchParams();
-    const trimmedQuery = searchQuery.trim();
+    const trimmedQuery = searchableQuery.trim();
 
     if (trimmedQuery) params.set('q', trimmedQuery);
     if (sortMode !== 'hot') params.set('sort', sortMode);
@@ -433,7 +445,7 @@ export function SearchPage() {
 
     const query = params.toString();
     return query ? `/search?${query}` : '/search';
-  }, [activeFilter, searchQuery, sortMode]);
+  }, [activeFilter, searchableQuery, sortMode]);
   const compilationUrl = showCompilationButton
     ? buildCompilationPlaybackUrl(compilationReturnPath, {
         start: 0,
@@ -441,7 +453,7 @@ export function SearchPage() {
     : null;
 
   const searchNavigationContext = useMemo<VideoNavigationContext | undefined>(() => {
-    const trimmedQuery = searchQuery.trim();
+    const trimmedQuery = searchableQuery.trim();
     if (!trimmedQuery) return undefined;
 
     return {
@@ -449,7 +461,7 @@ export function SearchPage() {
       query: trimmedQuery,
       sortMode,
     };
-  }, [searchQuery, sortMode]);
+  }, [searchableQuery, sortMode]);
 
   useCompilationFullscreen({
     videos: videoResults,
@@ -500,8 +512,10 @@ export function SearchPage() {
             />
           </div>
 
+          {isSecretKeyQuery && <SecretKeySearchWarning />}
+
           {/* Sort mode selector for video results */}
-          {(activeFilter === 'all' || activeFilter === 'videos') && searchQuery.trim() && (
+          {(activeFilter === 'all' || activeFilter === 'videos') && searchableQuery.trim() && (
             <div
               role="radiogroup"
               aria-label="Sort search results"
@@ -586,7 +600,7 @@ export function SearchPage() {
           </TabsList>
 
           {/* Status message */}
-          {searchQuery.trim() && (
+          {searchableQuery.trim() && (
             <div className="mb-4 flex flex-col items-center gap-3">
               {isLoading ? (
                 <p className="text-muted-foreground">Searching...</p>
@@ -612,7 +626,7 @@ export function SearchPage() {
 
           {/* All results tab */}
           <TabsContent value="all" className="mt-0">
-            {!searchQuery.trim() ? (
+            {!searchableQuery.trim() ? (
               <EmptySearchState />
             ) : isLoading ? (
               <LoadingState />
@@ -711,7 +725,7 @@ export function SearchPage() {
 
           {/* Videos only tab with infinite scroll */}
           <TabsContent value="videos" className="mt-0">
-            {!searchQuery.trim() ? (
+            {!searchableQuery.trim() ? (
               <EmptySearchState />
             ) : isLoadingVideos ? (
               <LoadingState />
@@ -758,7 +772,7 @@ export function SearchPage() {
 
           {/* Users only tab */}
           <TabsContent value="users" className="mt-0">
-            {!searchQuery.trim() ? (
+            {!searchableQuery.trim() ? (
               <EmptySearchState />
             ) : isLoadingUsers ? (
               <LoadingState />
@@ -777,7 +791,7 @@ export function SearchPage() {
 
           {/* Hashtags only tab */}
           <TabsContent value="hashtags" className="mt-0">
-            {!searchQuery.trim() ? (
+            {!searchableQuery.trim() ? (
               <EmptySearchState />
             ) : isLoadingHashtags ? (
               <LoadingState />
@@ -789,13 +803,13 @@ export function SearchPage() {
               <HashtagResultsList
                 hashtags={hashtagResults}
                 onHashtagClick={handleHashtagClick}
-                query={searchQuery}
+                query={searchableQuery}
                 variant="full"
               />
             )}
           </TabsContent>
         </Tabs>
-        {videoResults.length > 0 && videoResults.length < allVideoResults.length && hasNextVideos &&
+        {Boolean(searchableQuery.trim()) && videoResults.length > 0 && videoResults.length < allVideoResults.length && hasNextVideos &&
           (activeFilter === 'videos' || (activeFilter === 'all' && videoResults.length < 6)) && (
           <Button type="button" variant="outline" disabled={isFetchingNextVideos} aria-busy={isFetchingNextVideos}
             onClick={() => void fetchNextVideos({ cancelRefetch: false })}>

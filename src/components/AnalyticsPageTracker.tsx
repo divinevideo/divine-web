@@ -14,6 +14,7 @@ import {
   classifyProductAnalyticsReferrer,
   trackProductEvent,
 } from '@/lib/analyticsClient';
+import { looksLikeSecretKey } from '@/lib/searchUtils';
 
 function getSurface(pathname: string): ProductAnalyticsV2Surface {
   if (pathname === '/') return 'landing';
@@ -76,7 +77,11 @@ export function AnalyticsPageTracker() {
     }
 
     if (previousPath.current !== pathname) {
-      trackPageView(pathname + location.search, document.title);
+      // The search page takes a secret key back out of ?q= only after this runs
+      const containsSecretKey = looksLikeSecretKey(location.search) ||
+        Array.from(new URLSearchParams(location.search)).flat().some(looksLikeSecretKey);
+      const search = containsSecretKey ? '' : location.search;
+      trackPageView(pathname + search, document.title);
       previousPath.current = pathname;
     }
   }, [location.pathname, location.search]);

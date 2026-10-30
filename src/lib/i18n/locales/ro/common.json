@@ -1583,5 +1583,8 @@
     "verificationNext": "Următorul pas: verificarea",
     "verificationDetail": "Abonamentul de susținător este necesar pentru a solicita verificarea. Nu îți verifică identitatea și nu garantează aprobarea. Poți conecta conturile existente pentru a distribui dovezi de identitate.",
     "linkAccounts": "Continuă la conturile conectate"
+  },
+  "secretKeySearchWarning": {
+    "message": "Asta arată ca o cheie secretă, așa că n-am căutat-o. Introdu-o doar ca să te conectezi și nu o da nimănui."
   }
 }

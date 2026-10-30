@@ -1591,5 +1591,8 @@
     "verificationNext": "Następny krok: weryfikacja",
     "verificationDetail": "Subskrypcja wspierającego jest wymagana do złożenia wniosku o weryfikację. Nie potwierdza tożsamości ani nie gwarantuje zatwierdzenia. Możesz połączyć istniejące konta, aby udostępnić dowody tożsamości.",
     "linkAccounts": "Przejdź do połączonych kont"
+  },
+  "secretKeySearchWarning": {
+    "message": "To wygląda na klucz prywatny, więc go nie wyszukaliśmy. Wpisuj go tylko przy logowaniu i nigdy nikomu go nie udostępniaj."
   }
 }
