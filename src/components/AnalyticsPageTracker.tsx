@@ -79,7 +79,7 @@ export function AnalyticsPageTracker() {
     if (previousPath.current !== pathname) {
       // The search page takes a secret key back out of ?q= only after this runs
       const containsSecretKey = looksLikeSecretKey(location.search) ||
-        Array.from(new URLSearchParams(location.search).values()).some(looksLikeSecretKey);
+        Array.from(new URLSearchParams(location.search)).flat().some(looksLikeSecretKey);
       const search = containsSecretKey ? '' : location.search;
       trackPageView(pathname + search, document.title);
       previousPath.current = pathname;

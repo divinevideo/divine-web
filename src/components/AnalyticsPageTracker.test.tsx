@@ -126,6 +126,8 @@ describe('AnalyticsPageTracker', () => {
     `q=%6E${SYNTHETIC_NSEC.slice(1)}`,
     `q=${Array.from(SYNTHETIC_NSEC, char => `%${char.charCodeAt(0).toString(16)}`).join('')}`,
     `q=cats&q=my+key+%4E${SYNTHETIC_NSEC.slice(1).toUpperCase()}`,
+    // A bare parameter name decodes to the key with an empty value
+    `%6E${SYNTHETIC_NSEC.slice(1)}`,
   ])('omits encoded secret-key input from the page view (%#)', query => {
     render(
       <MemoryRouter initialEntries={[`/search?${query}&sort=top`]}>
