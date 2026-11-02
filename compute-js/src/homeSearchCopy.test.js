@@ -27,5 +27,6 @@ describe('homepage search copy', () => {
 
     expect(page.title).toBe('Trending Videos - Divine');
     expect(page.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://divine.video/discovery/hot');
+    expect(page.querySelector('meta[name="description"]')?.getAttribute('content')).toBe('Watch classic Vines and new short videos on Divine.');
   });
 });

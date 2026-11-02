@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { HubSpotSignup } from './HubSpotSignup';
@@ -21,5 +21,23 @@ describe('HubSpotSignup', () => {
     await userEvent.click(screen.getByRole('button', { name: /sign up for email updates/i }));
 
     expect(document.querySelector('script[src*="hsforms.net"]')).not.toBeNull();
+  });
+
+  it('keeps keyboard focus until the email field appears, then focuses it', async () => {
+    render(<HubSpotSignup />);
+    const button = screen.getByRole('button', { name: /sign up for email updates/i });
+    button.focus();
+
+    await userEvent.keyboard('{Enter}');
+
+    expect(document.activeElement).toBe(button);
+    expect(screen.getByRole('button', { name: /loading email form/i })).toBeInTheDocument();
+
+    const input = document.createElement('input');
+    input.type = 'email';
+    document.querySelector('.hs-form-html')?.appendChild(input);
+
+    await waitFor(() => expect(document.activeElement).toBe(input));
+    expect(screen.queryByRole('button', { name: /loading email form/i })).toBeNull();
   });
 });

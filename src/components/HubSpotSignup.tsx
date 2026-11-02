@@ -1,10 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export function HubSpotSignup({ onDark = false }: { onDark?: boolean }) {
   const [isRequested, setIsRequested] = useState(false);
+  const [isFormReady, setIsFormReady] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isRequested) return;
+
+    const form = formRef.current;
+    if (!form) return;
+
+    const observer = new MutationObserver(() => {
+      const emailInput = form.querySelector<HTMLInputElement>('input[type="email"]');
+      if (!emailInput) return;
+
+      if (document.activeElement === buttonRef.current) emailInput.focus();
+      setIsFormReady(true);
+      observer.disconnect();
+    });
+    observer.observe(form, { childList: true, subtree: true });
 
     // Load HubSpot script
     const script = document.createElement('script');
@@ -13,25 +29,25 @@ export function HubSpotSignup({ onDark = false }: { onDark?: boolean }) {
     document.body.appendChild(script);
 
     return () => {
+      observer.disconnect();
       script.remove();
     };
   }, [isRequested]);
 
-  if (!isRequested) {
-    return (
-      <button
-        type="button"
-        className={`text-sm font-semibold underline ${onDark ? 'text-brand-green' : 'text-brand-dark-green dark:text-brand-green'}`}
-        onClick={() => setIsRequested(true)}
-      >
-        Sign up for email updates
-      </button>
-    );
-  }
-
   return (
     <>
-      <style>{`
+      {(!isRequested || !isFormReady) && (
+        <button
+          ref={buttonRef}
+          type="button"
+          className={`text-sm font-semibold underline ${onDark ? 'text-brand-green' : 'text-brand-dark-green dark:text-brand-green'}`}
+          onClick={() => setIsRequested(true)}
+        >
+          <span aria-live="polite">{isRequested ? 'Loading email form…' : 'Sign up for email updates'}</span>
+        </button>
+      )}
+      {isRequested && (
+        <style>{`
         /* Base HubSpot v4 form styles - applies to all instances */
         .hs-form-html [data-hsfc-id="Renderer"] {
           --hsf-background__padding: 0;
@@ -188,13 +204,17 @@ export function HubSpotSignup({ onDark = false }: { onDark?: boolean }) {
             flex: 1 !important;
           }
         }
-      `}</style>
-      <div
-        className="hs-form-html"
-        data-region="na2"
-        data-form-id="0da93daf-2cce-45ba-8591-6c68c0b733b0"
-        data-portal-id="244466832"
-      />
+        `}</style>
+      )}
+      {isRequested && (
+        <div
+          ref={formRef}
+          className="hs-form-html"
+          data-region="na2"
+          data-form-id="0da93daf-2cce-45ba-8591-6c68c0b733b0"
+          data-portal-id="244466832"
+        />
+      )}
     </>
   );
 }

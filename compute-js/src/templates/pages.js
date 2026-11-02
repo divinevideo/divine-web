@@ -59,7 +59,9 @@ export function renderFeedPage({ videos, feedType = 'trending', pathname = '/', 
 
   return renderShell({
     title: isHome ? 'Divine: Watch Classic Vines and New Short Videos' : pageTitle,
-    description: isHome ? "Watch classic Vines and new short videos on Divine. Browse on the web without signing in. Get the app when you're ready." : undefined,
+    description: isHome
+      ? "Watch classic Vines and new short videos on Divine. Browse on the web without signing in. Get the app when you're ready."
+      : pathname === '/discovery/hot' ? 'Watch classic Vines and new short videos on Divine.' : undefined,
     ogUrl: `https://divine.video${isHome ? '/' : pathname}`,
     body,
     jsonInjection,

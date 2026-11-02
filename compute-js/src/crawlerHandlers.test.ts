@@ -221,6 +221,16 @@ describe('handleDiscoveryOgTags', () => {
     expect(html).not.toContain('og:image:width');
   });
 
+  it('keeps the hot route canonical and metadata aligned with the watchable page', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
+    const result = await handleDiscoveryOgTags('hot');
+    const page = new DOMParser().parseFromString(await result.text(), 'text/html');
+
+    expect(page.title).toBe('Trending Videos - Divine');
+    expect(page.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://divine.video/discovery/hot');
+    expect(page.querySelector('meta[property="og:description"]')?.getAttribute('content')).toBe('Watch classic Vines and new short videos on Divine.');
+  });
+
   it('handles unknown feed type by falling back to trending', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
     const result = await handleDiscoveryOgTags('foobar');

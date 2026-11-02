@@ -342,13 +342,15 @@ export function VideoFeed({
 
   const handlePlaybackStarted = useCallback((video: ParsedVideoData) => {
     setHasFirstPlayback(true);
-    setFirstPlayedVideoId((current) => current ?? video.id);
+    setFirstPlayedVideoId((current) =>
+      current && filteredVideos.some((visibleVideo) => visibleVideo.id === current) ? current : video.id
+    );
     trackFirstPlayback({
       renderedVideos: filteredVideos.length,
       totalVideos: allVideos.length,
       videoId: video.id,
     });
-  }, [allVideos.length, filteredVideos.length, trackFirstPlayback]);
+  }, [allVideos.length, filteredVideos, trackFirstPlayback]);
 
   // Loading state (initial load only)
   if (isLoading && !data) {

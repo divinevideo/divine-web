@@ -37,6 +37,7 @@ import {
   HOST_DEPENDENT_CRAWLER_VARY,
 } from './templateCachePolicy.js';
 import { renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
+import { shouldServeFeedToSearchCrawler } from './searchCrawler.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -98,6 +99,8 @@ async function handleRequest(event) {
   const forwardedHost = request.headers.get('X-Forwarded-Host');
   const hostnameToUse = originalHost || forwardedHost || url.hostname;
   const funnelcakeTarget = getFunnelcakeOriginForApiHost(hostnameToUse);
+  const isApexDomain = APEX_DOMAINS.includes(hostnameToUse) || hostnameToUse.endsWith('.edgecompute.app');
+  const serveSearchFeed = isApexDomain && shouldServeFeedToSearchCrawler(url.pathname, request.headers.get('User-Agent') || '');
 
   console.log('Request hostname:', url.hostname, 'original:', originalHost, 'path:', url.pathname);
 
@@ -240,7 +243,7 @@ async function handleRequest(event) {
   }
 
   // 6. Handle dynamic OG meta tags for crawler requests
-  if (isSocialMediaCrawler(request)) {
+  if (isSocialMediaCrawler(request) && !serveSearchFeed) {
     if (url.pathname.startsWith('/video/')) {
       console.log('Handling video OG tags for crawler, path:', url.pathname);
       const videoId = url.pathname.split('/video/')[1]?.split('?')[0];
@@ -369,13 +372,12 @@ async function handleRequest(event) {
 
   // 9. Serve static content with SPA fallback (handled by PublisherServer config)
   // Detect pages that benefit from edge-injected feed data
-  const isApexDomain = APEX_DOMAINS.includes(hostnameToUse) || hostnameToUse.endsWith('.edgecompute.app');
   const isApexLanding = isApexDomain && (url.pathname === '/' || url.pathname === '/index.html');
   const discoveryFeedType = isApexDomain ? getDiscoveryFeedType(url.pathname) : null;
   const isSearchPage = isApexDomain && url.pathname === '/search';
   const shouldRenderFeedPage = isApexLanding || discoveryFeedType;
 
-  if (isApexLanding && isSocialMediaCrawler(request)) {
+  if (isApexLanding && isSocialMediaCrawler(request) && !serveSearchFeed) {
     const ogResponse = await handleApexOgTags();
     if (ogResponse) return ogResponse;
   }

@@ -172,6 +172,26 @@ describe('VideoFeed', () => {
     expect(screen.getByRole('link', { name: 'Get Divine' })).toBeInTheDocument();
   });
 
+  it('offers the app after the next playback when filtering removes the first watched video', () => {
+    mockUseVideoProvider.mockReturnValue({
+      data: { pages: [{ videos: [
+        { id: 'unverified', pubkey: 'a'.repeat(64), videoUrl: 'https://example.com/unverified.mp4' },
+        { id: 'verified', pubkey: 'b'.repeat(64), videoUrl: 'https://example.com/verified.mp4', proofMode: { level: 'verified_mobile' } },
+      ] }] },
+      fetchNextPage: vi.fn(), hasNextPage: false, isLoading: false,
+      error: null, refetch: vi.fn(), fetchedCount: 2, dataSource: 'funnelcake',
+    });
+
+    const { rerender } = render(<MemoryRouter><VideoFeed feedType="discovery" /></MemoryRouter>);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Start video' })[0]);
+    expect(screen.getByRole('link', { name: 'Get Divine' })).toBeInTheDocument();
+
+    rerender(<MemoryRouter><VideoFeed feedType="discovery" verifiedOnly /></MemoryRouter>);
+    expect(screen.queryByRole('link', { name: 'Get Divine' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Start video' }));
+    expect(screen.getByRole('link', { name: 'Get Divine' })).toBeInTheDocument();
+  });
+
   it('renders a compilation launcher for eligible feed-backed sources', async () => {
     const user = userEvent.setup();
 
