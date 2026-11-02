@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import {
   copyFileSync,
+  cpSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -9,38 +10,55 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { SUPPORTED_LOCALES } from '@/lib/i18n/config';
 
 const REPO_ROOT = resolve(__dirname, '..');
 
+const LEGAL_PAGES = ['TermsPage.tsx', 'PrivacyPage.tsx', 'SafetyPage.tsx', 'DMCAPage.tsx'];
+
+interface PrerenderOptions {
+  /** Edits a copied page's source before the script reads it. */
+  editPage?: (file: string, source: string) => string;
+  /** Edits the copied English common catalog before the script reads it. */
+  editCatalog?: (catalog: Record<string, unknown>) => void;
+}
+
 /**
  * Runs the real prerender script against a fixture dist/ and source tree in a
- * temp directory and returns the generated /terms page. The script reads the
- * React page and the English locale catalog relative to its own location, so
- * both are copied in to exercise the real resolution path.
+ * temp directory and returns a reader for the generated pages. The script reads
+ * the React pages and the English locale catalogs relative to its own location,
+ * so both are copied in to exercise the real resolution path. A script failure
+ * propagates as a thrown error carrying the script's stderr.
  */
-function prerenderTerms(): string {
+function prerenderLegalPages(options: PrerenderOptions = {}): (route: string) => string {
   const tmp = mkdtempSync(join(tmpdir(), 'terms-prerender-'));
 
   try {
     mkdirSync(join(tmp, 'scripts'), { recursive: true });
     mkdirSync(join(tmp, 'dist'), { recursive: true });
     mkdirSync(join(tmp, 'src', 'pages'), { recursive: true });
-    mkdirSync(join(tmp, 'src', 'lib', 'i18n', 'locales', 'en'), { recursive: true });
 
     copyFileSync(
       resolve(REPO_ROOT, 'scripts/prerender-legal.mjs'),
       join(tmp, 'scripts', 'prerender-legal.mjs'),
     );
-    copyFileSync(
-      resolve(REPO_ROOT, 'src', 'pages', 'TermsPage.tsx'),
-      join(tmp, 'src', 'pages', 'TermsPage.tsx'),
-    );
-    copyFileSync(
-      resolve(REPO_ROOT, 'src', 'lib', 'i18n', 'locales', 'en', 'common.json'),
-      join(tmp, 'src', 'lib', 'i18n', 'locales', 'en', 'common.json'),
-    );
+    for (const file of LEGAL_PAGES) {
+      const source = readFileSync(resolve(REPO_ROOT, 'src', 'pages', file), 'utf8');
+      writeFileSync(
+        join(tmp, 'src', 'pages', file),
+        options.editPage ? options.editPage(file, source) : source,
+      );
+    }
+
+    const localesDir = join(tmp, 'src', 'lib', 'i18n', 'locales', 'en');
+    cpSync(resolve(REPO_ROOT, 'src', 'lib', 'i18n', 'locales', 'en'), localesDir, { recursive: true });
+    if (options.editCatalog) {
+      const catalogPath = join(localesDir, 'common.json');
+      const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'));
+      options.editCatalog(catalog);
+      writeFileSync(catalogPath, JSON.stringify(catalog));
+    }
 
     writeFileSync(
       join(tmp, 'dist', 'index.html'),
@@ -55,14 +73,26 @@ function prerenderTerms(): string {
       stdio: 'pipe',
     });
 
-    return readFileSync(join(tmp, 'dist', 'terms', 'index.html'), 'utf8');
+    const pages = new Map<string, string>();
+    for (const route of ['terms', 'privacy', 'safety', 'dmca']) {
+      pages.set(route, readFileSync(join(tmp, 'dist', route, 'index.html'), 'utf8'));
+    }
+    return (route) => {
+      const html = pages.get(route);
+      if (html === undefined) throw new Error(`No prerendered page for /${route}`);
+      return html;
+    };
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
 }
 
 describe('prerendered terms of service', () => {
-  const html = prerenderTerms();
+  let html: string;
+
+  beforeAll(() => {
+    html = prerenderLegalPages()('terms');
+  });
 
   it('resolves every translated string instead of leaking template placeholders', () => {
     // The page title and update date are t() calls; before the resolver learned
