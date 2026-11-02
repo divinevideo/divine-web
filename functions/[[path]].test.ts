@@ -1,27 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 
 import { onRequest } from './[[path]]';
 
-const INDEX_HTML = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <title>Divine Web - Short-form Looping Videos on Nostr</title>
-    <meta name="description" content="Watch and share 6-second looping videos on the decentralized Nostr network." />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://divine.video/" />
-    <meta property="og:title" content="Divine Web - Short-form Looping Videos on Nostr" />
-    <meta property="og:description" content="Watch and share 6-second looping videos on the decentralized Nostr network." />
-    <meta property="og:image" content="https://divine.video/og.png" />
-    <meta property="og:image:alt" content="Divine Web - Short-form looping videos on the Nostr network" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Divine Web - Short-form Looping Videos on Nostr" />
-    <meta name="twitter:description" content="Watch and share 6-second looping videos on the decentralized Nostr network." />
-    <meta name="twitter:image" content="https://divine.video/og.png" />
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>`;
+const INDEX_HTML = readFileSync('index.html', 'utf8');
+const SHELL_META = new DOMParser().parseFromString(INDEX_HTML, 'text/html');
+const SHELL_TITLE = SHELL_META.title;
 
 describe('functions/[[path]]', () => {
   beforeEach(() => {
@@ -208,7 +192,7 @@ describe('functions/[[path]]', () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain(`<title>${'Divine Web - Short-form Looping Videos on Nostr'}</title>`);
+    expect(html).toContain(`<title>${SHELL_TITLE}</title>`);
     expect(html).not.toContain('property="og:video"');
   });
 
@@ -331,7 +315,7 @@ describe('functions/[[path]]', () => {
     ['/discovery/classics', 'Classic videos on Divine', 'https://divine.video/discovery/classics'],
     ['/discovery/foryou', 'For you videos on Divine', 'https://divine.video/discovery/foryou'],
     ['/@jalcine', 'The Wall! on Divine', 'https://divine.video/@jalcine'],
-    ['/', 'Divine — 6-second loops from real humans', 'https://divine.video/'],
+    ['/', SHELL_TITLE, 'https://divine.video/'],
   ])('injects route metadata for %s', async (path, title, canonicalUrl) => {
     const response = await onRequest({
       request: new Request(`https://divine.video${path}`),
@@ -412,13 +396,13 @@ describe('functions/[[path]]', () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain('<title>Divine Web - Short-form Looping Videos on Nostr</title>');
+    expect(html).toContain(`<title>${SHELL_TITLE}</title>`);
     expect(html).not.toContain('missing on Divine');
   });
 
   it('restores generic metadata when the index fetch resolves through the home route', async () => {
     const homeHtml = INDEX_HTML
-      .replaceAll('Divine Web - Short-form Looping Videos on Nostr', 'Divine — 6-second loops from real humans')
+      .replaceAll(SHELL_TITLE, 'Unexpected home title')
       .replace('https://divine.video/', 'https://preview.pages.dev/');
     vi.mocked(fetch).mockResolvedValueOnce(new Response(homeHtml, {
       status: 200,
@@ -433,7 +417,28 @@ describe('functions/[[path]]', () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain('<title>Divine Web - Short-form Looping Videos on Nostr</title>');
+    expect(html).toContain(`<title>${SHELL_TITLE}</title>`);
     expect(html).toContain('property="og:url" content="https://preview.pages.dev/no-such-route"');
+  });
+
+  it.each([
+    ['/', 200],
+    ['/', 404],
+    ['/profile/invalid-npub', 404],
+  ] as const)('keeps the shipped homepage copy for %s with an asset status of %s', async (path, status) => {
+    const response = await onRequest({
+      request: new Request(`https://divine.video${path}`),
+      next: async () => new Response(status === 200 ? INDEX_HTML : 'not found', {
+        status,
+        headers: { 'content-type': 'text/html; charset=UTF-8' },
+      }),
+      env: {},
+    });
+    const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+
+    expect(page.title).toBe(SHELL_TITLE);
+    for (const selector of ['meta[name="description"]', 'meta[property="og:title"]', 'meta[property="og:description"]', 'meta[name="twitter:title"]', 'meta[name="twitter:description"]']) {
+      expect(page.querySelector(selector)?.getAttribute('content')).toBe(SHELL_META.querySelector(selector)?.getAttribute('content'));
+    }
   });
 });

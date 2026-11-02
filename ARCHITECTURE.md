@@ -184,7 +184,9 @@ preview bots receive OG responses, with the hot route's own canonical URL.
 The SPA updates discovery titles and canonical URLs on client navigation through
 `DiscoverySeo`; the homepage keeps its metadata in `Index`.
 Homepage copy also exists in the SPA fallback `index.html` and the apex social
-crawler response in `compute-js/src/crawlerHandlers.js`; keep all three aligned.
+crawler response in `compute-js/src/crawlerHandlers.js`. Cloudflare's
+`functions/[[path]].ts` uses `getDefaultPageMeta` in `src/lib/serverSocialMeta.ts`
+for the homepage and generic fallback; keep all these paths aligned.
 Templates with a distinct crawler response vary by both the original host and
 user agent so one response cannot replace the other in the edge cache. Bare
 vanity-subdomain profiles vary only by original host because crawlers and
