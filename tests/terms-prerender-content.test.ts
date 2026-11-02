@@ -157,7 +157,7 @@ describe('prerendered terms of service', () => {
     expect(html).toContain('Verse Communications, Inc.');
     expect(html).toContain('not with Apple');
     expect(html).toContain('third-party beneficiaries');
-    expect(html).toContain('other accounts associated with the purchaser through Family Sharing or volume purchasing');
+    expect(html).toContain('other accounts associated with the purchaser through Family Sharing, volume purchasing, or Legacy Contacts');
     expect(html).toContain('9450 SW Gemini Dr PMB 21667\nBeaverton, Oregon 97008-7105 US');
     expect(html).not.toContain('[postal address pending legal review]');
   });
@@ -168,13 +168,21 @@ describe('prerendered terms of service', () => {
     expect(html).not.toContain('dba Divine');
   });
 
-  it('keeps the supplied developer contact identical in every locale catalog', () => {
-    const english = JSON.parse(readFileSync(resolve(REPO_ROOT, 'src/lib/i18n/locales/en/common.json'), 'utf8')).termsPage.appleStore.developerContact;
-    expect(english).toContain('Verse Communications, Inc.');
-    expect(english).toContain('9450 SW Gemini Dr PMB 21667\nBeaverton, Oregon 97008-7105 US');
+  it('distinguishes App Store renewal timing from Google Play billing', () => {
+    expect(html).toContain('For App Store purchases, turn off auto-renew at least 24 hours');
+    expect(html).toContain('For Google Play purchases, cancel before the renewal date');
+    expect(html).toContain('Google Play charges your account at the beginning of each billing cycle');
+    expect(html).not.toContain('at the same price and for the same period');
+  });
+
+  it('keeps the English-authored subscription and Apple terms identical in every locale catalog', () => {
+    const english = JSON.parse(readFileSync(resolve(REPO_ROOT, 'src/lib/i18n/locales/en/common.json'), 'utf8')).termsPage;
+    expect(english.appleStore.developerContact).toContain('Verse Communications, Inc.');
+    expect(english.appleStore.developerContact).toContain('9450 SW Gemini Dr PMB 21667\nBeaverton, Oregon 97008-7105 US');
     for (const locale of SUPPORTED_LOCALES) {
       const catalog = JSON.parse(readFileSync(resolve(REPO_ROOT, 'src/lib/i18n/locales', locale, 'common.json'), 'utf8'));
-      expect(catalog.termsPage.appleStore.developerContact, locale).toBe(english);
+      expect(catalog.termsPage.subscriptions, locale).toEqual(english.subscriptions);
+      expect(catalog.termsPage.appleStore, locale).toEqual(english.appleStore);
     }
   });
 });
