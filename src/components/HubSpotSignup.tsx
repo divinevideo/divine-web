@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export function HubSpotSignup() {
+export function HubSpotSignup({ onDark = false }: { onDark?: boolean }) {
   const [isRequested, setIsRequested] = useState(false);
 
   useEffect(() => {
@@ -18,7 +18,15 @@ export function HubSpotSignup() {
   }, [isRequested]);
 
   if (!isRequested) {
-    return <button type="button" className="text-sm font-semibold text-brand-green underline" onClick={() => setIsRequested(true)}>Sign up for email updates</button>;
+    return (
+      <button
+        type="button"
+        className={`text-sm font-semibold underline ${onDark ? 'text-brand-green' : 'text-brand-dark-green'}`}
+        onClick={() => setIsRequested(true)}
+      >
+        Sign up for email updates
+      </button>
+    );
   }
 
   return (
