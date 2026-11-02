@@ -8,6 +8,7 @@ describe('HubSpotSignup', () => {
     const { rerender } = render(<HubSpotSignup />);
     const button = screen.getByRole('button', { name: /sign up for email updates/i });
     expect(button).toHaveClass('text-brand-dark-green');
+    expect(button).toHaveClass('dark:text-brand-green');
 
     rerender(<HubSpotSignup onDark />);
     expect(button).toHaveClass('text-brand-green');

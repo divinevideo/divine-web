@@ -21,7 +21,7 @@ export function HubSpotSignup({ onDark = false }: { onDark?: boolean }) {
     return (
       <button
         type="button"
-        className={`text-sm font-semibold underline ${onDark ? 'text-brand-green' : 'text-brand-dark-green'}`}
+        className={`text-sm font-semibold underline ${onDark ? 'text-brand-green' : 'text-brand-dark-green dark:text-brand-green'}`}
         onClick={() => setIsRequested(true)}
       >
         Sign up for email updates
