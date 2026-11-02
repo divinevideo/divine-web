@@ -181,6 +181,24 @@ describe('prerendered legal pages', () => {
     }
   });
 
+  it('inserts option values literally and escapes catalog text like React does', () => {
+    // String.prototype.replaceAll treats $&, $$ and friends in a replacement
+    // string as patterns, and React would escape & < > in text but the prerender
+    // wrote them raw.
+    const html = prerenderLegalPages({
+      editPage: (file, source) =>
+        file === 'TermsPage.tsx'
+          ? source.replace("'September 25, 2026'", () => "'$& R&D <b> $$5'")
+          : source,
+      editCatalog: (catalog) => {
+        (catalog.termsPage as Record<string, unknown>).title = 'Terms & <Conditions>';
+      },
+    })('terms');
+
+    expect(html).toContain('Last Updated: $&amp; R&amp;D &lt;b&gt; $$5');
+    expect(html).toContain('>Terms &amp; &lt;Conditions&gt;</h1>');
+  });
+
   // A leak used to be silent: the script left the {t('…')} call in the output,
   // exited 0, and the build shipped it. These pin that it now fails loudly.
   describe('refuses to ship content it cannot resolve', () => {

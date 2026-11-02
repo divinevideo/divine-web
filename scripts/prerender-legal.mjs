@@ -158,6 +158,10 @@ function convertStyleProps(content) {
   });
 }
 
+function escapeHtmlText(text) {
+  return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+}
+
 function resolveTCalls(source, content) {
   // Pages that call useTranslation() with no argument resolve against the
   // default namespace ('common'), same as the i18n instance does.
@@ -184,7 +188,9 @@ function resolveTCalls(source, content) {
 
       const resolved = optionsSource
         ? [...optionsSource.matchAll(/(\w+)\s*:\s*'([^']*)'/g)].reduce(
-            (text, [, name, replacement]) => text.replaceAll(`{{${name}}}`, replacement),
+            // A function replacer inserts the value literally; a replacement
+            // string would interpret $&, $$ and the like.
+            (text, [, name, replacement]) => text.replaceAll(`{{${name}}}`, () => replacement),
             value,
           )
         : value;
@@ -197,7 +203,9 @@ function resolveTCalls(source, content) {
         );
       }
 
-      return resolved;
+      // The catalog holds plain text and React escapes it when rendering, so the
+      // prerender has to as well before writing it into markup.
+      return escapeHtmlText(resolved);
     },
   );
 }
