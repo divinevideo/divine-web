@@ -154,7 +154,7 @@ function convertStyleProps(content) {
     const css = pairs
       .map(([, property, value]) => `${property.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}: ${value}`)
       .join('; ');
-    return `style="${css.replaceAll('"', '&quot;')}"`;
+    return `style="${css.replaceAll('&', '&amp;').replaceAll('"', '&quot;')}"`;
   });
 }
 
@@ -168,6 +168,14 @@ function resolveTCalls(source, content) {
   const namespaceMatch = source.match(/useTranslation\(\s*(?:'([^']+)')?\s*\)/);
   const namespace = namespaceMatch?.[1] ?? 'common';
 
+  // Only a bare call or one quoted name is understood. An array, a double-quoted
+  // name or a variable would otherwise fall through to 'common' without a word.
+  for (const [call, args] of source.matchAll(/useTranslation\(([^)]*)\)/g)) {
+    if (!/^\s*(?:'[^']+')?\s*$/.test(args)) {
+      throw new Error(`Prerender: cannot read the namespace in ${call}; use useTranslation() or useTranslation('name')`);
+    }
+  }
+
   const localePath = join(__dirname, '..', 'src', 'lib', 'i18n', 'locales', 'en', `${namespace}.json`);
   if (!existsSync(localePath)) {
     return content;
@@ -180,10 +188,24 @@ function resolveTCalls(source, content) {
   // {{name}} placeholders in the resolved message.
   return content.replace(
     /\{t\(\s*'([^']+)'\s*(?:,\s*(\{(?:[^}']|'[^']*')*\}))?\s*\)\}/g,
-    (match, key, optionsSource) => {
+    (match, key, optionsSource, offset, whole) => {
       const value = getTranslationValue(messages, key);
       if (typeof value !== 'string') {
         throw new Error(`Prerender: no string for '${key}' in locales/en/${namespace}.json (used in ${match})`);
+      }
+
+      // The forms below would be resolved quietly and wrongly, so refuse them.
+      if (whole[offset - 1] === '=') {
+        throw new Error(`Prerender: ${match} is used as an attribute value, which is not supported`);
+      }
+      if (optionsSource?.includes('\\')) {
+        throw new Error(
+          `Prerender: option values for '${key}' contain a backslash escape sequence, ` +
+            `which would be inserted literally (used in ${match})`,
+        );
+      }
+      if (optionsSource && /[{,]\s*ns\s*:/.test(optionsSource)) {
+        throw new Error(`Prerender: the 'ns' option on '${key}' is not supported (used in ${match})`);
       }
 
       const resolved = optionsSource

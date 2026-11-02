@@ -275,4 +275,53 @@ describe('prerendered legal pages', () => {
       ).toThrow(/unconverted JSX.*\{\{leftover\}\}/);
     });
   });
+
+  // These forms leave nothing behind for the leftover check to see: the script
+  // would resolve them, quietly and wrongly. They have to be refused outright.
+  describe('refuses t() forms it would resolve wrongly', () => {
+    it('fails when an option value contains a JS escape sequence', () => {
+      // Read as source text, 'café' would be inserted as a literal backslash.
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage(LAST_UPDATED_OPTION, "{ date: 'caf\\u00e9' }"),
+        }),
+      ).toThrow(/escape sequence.*termsPage\.lastUpdated/);
+    });
+
+    it('fails when t() is used as an attribute value', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage("{t('termsPage.title')}", "<a title={t('termsPage.title')}>x</a>"),
+        }),
+      ).toThrow(/attribute/);
+    });
+
+    it('fails when useTranslation names its namespace in a form it cannot read', () => {
+      // An array or a double-quoted name would otherwise resolve against common.
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage('useTranslation()', "useTranslation(['common', 'faq'])"),
+        }),
+      ).toThrow(/useTranslation/);
+    });
+
+    it('fails when a t() call picks another namespace through its options', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage("{t('termsPage.title')}", "{t('termsPage.title', { ns: 'faq' })}"),
+        }),
+      ).toThrow(/ns.*termsPage\.title/);
+    });
+  });
+
+  it('escapes & and " in a converted style attribute', () => {
+    const html = prerenderLegalPages({
+      editPage: editTermsPage(
+        "style={{ textTransform: 'uppercase' }}",
+        `style={{ fontFamily: 'A&B "x"' }}`,
+      ),
+    })('terms');
+
+    expect(html).toContain('style="font-family: A&amp;B &quot;x&quot;"');
+  });
 });
