@@ -214,6 +214,20 @@ describe('prerendered legal pages', () => {
     expect(html).toContain('>Terms &amp; &lt;Conditions&gt;</h1>');
   });
 
+  it('ignores t() calls that only appear inside JSX comments', () => {
+    // Comments are not rendered, so a commented-out call must neither throw for a
+    // missing key nor reach the output.
+    const html = prerenderLegalPages({
+      editPage: editTermsPage(
+        "{t('termsPage.title')}",
+        "{t('termsPage.title')}{/* was {t('termsPage.noSuchKey')} */}",
+      ),
+    })('terms');
+
+    expect(html).toContain('>Terms of Service</h1>');
+    expect(html).not.toContain('noSuchKey');
+  });
+
   // A leak used to be silent: the script left the {t('…')} call in the output,
   // exited 0, and the build shipped it. These pin that it now fails loudly.
   describe('refuses to ship content it cannot resolve', () => {

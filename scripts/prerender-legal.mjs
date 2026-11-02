@@ -259,8 +259,11 @@ function extractContentFromTsx(sourcePath) {
     throw new Error(`Could not extract prerender content from ${sourcePath}`);
   }
 
-  const html = resolveTCalls(source, convertStyleProps(match[1]))
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+  // JSX comments go first: they are not rendered, so a t() call inside one must
+  // be neither resolved nor reported as missing.
+  const withoutComments = match[1].replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+
+  const html = resolveTCalls(source, convertStyleProps(withoutComments))
     .replace(/<Link\s+to=/g, '<a href=')
     .replace(/<\/Link>/g, '</a>')
     .replace(/className=/g, 'class=')
