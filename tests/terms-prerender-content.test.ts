@@ -143,3 +143,24 @@ describe('prerendered terms of service', () => {
     }
   });
 });
+
+describe('prerendered legal pages', () => {
+  it('resolves the privacy page title and update date instead of leaking placeholders', () => {
+    // PrivacyPage calls useTranslation() with no namespace and passes the date as
+    // an interpolation option, the same shape that shipped "{t('privacyPage.title')}"
+    // to crawlers before the resolver learned the default namespace.
+    const html = prerenderLegalPages()('privacy');
+
+    expect(html).not.toMatch(/\{t\(|\{\{/);
+    expect(html).toContain('>Privacy Policy</h1>');
+    expect(html).toMatch(/Last Updated: [A-Z][a-z]+ \d{1,2}, \d{4}/);
+  });
+
+  it('leaves no template placeholders on the safety and DMCA pages', () => {
+    const read = prerenderLegalPages();
+
+    for (const route of ['safety', 'dmca']) {
+      expect(read(route), route).not.toMatch(/\{t\(|\{\{/);
+    }
+  });
+});
