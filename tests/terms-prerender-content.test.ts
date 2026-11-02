@@ -103,6 +103,15 @@ describe('prerendered terms of service', () => {
     expect(html).toContain('Last Updated: September 25, 2026');
   });
 
+  it('renders inline style props as HTML attributes instead of leaking JSX', () => {
+    // Section 19's warranty and liability disclaimers are set in capitals through
+    // style={{ textTransform: 'uppercase' }} (a conspicuousness requirement). The
+    // prerender used to ship that JSX verbatim, so crawlers and App Review got four
+    // paragraphs with junk attributes and no capitals.
+    expect(html).not.toMatch(/style=\{/);
+    expect(html).toContain('<p class="mb-3" style="text-transform: uppercase">');
+  });
+
   it('renders both new sections with stable deep-link anchors', () => {
     expect(html).toContain('id="subscriptions"');
     expect(html).toContain('id="apple-app-store"');

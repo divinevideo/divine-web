@@ -139,6 +139,25 @@ function getTranslationValue(messages, key) {
   }, messages);
 }
 
+// Turns style={{ textTransform: 'uppercase' }} into style="text-transform: uppercase".
+// Only objects made entirely of string-literal values are converted; anything
+// else is left in place for the leftover-JSX check in extractContentFromTsx.
+function convertStyleProps(content) {
+  const declaration = /(\w+)\s*:\s*'([^']*)'/g;
+
+  return content.replace(/style=\{\{([^{}]*)\}\}/g, (match, body) => {
+    const pairs = [...body.matchAll(declaration)];
+    if (pairs.length === 0 || body.replace(declaration, '').replace(/[\s,]/g, '') !== '') {
+      return match;
+    }
+
+    const css = pairs
+      .map(([, property, value]) => `${property.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}: ${value}`)
+      .join('; ');
+    return `style="${css.replaceAll('"', '&quot;')}"`;
+  });
+}
+
 function resolveTCalls(source, content) {
   // Pages that call useTranslation() with no argument resolve against the
   // default namespace ('common'), same as the i18n instance does.
@@ -224,7 +243,7 @@ function extractContentFromTsx(sourcePath) {
     throw new Error(`Could not extract prerender content from ${sourcePath}`);
   }
 
-  return resolveTCalls(source, match[1])
+  return resolveTCalls(source, convertStyleProps(match[1]))
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
     .replace(/<Link\s+to=/g, '<a href=')
     .replace(/<\/Link>/g, '</a>')
