@@ -285,7 +285,7 @@ describe('prerendered legal pages', () => {
         prerenderLegalPages({
           editPage: editTermsPage(LAST_UPDATED_OPTION, "{ date: 'caf\\u00e9' }"),
         }),
-      ).toThrow(/escape sequence.*termsPage\.lastUpdated/);
+      ).toThrow(/option values for 'termsPage\.lastUpdated' contain a backslash escape sequence/);
     });
 
     it('fails when t() is used as an attribute value', () => {
@@ -293,7 +293,7 @@ describe('prerendered legal pages', () => {
         prerenderLegalPages({
           editPage: editTermsPage("{t('termsPage.title')}", "<a title={t('termsPage.title')}>x</a>"),
         }),
-      ).toThrow(/attribute/);
+      ).toThrow(/\{t\('termsPage\.title'\)\} is used as an attribute value/);
     });
 
     it('fails when useTranslation names its namespace in a form it cannot read', () => {
@@ -302,7 +302,7 @@ describe('prerendered legal pages', () => {
         prerenderLegalPages({
           editPage: editTermsPage('useTranslation()', "useTranslation(['common', 'faq'])"),
         }),
-      ).toThrow(/useTranslation/);
+      ).toThrow(/cannot read the namespace in useTranslation\(\['common', 'faq'\]\)/);
     });
 
     it('fails when a t() call picks another namespace through its options', () => {
@@ -310,7 +310,7 @@ describe('prerendered legal pages', () => {
         prerenderLegalPages({
           editPage: editTermsPage("{t('termsPage.title')}", "{t('termsPage.title', { ns: 'faq' })}"),
         }),
-      ).toThrow(/ns.*termsPage\.title/);
+      ).toThrow(/the 'ns' option on 'termsPage\.title' is not supported/);
     });
   });
 
