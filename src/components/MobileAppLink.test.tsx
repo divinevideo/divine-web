@@ -6,10 +6,12 @@ import { MobileAppLink } from './MobileAppLink';
 const currentUser = vi.hoisted(() => ({ value: null as { pubkey: string } | null }));
 
 vi.mock('@/hooks/useCurrentUser', () => ({ useCurrentUser: () => ({ user: currentUser.value }) }));
+// The visible text and the store names are separate strings, so a locale whose
+// store phrase does not repeat the visible text would still pass the name check.
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => ({
-  'pwaInstallPrompt.getDivine': 'Get Divine',
-  'pwaInstallPrompt.appStoreAria': 'Download Divine on the App Store',
-  'pwaInstallPrompt.googlePlayAria': 'Get Divine on Google Play',
+  'pwaInstallPrompt.getDivine': 'Divine holen',
+  'pwaInstallPrompt.appStore': 'App Store',
+  'pwaInstallPrompt.googlePlay': 'Google Play',
 } as Record<string, string>)[key] ?? key }) }));
 
 function setPlatform(userAgent: string) {
@@ -25,13 +27,23 @@ describe('MobileAppLink', () => {
   it('links to the iOS store for an anonymous iPhone viewer', () => {
     setPlatform('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)');
     render(<MobileAppLink />);
-    expect(screen.getByRole('link', { name: 'Download Divine on the App Store' })).toHaveAttribute('href', APP_STORE_URL);
+    expect(screen.getByRole('link', { name: 'Divine holen (App Store)' })).toHaveAttribute('href', APP_STORE_URL);
   });
 
   it('links to Google Play for an anonymous Android viewer', () => {
     setPlatform('Mozilla/5.0 (Linux; Android 14; Pixel 8)');
     render(<MobileAppLink />);
-    expect(screen.getByRole('link', { name: 'Get Divine on Google Play' })).toHaveAttribute('href', PLAY_STORE_URL);
+    expect(screen.getByRole('link', { name: 'Divine holen (Google Play)' })).toHaveAttribute('href', PLAY_STORE_URL);
+  });
+
+  it('keeps the visible text inside the accessible name (WCAG 2.5.3 Label in Name)', () => {
+    for (const userAgent of ['Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', 'Mozilla/5.0 (Linux; Android 14; Pixel 8)']) {
+      setPlatform(userAgent);
+      const { unmount } = render(<MobileAppLink />);
+      const link = screen.getByRole('link');
+      expect(link.getAttribute('aria-label')).toContain(link.textContent ?? '');
+      unmount();
+    }
   });
 
   it('stays hidden for signed-in, desktop, and installed viewers', () => {

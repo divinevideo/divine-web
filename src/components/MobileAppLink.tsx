@@ -17,12 +17,15 @@ export function MobileAppLink() {
   if (user || isAuthPending || platform === 'other' || isInstalled) return null;
 
   const href = platform === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
-  const ariaLabel = t(platform === 'ios' ? 'pwaInstallPrompt.appStoreAria' : 'pwaInstallPrompt.googlePlayAria');
+  const linkText = t('pwaInstallPrompt.getDivine');
+  const storeName = t(platform === 'ios' ? 'pwaInstallPrompt.appStore' : 'pwaInstallPrompt.googlePlay');
+  // The accessible name must contain the visible text so voice control can target it (WCAG 2.5.3).
+  const ariaLabel = `${linkText} (${storeName})`;
 
   return (
     <p className="py-2 text-center text-sm text-muted-foreground">
       <a className="font-semibold text-foreground underline hover:text-foreground/80" href={href} target="_blank" rel="noopener noreferrer" aria-label={ariaLabel}>
-        {t('pwaInstallPrompt.getDivine')}
+        {linkText}
       </a>
     </p>
   );
