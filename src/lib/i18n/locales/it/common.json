@@ -1387,14 +1387,9 @@
     "replyPlaceholder": "Scrivi una risposta..."
   },
   "pwaInstallPrompt": {
-    "close": "Chiudi",
     "getDivine": "Scarica Divine",
-    "descriptionNative": "Installa l'app nativa per la migliore esperienza Divine",
     "appStore": "App Store",
-    "appStoreAria": "Scarica Divine sull'App Store",
-    "googlePlay": "Google Play",
-    "googlePlayAria": "Scarica Divine su Google Play",
-    "notNow": "Non ora"
+    "googlePlay": "Google Play"
   },
   "relaySelector": {
     "placeholder": "Seleziona relay"

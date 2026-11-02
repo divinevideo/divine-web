@@ -1379,14 +1379,9 @@
     "replyPlaceholder": "Balas semula..."
   },
   "pwaInstallPrompt": {
-    "close": "Tutup",
     "getDivine": "Dapatkan Divine",
-    "descriptionNative": "Pasang aplikasi asli untuk pengalaman Divine terbaik",
     "appStore": "App Store",
-    "appStoreAria": "Muat turun Divine di App Store",
-    "googlePlay": "Google Play",
-    "googlePlayAria": "Dapatkan Divine di Google Play",
-    "notNow": "Bukan sekarang"
+    "googlePlay": "Google Play"
   },
   "relaySelector": {
     "placeholder": "Pilih relay"

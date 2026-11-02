@@ -1379,14 +1379,9 @@
     "replyPlaceholder": "Sumagot..."
   },
   "pwaInstallPrompt": {
-    "close": "Isara",
     "getDivine": "Kunin ang Divine",
-    "descriptionNative": "I-install ang native app para sa pinakamagandang karanasan sa Divine",
     "appStore": "App Store",
-    "appStoreAria": "I-download ang Divine sa App Store",
-    "googlePlay": "Google Play",
-    "googlePlayAria": "Kunin ang Divine sa Google Play",
-    "notNow": "Hindi ngayon"
+    "googlePlay": "Google Play"
   },
   "relaySelector": {
     "placeholder": "Pumili ng relay"

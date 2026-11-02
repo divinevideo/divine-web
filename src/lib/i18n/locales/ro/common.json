@@ -1387,14 +1387,9 @@
     "replyPlaceholder": "Răspunde..."
   },
   "pwaInstallPrompt": {
-    "close": "Închide",
     "getDivine": "Ia Divine",
-    "descriptionNative": "Instalează aplicația nativă pentru cea mai bună experiență Divine",
     "appStore": "App Store",
-    "appStoreAria": "Descarcă Divine din App Store",
-    "googlePlay": "Google Play",
-    "googlePlayAria": "Ia Divine de pe Google Play",
-    "notNow": "Nu acum"
+    "googlePlay": "Google Play"
   },
   "relaySelector": {
     "placeholder": "Selectează relay"

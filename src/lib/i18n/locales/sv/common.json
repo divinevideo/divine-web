@@ -1379,14 +1379,9 @@
     "replyPlaceholder": "Skriv ett svar..."
   },
   "pwaInstallPrompt": {
-    "close": "Stäng",
     "getDivine": "Hämta Divine",
-    "descriptionNative": "Installera den nativa appen för bästa Divine-upplevelse",
     "appStore": "App Store",
-    "appStoreAria": "Ladda ner Divine på App Store",
-    "googlePlay": "Google Play",
-    "googlePlayAria": "Hämta Divine på Google Play",
-    "notNow": "Inte nu"
+    "googlePlay": "Google Play"
   },
   "relaySelector": {
     "placeholder": "Välj relä"

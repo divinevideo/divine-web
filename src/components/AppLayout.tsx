@@ -63,7 +63,6 @@ export function AppLayout() {
 
         {/* Bottom nav - mobile only */}
         {!isRecording && <BottomNav />}
-
       </div>
 
       {/* Fullscreen video feed overlay */}
