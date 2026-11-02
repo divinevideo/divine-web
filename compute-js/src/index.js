@@ -384,7 +384,7 @@ async function handleRequest(event) {
   if (shouldRenderFeedPage) {
     try {
       const feedType = discoveryFeedType || 'trending';
-      const feedPageResponse = await handleFeedPage(feedType, funnelcakeTarget);
+      const feedPageResponse = await handleFeedPage(feedType, funnelcakeTarget, url.pathname);
       if (feedPageResponse) {
         return feedPageResponse;
       }
@@ -1243,8 +1243,8 @@ async function handleVideoPage(request, videoId, url, funnelcakeTarget) {
 /**
  * Handle feed/discovery pages — render edge-templated HTML with video grid.
  */
-async function handleFeedPage(feedType, funnelcakeTarget) {
-  const CACHE_KEY = `page:feed:${feedType}`;
+async function handleFeedPage(feedType, funnelcakeTarget, pathname) {
+  const CACHE_KEY = `page:feed:${pathname}`;
   const CACHE_TTL = 60;
   const contentStore = new KVStore('divine-web-content');
   const staticAssets = await getStaticAssets();
@@ -1284,7 +1284,7 @@ async function handleFeedPage(feedType, funnelcakeTarget) {
   //    for isVineMigrated and archivedLoopCount)
   const compactVideos = (Array.isArray(videos) ? videos : []).map(compactVideoForHydration);
   const feedJson = JSON.stringify(feedData.videos ? { ...feedData, videos: compactVideos } : compactVideos);
-  const html = renderFeedPage({ videos, feedType, feedJson, staticAssets });
+  const html = renderFeedPage({ videos, feedType, pathname, feedJson, staticAssets });
   console.log('Rendered feed page, type:', feedType, 'videos:', videos.length, 'length:', html.length);
 
   // 5. Cache in KV

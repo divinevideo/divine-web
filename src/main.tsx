@@ -29,15 +29,6 @@ import './lib/polyfills.ts';
 // Start lazy locale loading early; React still waits for the same promise below.
 initializeI18n();
 
-// Initialize cookie consent listener (must be before analytics)
-import { initCookieConsent } from './lib/cookieConsent';
-initCookieConsent();
-
-// Initialize Firebase Analytics and Performance Monitoring
-// (gated behind GDPR cookie consent from HubSpot banner)
-import { initializeAnalytics } from './lib/analytics';
-initializeAnalytics();
-
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import App from './App.tsx';
 import './index.css';

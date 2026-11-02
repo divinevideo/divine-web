@@ -18,7 +18,7 @@ import { navbar, discoveryTabs, videoGrid, videoDetail, profileHeader, footer } 
  * @param {string} options.feedJson - Stringified feed data for window.__DIVINE_FEED__
  * @param {Object} [options.staticAssets] - Build manifest asset paths
  */
-export function renderFeedPage({ videos, feedType = 'trending', feedJson = '', staticAssets = null }) {
+export function renderFeedPage({ videos, feedType = 'trending', pathname = '/', feedJson = '', staticAssets = null }) {
   const tabMap = { trending: 'hot', recent: 'new', classics: 'classics', top: 'top' };
   const activeTab = tabMap[feedType] || 'hot';
 
@@ -29,7 +29,7 @@ export function renderFeedPage({ videos, feedType = 'trending', feedJson = '', s
     top: 'Top Videos',
   };
   const pageTitle = `${titleMap[feedType] || 'Videos'} - Divine`;
-  const isHome = feedType === 'trending';
+  const isHome = pathname === '/' || pathname === '/index.html';
   const currentPath = isHome ? '/' : '/discovery';
 
   const body = `<div class="divine-shell">
@@ -58,7 +58,9 @@ export function renderFeedPage({ videos, feedType = 'trending', feedJson = '', s
     : '';
 
   return renderShell({
-    title: isHome ? 'Divine Web - Short-form Looping Videos on Nostr' : pageTitle,
+    title: isHome ? 'Divine: Watch Classic Vines and New Short Videos' : pageTitle,
+    description: isHome ? "Watch classic Vines and new short videos on Divine. Browse on the web without signing in. Get the app when you're ready." : undefined,
+    ogUrl: `https://divine.video${isHome ? '/' : pathname}`,
     body,
     jsonInjection,
     preloadLinks,

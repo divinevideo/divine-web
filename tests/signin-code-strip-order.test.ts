@@ -8,9 +8,9 @@ const html = readFileSync('index.html', 'utf8');
 const moduleScripts = [...html.matchAll(/<script\s+type="module"\s+src="([^"]+)"/g)].map((m) => m[1]);
 
 describe('sign-in code strip load order', () => {
-  it('is the first module script, ahead of HubSpot and the app', () => {
+  it('is the first module script, ahead of the app', () => {
     expect(moduleScripts[0]).toBe('/src/lib/stripSignInCode.ts');
-    expect(moduleScripts).toContain('/src/lib/hubSpotLoader.ts');
+    expect(moduleScripts).not.toContain('/src/lib/hubSpotLoader.ts');
     expect(moduleScripts).toContain('/src/main.tsx');
   });
 

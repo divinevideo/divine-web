@@ -1,15 +1,10 @@
-import { useEffect } from 'react';
-
-function isHubSpotAllowed(): boolean {
-  return true;
-}
+import { useEffect, useState } from 'react';
 
 export function HubSpotSignup() {
+  const [isRequested, setIsRequested] = useState(false);
+
   useEffect(() => {
-    // Skip HubSpot on staging/typo domains (devine.video, dvines.org, etc.)
-    if (!isHubSpotAllowed()) {
-      return;
-    }
+    if (!isRequested) return;
 
     // Load HubSpot script
     const script = document.createElement('script');
@@ -18,9 +13,13 @@ export function HubSpotSignup() {
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      script.remove();
     };
-  }, []);
+  }, [isRequested]);
+
+  if (!isRequested) {
+    return <button type="button" className="text-sm font-semibold text-brand-green underline" onClick={() => setIsRequested(true)}>Sign up for email updates</button>;
+  }
 
   return (
     <>

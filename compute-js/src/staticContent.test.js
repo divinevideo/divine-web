@@ -24,7 +24,7 @@ describe('hasViteEntryScript', () => {
 describe('extractStaticAssetsFromHtml', () => {
   it('selects the Vite app entry instead of the first module script', () => {
     const html = `
-      <script type="module" src="/assets/hubSpotLoader-AbCd.js"></script>
+      <script type="module" src="/assets/stripSignInCode-AbCd.js"></script>
       <link rel="stylesheet" href="/assets/index-EfGh.css">
       <script type="module" src="/assets/index-IjKl.js"></script>
     `;
@@ -36,7 +36,7 @@ describe('extractStaticAssetsFromHtml', () => {
   });
 
   it('returns null when the app entry script is missing', () => {
-    const html = '<script type="module" src="/assets/hubSpotLoader-AbCd.js"></script>';
+    const html = '<script type="module" src="/assets/stripSignInCode-AbCd.js"></script>';
 
     expect(extractStaticAssetsFromHtml(html)).toBeNull();
   });

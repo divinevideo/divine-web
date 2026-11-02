@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import { Outlet, useSearchParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav } from '@/components/BottomNav';
-import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { FullscreenFeed } from '@/components/FullscreenFeed';
 import { AppSidebar } from '@/components/AppSidebar';
 import { useAppContext } from '@/hooks/useAppContext';
@@ -65,7 +64,6 @@ export function AppLayout() {
         {/* Bottom nav - mobile only */}
         {!isRecording && <BottomNav />}
 
-        <PWAInstallPrompt />
       </div>
 
       {/* Fullscreen video feed overlay */}

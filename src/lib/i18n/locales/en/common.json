@@ -1085,8 +1085,8 @@
     "unpinErrorDescription": "Couldn't unpin. Try again?"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - Short-form Looping Videos on Nostr",
-    "seoDescription": "Watch and share 6-second looping videos on the decentralized Nostr network.",
+    "seoTitle": "Divine: Watch Classic Vines and New Short Videos",
+    "seoDescription": "Watch classic Vines and new short videos on Divine. Browse on the web without signing in. Get the app when you're ready.",
     "heading": "Home",
     "subheadingDefault": "Videos from people you follow",
     "subheadingCount_one": "Videos from {{count}} person you follow",

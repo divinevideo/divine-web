@@ -422,14 +422,17 @@ vi.mock('@/contexts/LoginDialogContext', () => ({
 }));
 
 vi.mock('@/components/VideoCard', () => ({
-  VideoCard: ({ video, onLike, onRepost }: { video: { id: string }; onLike?: () => void; onRepost?: () => void }) => (
+  VideoCard: ({ video, onLike, onRepost, onPlaybackStarted }: { video: { id: string }; onLike?: () => void; onRepost?: () => void; onPlaybackStarted?: () => void }) => (
     <div data-testid="video-card">
       {video.id}
       <button aria-label="Like video" onClick={onLike} />
       <button aria-label="Repost video" onClick={onRepost} />
+      <button aria-label="Start video" onClick={onPlaybackStarted} />
     </div>
   ),
 }));
+
+vi.mock('@/components/MobileAppLink', () => ({ MobileAppLink: () => <a href="/download">Get Divine</a> }));
 
 vi.mock('@/components/ui/card', () => ({
   Card: ({ children, ...props }: HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
@@ -507,6 +510,13 @@ describe('VideoPage', () => {
       } satisfies Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'clear'>,
     });
     await initializeI18n({ force: true, languages: ['en-US'] });
+  });
+
+  it('offers the app below a direct video only after playback', () => {
+    renderPage('/video/video-2');
+    expect(screen.queryByRole('link', { name: 'Get Divine' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Start video' }));
+    expect(screen.getByRole('link', { name: 'Get Divine' })).toBeInTheDocument();
   });
 
   it('navigates through bounded search results while preserving search params', () => {

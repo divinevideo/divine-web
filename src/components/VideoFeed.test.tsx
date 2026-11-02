@@ -94,11 +94,13 @@ vi.mock('@/lib/performanceMonitoring', () => ({
 }));
 
 vi.mock('@/components/VideoCardWithMetrics', () => ({
-  VideoCardWithMetrics: (props: unknown) => {
+  VideoCardWithMetrics: (props: { onPlaybackStarted?: () => void }) => {
     mockVideoCardWithMetrics(props);
-    return <div data-testid="video-card" />;
+    return <div data-testid="video-card"><button onClick={props.onPlaybackStarted}>Start video</button></div>;
   },
 }));
+
+vi.mock('@/components/MobileAppLink', () => ({ MobileAppLink: () => <a href="/download">Get Divine</a> }));
 
 vi.mock('@/components/VideoGrid', () => ({
   VideoGrid: (props: unknown) => {
@@ -161,6 +163,13 @@ describe('VideoFeed', () => {
       fetchedCount: 1,
       dataSource: 'funnelcake',
     });
+  });
+
+  it('offers the app inline after playback, without an entry prompt', () => {
+    render(<MemoryRouter><VideoFeed feedType="discovery" /></MemoryRouter>);
+    expect(screen.queryByRole('link', { name: 'Get Divine' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Start video' }));
+    expect(screen.getByRole('link', { name: 'Get Divine' })).toBeInTheDocument();
   });
 
   it('renders a compilation launcher for eligible feed-backed sources', async () => {
