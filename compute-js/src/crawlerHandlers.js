@@ -410,8 +410,8 @@ export async function handleApexOgTags() {
     console.error('handleApexOgTags funnelcake error:', e.message);
   }
   const html = buildCrawlerHtml({
-    title: 'Divine — 6-second loops from real humans',
-    description: 'Watch and share 6-second looping videos on the decentralized Nostr network.',
+    title: 'Divine: Watch Classic Vines and New Short Videos',
+    description: "Watch classic Vines and new short videos on Divine. Browse on the web without signing in. Get the app when you're ready.",
     image: topThumbnail || DEFAULT_OG_IMAGE,
     url: 'https://divine.video/',
     ogType: 'website',

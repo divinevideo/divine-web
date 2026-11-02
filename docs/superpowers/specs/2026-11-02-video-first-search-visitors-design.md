@@ -37,3 +37,5 @@ The supplied Search Console report shows 3,097 clicks from 142,650 impressions. 
 ## Limits
 
 Search Console clicks measure acquisition. Without anonymous identifiers or consent, this change cannot attribute a specific search click to an app installation. Any later aggregate measurement needs its own design and privacy review. Existing cookies already stored in returning browsers are not erased by this change.
+
+Fullscreen compilation playback retains its current controls; the inline app link belongs to the public feed and direct video card where it can sit below the video without covering it.

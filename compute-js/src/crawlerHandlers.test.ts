@@ -48,7 +48,8 @@ describe('handleApexOgTags', () => {
     }));
     const result = await handleApexOgTags();
     const html = await result!.text();
-    expect(html).toContain('Divine — 6-second loops from real humans');
+    expect(html).toContain('Divine: Watch Classic Vines and New Short Videos');
+    expect(html).toContain('Watch classic Vines and new short videos on Divine.');
     expect(html).toContain('https://x/hero.jpg');
     expect(html).toContain('https://divine.video/');
     // When using a fetched thumbnail, dimensions should be omitted
@@ -68,7 +69,7 @@ describe('handleApexOgTags', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
     const result = await handleApexOgTags();
     const html = await result!.text();
-    expect(html).toContain('Divine — 6-second loops from real humans');
+    expect(html).toContain('Divine: Watch Classic Vines and New Short Videos');
     expect(html).toContain('https://divine.video/og.png');
   });
 });
