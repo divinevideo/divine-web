@@ -110,6 +110,14 @@ describe('prerendered terms of service', () => {
     expect(html).toContain('24. Apple App Store Additional Terms');
   });
 
+  it('offsets the deep-link sections below the fixed header', () => {
+    // MarketingHeader is fixed, and ScrollToTop calls scrollIntoView({ block: 'start' })
+    // for a hash, so without scroll-mt the heading lands underneath the nav. The
+    // other static pages use scroll-mt-24 for the same reason (see Anchor).
+    expect(html).toMatch(/<section id="subscriptions" class="scroll-mt-24">/);
+    expect(html).toMatch(/<section id="apple-app-store" class="scroll-mt-24">/);
+  });
+
   it('includes the subscription disclosure the stores require', () => {
     expect(html).toContain('Divine Supporter Monthly');
     expect(html).toContain('Divine Founding Supporter');

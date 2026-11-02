@@ -624,7 +624,7 @@ export function TermsPage() {
           </section>
 
           {/* 23. Subscriptions and In-App Purchases */}
-          <section id="subscriptions">
+          <section id="subscriptions" className="scroll-mt-24">
             <h2 className="text-2xl font-extrabold text-foreground mb-3">
               {t('termsPage.subscriptions.heading')}
             </h2>
@@ -657,7 +657,7 @@ export function TermsPage() {
           </section>
 
           {/* 24. Apple App Store Additional Terms */}
-          <section id="apple-app-store">
+          <section id="apple-app-store" className="scroll-mt-24">
             <h2 className="text-2xl font-extrabold text-foreground mb-3">
               {t('termsPage.appleStore.heading')}
             </h2>
