@@ -4,9 +4,10 @@
 
 import { type ComponentType, useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { VideoFeed } from '@/components/VideoFeed';
+import { DiscoverySeo } from '@/components/DiscoverySeo';
 import { VerifiedOnlyToggle } from '@/components/VerifiedOnlyToggle';
 import { HashtagExplorer } from '@/components/HashtagExplorer';
 import { ClassicVinersRow } from '@/components/ClassicVinersRow';
@@ -82,6 +83,7 @@ function insertFeaturedTab(
 
 export function DiscoveryPage() {
   const navigate = useSubdomainNavigate();
+  const { pathname } = useLocation();
   const { t } = useTranslation();
   const params = useParams<{ tab?: string }>();
   const { user, isAuthPending } = useCurrentUser();
@@ -223,6 +225,7 @@ export function DiscoveryPage() {
 
   return (
     <div className="container mx-auto px-4 py-6">
+      {pathname !== '/' && <DiscoverySeo pathname={pathname} />}
       <div className={activeTab === 'hashtags' ? 'max-w-6xl mx-auto' : 'max-w-2xl mx-auto'}>
         <header className="mb-6 space-y-4">
           <div className="flex items-start justify-between mb-4">

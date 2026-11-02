@@ -179,6 +179,8 @@ boots the same SPA bundle. `/` and `/discovery/hot` go through it today;
 [`compute-js/src/index.js`](./compute-js/src/index.js) can route more.
 Feed HTML is cached by path so the homepage and hot discovery page keep
 their own titles and canonical URLs even though both use the trending feed.
+The SPA updates discovery titles and canonical URLs on client navigation through
+`DiscoverySeo`; the homepage keeps its metadata in `Index`.
 Homepage copy also exists in the SPA fallback `index.html` and the apex social
 crawler response in `compute-js/src/crawlerHandlers.js`; keep all three aligned.
 Templates with a distinct crawler response vary by both the original host and
