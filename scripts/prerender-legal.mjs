@@ -179,17 +179,25 @@ function resolveTCalls(source, content) {
     (match, key, optionsSource) => {
       const value = getTranslationValue(messages, key);
       if (typeof value !== 'string') {
-        return match;
+        throw new Error(`Prerender: no string for '${key}' in locales/en/${namespace}.json (used in ${match})`);
       }
 
-      if (!optionsSource) {
-        return value;
+      const resolved = optionsSource
+        ? [...optionsSource.matchAll(/(\w+)\s*:\s*'([^']*)'/g)].reduce(
+            (text, [, name, replacement]) => text.replaceAll(`{{${name}}}`, replacement),
+            value,
+          )
+        : value;
+
+      const unfilled = resolved.match(/\{\{\s*\w+\s*\}\}/);
+      if (unfilled) {
+        throw new Error(
+          `Prerender: '${key}' still contains ${unfilled[0]} after substituting options; ` +
+            `only plain string-literal option values are supported (used in ${match})`,
+        );
       }
 
-      return [...optionsSource.matchAll(/(\w+)\s*:\s*'([^']*)'/g)].reduce(
-        (resolved, [, name, replacement]) => resolved.replaceAll(`{{${name}}}`, replacement),
-        value,
-      );
+      return resolved;
     },
   );
 }
@@ -243,7 +251,7 @@ function extractContentFromTsx(sourcePath) {
     throw new Error(`Could not extract prerender content from ${sourcePath}`);
   }
 
-  return resolveTCalls(source, convertStyleProps(match[1]))
+  const html = resolveTCalls(source, convertStyleProps(match[1]))
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
     .replace(/<Link\s+to=/g, '<a href=')
     .replace(/<\/Link>/g, '</a>')
@@ -251,6 +259,19 @@ function extractContentFromTsx(sourcePath) {
     .replace(/\{\s*' '\s*\}/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+
+  // This is a regex conversion of JSX, not a renderer, so anything it does not
+  // understand survives into the output. Fail the build rather than ship it to
+  // crawlers: an unresolved t() call, an uninterpolated {{placeholder}}, or a
+  // style object that was not converted.
+  const leftover = html.match(/\{t\(|\{\{|style=\{/);
+  if (leftover) {
+    throw new Error(
+      `Prerender: unconverted JSX in ${sourcePath} near "${html.slice(leftover.index, leftover.index + 80)}"`,
+    );
+  }
+
+  return html;
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────

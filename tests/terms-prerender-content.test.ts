@@ -180,4 +180,40 @@ describe('prerendered legal pages', () => {
       expect(read(route), route).not.toMatch(/\{t\(|\{\{/);
     }
   });
+
+  // A leak used to be silent: the script left the {t('…')} call in the output,
+  // exited 0, and the build shipped it. These pin that it now fails loudly.
+  describe('refuses to ship content it cannot resolve', () => {
+    it('fails when a translation key is missing from the English catalog', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editCatalog: (catalog) => {
+            delete (catalog.termsPage as Record<string, unknown>).title;
+          },
+        }),
+      ).toThrow(/termsPage\.title/);
+    });
+
+    it('fails when an interpolation option is not a plain string literal', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editPage: (file, source) =>
+            file === 'TermsPage.tsx'
+              ? source.replace("{ date: 'September 25, 2026' }", '{ date: LAST_UPDATED }')
+              : source,
+        }),
+      ).toThrow(/termsPage\.lastUpdated/);
+    });
+
+    it('fails when a t() call uses a form the resolver does not recognize', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editPage: (file, source) =>
+            file === 'TermsPage.tsx'
+              ? source.replace("{t('termsPage.title')}", '{t("termsPage.title")}')
+              : source,
+        }),
+      ).toThrow(/unconverted JSX/);
+    });
+  });
 });
