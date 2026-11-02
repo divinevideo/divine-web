@@ -25,6 +25,24 @@ interface PrerenderOptions {
 }
 
 /**
+ * Builds an `editPage` that rewrites TermsPage.tsx only. It throws when the
+ * target text is absent, so a fixture edit that stops matching fails loudly
+ * instead of leaving a test to pass on an unmodified page.
+ */
+function editTermsPage(from: string | RegExp, to: string): NonNullable<PrerenderOptions['editPage']> {
+  return (file, source) => {
+    if (file !== 'TermsPage.tsx') return source;
+    if (typeof from === 'string' ? !source.includes(from) : !from.test(source)) {
+      throw new Error(`Fixture edit matched nothing in TermsPage.tsx: ${String(from)}`);
+    }
+    return source.replace(from, () => to);
+  };
+}
+
+// The Last Updated date is bumped with the legal text, so match the option, not its value.
+const LAST_UPDATED_OPTION = /\{ date: '[^']*' \}/;
+
+/**
  * Runs the real prerender script against a fixture dist/ and source tree in a
  * temp directory and returns a reader for the generated pages. The script reads
  * the React pages and the English locale catalogs relative to its own location,
@@ -186,10 +204,7 @@ describe('prerendered legal pages', () => {
     // string as patterns, and React would escape & < > in text but the prerender
     // wrote them raw.
     const html = prerenderLegalPages({
-      editPage: (file, source) =>
-        file === 'TermsPage.tsx'
-          ? source.replace("'September 25, 2026'", () => "'$& R&D <b> $$5'")
-          : source,
+      editPage: editTermsPage(LAST_UPDATED_OPTION, "{ date: '$& R&D <b> $$5' }"),
       editCatalog: (catalog) => {
         (catalog.termsPage as Record<string, unknown>).title = 'Terms & <Conditions>';
       },
@@ -209,29 +224,41 @@ describe('prerendered legal pages', () => {
             delete (catalog.termsPage as Record<string, unknown>).title;
           },
         }),
-      ).toThrow(/termsPage\.title/);
+      ).toThrow(/no string for 'termsPage\.title'/);
     });
 
     it('fails when an interpolation option is not a plain string literal', () => {
       expect(() =>
         prerenderLegalPages({
-          editPage: (file, source) =>
-            file === 'TermsPage.tsx'
-              ? source.replace("{ date: 'September 25, 2026' }", '{ date: LAST_UPDATED }')
-              : source,
+          editPage: editTermsPage(LAST_UPDATED_OPTION, '{ date: LAST_UPDATED }'),
         }),
-      ).toThrow(/termsPage\.lastUpdated/);
+      ).toThrow(/'termsPage\.lastUpdated' still contains \{\{date\}\}/);
     });
 
+    // The three branches of the final leftover check each get their own case, so
+    // narrowing that pattern turns one of them red.
     it('fails when a t() call uses a form the resolver does not recognize', () => {
       expect(() =>
         prerenderLegalPages({
-          editPage: (file, source) =>
-            file === 'TermsPage.tsx'
-              ? source.replace("{t('termsPage.title')}", '{t("termsPage.title")}')
-              : source,
+          editPage: editTermsPage("{t('termsPage.title')}", '{t("termsPage.title")}'),
         }),
-      ).toThrow(/unconverted JSX/);
+      ).toThrow(/unconverted JSX.*\{t\(/);
+    });
+
+    it('fails when a style object cannot be converted to an attribute', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage("style={{ textTransform: 'uppercase' }}", 'style={{ lineHeight: 1.5 }}'),
+        }),
+      ).toThrow(/unconverted JSX.*style=\{/);
+    });
+
+    it('fails when a stray placeholder is left in the page markup', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage("{t('termsPage.title')}", '{{leftover}}'),
+        }),
+      ).toThrow(/unconverted JSX.*\{\{leftover\}\}/);
     });
   });
 });
