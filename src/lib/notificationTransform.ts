@@ -149,6 +149,11 @@ export function transformNotification(raw: RawApiNotification): RawNotification 
   }
 
   const targetEventId = resolveTargetEventId(raw);
+  const targetEventKind = raw.root_event_kind ?? (
+    !raw.root_event_id || raw.root_event_id === raw.referenced_event_id
+      ? raw.referenced_event_kind ?? undefined
+      : undefined
+  );
 
   if (type !== 'follow' && !targetEventId) {
     return null;
@@ -166,6 +171,7 @@ export function transformNotification(raw: RawApiNotification): RawNotification 
     // uncoerced value reaches the UI union as whatever the wire happened to say.
     isRead: Boolean(raw.read),
     targetEventId,
+    targetEventKind,
     groupingKey: resolveGroupingKey(raw) ?? targetEventId,
     sourceEventId: raw.source_event_id,
     sourceKind: raw.source_kind,

@@ -1,11 +1,11 @@
 // ABOUTME: Tests for grouped notification row components
-// ABOUTME: Covers VideoNotificationRow and ActorNotificationRow rendering and navigation
+// ABOUTME: Covers ContentNotificationRow and ActorNotificationRow rendering and navigation
 
 import { act, render, screen, fireEvent } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18n } from '@/lib/i18n';
-import { VideoNotificationRow, ActorNotificationRow } from './NotificationRows';
-import type { VideoNotification, ActorNotification } from '@/types/notification';
+import { ContentNotificationRow, ActorNotificationRow } from './NotificationRows';
+import type { VideoNotification, ActorNotification, PostNotification } from '@/types/notification';
 
 const { mockNavigate, mockUseNotificationVideoPreview } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
@@ -68,7 +68,7 @@ function buildActorNotification(
   };
 }
 
-describe('VideoNotificationRow', () => {
+describe('ContentNotificationRow', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockUseNotificationVideoPreview.mockReturnValue({ data: undefined });
@@ -86,9 +86,55 @@ describe('VideoNotificationRow', () => {
     await initializeI18n({ force: true, languages: ['en-US'] });
   });
 
+  it.each([
+    ['like', 'liked your post'],
+    ['repost', 'reposted your post'],
+    ['comment', 'commented on your post'],
+  ] as const)('opens a %s on a text post in the event viewer without a video tile', (type, message) => {
+    const eventId = 'e'.repeat(64);
+    const notification: PostNotification = {
+      id: 'post-notification', rawIds: ['source'], timestamp: 1_700_000_000,
+      isRead: true, kind: 'post', type, eventId, eventKind: 1,
+      actors: buildVideoNotification().actors, totalCount: 1,
+    };
+    render(<ContentNotificationRow notification={notification} />);
+
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(message) }));
+    expect(mockNavigate).toHaveBeenCalledWith(`/event/${eventId}`);
+    expect(screen.queryByRole('button', { name: /open your video/i })).not.toBeInTheDocument();
+    expect(mockUseNotificationVideoPreview).not.toHaveBeenCalled();
+  });
+
+  it('resolves an untyped event ID through the event viewer instead of assuming it is a video', () => {
+    const eventId = 'f'.repeat(64);
+    render(<ContentNotificationRow notification={buildVideoNotification({ videoEventId: eventId })} />);
+    fireEvent.click(screen.getByRole('button', { name: /Alice liked My Cool Loop/i }));
+    expect(mockNavigate).toHaveBeenCalledWith(`/event/${eventId}`);
+  });
+
+  it('keeps direct video navigation when the target kind is known', () => {
+    const eventId = 'f'.repeat(64);
+    render(<ContentNotificationRow notification={buildVideoNotification({ videoEventId: eventId, eventKind: 34236 })} />);
+    fireEvent.click(screen.getByRole('button', { name: /Alice liked My Cool Loop/i }));
+    expect(mockNavigate).toHaveBeenCalledWith(`/video/${eventId}`);
+  });
+
+  it('uses the full address when a non-video post has only a d-tag', () => {
+    const pubkey = 'b'.repeat(64);
+    const notification: PostNotification = {
+      id: 'post-notification', rawIds: ['source'], timestamp: 1_700_000_000,
+      isRead: true, kind: 'post', type: 'repost', eventId: 'my-post', eventKind: 30023,
+      eventReference: `30023:${pubkey}:my-post`,
+      actors: buildVideoNotification().actors, totalCount: 1,
+    };
+    render(<ContentNotificationRow notification={notification} />);
+    fireEvent.click(screen.getByRole('button', { name: /reposted your post/i }));
+    expect(mockNavigate).toHaveBeenCalledWith(`/event/a/30023/${pubkey}/my-post`);
+  });
+
   it('single-actor like row shows one avatar, a whole-sentence message, and a thumbnail', () => {
     const notification = buildVideoNotification({ videoUrl: 'https://media.divine.video/loop.mp4' });
-    const { container } = render(<VideoNotificationRow notification={notification} />);
+    const { container } = render(<ContentNotificationRow notification={notification} />);
 
     // Actor name visible
     expect(screen.getByText('Alice')).toBeInTheDocument();
@@ -111,7 +157,7 @@ describe('VideoNotificationRow', () => {
 
   it('says a comment was liked, not the video, for commentLike rows', () => {
     render(
-      <VideoNotificationRow notification={buildVideoNotification({ type: 'commentLike' })} />,
+      <ContentNotificationRow notification={buildVideoNotification({ type: 'commentLike' })} />,
     );
 
     expect(screen.getByText('liked your comment on My Cool Loop')).toBeInTheDocument();
@@ -120,7 +166,7 @@ describe('VideoNotificationRow', () => {
 
   it('falls back to untitled comment-like copy when the video has no title', () => {
     render(
-      <VideoNotificationRow
+      <ContentNotificationRow
         notification={buildVideoNotification({ type: 'commentLike', videoTitle: undefined })}
       />,
     );
@@ -131,14 +177,14 @@ describe('VideoNotificationRow', () => {
 
   it('announces unread state to assistive tech, not only as a background tint', () => {
     const { rerender } = render(
-      <VideoNotificationRow notification={buildVideoNotification({ isRead: false })} />,
+      <ContentNotificationRow notification={buildVideoNotification({ isRead: false })} />,
     );
 
     // Unread is otherwise conveyed only by `bg-muted/30` and the icon weight,
     // neither of which reaches an accessible name.
     expect(screen.getByText('Unread')).toBeInTheDocument();
 
-    rerender(<VideoNotificationRow notification={buildVideoNotification({ isRead: true })} />);
+    rerender(<ContentNotificationRow notification={buildVideoNotification({ isRead: true })} />);
     expect(screen.queryByText('Unread')).not.toBeInTheDocument();
   });
 
@@ -146,7 +192,7 @@ describe('VideoNotificationRow', () => {
     const notification = buildVideoNotification({
       videoTitle: undefined,
     });
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     const timestampEl = screen.getByTestId('notification-timestamp');
     const messageText = timestampEl.closest('button')?.textContent ?? '';
@@ -164,7 +210,7 @@ describe('VideoNotificationRow', () => {
       ],
       totalCount: 14,
     });
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     // Overflow circle
     expect(screen.getByText('+11')).toBeInTheDocument();
@@ -181,7 +227,7 @@ describe('VideoNotificationRow', () => {
       ],
       totalCount: 14,
     });
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     // The full conjunction phrase must be present as a rendered text node
     expect(screen.getByText('and 13 others')).toBeInTheDocument();
@@ -194,7 +240,7 @@ describe('VideoNotificationRow', () => {
       type: 'comment',
       commentText: 'Great video!',
     });
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     expect(screen.getByText('commented on My Cool Loop')).toBeInTheDocument();
 
@@ -213,7 +259,7 @@ describe('VideoNotificationRow', () => {
       type: 'comment',
       commentText: '',
     });
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     const timestampEl = screen.getByTestId('notification-timestamp');
     expect(timestampEl.textContent).not.toBe('');
@@ -221,7 +267,7 @@ describe('VideoNotificationRow', () => {
 
   it('falls back to the untitled sentence when the video has no title', () => {
     const notification = buildVideoNotification({ videoTitle: undefined });
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     // The untitled wording must actually reach the screen, not just the
     // thumbnail's accessible name.
@@ -231,7 +277,7 @@ describe('VideoNotificationRow', () => {
   it('localizes the thumbnail and avatar accessible names', async () => {
     await initializeI18n({ force: true, languages: ['es'] });
     const notification = buildVideoNotification();
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     // Neither label may be hardcoded English.
     expect(screen.queryByRole('button', { name: /^Open My Cool Loop$/ })).toBeNull();
@@ -242,7 +288,7 @@ describe('VideoNotificationRow', () => {
     const notification = buildVideoNotification({
       videoThumbnailUrl: undefined,
     });
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     // The thumbnail button keeps its accessible name from the video title;
     // the placeholder span is presentational and contains the BrandLogo.
@@ -265,7 +311,7 @@ describe('VideoNotificationRow', () => {
       videoThumbnailUrl: undefined,
       videoUrl: 'https://media.divine.video/loop.mp4',
     });
-    const { container } = render(<VideoNotificationRow notification={notification} />);
+    const { container } = render(<ContentNotificationRow notification={notification} />);
 
     expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith(
       'event-abc123', false, 'https://media.divine.video/loop.mp4',
@@ -289,7 +335,7 @@ describe('VideoNotificationRow', () => {
       onIntersect = callback;
       return { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
     });
-    const { container } = render(<VideoNotificationRow notification={buildVideoNotification({
+    const { container } = render(<ContentNotificationRow notification={buildVideoNotification({
       videoUrl: 'https://media.divine.video/loop.mp4',
     })} />);
 
@@ -305,7 +351,7 @@ describe('VideoNotificationRow', () => {
   });
 
   it('does not load restricted video as a thumbnail fallback', () => {
-    const { container } = render(<VideoNotificationRow notification={buildVideoNotification({
+    const { container } = render(<ContentNotificationRow notification={buildVideoNotification({
       videoThumbnailUrl: undefined,
       videoUrl: 'https://media.divine.video/restricted.mp4',
       videoAgeRestricted: true,
@@ -322,7 +368,7 @@ describe('VideoNotificationRow', () => {
       return { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
     });
     const notification = buildVideoNotification();
-    const { container, rerender } = render(<VideoNotificationRow notification={notification} />);
+    const { container, rerender } = render(<ContentNotificationRow notification={notification} />);
     expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', false, undefined);
     fireEvent.error(container.querySelector('img[src="https://example.com/thumb.jpg"]')!);
     expect(mockUseNotificationVideoPreview).toHaveBeenLastCalledWith('event-abc123', false, undefined);
@@ -332,7 +378,7 @@ describe('VideoNotificationRow', () => {
     mockUseNotificationVideoPreview.mockReturnValue({ data: {
       videoUrl: 'https://example.com/fallback.mp4', ageRestricted: false,
     } });
-    rerender(<VideoNotificationRow notification={notification} />);
+    rerender(<ContentNotificationRow notification={notification} />);
     expect(container.querySelector('video')).toHaveAttribute('src', 'https://example.com/fallback.mp4#t=0.1');
   });
 
@@ -345,7 +391,7 @@ describe('VideoNotificationRow', () => {
     mockUseNotificationVideoPreview.mockReturnValue({ data: {
       videoUrl: 'https://example.com/restricted.mp4', ageRestricted: true,
     } });
-    const { container } = render(<VideoNotificationRow notification={buildVideoNotification({
+    const { container } = render(<ContentNotificationRow notification={buildVideoNotification({
       videoThumbnailUrl: undefined,
     })} />);
     act(() => onIntersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
@@ -357,7 +403,7 @@ describe('VideoNotificationRow', () => {
     const notification = buildVideoNotification({
       videoThumbnailUrl: '',
     });
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     const thumbnailButton = screen.getAllByRole('button', { name: /My Cool Loop/i }).pop()!;
     expect(thumbnailButton.textContent).toContain('Divine');
@@ -365,7 +411,7 @@ describe('VideoNotificationRow', () => {
 
   it('like row timestamp is inlined inside the message paragraph', () => {
     const notification = buildVideoNotification({ type: 'like' });
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     const timestampEl = screen.getByTestId('notification-timestamp');
     expect(timestampEl.textContent).not.toBe('');
@@ -378,7 +424,7 @@ describe('VideoNotificationRow', () => {
 
   it('thumbnail click navigates to /video/:videoEventId and does not double-fire row navigation', () => {
     const notification = buildVideoNotification();
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     const thumbBtn = screen.getByRole('button', { name: /Open My Cool Loop/i });
     fireEvent.click(thumbBtn);
@@ -389,7 +435,7 @@ describe('VideoNotificationRow', () => {
 
   it('message click navigates to /video/:videoEventId', () => {
     const notification = buildVideoNotification();
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Alice liked My Cool Loop/i }));
 
@@ -400,7 +446,7 @@ describe('VideoNotificationRow', () => {
     // Addressable rows target a d-tag, which is an arbitrary author-chosen
     // string — it can carry '/', '?' or '#'.
     const notification = buildVideoNotification({ videoEventId: 'summer/2015?take#2' });
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Open My Cool Loop/i }));
 
@@ -409,7 +455,7 @@ describe('VideoNotificationRow', () => {
 
   it('avatar click navigates to actor profile path and does not trigger row navigation', () => {
     const notification = buildVideoNotification();
-    render(<VideoNotificationRow notification={notification} />);
+    render(<ContentNotificationRow notification={notification} />);
 
     const avatarBtn = screen.getByRole('button', { name: /Alice profile/i });
     fireEvent.click(avatarBtn);
@@ -421,7 +467,7 @@ describe('VideoNotificationRow', () => {
 
   it('does not render nested interactive row buttons', () => {
     const notification = buildVideoNotification();
-    const { container } = render(<VideoNotificationRow notification={notification} />);
+    const { container } = render(<ContentNotificationRow notification={notification} />);
 
     expect(container.querySelector('[role="button"] button')).not.toBeInTheDocument();
     expect(container.querySelector('button button')).not.toBeInTheDocument();

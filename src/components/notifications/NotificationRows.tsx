@@ -1,5 +1,5 @@
 // ABOUTME: Grouped notification row components for the new video-grouping notifications UI
-// ABOUTME: Renders VideoNotificationRow (like/comment/repost) and ActorNotificationRow (follow)
+// ABOUTME: Renders grouped post/video activity and individual follow notifications
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,11 +8,12 @@ import { useNotificationVideoPreview } from '@/hooks/useNotificationVideoPreview
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
-import { buildVideoPath } from '@/lib/eventRouting';
+import { buildEventPath, buildVideoPath } from '@/lib/eventRouting';
+import { getDirectSearchTarget } from '@/lib/directSearch';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { formatRelativeTime } from '@/lib/notificationTransform';
 import { cn } from '@/lib/utils';
-import type { VideoNotification, ActorNotification, ActorInfo } from '@/types/notification';
+import type { VideoNotification, PostNotification, ActorNotification, ActorInfo } from '@/types/notification';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -231,7 +232,15 @@ type TFunction = ReturnType<typeof useTranslation>['t'];
  * than a verb fragment the JSX concatenates onto a bare title. Languages that
  * put the verb last (ja, ko, tr) cannot reorder a fragment.
  */
-function getVerbKey(type: VideoNotification['type'], hasTitle: boolean): string {
+function getVerbKey(type: VideoNotification['type'], hasTitle: boolean, isPost: boolean): string {
+  if (isPost) {
+    switch (type) {
+      case 'like': return 'notificationsPage.message.likedPost';
+      case 'comment': return 'notificationsPage.message.commentedPost';
+      case 'repost': return 'notificationsPage.message.repostedPost';
+      case 'commentLike': return 'notificationsPage.message.likedComment';
+    }
+  }
   switch (type) {
     case 'like':
       return hasTitle
@@ -261,16 +270,16 @@ interface MessageParts {
   titleText: string;
 }
 
-function formatGroupedMessage(notification: VideoNotification, t: TFunction): MessageParts {
+function formatGroupedMessage(notification: VideoNotification | PostNotification, t: TFunction): MessageParts {
   const firstName = notification.actors[0]?.displayName ?? '';
   const othersCount = notification.totalCount - 1;
   const othersText =
     othersCount > 0
       ? t('notificationsPage.message.andOthers', { count: othersCount })
       : null;
-  const videoTitle = notification.videoTitle?.trim();
+  const videoTitle = notification.kind === 'video' ? notification.videoTitle?.trim() : undefined;
   const titleText = videoTitle || t('notificationsPage.video.untitled');
-  const messageText = t(getVerbKey(notification.type, Boolean(videoTitle)), {
+  const messageText = t(getVerbKey(notification.type, Boolean(videoTitle), notification.kind === 'post'), {
     title: videoTitle,
   });
 
@@ -281,10 +290,10 @@ function formatGroupedMessage(notification: VideoNotification, t: TFunction): Me
 // Public row components
 // ---------------------------------------------------------------------------
 
-export function VideoNotificationRow({
+export function ContentNotificationRow({
   notification,
 }: {
-  notification: VideoNotification;
+  notification: VideoNotification | PostNotification;
 }): JSX.Element {
   const { t } = useTranslation('common');
   const navigate = useSubdomainNavigate();
@@ -292,9 +301,15 @@ export function VideoNotificationRow({
   const { firstName, othersText, messageText, titleText } = formatGroupedMessage(notification, t);
   const showInlineTimestamp = notification.type !== 'comment' || !notification.commentText;
 
-  const handleVideoActivate = () => {
-    // d-tags are author-chosen strings, so the identifier has to be encoded.
-    navigate(buildVideoPath(notification.videoEventId));
+  const handleTargetActivate = () => {
+    if (notification.kind === 'post') {
+      navigate(getDirectSearchTarget(notification.eventReference ?? '')?.path ?? buildEventPath(notification.eventId));
+      return;
+    }
+    const id = notification.videoEventId;
+    navigate(notification.eventKind == null && /^[0-9a-f]{64}$/i.test(id)
+      ? buildEventPath(id)
+      : buildVideoPath(id));
   };
 
   const handleAvatarClick = (actor: ActorInfo) => {
@@ -328,7 +343,7 @@ export function VideoNotificationRow({
         {/* Message text — timestamp inlined at end (omitted for comment rows; see quote box below) */}
         <button
           type="button"
-          onClick={handleVideoActivate}
+          onClick={handleTargetActivate}
           className="line-clamp-3 w-full break-words text-left text-sm leading-snug focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <span className="font-semibold">{firstName}</span>
@@ -366,15 +381,17 @@ export function VideoNotificationRow({
       </div>
 
       {/* Right: thumbnail */}
-      <NotificationVideoThumbnail
+      {notification.kind === 'video' && (
+        <NotificationVideoThumbnail
         key={`${notification.videoEventId}:${notification.videoThumbnailUrl ?? ''}:${notification.videoUrl ?? ''}:${notification.videoAgeRestricted ?? false}`}
         videoId={notification.videoEventId}
         thumbnailUrl={notification.videoThumbnailUrl}
         videoUrl={notification.videoUrl}
         ageRestricted={notification.videoAgeRestricted}
         title={titleText}
-        onClick={handleVideoActivate}
-      />
+        onClick={handleTargetActivate}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 // ABOUTME: Type definitions for the notifications feature
-// ABOUTME: RawNotification (fetch stage) + sealed VideoNotification|ActorNotification UI union
+// ABOUTME: RawNotification plus grouped video, post, and actor notification types
 
 /**
  * `commentLike` has no API counterpart. The backend emits `reaction` for every
@@ -44,17 +44,28 @@ interface BaseGroupedNotification {
   isRead: boolean;
 }
 
-export interface VideoNotification extends BaseGroupedNotification {
-  kind: 'video';
+interface GroupedContentNotification extends BaseGroupedNotification {
   type: 'like' | 'commentLike' | 'comment' | 'repost';
+  actors: ActorInfo[];
+  totalCount: number;
+  commentText?: string;
+}
+
+export interface VideoNotification extends GroupedContentNotification {
+  kind: 'video';
+  eventKind?: number;
   videoEventId: string;
   videoTitle?: string;
   videoThumbnailUrl?: string;
   videoUrl?: string;
   videoAgeRestricted?: boolean;
-  actors: ActorInfo[];
-  totalCount: number;
-  commentText?: string;
+}
+
+export interface PostNotification extends GroupedContentNotification {
+  kind: 'post';
+  eventId: string;
+  eventKind: number;
+  eventReference?: string;
 }
 
 export interface ActorNotification extends BaseGroupedNotification {
@@ -63,7 +74,7 @@ export interface ActorNotification extends BaseGroupedNotification {
   actor: ActorInfo;
 }
 
-export type NotificationItem = VideoNotification | ActorNotification;
+export type NotificationItem = VideoNotification | PostNotification | ActorNotification;
 
 export interface RawNotification {
   id: string;
@@ -72,6 +83,7 @@ export interface RawNotification {
   timestamp: number;
   isRead: boolean;
   targetEventId?: string;
+  targetEventKind?: number;
   /**
    * Stable identity of the target for grouping purposes.
    *
@@ -157,8 +169,10 @@ export interface RawApiNotification {
   content?: string | null;
   /** Reaction/repost target, or for kind 1111 the NIP-22 lowercase `e` (parent). */
   referenced_event_id?: string | null;
+  referenced_event_kind?: number | null;
   /** Root navigation target. Prefer this over `referenced_event_id`. */
   root_event_id?: string | null;
+  root_event_kind?: number | null;
   /** Root video d-tag. Resolvable by `/api/videos/{id}` and `/video/:id`. */
   root_d_tag?: string | null;
   /** d-tag of the referenced addressable event. */

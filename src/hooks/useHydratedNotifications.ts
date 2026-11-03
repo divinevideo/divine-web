@@ -8,7 +8,7 @@ import { fetchBulkVideos, fetchVideoById } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage, getSafeThumbnailUrl, sanitizeImageUrl } from '@/lib/imageUtils';
-import { groupRawNotifications, type NotificationVideoMeta } from '@/lib/notificationGrouping';
+import { groupRawNotifications, hasNonVideoTarget, type NotificationVideoMeta } from '@/lib/notificationGrouping';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import type { ActorInfo, NotificationFilters, NotificationItem, RawNotification } from '@/types/notification';
@@ -120,7 +120,7 @@ export function useHydratedNotifications(
     const ids = Array.from(
       new Set(
         flatRaw
-          .filter((r) => r.type !== 'follow' && r.targetEventId)
+          .filter((r) => r.type !== 'follow' && r.targetEventId && !hasNonVideoTarget(r))
           .map((r) => r.targetEventId as string),
       ),
       // Only a row carrying BOTH fields is fully hydrated. Treating any

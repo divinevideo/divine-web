@@ -50,6 +50,22 @@ describe('groupRawNotifications', () => {
     _seq = 0;
   });
 
+  it('preserves text-post activity without inventing a video preview', () => {
+    const eventId = 'e'.repeat(64);
+    const raw = makeRaw({ type: 'like', actorPubkey: 'pk1', targetEventId: eventId, targetEventKind: 1 });
+    const result = groupRawNotifications([raw], new Map(), new Map());
+
+    expect(result[0]).toMatchObject({ kind: 'post', eventId, eventKind: 1, type: 'like', totalCount: 1 });
+    expect(result[0]).not.toHaveProperty('videoEventId');
+    expect(result[0]).not.toHaveProperty('videoThumbnailUrl');
+  });
+
+  it('retains the coordinate needed to open a non-video addressable post', () => {
+    const address = `30023:${'b'.repeat(64)}:my-post`;
+    const raw = makeRaw({ type: 'repost', actorPubkey: 'pk1', targetEventId: 'my-post', targetEventKind: 30023, groupingKey: address });
+    expect(groupRawNotifications([raw], new Map(), new Map())[0]).toMatchObject({ kind: 'post', eventReference: address });
+  });
+
   // 1. 1 like on a video produces one VideoNotification
   it('produces one VideoNotification for a single like', () => {
     const raw = makeRaw({ type: 'like', actorPubkey: 'pk1', targetEventId: 'video-1' });

@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Bell } from '@phosphor-icons/react';
 import { useHydratedNotifications } from '@/hooks/useHydratedNotifications';
 import { useMarkNotificationsRead } from '@/hooks/useNotifications';
-import { VideoNotificationRow, ActorNotificationRow } from '@/components/notifications/NotificationRows';
+import { ContentNotificationRow, ActorNotificationRow } from '@/components/notifications/NotificationRows';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { NotificationItem, NotificationCategory } from '@/types/notification';
@@ -121,10 +121,10 @@ export default function NotificationsPage() {
   const emptyState = EMPTY_STATE_COPY[category];
 
   const renderNotificationRow = (notification: NotificationItem) =>
-    notification.kind === 'video' ? (
-      <VideoNotificationRow key={notification.id} notification={notification} />
-    ) : (
+    notification.kind === 'actor' ? (
       <ActorNotificationRow key={notification.id} notification={notification} />
+    ) : (
+      <ContentNotificationRow key={notification.id} notification={notification} />
     );
 
   const renderNotifications = (notifs: NotificationItem[]) => (

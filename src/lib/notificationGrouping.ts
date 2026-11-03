@@ -1,13 +1,15 @@
 // ABOUTME: Pure transform from raw notifications + hydrated profile/video maps
-// ABOUTME: to the grouped VideoNotification | ActorNotification list
+// ABOUTME: to grouped video/post activity and individual follow notifications
 
 import { genUserName } from '@/lib/genUserName';
+import { VIDEO_KINDS } from '@/types/video';
 import type {
   ActorInfo,
   ActorNotification,
   NotificationItem,
   RawNotification,
   VideoNotification,
+  PostNotification,
 } from '@/types/notification';
 
 /** A bare 64-char hex event id, as opposed to an author-chosen d-tag. */
@@ -20,8 +22,12 @@ export interface NotificationVideoMeta {
   ageRestricted?: boolean;
 }
 
+export function hasNonVideoTarget(row: Pick<RawNotification, 'targetEventKind'>): boolean {
+  return row.targetEventKind != null && !VIDEO_KINDS.includes(row.targetEventKind);
+}
+
 /**
- * Group a flat list of RawNotifications into VideoNotification | ActorNotification rows.
+ * Group raw notifications into video, post, and actor rows.
  *
  * Rules:
  *  - Non-follow rows are bucketed by `${groupingKey}::${type}`, where groupingKey
@@ -66,7 +72,7 @@ export function groupRawNotifications(
     }
   }
 
-  const videoItems: VideoNotification[] = [];
+  const contentItems: (VideoNotification | PostNotification)[] = [];
 
   for (const [, bucket] of buckets) {
     // Sort newest-first
@@ -100,28 +106,33 @@ export function groupRawNotifications(
         undefined,
       );
 
-    const item: VideoNotification = {
-      kind: 'video',
+    const common = {
       id: newestRow.id,
       rawIds: bucket.map((r) => r.id),
       timestamp: newestRow.timestamp,
       isRead: bucket.every((r) => r.isRead),
       type,
-      videoEventId: targetEventId,
-      videoTitle: videoMeta?.title,
-      videoThumbnailUrl: videoMeta?.thumbnailUrl,
-      videoUrl: videoMeta?.videoUrl,
-      videoAgeRestricted: videoMeta?.ageRestricted,
       actors: uniqueActors.slice(0, 3),
       totalCount: seenPubkeys.size,
       commentText: type === 'comment' ? newestRow.commentText : undefined,
     };
-
-    videoItems.push(item);
+    const targetEventKind = bucket.find((row) => row.targetEventKind != null)?.targetEventKind;
+    if (targetEventKind != null && hasNonVideoTarget({ targetEventKind })) {
+      contentItems.push({
+        ...common, kind: 'post', eventId: targetEventId, eventKind: targetEventKind,
+        eventReference: newestRow.groupingKey,
+      });
+    } else {
+      contentItems.push({
+        ...common, kind: 'video', eventKind: targetEventKind, videoEventId: targetEventId,
+        videoTitle: videoMeta?.title, videoThumbnailUrl: videoMeta?.thumbnailUrl,
+        videoUrl: videoMeta?.videoUrl, videoAgeRestricted: videoMeta?.ageRestricted,
+      });
+    }
   }
 
-  // Combine video + actor items and sort newest-first
-  const combined: NotificationItem[] = [...videoItems, ...followItems];
+  // Combine content + actor items and sort newest-first
+  const combined: NotificationItem[] = [...contentItems, ...followItems];
   combined.sort((a, b) => b.timestamp - a.timestamp);
   return combined;
 }

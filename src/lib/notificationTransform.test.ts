@@ -87,6 +87,16 @@ describe('notificationTransform', () => {
       content: '+',
     };
 
+    it('preserves the root kind so text-post reactions are not treated as videos', () => {
+      expect(transformNotification({ ...raw, root_event_kind: 1 })?.targetEventKind).toBe(1);
+      expect(transformNotification({ ...raw, root_event_kind: 34236, referenced_event_kind: 1111 })?.targetEventKind).toBe(34236);
+    });
+
+    it('uses referenced kind only when it describes the resolved target', () => {
+      expect(transformNotification({ ...raw, referenced_event_kind: 1 })?.targetEventKind).toBe(1);
+      expect(transformNotification({ ...raw, root_event_id: 'a'.repeat(64), referenced_event_kind: 1111 })?.targetEventKind).toBeUndefined();
+    });
+
     it('transforms a reaction notification', () => {
       const result = transformNotification(raw);
       expect(result).not.toBeNull();
