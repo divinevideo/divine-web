@@ -160,6 +160,18 @@ describe('useHydratedNotifications', () => {
     mockUseBatchedAuthors.mockReturnValue({ data: {} });
   });
 
+  it('does not hydrate an untyped row whose target another row marks as a post', async () => {
+    const typed = { ...makeLike('typed-like', PUBKEY_A, VIDEO_ID, 2000), targetEventKind: 1 };
+    const untyped = makeLike('untyped-like', PUBKEY_B, VIDEO_ID, 1000);
+    mockUseNotifications.mockReturnValue(makeInfiniteQueryResult([makeNotificationsPage([typed, untyped])]));
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+    const { result } = renderHook(() => useHydratedNotifications({ category: 'all' }), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.items[0]?.kind).toBe('post'));
+    expect(mockFetchBulkVideos).not.toHaveBeenCalled();
+    expect(mockFetchVideoById).not.toHaveBeenCalled();
+  });
+
   it('still hydrates kind 34235 video targets through the video API', async () => {
     const like = { ...makeLike('normal-video-like', PUBKEY_A, VIDEO_ID), targetEventKind: 34235 };
     mockUseNotifications.mockReturnValue(makeInfiniteQueryResult([makeNotificationsPage([like])]));

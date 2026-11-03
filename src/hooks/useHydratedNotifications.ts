@@ -117,10 +117,14 @@ export function useHydratedNotifications(
   }, [flatRaw]);
 
   const sortedIds = useMemo(() => {
+    // Not every row carries the target kind, and grouping renders a whole
+    // bucket as a post once any row says so. Skip a target as soon as any row
+    // identifies it as non-video, not only the rows that carry the kind.
+    const nonVideoTargets = new Set(flatRaw.filter(hasNonVideoTarget).map((r) => r.targetEventId));
     const ids = Array.from(
       new Set(
         flatRaw
-          .filter((r) => r.type !== 'follow' && r.targetEventId && !hasNonVideoTarget(r))
+          .filter((r) => r.type !== 'follow' && r.targetEventId && !nonVideoTargets.has(r.targetEventId))
           .map((r) => r.targetEventId as string),
       ),
       // Only a row carrying BOTH fields is fully hydrated. Treating any
