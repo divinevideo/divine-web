@@ -7,6 +7,7 @@ import { useLocation } from 'react-router-dom';
 import { performanceMonitor } from '@/lib/performanceMonitoring';
 import { VideoCamera as Video, CircleNotch as Loader2, Play } from '@phosphor-icons/react';
 import { VideoCardWithMetrics } from '@/components/VideoCardWithMetrics';
+import { MobileAppLink } from '@/components/MobileAppLink';
 import { VideoGrid } from '@/components/VideoGrid';
 import { AddToListDialog } from '@/components/AddToListDialog';
 import { useVideoProvider } from '@/hooks/useVideoProvider';
@@ -83,6 +84,7 @@ export function VideoFeed({
   const [showCommentsForVideo, setShowCommentsForVideo] = useState<string | null>(null);
   const [showListDialog, setShowListDialog] = useState<{ videoId: string; videoPubkey: string } | null>(null);
   const [hasFirstPlayback, setHasFirstPlayback] = useState(false);
+  const [firstPlayedVideoId, setFirstPlayedVideoId] = useState<string | null>(null);
   const mountTimeRef = useRef<number | null>(null);
   // The impression effect re-runs on every appended page; this keeps the
   // featured-tab event to one per feed mount, like trackInitialRender.
@@ -340,12 +342,15 @@ export function VideoFeed({
 
   const handlePlaybackStarted = useCallback((video: ParsedVideoData) => {
     setHasFirstPlayback(true);
+    setFirstPlayedVideoId((current) =>
+      current && filteredVideos.some((visibleVideo) => visibleVideo.id === current) ? current : video.id
+    );
     trackFirstPlayback({
       renderedVideos: filteredVideos.length,
       totalVideos: allVideos.length,
       videoId: video.id,
     });
-  }, [allVideos.length, filteredVideos.length, trackFirstPlayback]);
+  }, [allVideos.length, filteredVideos, trackFirstPlayback]);
 
   // Loading state (initial load only)
   if (isLoading && !data) {
@@ -587,26 +592,28 @@ export function VideoFeed({
       >
         <div className="grid gap-6">
           {filteredVideos.map((video, index) => (
-            <VideoCardWithMetrics
-              key={video.id}
-              video={video}
-              index={index}
-              navigationIndex={navigationIndices.get(video.id)}
-              mode={mode}
-              isPriority={index === 0}
-              showComments={showCommentsForVideo === video.id}
-              onOpenComments={() => handleOpenComments(video)}
-              onCloseComments={handleCloseComments}
-              onEnterFullscreen={() => handleEnterFullscreen(index)}
-              onPlaybackStarted={() => handlePlaybackStarted(video)}
-              accent={accent}
-              navigationContext={{
-                source: feedType,
-                hashtag,
-                pubkey,
-                featuredTabId,
-              }}
-            />
+            <div key={video.id}>
+              <VideoCardWithMetrics
+                video={video}
+                index={index}
+                navigationIndex={navigationIndices.get(video.id)}
+                mode={mode}
+                isPriority={index === 0}
+                showComments={showCommentsForVideo === video.id}
+                onOpenComments={() => handleOpenComments(video)}
+                onCloseComments={handleCloseComments}
+                onEnterFullscreen={() => handleEnterFullscreen(index)}
+                onPlaybackStarted={() => handlePlaybackStarted(video)}
+                accent={accent}
+                navigationContext={{
+                  source: feedType,
+                  hashtag,
+                  pubkey,
+                  featuredTabId,
+                }}
+              />
+              {firstPlayedVideoId === video.id && <MobileAppLink />}
+            </div>
           ))}
         </div>
       </InfiniteScroll>

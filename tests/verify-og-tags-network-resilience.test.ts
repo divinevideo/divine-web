@@ -10,8 +10,13 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 const SCRIPT = 'scripts/verify-og-tags.sh';
 
-// Must match the SPA shell fallback the script asserts on.
-const BRAND_TITLE = 'Divine Web - Short-form Looping Videos on Nostr';
+// Serve the real shell title so stale audit expectations cannot hide in this fixture.
+const BRAND_TITLE = (() => {
+  const shell = new DOMParser().parseFromString(readFileSync('index.html', 'utf8'), 'text/html');
+  const title = shell.querySelector('meta[property="og:title"]')?.getAttribute('content');
+  if (!title) throw new Error('Could not read og:title from index.html');
+  return title;
+})();
 
 // Read from the script so the fixture cannot drift from the route table.
 const SYNTHETIC_NPUB = (() => {
@@ -26,8 +31,10 @@ const SYNTHETIC_NPUB = (() => {
 })();
 
 /** Body that satisfies every assertion the script makes, for every route. */
-function pageFor(baseUrl: string, requestPath: string): string {
-  const title = requestPath.includes(SYNTHETIC_NPUB) ? BRAND_TITLE : 'Test Route Title';
+function pageFor(baseUrl: string, requestPath: string, forceShellFallback = false): string {
+  const title = forceShellFallback || requestPath === '/' || requestPath.includes(SYNTHETIC_NPUB)
+    ? BRAND_TITLE
+    : 'Test Route Title';
 
   return [
     '<!doctype html><html><head>',
@@ -55,6 +62,7 @@ async function startFixture(
   dropPlan: Record<string, number> = {},
   staleHeaderPath?: string,
   transientStatusPath?: string,
+  shellFallbackPath?: string,
 ): Promise<Fixture> {
   const drops = new Map<string, number>();
 
@@ -101,7 +109,7 @@ async function startFixture(
       headers['x-robots-tag'] = 'noindex';
     }
     response.writeHead(200, headers);
-    response.end(request.method === 'HEAD' ? '' : pageFor(baseUrl, requestPath));
+    response.end(request.method === 'HEAD' ? '' : pageFor(baseUrl, requestPath, pathOnly === shellFallbackPath));
   });
 
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -149,6 +157,16 @@ describe('verify-og-tags.sh network resilience', () => {
 
     expect(output).toContain('All checks passed.');
     expect(status).toBe(0);
+  }, 60_000);
+
+  it('rejects a route that unexpectedly serves the current SPA shell title', async () => {
+    fixture = await startFixture({}, undefined, undefined, '/category/dance');
+
+    const { output, status } = await runAudit(fixture.baseUrl);
+
+    expect(output).toContain('og:title is generic brand fallback (no per-route handler fired)');
+    expect(output).toContain('FAILED: 1 of 16 checks did not pass');
+    expect(status).toBe(1);
   }, 60_000);
 
   it('retries a route whose connection is dropped once', async () => {

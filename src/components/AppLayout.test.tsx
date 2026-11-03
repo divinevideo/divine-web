@@ -22,10 +22,6 @@ vi.mock('@/components/BottomNav', () => ({
   BottomNav: () => <nav aria-label="bottom nav">bottom nav</nav>,
 }));
 
-vi.mock('@/components/PWAInstallPrompt', () => ({
-  PWAInstallPrompt: () => null,
-}));
-
 vi.mock('@/components/AppSidebar', () => ({
   AppSidebar: () => <aside aria-label="sidebar">sidebar</aside>,
 }));

@@ -1395,14 +1395,9 @@
     "replyPlaceholder": "Napisz odpowiedź..."
   },
   "pwaInstallPrompt": {
-    "close": "Zamknij",
     "getDivine": "Pobierz Divine",
-    "descriptionNative": "Zainstaluj natywną apkę dla najlepszego doświadczenia z Divine",
     "appStore": "App Store",
-    "appStoreAria": "Pobierz Divine z App Store",
-    "googlePlay": "Google Play",
-    "googlePlayAria": "Pobierz Divine z Google Play",
-    "notNow": "Nie teraz"
+    "googlePlay": "Google Play"
   },
   "relaySelector": {
     "placeholder": "Wybierz przekaźnik"

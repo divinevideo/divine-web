@@ -358,7 +358,8 @@ const FEED_TITLES = {
 };
 
 export async function handleDiscoveryOgTags(feedType) {
-  const type = FEED_TITLES[feedType] ? feedType : 'trending';
+  const isHotRoute = feedType === 'hot';
+  const type = isHotRoute ? 'trending' : FEED_TITLES[feedType] ? feedType : 'trending';
   let topThumbnail = null;
   try {
     const r = await fetch(`https://relay.divine.video/api/videos?sort=${encodeURIComponent(type)}&limit=1`, {
@@ -375,10 +376,10 @@ export async function handleDiscoveryOgTags(feedType) {
   }
   const label = FEED_TITLES[type];
   const html = buildCrawlerHtml({
-    title: `${label} on Divine`,
-    description: `${label} on Divine — 6-second loops from real humans.`,
+    title: isHotRoute ? 'Trending Videos - Divine' : `${label} on Divine`,
+    description: isHotRoute ? 'Watch classic Vines and new short videos on Divine.' : `${label} on Divine — 6-second loops from real humans.`,
     image: topThumbnail || DEFAULT_OG_IMAGE,
-    url: type === 'trending' ? 'https://divine.video/discovery' : `https://divine.video/discovery/${type}`,
+    url: isHotRoute ? 'https://divine.video/discovery/hot' : type === 'trending' ? 'https://divine.video/discovery' : `https://divine.video/discovery/${type}`,
     ogType: 'website',
     twitterCard: 'summary_large_image',
     imageWidth: topThumbnail ? null : 1200,
@@ -410,8 +411,8 @@ export async function handleApexOgTags() {
     console.error('handleApexOgTags funnelcake error:', e.message);
   }
   const html = buildCrawlerHtml({
-    title: 'Divine — 6-second loops from real humans',
-    description: 'Watch and share 6-second looping videos on the decentralized Nostr network.',
+    title: 'Divine: Watch Classic Vines and New Short Videos',
+    description: "Watch classic Vines and new short videos on Divine. Browse on the web without signing in. Get the app when you're ready.",
     image: topThumbnail || DEFAULT_OG_IMAGE,
     url: 'https://divine.video/',
     ogType: 'website',

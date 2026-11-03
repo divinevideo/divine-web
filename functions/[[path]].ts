@@ -214,11 +214,7 @@ function buildSimpleRouteMeta(url: URL): PageMeta | null {
   }
 
   if (url.pathname === '/') {
-    return buildSimplePageMeta(
-      url,
-      'Divine — 6-second loops from real humans',
-      'Watch and share 6-second looping videos on the decentralized Nostr network.'
-    );
+    return getDefaultPageMeta(url);
   }
 
   return null;

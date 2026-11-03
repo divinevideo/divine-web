@@ -155,9 +155,6 @@ export function renderShell({
 <body>
   <div id="root" data-divine-ssr="true">${body}</div>
 
-  <!-- HubSpot tracking & GDPR cookie consent -->
-  <script type="text/javascript" id="hs-script-loader" async defer src="https://js-na2.hs-scripts.com/244466832.js"></script>
-
   ${mainScript ? `<script type="module" src="${escapeHtml(mainScript)}"></script>` : ''}
 </body>
 </html>`;

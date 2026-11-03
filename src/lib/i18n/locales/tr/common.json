@@ -1379,14 +1379,9 @@
     "replyPlaceholder": "Yanıt yaz..."
   },
   "pwaInstallPrompt": {
-    "close": "Kapat",
     "getDivine": "Divine'ı edin",
-    "descriptionNative": "En iyi Divine deneyimi için yerel uygulamayı yükle",
     "appStore": "App Store",
-    "appStoreAria": "Divine'ı App Store'dan indir",
-    "googlePlay": "Google Play",
-    "googlePlayAria": "Divine'ı Google Play'den edin",
-    "notNow": "Şimdi değil"
+    "googlePlay": "Google Play"
   },
   "relaySelector": {
     "placeholder": "Relay seç"

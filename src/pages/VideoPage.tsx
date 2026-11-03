@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { VideoCard } from '@/components/VideoCard';
+import { MobileAppLink } from '@/components/MobileAppLink';
 import { buildVideoNavigationUrl, parseVideoNavigationContext, useVideoNavigation, type VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import { useVideoByIdFunnelcake } from '@/hooks/useVideoByIdFunnelcake';
 import { useAgeRestrictedPreference } from '@/hooks/useAgeRestrictedPreference';
@@ -44,12 +45,13 @@ interface VideoPageCardActions {
   handleCloseComments: () => void;
 }
 
-function VideoCardWithMetrics({ video, userInteractions, actions, showComments, navigationContext }: {
+function VideoCardWithMetrics({ video, userInteractions, actions, showComments, navigationContext, onPlaybackStarted }: {
   video: ParsedVideoData;
   userInteractions?: UserInteractions;
   actions: VideoPageCardActions;
   showComments: boolean;
   navigationContext: VideoNavigationContext | null;
+  onPlaybackStarted?: () => void;
 }) {
   const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, { enabled: true });
   const loopCount = video.isVineMigrated ? (video.loopCount ?? 0) : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
@@ -72,12 +74,14 @@ function VideoCardWithMetrics({ video, userInteractions, actions, showComments, 
       onOpenComments={() => actions.handleOpenComments(video)} onCloseComments={actions.handleCloseComments}
       isLiked={userInteractions?.hasLiked || false} isReposted={userInteractions?.hasReposted || false}
       likeCount={video.likeCount ?? 0} repostCount={video.repostCount ?? 0} commentCount={video.commentCount ?? 0}
-      viewCount={displayCount} showComments={showComments} navigationContext={navigationContext || undefined} />
+      viewCount={displayCount} showComments={showComments} navigationContext={navigationContext || undefined}
+      onPlaybackStarted={onPlaybackStarted} />
   );
 }
 
 export function VideoPage() {
   const { t } = useTranslation();
+  const [playedVideoId, setPlayedVideoId] = useState<string | null>(null);
   const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -827,6 +831,7 @@ export function VideoPage() {
                 {shouldRender ? (
                   <VideoCardWithMetrics
                     video={video}
+                    onPlaybackStarted={() => setPlayedVideoId(video.id)}
                     actions={videoCardActions}
                     showComments={showCommentsForVideo === video.id}
                     navigationContext={effectiveNavigationContext}
@@ -845,6 +850,7 @@ export function VideoPage() {
                     <Skeleton className="aspect-square w-full" />
                   </Card>
                 )}
+                {playedVideoId === video.id && <MobileAppLink />}
               </div>
             );
           })}
@@ -992,12 +998,14 @@ export function VideoPage() {
         {currentVideo && (
           <VideoCardWithMetrics
             video={currentVideo}
+            onPlaybackStarted={() => setPlayedVideoId(currentVideo.id)}
             actions={videoCardActions}
             showComments={showCommentsForVideo === currentVideo.id}
             navigationContext={effectiveNavigationContext}
             userInteractions={batchedInteractions.get(currentVideo.id)}
           />
         )}
+        {currentVideo && playedVideoId === currentVideo.id && <MobileAppLink />}
       </div>
 
       {/* Navigation Hint */}

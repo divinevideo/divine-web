@@ -17,6 +17,8 @@ set -uo pipefail
 
 BASE_URL="${BASE_URL:-https://divine.video}"
 UA_ONLY="${UA_ONLY:-}"
+# Keep aligned with index.html; the fixture audit reads its title directly.
+BRAND_TITLE="Divine: Watch Classic Vines and New Short Videos"
 
 REAL_VIDEO_ID="3ca833a0027dd6240b2956dec98643032ff43ee75c0f0cde9d2096186b4b2605"
 REAL_NPUB="npub1smznz0v5cfh3f9e5vp5j9h6tzn4dlp3eqnxx6p2wujr40ftnz5qqhzf22n"
@@ -51,7 +53,7 @@ ROUTES=(
   "/discovery/hot|discovery (trending)|og_title_not_brand && og_url_matches_path"
   "/discovery/classics|discovery (classics)|og_title_not_brand && og_url_matches_path"
   "/@jalcine|at-username apex|og_title_not_brand"
-  "/|apex home|og_title_not_brand"
+  "/|apex home|og_title_is_brand"
 )
 
 # Crawler UAs known to trigger Fastly's isSocialMediaCrawler() switch.
@@ -229,24 +231,24 @@ run_check() {
       og_title_not_brand)
         local og_title
         og_title=$(extract_meta "$body" "og:title")
-        if [[ "$og_title" == "Divine Web - Short-form Looping Videos on Nostr" ]]; then
+        if [[ "$og_title" == "$BRAND_TITLE" ]]; then
           all_passed=false
           echo "    FAIL: og:title is generic brand fallback (no per-route handler fired)"
           echo "          got: ${og_title}"
         fi
         ;;
       og_title_is_brand)
-        # Inverse of og_title_not_brand. Passes when the response falls through to
-        # the SPA shell with the brand-default title. Use this for negative tests
-        # where the worker correctly does NOT produce per-route OG (e.g. structurally
-        # invalid npubs, where decodeNpubToHex returns null).
+        # The homepage and intentional SPA shell fallthrough share this title.
+        # Use this for the homepage and negative tests where the worker correctly
+        # does NOT produce per-route OG (e.g. structurally invalid npubs, where
+        # decodeNpubToHex returns null).
         local og_title
         og_title=$(extract_meta "$body" "og:title")
-        if [[ "$og_title" != "Divine Web - Short-form Looping Videos on Nostr" ]]; then
+        if [[ "$og_title" != "$BRAND_TITLE" ]]; then
           all_passed=false
-          echo "    FAIL: og:title is NOT the brand-default SPA shell fallback"
+          echo "    FAIL: og:title does not match the homepage / SPA shell title"
           echo "          got: ${og_title}"
-          echo "          want: Divine Web - Short-form Looping Videos on Nostr"
+          echo "          want: ${BRAND_TITLE}"
         fi
         ;;
       og_url_matches_path)

@@ -1,5 +1,5 @@
 // ABOUTME: Removes a one-time sign-in code from the address on /app/callback
-// ABOUTME: ahead of HubSpot and the app. Has no imports on purpose.
+// ABOUTME: ahead of the app and any other script. Has no imports on purpose.
 
 const CODE_NAME = 'oauth_confirm';
 const CALLBACK_PATH = '/app/callback';

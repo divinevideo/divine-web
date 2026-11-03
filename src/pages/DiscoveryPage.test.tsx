@@ -86,6 +86,10 @@ vi.mock('@/lib/analytics', () => ({
   trackEvent: mockTrackEvent,
 }));
 
+vi.mock('@/components/DiscoverySeo', () => ({
+  DiscoverySeo: () => null,
+}));
+
 vi.mock('@/components/VideoFeed', () => ({
   VideoFeed: ({ feedType, featuredTabId }: { feedType: string; featuredTabId?: string }) => {
     const message = feedType === 'featured' && mockFeaturedFeedState.current !== 'normal'

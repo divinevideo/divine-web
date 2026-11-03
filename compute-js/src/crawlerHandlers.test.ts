@@ -48,7 +48,8 @@ describe('handleApexOgTags', () => {
     }));
     const result = await handleApexOgTags();
     const html = await result!.text();
-    expect(html).toContain('Divine — 6-second loops from real humans');
+    expect(html).toContain('Divine: Watch Classic Vines and New Short Videos');
+    expect(html).toContain('Watch classic Vines and new short videos on Divine.');
     expect(html).toContain('https://x/hero.jpg');
     expect(html).toContain('https://divine.video/');
     // When using a fetched thumbnail, dimensions should be omitted
@@ -68,7 +69,7 @@ describe('handleApexOgTags', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
     const result = await handleApexOgTags();
     const html = await result!.text();
-    expect(html).toContain('Divine — 6-second loops from real humans');
+    expect(html).toContain('Divine: Watch Classic Vines and New Short Videos');
     expect(html).toContain('https://divine.video/og.png');
   });
 });
@@ -218,6 +219,16 @@ describe('handleDiscoveryOgTags', () => {
     expect(html).toContain('https://x/top.jpg');
     expect(html).toContain('https://divine.video/discovery');
     expect(html).not.toContain('og:image:width');
+  });
+
+  it('keeps the hot route canonical and metadata aligned with the watchable page', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
+    const result = await handleDiscoveryOgTags('hot');
+    const page = new DOMParser().parseFromString(await result.text(), 'text/html');
+
+    expect(page.title).toBe('Trending Videos - Divine');
+    expect(page.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://divine.video/discovery/hot');
+    expect(page.querySelector('meta[property="og:description"]')?.getAttribute('content')).toBe('Watch classic Vines and new short videos on Divine.');
   });
 
   it('handles unknown feed type by falling back to trending', async () => {

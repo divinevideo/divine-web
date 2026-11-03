@@ -1379,14 +1379,9 @@
     "replyPlaceholder": "回一句…"
   },
   "pwaInstallPrompt": {
-    "close": "关闭",
     "getDivine": "获取 Divine",
-    "descriptionNative": "安装原生 App，获得最佳 Divine 体验",
     "appStore": "App Store",
-    "appStoreAria": "在 App Store 下载 Divine",
-    "googlePlay": "Google Play",
-    "googlePlayAria": "在 Google Play 获取 Divine",
-    "notNow": "以后再说"
+    "googlePlay": "Google Play"
   },
   "relaySelector": {
     "placeholder": "选择 Relay"

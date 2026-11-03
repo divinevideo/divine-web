@@ -17,7 +17,7 @@ export function AppFooter() {
             <div className="flex flex-col gap-2 lg:max-w-md">
               <div className="text-sm font-semibold text-brand-green">Divine Inspiration</div>
               <p className="text-sm text-brand-off-white mb-2">{MAILING_LIST_BLURB}</p>
-              <HubSpotSignup />
+              <HubSpotSignup onDark />
             </div>
 
             {/* Right side - Navigation Links */}

@@ -12,11 +12,11 @@ Output to `dist/`.
 ## Entry Point Flow
 
 ```
-index.html → src/lib/stripSignInCode.ts → src/lib/hubSpotLoader.ts
-           → src/main.tsx → src/App.tsx → src/AppRouter.tsx
+index.html → src/lib/stripSignInCode.ts → src/main.tsx
+           → src/App.tsx → src/AppRouter.tsx
 ```
 
-The first module removes a callback sign-in code before HubSpot and app startup,
+The first module removes a callback sign-in code before app startup,
 without reserializing other query or fragment values. It suppresses analytics
 before attempting the history update, so a rejected update does not abort boot
 or enable analytics. Sentry also scrubs navigation timing URLs, which keep the
@@ -177,6 +177,16 @@ On Fastly, some routes are not served from
 identifiable by the `x-divine-edge: template` response header — and that shell
 boots the same SPA bundle. `/` and `/discovery/hot` go through it today;
 [`compute-js/src/index.js`](./compute-js/src/index.js) can route more.
+Feed HTML is cached by path so the homepage and hot discovery page keep
+their own titles and canonical URLs even though both use the trending feed.
+Search crawlers receive that feed HTML at `/` and `/discovery/hot`; social link
+preview bots receive OG responses, with the hot route's own canonical URL.
+The SPA updates discovery titles and canonical URLs on client navigation through
+`DiscoverySeo`; the homepage keeps its metadata in `Index`.
+Homepage copy also exists in the SPA fallback `index.html` and the apex social
+crawler response in `compute-js/src/crawlerHandlers.js`. Cloudflare's
+`functions/[[path]].ts` uses `getDefaultPageMeta` in `src/lib/serverSocialMeta.ts`
+for the homepage and generic fallback; keep all these paths aligned.
 Templates with a distinct crawler response vary by both the original host and
 user agent so one response cannot replace the other in the edge cache. Bare
 vanity-subdomain profiles vary only by original host because crawlers and
@@ -346,9 +356,11 @@ Tests use `*.test.ts(x)` next to the file under test. Utilities use
 ## External Integrations
 
 Nostr relays are configured in [`src/config/relays.ts`](./src/config/relays.ts).
-Firebase Analytics runs behind GDPR cookie consent. Sentry handles error
-tracking. Media assets come from cdn.divine.video. Content moderation uses
-moderation-api.divine.video. HubSpot provides the cookie consent banner.
+Firebase Analytics and product analytics remain inactive without explicit
+consent; the public app does not load a cookie banner or tracking script at
+startup. HubSpot email forms load after a visitor requests one. Sentry handles
+error tracking. Media assets come from cdn.divine.video. Content moderation
+uses moderation-api.divine.video.
 
 ### Product Analytics Contract
 

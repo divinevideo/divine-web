@@ -1379,14 +1379,9 @@
     "replyPlaceholder": "Viết phản hồi..."
   },
   "pwaInstallPrompt": {
-    "close": "Đóng",
     "getDivine": "Tải Divine",
-    "descriptionNative": "Cài ứng dụng native để có trải nghiệm Divine tốt nhất",
     "appStore": "App Store",
-    "appStoreAria": "Tải Divine trên App Store",
-    "googlePlay": "Google Play",
-    "googlePlayAria": "Tải Divine trên Google Play",
-    "notNow": "Để sau"
+    "googlePlay": "Google Play"
   },
   "relaySelector": {
     "placeholder": "Chọn relay"

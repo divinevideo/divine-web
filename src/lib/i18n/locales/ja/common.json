@@ -1379,14 +1379,9 @@
     "replyPlaceholder": "返信を書く..."
   },
   "pwaInstallPrompt": {
-    "close": "閉じる",
     "getDivine": "Divineを入手",
-    "descriptionNative": "ネイティブアプリをインストールすると、Divineを最高の体験で楽しめます",
     "appStore": "App Store",
-    "appStoreAria": "App StoreでDivineをダウンロード",
-    "googlePlay": "Google Play",
-    "googlePlayAria": "Google PlayでDivineを入手",
-    "notNow": "あとで"
+    "googlePlay": "Google Play"
   },
   "relaySelector": {
     "placeholder": "リレーを選択"

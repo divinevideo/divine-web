@@ -1,5 +1,4 @@
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
-const DEFAULT_SITE_DESCRIPTION = 'Watch and share 6-second looping videos on the decentralized Nostr network.';
 
 const CATEGORY_LABEL_OVERRIDES: Record<string, string> = {
   diy: 'DIY',
@@ -386,12 +385,12 @@ export function buildDownloadPageMeta(url: URL): PageMeta {
 
 export function getDefaultPageMeta(url: URL): PageMeta {
   return {
-    title: 'Divine Web - Short-form Looping Videos on Nostr',
-    description: DEFAULT_SITE_DESCRIPTION,
+    title: 'Divine: Watch Classic Vines and New Short Videos',
+    description: "Watch classic Vines and new short videos on Divine. Browse on the web without signing in. Get the app when you're ready.",
     ogType: 'website',
     url: url.toString(),
     image: DEFAULT_OG_IMAGE,
-    imageAlt: 'Divine Web - Short-form looping videos on the Nostr network',
+    imageAlt: 'Divine',
     twitterCard: 'summary_large_image',
   };
 }
