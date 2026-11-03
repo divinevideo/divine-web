@@ -11,6 +11,17 @@ import { navbar, discoveryTabs, videoGrid, videoDetail, profileHeader, footer } 
 import { HOME_DESCRIPTION, HOME_TITLE, HOT_DESCRIPTION } from '../siteCopy.js';
 
 /**
+ * The path a feed page is rendered and cached under. `/index.html` is the
+ * homepage, so it shares `/`'s HTML rather than keeping a copy of its own.
+ *
+ * @param {string} pathname - Request path
+ * @returns {string}
+ */
+export function feedPagePath(pathname) {
+  return pathname === '/index.html' ? '/' : pathname;
+}
+
+/**
  * Render a feed/discovery page (home, trending, new, classics, top).
  *
  * @param {Object} options
@@ -30,7 +41,7 @@ export function renderFeedPage({ videos, feedType = 'trending', pathname = '/', 
     top: 'Top Videos',
   };
   const pageTitle = `${titleMap[feedType] || 'Videos'} - Divine`;
-  const isHome = pathname === '/' || pathname === '/index.html';
+  const isHome = feedPagePath(pathname) === '/';
   const currentPath = isHome ? '/' : '/discovery';
 
   const body = `<div class="divine-shell">

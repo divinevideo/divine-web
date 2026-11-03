@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CRITICAL_CSS } from './css.js';
-import { renderFeedPage, renderProfilePage, renderVideoPage } from './pages.js';
+import { feedPagePath, renderFeedPage, renderProfilePage, renderVideoPage } from './pages.js';
 
 const BREAKOUT = '</script><script>alert(1)</script>\u2028\u2029';
 
@@ -69,6 +70,13 @@ describe('edge page templates', () => {
     const html = renderFeedPage({ videos: [] });
 
     expect(html).not.toContain('/src/main.tsx');
+  });
+
+  it('renders and caches /index.html as the homepage rather than a page of its own', () => {
+    expect(feedPagePath('/index.html')).toBe('/');
+    expect(feedPagePath('/')).toBe('/');
+    expect(feedPagePath('/discovery/hot')).toBe('/discovery/hot');
+    expect(readFileSync('compute-js/src/index.js', 'utf8')).toContain('const CACHE_KEY = `page:feed:${feedPagePath(pathname)}`;');
   });
 
   it('keeps critical CSS free of layout gradients', () => {

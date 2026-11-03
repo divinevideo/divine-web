@@ -36,7 +36,7 @@ import {
   createEdgeTemplateHeaders,
   HOST_DEPENDENT_CRAWLER_VARY,
 } from './templateCachePolicy.js';
-import { renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
+import { feedPagePath, renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
 import { isSearchCrawler, searchFeedFallbackTab, shouldServeFeedToSearchCrawler } from './searchCrawler.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
@@ -1252,7 +1252,7 @@ async function handleVideoPage(request, videoId, url, funnelcakeTarget) {
  * Handle feed/discovery pages — render edge-templated HTML with video grid.
  */
 async function handleFeedPage(feedType, funnelcakeTarget, pathname) {
-  const CACHE_KEY = `page:feed:${pathname}`;
+  const CACHE_KEY = `page:feed:${feedPagePath(pathname)}`;
   const CACHE_TTL = 60;
   const contentStore = new KVStore('divine-web-content');
   const staticAssets = await getStaticAssets();

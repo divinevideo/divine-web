@@ -178,7 +178,8 @@ identifiable by the `x-divine-edge: template` response header — and that shell
 boots the same SPA bundle. `/` and `/discovery/hot` go through it today;
 [`compute-js/src/index.js`](./compute-js/src/index.js) can route more.
 Feed HTML is cached by path so the homepage and hot discovery page keep
-their own titles and canonical URLs even though both use the trending feed.
+their own titles and canonical URLs even though both use the trending feed;
+`/index.html` shares the `/` entry.
 Search crawlers receive that feed HTML at `/` and `/discovery/hot`; social link
 preview bots receive OG responses, with the hot route's own canonical URL. When
 the hot route's feed page can't render, search crawlers get its OG response too,
