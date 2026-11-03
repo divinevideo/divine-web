@@ -135,17 +135,6 @@ function makeInfiniteQueryResult(
 // ---------------------------------------------------------------------------
 
 describe('useHydratedNotifications', () => {
-  it('does not send known text-post targets to the video API', async () => {
-    const note = { ...makeLike('note-like', PUBKEY_A, VIDEO_ID), targetEventKind: 1 };
-    mockUseNotifications.mockReturnValue(makeInfiniteQueryResult([makeNotificationsPage([note])]));
-    mockUseBatchedAuthors.mockReturnValue({ data: {} });
-    const { useHydratedNotifications } = await import('./useHydratedNotifications');
-    const { result } = renderHook(() => useHydratedNotifications({ category: 'all' }), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(result.current.items[0]?.kind).toBe('post'));
-    expect(mockFetchBulkVideos).not.toHaveBeenCalled();
-    expect(mockFetchVideoById).not.toHaveBeenCalled();
-  });
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -158,6 +147,17 @@ describe('useHydratedNotifications', () => {
 
     // Default: empty author map
     mockUseBatchedAuthors.mockReturnValue({ data: {} });
+  });
+
+  it('does not send known text-post targets to the video API', async () => {
+    const note = { ...makeLike('note-like', PUBKEY_A, VIDEO_ID), targetEventKind: 1 };
+    mockUseNotifications.mockReturnValue(makeInfiniteQueryResult([makeNotificationsPage([note])]));
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+    const { result } = renderHook(() => useHydratedNotifications({ category: 'all' }), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.items[0]?.kind).toBe('post'));
+    expect(mockFetchBulkVideos).not.toHaveBeenCalled();
+    expect(mockFetchVideoById).not.toHaveBeenCalled();
   });
 
   it('does not hydrate an untyped row whose target another row marks as a post', async () => {
