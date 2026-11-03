@@ -184,7 +184,8 @@ preview bots receive OG responses, with the hot route's own canonical URL. When
 the hot route's feed page can't render, search crawlers get its OG response too,
 rather than the SPA shell's homepage metadata.
 The SPA updates discovery titles and canonical URLs on client navigation through
-`DiscoverySeo`; the homepage keeps its metadata in `Index`.
+`DiscoverySeo`; the homepage keeps its metadata in `Index`. Discovery titles come
+from `src/lib/discoveryMeta.ts`, which Cloudflare's function uses too.
 On Fastly, the homepage and hot-route copy comes from
 [`compute-js/src/siteCopy.js`](./compute-js/src/siteCopy.js), which the feed
 templates, the shell defaults, and the crawler responses in
