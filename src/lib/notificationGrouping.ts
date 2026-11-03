@@ -29,8 +29,12 @@ export interface NotificationVideoMeta {
  */
 const NOTIFICATION_VIDEO_KINDS: readonly number[] = [34235, ...VIDEO_KINDS];
 
+function isVideoKind(kind: number): boolean {
+  return NOTIFICATION_VIDEO_KINDS.includes(kind);
+}
+
 export function hasNonVideoTarget(row: Pick<RawNotification, 'targetEventKind'>): boolean {
-  return row.targetEventKind != null && !NOTIFICATION_VIDEO_KINDS.includes(row.targetEventKind);
+  return row.targetEventKind != null && !isVideoKind(row.targetEventKind);
 }
 
 /**
@@ -124,7 +128,7 @@ export function groupRawNotifications(
       commentText: type === 'comment' ? newestRow.commentText : undefined,
     };
     const targetEventKind = bucket.find((row) => row.targetEventKind != null)?.targetEventKind;
-    if (targetEventKind != null && hasNonVideoTarget({ targetEventKind })) {
+    if (targetEventKind != null && !isVideoKind(targetEventKind)) {
       contentItems.push({
         ...common, kind: 'post', eventId: targetEventId, eventKind: targetEventKind,
         eventReference: newestRow.groupingKey,
