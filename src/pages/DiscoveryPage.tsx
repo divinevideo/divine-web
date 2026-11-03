@@ -81,9 +81,16 @@ function insertFeaturedTab(
   ];
 }
 
+// Marks the redirect a signed-out visit to `/` takes into the default tab.
+interface HomeRedirectState {
+  fromHome?: boolean;
+}
+
 export function DiscoveryPage() {
   const navigate = useSubdomainNavigate();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
+  const isRedirectFromHome = (location.state as HomeRedirectState | null)?.fromHome === true;
   const { t } = useTranslation();
   const params = useParams<{ tab?: string }>();
   const { user, isAuthPending } = useCurrentUser();
@@ -201,12 +208,17 @@ export function DiscoveryPage() {
     navigate,
   ]);
 
-  // Redirect bare /discovery to default tab (foryou for logged in, classics for anonymous)
+  // Redirect bare /discovery to default tab (foryou for logged in, classics for anonymous).
+  // Index renders this page for signed-out visitors at `/`, so the redirect fires
+  // there too; the state lets the tab skip the discovery metadata below.
   useEffect(() => {
     if (!params.tab) {
-      navigate(`/discovery/${defaultTab}`, { replace: true });
+      navigate(
+        `/discovery/${defaultTab}`,
+        pathname === '/' ? { replace: true, state: { fromHome: true } satisfies HomeRedirectState } : { replace: true },
+      );
     }
-  }, [params.tab, navigate, defaultTab]);
+  }, [params.tab, navigate, defaultTab, pathname]);
 
   // Keyed on the identifiers rather than the resolved object: the config poll
   // hands back a fresh object every refresh, which would otherwise re-count an
@@ -225,7 +237,9 @@ export function DiscoveryPage() {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      {pathname !== '/' && <DiscoverySeo pathname={pathname} />}
+      {/* A crawler at `/` runs this redirect too; a discovery canonical here would
+          contradict the homepage's own. */}
+      {pathname !== '/' && !isRedirectFromHome && <DiscoverySeo pathname={pathname} />}
       <div className={activeTab === 'hashtags' ? 'max-w-6xl mx-auto' : 'max-w-2xl mx-auto'}>
         <header className="mb-6 space-y-4">
           <div className="flex items-start justify-between mb-4">
