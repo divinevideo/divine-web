@@ -124,7 +124,7 @@ describe('ContentNotificationRow', () => {
 
   it('keeps direct video navigation when the target kind is known', () => {
     const eventId = 'f'.repeat(64);
-    render(<ContentNotificationRow notification={buildVideoNotification({ videoEventId: eventId, eventKind: 34236 })} />);
+    render(<ContentNotificationRow notification={buildVideoNotification({ videoEventId: eventId, eventKind: 34236, videoThumbnailUrl: undefined })} />);
     fireEvent.click(screen.getByRole('button', { name: /Alice liked My Cool Loop/i }));
     expect(mockNavigate).toHaveBeenCalledWith(`/video/${eventId}`);
   });
