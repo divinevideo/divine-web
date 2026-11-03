@@ -1,0 +1,335 @@
+import { execFileSync } from 'node:child_process';
+import {
+  copyFileSync,
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { SUPPORTED_LOCALES } from '@/lib/i18n/config';
+
+const REPO_ROOT = resolve(__dirname, '..');
+
+const LEGAL_PAGES = ['TermsPage.tsx', 'PrivacyPage.tsx', 'SafetyPage.tsx', 'DMCAPage.tsx'];
+
+interface PrerenderOptions {
+  /** Edits a copied page's source before the script reads it. */
+  editPage?: (file: string, source: string) => string;
+  /** Edits the copied English common catalog before the script reads it. */
+  editCatalog?: (catalog: Record<string, unknown>) => void;
+}
+
+/**
+ * Builds an `editPage` that rewrites TermsPage.tsx only. It throws when the
+ * target text is absent, so a fixture edit that stops matching fails loudly
+ * instead of leaving a test to pass on an unmodified page.
+ */
+function editTermsPage(from: string | RegExp, to: string): NonNullable<PrerenderOptions['editPage']> {
+  return (file, source) => {
+    if (file !== 'TermsPage.tsx') return source;
+    if (typeof from === 'string' ? !source.includes(from) : !from.test(source)) {
+      throw new Error(`Fixture edit matched nothing in TermsPage.tsx: ${String(from)}`);
+    }
+    return source.replace(from, () => to);
+  };
+}
+
+// The Last Updated date is bumped with the legal text, so match the option, not its value.
+const LAST_UPDATED_OPTION = /\{ date: '[^']*' \}/;
+
+/**
+ * Runs the real prerender script against a fixture dist/ and source tree in a
+ * temp directory and returns a reader for the generated pages. The script reads
+ * the React pages and the English locale catalogs relative to its own location,
+ * so both are copied in to exercise the real resolution path. A script failure
+ * propagates as a thrown error carrying the script's stderr.
+ */
+function prerenderLegalPages(options: PrerenderOptions = {}): (route: string) => string {
+  const tmp = mkdtempSync(join(tmpdir(), 'terms-prerender-'));
+
+  try {
+    mkdirSync(join(tmp, 'scripts'), { recursive: true });
+    mkdirSync(join(tmp, 'dist'), { recursive: true });
+    mkdirSync(join(tmp, 'src', 'pages'), { recursive: true });
+
+    copyFileSync(
+      resolve(REPO_ROOT, 'scripts/prerender-legal.mjs'),
+      join(tmp, 'scripts', 'prerender-legal.mjs'),
+    );
+    for (const file of LEGAL_PAGES) {
+      const source = readFileSync(resolve(REPO_ROOT, 'src', 'pages', file), 'utf8');
+      writeFileSync(
+        join(tmp, 'src', 'pages', file),
+        options.editPage ? options.editPage(file, source) : source,
+      );
+    }
+
+    const localesDir = join(tmp, 'src', 'lib', 'i18n', 'locales', 'en');
+    cpSync(resolve(REPO_ROOT, 'src', 'lib', 'i18n', 'locales', 'en'), localesDir, { recursive: true });
+    if (options.editCatalog) {
+      const catalogPath = join(localesDir, 'common.json');
+      const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'));
+      options.editCatalog(catalog);
+      writeFileSync(catalogPath, JSON.stringify(catalog));
+    }
+
+    writeFileSync(
+      join(tmp, 'dist', 'index.html'),
+      '<!DOCTYPE html><html><head>' +
+        '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'">' +
+        '</head><body><div id="root"></div>' +
+        '<script type="module" crossorigin src="/assets/index-TEST.js"></script>' +
+        '</body></html>',
+    );
+
+    execFileSync(process.execPath, [join(tmp, 'scripts', 'prerender-legal.mjs')], {
+      stdio: 'pipe',
+    });
+
+    const pages = new Map<string, string>();
+    for (const route of ['terms', 'privacy', 'safety', 'dmca']) {
+      pages.set(route, readFileSync(join(tmp, 'dist', route, 'index.html'), 'utf8'));
+    }
+    return (route) => {
+      const html = pages.get(route);
+      if (html === undefined) throw new Error(`No prerendered page for /${route}`);
+      return html;
+    };
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+describe('prerendered terms of service', () => {
+  let html: string;
+
+  beforeAll(() => {
+    html = prerenderLegalPages()('terms');
+  });
+
+  it('resolves every translated string instead of leaking template placeholders', () => {
+    // The page title and update date are t() calls; before the resolver learned
+    // to handle the default namespace and interpolation options they shipped as
+    // literal "{t('termsPage.title')}" text to crawlers and App Review.
+    expect(html).not.toContain("{t('");
+    expect(html).toContain('<title>Terms of Service - Divine Web</title>');
+    expect(html).toContain('Last Updated: September 25, 2026');
+  });
+
+  it('renders inline style props as HTML attributes instead of leaking JSX', () => {
+    // Section 19's warranty and liability disclaimers are set in capitals through
+    // style={{ textTransform: 'uppercase' }} (a conspicuousness requirement). The
+    // prerender used to ship that JSX verbatim, so crawlers and App Review got four
+    // paragraphs with junk attributes and no capitals.
+    expect(html).not.toMatch(/style=\{/);
+    expect(html).toContain('<p class="mb-3" style="text-transform: uppercase">');
+  });
+
+  it('renders both new sections with stable deep-link anchors', () => {
+    expect(html).toContain('id="subscriptions"');
+    expect(html).toContain('id="apple-app-store"');
+    expect(html).toContain('23. Subscriptions and In-App Purchases');
+    expect(html).toContain('24. Apple App Store Additional Terms');
+  });
+
+  it('offsets the deep-link sections below the fixed header', () => {
+    // MarketingHeader is fixed, and ScrollToTop calls scrollIntoView({ block: 'start' })
+    // for a hash, so without scroll-mt the heading lands underneath the nav. The
+    // other static pages use scroll-mt-24 for the same reason (see Anchor).
+    expect(html).toMatch(/<section id="subscriptions" class="scroll-mt-24">/);
+    expect(html).toMatch(/<section id="apple-app-store" class="scroll-mt-24">/);
+  });
+
+  it('includes the subscription disclosure the stores require', () => {
+    expect(html).toContain('Divine Supporter Monthly');
+    expect(html).toContain('Divine Founding Supporter');
+    expect(html).toContain('24 hours before the current period ends');
+    expect(html).toContain('reportaproblem.apple.com');
+    expect(html).toContain('Supporting unlocks nothing');
+  });
+
+  it('includes the Apple minimum EULA terms', () => {
+    expect(html).toContain('Verse Communications, Inc.');
+    expect(html).toContain('not with Apple');
+    expect(html).toContain('third-party beneficiaries');
+    expect(html).toContain('other accounts associated with the purchaser through Family Sharing, volume purchasing, or Legacy Contacts');
+    expect(html).toContain('9450 SW Gemini Dr PMB 21667\nBeaverton, Oregon 97008-7105 US');
+    expect(html).not.toContain('[postal address pending legal review]');
+  });
+
+  it('names the same supplied legal entity throughout the rendered terms', () => {
+    expect(html).toContain('The Service is provided by Verse Communications, Inc.');
+    expect(html).not.toContain('Verse Communications PBC');
+    expect(html).not.toContain('dba Divine');
+  });
+
+  it('distinguishes App Store renewal timing from Google Play billing', () => {
+    expect(html).toContain('For App Store purchases, turn off auto-renew at least 24 hours');
+    expect(html).toContain('For Google Play purchases, cancel before the renewal date');
+    expect(html).toContain('Google Play charges your account at the beginning of each billing cycle');
+    expect(html).not.toContain('at the same price and for the same period');
+  });
+
+  it('keeps the English-authored subscription and Apple terms identical in every locale catalog', () => {
+    const english = JSON.parse(readFileSync(resolve(REPO_ROOT, 'src/lib/i18n/locales/en/common.json'), 'utf8')).termsPage;
+    expect(english.appleStore.developerContact).toContain('Verse Communications, Inc.');
+    expect(english.appleStore.developerContact).toContain('9450 SW Gemini Dr PMB 21667\nBeaverton, Oregon 97008-7105 US');
+    for (const locale of SUPPORTED_LOCALES) {
+      const catalog = JSON.parse(readFileSync(resolve(REPO_ROOT, 'src/lib/i18n/locales', locale, 'common.json'), 'utf8'));
+      expect(catalog.termsPage.subscriptions, locale).toEqual(english.subscriptions);
+      expect(catalog.termsPage.appleStore, locale).toEqual(english.appleStore);
+    }
+  });
+});
+
+describe('prerendered legal pages', () => {
+  it('resolves the privacy page title and update date instead of leaking placeholders', () => {
+    // PrivacyPage calls useTranslation() with no namespace and passes the date as
+    // an interpolation option, the same shape that shipped "{t('privacyPage.title')}"
+    // to crawlers before the resolver learned the default namespace.
+    const html = prerenderLegalPages()('privacy');
+
+    expect(html).not.toMatch(/\{t\(|\{\{/);
+    expect(html).toContain('>Privacy Policy</h1>');
+    expect(html).toMatch(/Last Updated: [A-Z][a-z]+ \d{1,2}, \d{4}/);
+  });
+
+  it('leaves no template placeholders on the safety and DMCA pages', () => {
+    const read = prerenderLegalPages();
+
+    for (const route of ['safety', 'dmca']) {
+      expect(read(route), route).not.toMatch(/\{t\(|\{\{/);
+    }
+  });
+
+  it('inserts option values literally and escapes catalog text like React does', () => {
+    // String.prototype.replaceAll treats $&, $$ and friends in a replacement
+    // string as patterns, and React would escape & < > in text but the prerender
+    // wrote them raw.
+    const html = prerenderLegalPages({
+      editPage: editTermsPage(LAST_UPDATED_OPTION, "{ date: '$& R&D <b> $$5' }"),
+      editCatalog: (catalog) => {
+        (catalog.termsPage as Record<string, unknown>).title = 'Terms & <Conditions>';
+      },
+    })('terms');
+
+    expect(html).toContain('Last Updated: $&amp; R&amp;D &lt;b&gt; $$5');
+    expect(html).toContain('>Terms &amp; &lt;Conditions&gt;</h1>');
+  });
+
+  it('ignores t() calls that only appear inside JSX comments', () => {
+    // Comments are not rendered, so a commented-out call must neither throw for a
+    // missing key nor reach the output.
+    const html = prerenderLegalPages({
+      editPage: editTermsPage(
+        "{t('termsPage.title')}",
+        "{t('termsPage.title')}{/* was {t('termsPage.noSuchKey')} */}",
+      ),
+    })('terms');
+
+    expect(html).toContain('>Terms of Service</h1>');
+    expect(html).not.toContain('noSuchKey');
+  });
+
+  // A leak used to be silent: the script left the {t('…')} call in the output,
+  // exited 0, and the build shipped it. These pin that it now fails loudly.
+  describe('refuses to ship content it cannot resolve', () => {
+    it('fails when a translation key is missing from the English catalog', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editCatalog: (catalog) => {
+            delete (catalog.termsPage as Record<string, unknown>).title;
+          },
+        }),
+      ).toThrow(/no string for 'termsPage\.title'/);
+    });
+
+    it('fails when an interpolation option is not a plain string literal', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage(LAST_UPDATED_OPTION, '{ date: LAST_UPDATED }'),
+        }),
+      ).toThrow(/'termsPage\.lastUpdated' still contains \{\{date\}\}/);
+    });
+
+    // The three branches of the final leftover check each get their own case, so
+    // narrowing that pattern turns one of them red.
+    it('fails when a t() call uses a form the resolver does not recognize', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage("{t('termsPage.title')}", '{t("termsPage.title")}'),
+        }),
+      ).toThrow(/unconverted JSX.*\{t\(/);
+    });
+
+    it('fails when a style object cannot be converted to an attribute', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage("style={{ textTransform: 'uppercase' }}", 'style={{ lineHeight: 1.5 }}'),
+        }),
+      ).toThrow(/unconverted JSX.*style=\{/);
+    });
+
+    it('fails when a stray placeholder is left in the page markup', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage("{t('termsPage.title')}", '{{leftover}}'),
+        }),
+      ).toThrow(/unconverted JSX.*\{\{leftover\}\}/);
+    });
+  });
+
+  // These forms leave nothing behind for the leftover check to see: the script
+  // would resolve them, quietly and wrongly. They have to be refused outright.
+  describe('refuses t() forms it would resolve wrongly', () => {
+    it('fails when an option value contains a JS escape sequence', () => {
+      // Read as source text, 'café' would be inserted as a literal backslash.
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage(LAST_UPDATED_OPTION, "{ date: 'caf\\u00e9' }"),
+        }),
+      ).toThrow(/option values for 'termsPage\.lastUpdated' contain a backslash escape sequence/);
+    });
+
+    it('fails when t() is used as an attribute value', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage("{t('termsPage.title')}", "<a title={t('termsPage.title')}>x</a>"),
+        }),
+      ).toThrow(/\{t\('termsPage\.title'\)\} is used as an attribute value/);
+    });
+
+    it('fails when useTranslation names its namespace in a form it cannot read', () => {
+      // An array or a double-quoted name would otherwise resolve against common.
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage('useTranslation()', "useTranslation(['common', 'faq'])"),
+        }),
+      ).toThrow(/cannot read the namespace in useTranslation\(\['common', 'faq'\]\)/);
+    });
+
+    it('fails when a t() call picks another namespace through its options', () => {
+      expect(() =>
+        prerenderLegalPages({
+          editPage: editTermsPage("{t('termsPage.title')}", "{t('termsPage.title', { ns: 'faq' })}"),
+        }),
+      ).toThrow(/the 'ns' option on 'termsPage\.title' is not supported/);
+    });
+  });
+
+  it('escapes & and " in a converted style attribute', () => {
+    const html = prerenderLegalPages({
+      editPage: editTermsPage(
+        "style={{ textTransform: 'uppercase' }}",
+        `style={{ fontFamily: 'A&B "x"' }}`,
+      ),
+    })('terms');
+
+    expect(html).toContain('style="font-family: A&amp;B &quot;x&quot;"');
+  });
+});

@@ -139,24 +139,97 @@ function getTranslationValue(messages, key) {
   }, messages);
 }
 
-function resolveTCalls(source, content) {
-  const namespaceMatch = source.match(/useTranslation\('([^']+)'\)/);
+// Turns style={{ textTransform: 'uppercase' }} into style="text-transform: uppercase".
+// Only objects made entirely of string-literal values are converted; anything
+// else is left in place for the leftover-JSX check in extractContentFromTsx.
+function convertStyleProps(content) {
+  const declaration = /(\w+)\s*:\s*'([^']*)'/g;
 
-  if (!namespaceMatch) {
-    return content;
+  return content.replace(/style=\{\{([^{}]*)\}\}/g, (match, body) => {
+    const pairs = [...body.matchAll(declaration)];
+    if (pairs.length === 0 || body.replace(declaration, '').replace(/[\s,]/g, '') !== '') {
+      return match;
+    }
+
+    const css = pairs
+      .map(([, property, value]) => `${property.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}: ${value}`)
+      .join('; ');
+    return `style="${css.replaceAll('&', '&amp;').replaceAll('"', '&quot;')}"`;
+  });
+}
+
+function escapeHtmlText(text) {
+  return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+}
+
+function resolveTCalls(source, content) {
+  // Pages that call useTranslation() with no argument resolve against the
+  // default namespace ('common'), same as the i18n instance does.
+  const namespaceMatch = source.match(/useTranslation\(\s*(?:'([^']+)')?\s*\)/);
+  const namespace = namespaceMatch?.[1] ?? 'common';
+
+  // Only a bare call or one quoted name is understood. An array, a double-quoted
+  // name or a variable would otherwise fall through to 'common' without a word.
+  for (const [call, args] of source.matchAll(/useTranslation\(([^)]*)\)/g)) {
+    if (!/^\s*(?:'[^']+')?\s*$/.test(args)) {
+      throw new Error(`Prerender: cannot read the namespace in ${call}; use useTranslation() or useTranslation('name')`);
+    }
   }
 
-  const localePath = join(__dirname, '..', 'src', 'lib', 'i18n', 'locales', 'en', `${namespaceMatch[1]}.json`);
+  const localePath = join(__dirname, '..', 'src', 'lib', 'i18n', 'locales', 'en', `${namespace}.json`);
   if (!existsSync(localePath)) {
     return content;
   }
 
   const messages = JSON.parse(readFileSync(localePath, 'utf-8'));
 
-  return content.replace(/\{t\('([^']+)'\)\}/g, (match, key) => {
-    const value = getTranslationValue(messages, key);
-    return typeof value === 'string' ? value : match;
-  });
+  // Matches {t('key')} and {t('key', { name: 'value' })}. The second form
+  // carries interpolation options, so its string values replace the matching
+  // {{name}} placeholders in the resolved message.
+  return content.replace(
+    /\{t\(\s*'([^']+)'\s*(?:,\s*(\{(?:[^}']|'[^']*')*\}))?\s*\)\}/g,
+    (match, key, optionsSource, offset, whole) => {
+      const value = getTranslationValue(messages, key);
+      if (typeof value !== 'string') {
+        throw new Error(`Prerender: no string for '${key}' in locales/en/${namespace}.json (used in ${match})`);
+      }
+
+      // The forms below would be resolved quietly and wrongly, so refuse them.
+      if (whole[offset - 1] === '=') {
+        throw new Error(`Prerender: ${match} is used as an attribute value, which is not supported`);
+      }
+      if (optionsSource?.includes('\\')) {
+        throw new Error(
+          `Prerender: option values for '${key}' contain a backslash escape sequence, ` +
+            `which would be inserted literally (used in ${match})`,
+        );
+      }
+      if (optionsSource && /[{,]\s*ns\s*:/.test(optionsSource)) {
+        throw new Error(`Prerender: the 'ns' option on '${key}' is not supported (used in ${match})`);
+      }
+
+      const resolved = optionsSource
+        ? [...optionsSource.matchAll(/(\w+)\s*:\s*'([^']*)'/g)].reduce(
+            // A function replacer inserts the value literally; a replacement
+            // string would interpret $&, $$ and the like.
+            (text, [, name, replacement]) => text.replaceAll(`{{${name}}}`, () => replacement),
+            value,
+          )
+        : value;
+
+      const unfilled = resolved.match(/\{\{\s*\w+\s*\}\}/);
+      if (unfilled) {
+        throw new Error(
+          `Prerender: '${key}' still contains ${unfilled[0]} after substituting options; ` +
+            `only plain string-literal option values are supported (used in ${match})`,
+        );
+      }
+
+      // The catalog holds plain text and React escapes it when rendering, so the
+      // prerender has to as well before writing it into markup.
+      return escapeHtmlText(resolved);
+    },
+  );
 }
 
 // ── Page content (semantic HTML versions of the React components) ──────────
@@ -208,14 +281,30 @@ function extractContentFromTsx(sourcePath) {
     throw new Error(`Could not extract prerender content from ${sourcePath}`);
   }
 
-  return resolveTCalls(source, match[1])
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+  // JSX comments go first: they are not rendered, so a t() call inside one must
+  // be neither resolved nor reported as missing.
+  const withoutComments = match[1].replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+
+  const html = resolveTCalls(source, convertStyleProps(withoutComments))
     .replace(/<Link\s+to=/g, '<a href=')
     .replace(/<\/Link>/g, '</a>')
     .replace(/className=/g, 'class=')
     .replace(/\{\s*' '\s*\}/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+
+  // This is a regex conversion of JSX, not a renderer, so anything it does not
+  // understand survives into the output. Fail the build rather than ship it to
+  // crawlers: an unresolved t() call, an uninterpolated {{placeholder}}, or a
+  // style object that was not converted.
+  const leftover = html.match(/\{t\(|\{\{|style=\{/);
+  if (leftover) {
+    throw new Error(
+      `Prerender: unconverted JSX in ${sourcePath} near "${html.slice(leftover.index, leftover.index + 80)}"`,
+    );
+  }
+
+  return html;
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────
