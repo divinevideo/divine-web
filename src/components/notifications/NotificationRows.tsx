@@ -10,6 +10,7 @@ import { BrandLogo } from '@/components/brand/BrandLogo';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { buildEventPath, buildVideoPath } from '@/lib/eventRouting';
 import { getDirectSearchTarget } from '@/lib/directSearch';
+import { isHex64 } from '@/lib/nostrCoordinates';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { formatRelativeTime } from '@/lib/notificationTransform';
 import { cn } from '@/lib/utils';
@@ -307,7 +308,7 @@ export function ContentNotificationRow({
       return;
     }
     const id = notification.videoEventId;
-    navigate(notification.eventKind == null && /^[0-9a-f]{64}$/i.test(id)
+    navigate(notification.eventKind == null && isHex64(id)
       ? buildEventPath(id)
       : buildVideoPath(id));
   };
