@@ -27,13 +27,15 @@ function makeEvent(overrides: Partial<NostrEvent>): NostrEvent {
 }
 
 describe('eventRouting', () => {
-  it('routes video events to the video page using the d tag when present', () => {
+  it('routes resolved video events using their unique event ID', () => {
     const event = makeEvent({
       kind: SHORT_VIDEO_KIND,
       tags: [['d', 'clip-42']],
     });
 
-    expect(buildResolvedEventRoute(event)).toBe(buildVideoPath('clip-42'));
+    expect(buildResolvedEventRoute(event)).toBe(buildVideoPath(event.id));
+    const other = makeEvent({ id: 'a'.repeat(64), pubkey: 'b'.repeat(64), kind: SHORT_VIDEO_KIND, tags: event.tags });
+    expect(buildResolvedEventRoute(other)).not.toBe(buildResolvedEventRoute(event));
   });
 
   it('routes video list events to the public list page', () => {

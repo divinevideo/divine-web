@@ -160,6 +160,23 @@ describe('EventPage', () => {
     expect(screen.getAllByText('Text Note').length).toBeGreaterThan(0);
   });
 
+  it.each(['100% done', 'literal%2F', 'folder/name'])(
+    'looks up the exact addressable identifier %s after router decoding',
+    async (identifier) => {
+      mockFetchAddressableEvent.mockResolvedValue(null);
+      renderPage([`/event/a/30023/${'f'.repeat(64)}/${encodeURIComponent(identifier)}`]);
+      await waitFor(() => expect(mockFetchAddressableEvent).toHaveBeenCalled());
+      expect(mockFetchAddressableEvent.mock.calls[0][1]).toMatchObject({ identifier });
+    },
+  );
+
+  it('looks up an addressable post when the route has a trailing slash', async () => {
+    mockFetchAddressableEvent.mockResolvedValue(null);
+    renderPage([`/event/a/30023/${'f'.repeat(64)}/my-post/`]);
+    await waitFor(() => expect(mockFetchAddressableEvent).toHaveBeenCalled());
+    expect(mockFetchAddressableEvent.mock.calls[0][1]).toMatchObject({ identifier: 'my-post' });
+  });
+
   it('redirects video lists to the existing list page', async () => {
     const pubkey = 'a'.repeat(64);
     mockFetchEventById.mockResolvedValue({

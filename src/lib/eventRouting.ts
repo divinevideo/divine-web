@@ -77,7 +77,7 @@ export function buildAddressableRoute(kind: number, pubkey: string, identifier: 
 
 export function buildResolvedEventRoute(event: Pick<NostrEvent, 'id' | 'kind' | 'pubkey' | 'tags'>): string {
   if (VIDEO_KINDS.includes(event.kind as typeof VIDEO_KINDS[number])) {
-    return buildVideoPath(getEventDTag(event) || event.id);
+    return buildVideoPath(event.id);
   }
 
   const dTag = getEventDTag(event);

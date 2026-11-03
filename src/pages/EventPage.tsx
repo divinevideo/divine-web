@@ -111,6 +111,16 @@ function EventLoadingState() {
   );
 }
 
+function getAddressableIdentifier(pathname: string, routeIdentifier: string | undefined): string | undefined {
+  if (!routeIdentifier) return routeIdentifier;
+  try {
+    const path = pathname.replace(/\/+$/, '');
+    return decodeURIComponent(path.slice(path.lastIndexOf('/') + 1));
+  } catch {
+    return routeIdentifier;
+  }
+}
+
 export function EventPage() {
   const { eventId, kind, pubkey, identifier } = useParams<{
     eventId?: string;
@@ -125,7 +135,7 @@ export function EventPage() {
   const { t } = useTranslation();
 
   const numericKind = kind ? Number(kind) : null;
-  const decodedIdentifier = identifier ? decodeURIComponent(identifier) : null;
+  const decodedIdentifier = getAddressableIdentifier(location.pathname, identifier);
   const relayHints = parseRelayHints(location.search);
   const configuredRelayUrls = [
     ...(config.relayUrls || [config.relayUrl]),

@@ -95,7 +95,8 @@ describes the same target). Known non-video activity uses a post row and opens
 Only video targets or older responses with no target kind enter thumbnail
 hydration and preview lookup. Untyped hex event IDs use the event resolver for
 navigation, which can redirect videos and render posts; video d-tags keep their
-video route.
+video route. Resolved video redirects retain the unique event ID. Addressable
+post lookup decodes the raw URL segment once, preserving literal percent escapes.
 
 Web and mobile both write the same Funnelcake per-pubkey notification read
 marker through `POST /api/users/{pubkey}/notifications/read` with an empty body.
