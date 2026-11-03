@@ -1092,8 +1092,8 @@
     "unpinErrorDescription": "Não deu pra desafixar. Tenta de novo?"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - Vídeos curtos em loop no Nostr",
-    "seoDescription": "Assista e compartilhe vídeos em loop de 6 segundos na rede descentralizada Nostr.",
+    "seoTitle": "Divine: assista a Vines clássicos e novos vídeos curtos",
+    "seoDescription": "Assista a Vines clássicos e novos vídeos curtos na Divine. Navegue na web sem fazer login. Baixe o app quando quiser.",
     "heading": "Início",
     "subheadingDefault": "Vídeos das pessoas que você segue",
     "subheadingCount_one": "Vídeos de {{count}} pessoa que você segue",

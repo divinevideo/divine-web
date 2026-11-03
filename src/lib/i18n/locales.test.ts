@@ -248,6 +248,18 @@ describe('i18n locale resources', () => {
     }
   });
 
+  it('keeps the retired Nostr homepage copy out of every locale', () => {
+    // Index writes these over the edge-rendered homepage title after hydration,
+    // so a stale translation brings the old messaging back for that language.
+    for (const [locale, namespaces] of Object.entries(resources)) {
+      const indexPage = (namespaces.common as { indexPage?: Record<string, string> }).indexPage ?? {};
+
+      for (const key of ['seoTitle', 'seoDescription']) {
+        expect(indexPage[key], `${locale}.common.indexPage.${key}`).not.toMatch(/Nostr|Divine Web/);
+      }
+    }
+  });
+
   it('preserves interpolation placeholders across every locale', () => {
     for (const [namespace, englishCatalog] of Object.entries(resources.en)) {
       const englishKeys = flattenKeys(englishCatalog).sort();

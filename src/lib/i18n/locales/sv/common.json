@@ -1085,8 +1085,8 @@
     "unpinErrorDescription": "Kunde inte lossa. Försök igen?"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - Korta loopande videor på Nostr",
-    "seoDescription": "Titta på och dela 6-sekunders loopande videor på det decentraliserade Nostr-nätverket.",
+    "seoTitle": "Divine: titta på klassiska Vines och nya korta videor",
+    "seoDescription": "Titta på klassiska Vines och nya korta videor på Divine. Utforska på webben utan att logga in. Skaffa appen när du är redo.",
     "heading": "Hem",
     "subheadingDefault": "Videor från personer du följer",
     "subheadingCount_one": "Videor från {{count}} person du följer",

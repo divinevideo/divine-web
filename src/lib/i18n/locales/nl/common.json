@@ -1085,8 +1085,8 @@
     "unpinErrorDescription": "Kon niet losmaken. Nog eens proberen?"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - Korte loopvideo's op Nostr",
-    "seoDescription": "Bekijk en deel loopvideo's van 6 seconden op het gedecentraliseerde Nostr-netwerk.",
+    "seoTitle": "Divine: bekijk klassieke Vines en nieuwe korte video's",
+    "seoDescription": "Bekijk klassieke Vines en nieuwe korte video's op Divine. Kijk rond op het web zonder in te loggen. Download de app als je er klaar voor bent.",
     "heading": "Home",
     "subheadingDefault": "Video's van mensen die je volgt",
     "subheadingCount_one": "Video's van {{count}} persoon die je volgt",

@@ -1085,8 +1085,8 @@
     "unpinErrorDescription": "固定解除できませんでした。もう一度試しますか？"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - Nostr上のショート・ループ動画",
-    "seoDescription": "分散型のNostrネットワークで、6秒のループ動画を視聴・シェアしよう。",
+    "seoTitle": "Divine：クラシックVineと新しいショート動画を観よう",
+    "seoDescription": "Divineで、クラシックVineと新しいショート動画を観よう。サインインせずにWebで見られます。アプリは準備ができたらどうぞ。",
     "heading": "ホーム",
     "subheadingDefault": "フォロー中のユーザーの動画",
     "subheadingCount_one": "フォロー中の{{count}}人の動画",

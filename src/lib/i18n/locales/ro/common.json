@@ -1092,8 +1092,8 @@
     "unpinErrorDescription": "Nu am putut anula fixarea. Mai încerci?"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - Videoclipuri scurte în buclă pe Nostr",
-    "seoDescription": "Vezi și distribuie videoclipuri în buclă de 6 secunde în rețeaua descentralizată Nostr.",
+    "seoTitle": "Divine: urmărește Vines clasice și videoclipuri scurte noi",
+    "seoDescription": "Urmărește Vines clasice și videoclipuri scurte noi pe Divine. Navighează pe web fără să te conectezi. Descarcă aplicația când ești gata.",
     "heading": "Acasă",
     "subheadingDefault": "Videoclipuri de la persoanele pe care le urmărești",
     "subheadingCount_one": "Videoclipuri de la {{count}} persoană pe care o urmărești",

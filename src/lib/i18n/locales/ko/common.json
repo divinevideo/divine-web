@@ -1085,8 +1085,8 @@
     "unpinErrorDescription": "고정 해제가 안 됐어요. 다시 시도할까요?"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - Nostr 위의 짧은 루프 비디오",
-    "seoDescription": "탈중앙화 Nostr 네트워크에서 6초 루프 비디오를 보고 공유해요.",
+    "seoTitle": "Divine: 클래식 Vine과 새로운 짧은 비디오 보기",
+    "seoDescription": "Divine에서 클래식 Vine과 새로운 짧은 비디오를 봐요. 로그인 없이 웹에서 둘러볼 수 있어요. 준비되면 앱도 받아 보세요.",
     "heading": "홈",
     "subheadingDefault": "팔로우하는 사람들의 비디오",
     "subheadingCount_one": "팔로우하는 {{count}}명의 비디오",
