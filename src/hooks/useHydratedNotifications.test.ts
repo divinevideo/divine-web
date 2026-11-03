@@ -160,6 +160,17 @@ describe('useHydratedNotifications', () => {
     mockUseBatchedAuthors.mockReturnValue({ data: {} });
   });
 
+  it('still hydrates kind 34235 video targets through the video API', async () => {
+    const like = { ...makeLike('normal-video-like', PUBKEY_A, VIDEO_ID), targetEventKind: 34235 };
+    mockUseNotifications.mockReturnValue(makeInfiniteQueryResult([makeNotificationsPage([like])]));
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+    const { result } = renderHook(() => useHydratedNotifications({ category: 'all' }), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(mockFetchBulkVideos).toHaveBeenCalled());
+    expect(mockFetchBulkVideos.mock.calls[0][1]).toEqual([VIDEO_ID]);
+    expect(result.current.items[0]?.kind).toBe('video');
+  });
+
   it('groups two likes on one video into one row for category: all', async () => {
     const like1 = makeLike('like-1', PUBKEY_A, VIDEO_ID, 2000);
     const like2 = makeLike('like-2', PUBKEY_B, VIDEO_ID, 1000);

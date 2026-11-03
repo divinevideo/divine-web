@@ -22,8 +22,15 @@ export interface NotificationVideoMeta {
   ageRestricted?: boolean;
 }
 
+/**
+ * Kinds a notification target can have and still be a video. Funnelcake
+ * indexes and serves NIP-71 normal videos (34235) through the same video API as
+ * short videos, so both keep the thumbnail and the `/video/:id` route.
+ */
+const NOTIFICATION_VIDEO_KINDS: readonly number[] = [34235, ...VIDEO_KINDS];
+
 export function hasNonVideoTarget(row: Pick<RawNotification, 'targetEventKind'>): boolean {
-  return row.targetEventKind != null && !VIDEO_KINDS.includes(row.targetEventKind);
+  return row.targetEventKind != null && !NOTIFICATION_VIDEO_KINDS.includes(row.targetEventKind);
 }
 
 /**

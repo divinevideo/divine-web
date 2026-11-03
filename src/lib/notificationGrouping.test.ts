@@ -66,6 +66,14 @@ describe('groupRawNotifications', () => {
     expect(groupRawNotifications([raw], new Map(), new Map())[0]).toMatchObject({ kind: 'post', eventReference: address });
   });
 
+  it.each([34235, 34236])('keeps kind %i targets on the video path', (targetEventKind) => {
+    const raw = makeRaw({ type: 'like', actorPubkey: 'pk1', targetEventId: HEX_VIDEO_ID, targetEventKind });
+    const videos = new Map([[HEX_VIDEO_ID, makeVideoMeta('Loop', 'https://example.com/t.jpg')]]);
+    expect(groupRawNotifications([raw], new Map(), videos)[0]).toMatchObject({
+      kind: 'video', videoEventId: HEX_VIDEO_ID, eventKind: targetEventKind, videoThumbnailUrl: 'https://example.com/t.jpg',
+    });
+  });
+
   // 1. 1 like on a video produces one VideoNotification
   it('produces one VideoNotification for a single like', () => {
     const raw = makeRaw({ type: 'like', actorPubkey: 'pk1', targetEventId: 'video-1' });
