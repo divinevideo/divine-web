@@ -6,7 +6,7 @@ import { PendingInviteCard } from './PendingInviteCard';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 const video: NostrEvent = {
-  id: 'v', pubkey: 'b'.repeat(64), created_at: 1700000000, kind: 34236,
+  id: 'c'.repeat(64), pubkey: 'b'.repeat(64), created_at: 1700000000, kind: 34236,
   content: 'desc', sig: '',
   tags: [
     ['d', 'vid1'],
@@ -41,7 +41,7 @@ describe('PendingInviteCard', () => {
       { wrapper: TestApp },
     );
 
-    expect(screen.getByRole('link', { name: 'Hello world' })).toHaveAttribute('href', '/video/vid1');
+    expect(screen.getByRole('link', { name: 'Hello world' })).toHaveAttribute('href', `/video/${video.id}`);
 
     const creatorNpub = nip19.npubEncode('b'.repeat(64));
     expect(screen.getByRole('link', { name: `Creator ${creatorNpub.slice(0, 12)}...` }))
