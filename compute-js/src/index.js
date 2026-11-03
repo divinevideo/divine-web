@@ -37,7 +37,7 @@ import {
   HOST_DEPENDENT_CRAWLER_VARY,
 } from './templateCachePolicy.js';
 import { renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
-import { shouldServeFeedToSearchCrawler } from './searchCrawler.js';
+import { searchFeedFallbackTab, shouldServeFeedToSearchCrawler } from './searchCrawler.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -394,6 +394,14 @@ async function handleRequest(event) {
       console.error('Edge template feed page error:', err.message);
       // Fall through to SPA
     }
+  }
+
+  // Search crawlers skipped the OG handlers above to get the feed page. When it
+  // did not render, the SPA shell would give them the homepage's metadata.
+  const searchFallbackTab = serveSearchFeed ? searchFeedFallbackTab(url.pathname) : null;
+  if (searchFallbackTab) {
+    const ogResponse = await handleDiscoveryOgTags(searchFallbackTab);
+    if (ogResponse) return ogResponse;
   }
 
   // Edge-templated search page

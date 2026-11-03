@@ -180,7 +180,9 @@ boots the same SPA bundle. `/` and `/discovery/hot` go through it today;
 Feed HTML is cached by path so the homepage and hot discovery page keep
 their own titles and canonical URLs even though both use the trending feed.
 Search crawlers receive that feed HTML at `/` and `/discovery/hot`; social link
-preview bots receive OG responses, with the hot route's own canonical URL.
+preview bots receive OG responses, with the hot route's own canonical URL. When
+the hot route's feed page can't render, search crawlers get its OG response too,
+rather than the SPA shell's homepage metadata.
 The SPA updates discovery titles and canonical URLs on client navigation through
 `DiscoverySeo`; the homepage keeps its metadata in `Index`.
 Homepage copy also exists in the SPA fallback `index.html` and the apex social
