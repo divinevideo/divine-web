@@ -118,14 +118,16 @@ export function useHydratedNotifications(
   }, [flatRaw]);
 
   const sortedIds = useMemo(() => {
-    // Not every row carries the target kind, and grouping renders a whole
-    // bucket as a post once any row says so. Skip a target as soon as any row
-    // identifies it as non-video, not only the rows that carry the kind.
-    const nonVideoTargets = new Set(flatRaw.filter(hasNonVideoTarget).map((r) => r.targetEventId));
+    // Not every row carries the target kind, and grouping classifies a whole
+    // bucket from whichever row does. Key the skip on the grouping key, the
+    // bucket's identity, so an untyped sibling of a post is skipped too, while
+    // a video that merely shares a d-tag with someone's post still hydrates.
+    const targetKey = (r: RawNotification) => r.groupingKey ?? r.targetEventId;
+    const nonVideoTargets = new Set(flatRaw.filter(hasNonVideoTarget).map(targetKey));
     const ids = Array.from(
       new Set(
         flatRaw
-          .filter((r) => r.type !== 'follow' && r.targetEventId && !nonVideoTargets.has(r.targetEventId))
+          .filter((r) => r.type !== 'follow' && r.targetEventId && !nonVideoTargets.has(targetKey(r)))
           .map((r) => r.targetEventId as string),
       ),
       // Only a row carrying BOTH fields is fully hydrated. Treating any

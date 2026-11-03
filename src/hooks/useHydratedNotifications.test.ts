@@ -172,6 +172,36 @@ describe('useHydratedNotifications', () => {
     expect(mockFetchVideoById).not.toHaveBeenCalled();
   });
 
+  it('skips by grouping key, so a video sharing a d-tag with a post still hydrates', async () => {
+    const post = {
+      ...makeLike('post-like', PUBKEY_A, 'shared-dtag', 2000),
+      targetEventKind: 30023, groupingKey: `30023:${PUBKEY_A}:shared-dtag`,
+    };
+    const video = {
+      ...makeLike('video-like', PUBKEY_B, 'shared-dtag', 1000),
+      targetEventKind: 34236, groupingKey: `34236:${PUBKEY_B}:shared-dtag`,
+    };
+    mockUseNotifications.mockReturnValue(makeInfiniteQueryResult([makeNotificationsPage([post, video])]));
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+    renderHook(() => useHydratedNotifications({ category: 'all' }), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(mockFetchBulkVideos).toHaveBeenCalled());
+    expect(mockFetchBulkVideos.mock.calls[0][1]).toEqual(['shared-dtag']);
+  });
+
+  it('skips every row in a post bucket, even one whose target ID differs', async () => {
+    const coordinate = `30023:${PUBKEY_A}:my-post`;
+    const typed = { ...makeLike('typed-like', PUBKEY_A, VIDEO_ID, 2000), targetEventKind: 30023, groupingKey: coordinate };
+    const untyped = { ...makeLike('untyped-like', PUBKEY_B, 'my-post', 1000), groupingKey: coordinate };
+    mockUseNotifications.mockReturnValue(makeInfiniteQueryResult([makeNotificationsPage([typed, untyped])]));
+    const { useHydratedNotifications } = await import('./useHydratedNotifications');
+    const { result } = renderHook(() => useHydratedNotifications({ category: 'all' }), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.items[0]?.kind).toBe('post'));
+    expect(mockFetchBulkVideos).not.toHaveBeenCalled();
+    expect(mockFetchVideoById).not.toHaveBeenCalled();
+  });
+
   it('still hydrates kind 34235 video targets through the video API', async () => {
     const like = { ...makeLike('normal-video-like', PUBKEY_A, VIDEO_ID), targetEventKind: 34235 };
     mockUseNotifications.mockReturnValue(makeInfiniteQueryResult([makeNotificationsPage([like])]));
