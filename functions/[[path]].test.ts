@@ -437,7 +437,7 @@ describe('functions/[[path]]', () => {
     const page = new DOMParser().parseFromString(await response.text(), 'text/html');
 
     expect(page.title).toBe(SHELL_TITLE);
-    for (const selector of ['meta[name="description"]', 'meta[property="og:title"]', 'meta[property="og:description"]', 'meta[name="twitter:title"]', 'meta[name="twitter:description"]']) {
+    for (const selector of ['meta[name="description"]', 'meta[property="og:title"]', 'meta[property="og:description"]', 'meta[property="og:image:alt"]', 'meta[name="twitter:title"]', 'meta[name="twitter:description"]']) {
       expect(page.querySelector(selector)?.getAttribute('content')).toBe(SHELL_META.querySelector(selector)?.getAttribute('content'));
     }
   });
