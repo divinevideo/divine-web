@@ -37,7 +37,7 @@ import {
   HOST_DEPENDENT_CRAWLER_VARY,
 } from './templateCachePolicy.js';
 import { renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
-import { searchFeedFallbackTab, shouldServeFeedToSearchCrawler } from './searchCrawler.js';
+import { isSearchCrawler, searchFeedFallbackTab, shouldServeFeedToSearchCrawler } from './searchCrawler.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -1032,6 +1032,10 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname,
 function isSocialMediaCrawler(request) {
   const userAgent = (request.headers.get('User-Agent') || '').toLowerCase();
 
+  // Search engine crawlers come from searchCrawler.js, which also decides which
+  // of them get the feed page instead of OG metadata.
+  if (isSearchCrawler(userAgent)) return true;
+
   // Common social media and link preview crawlers
   const crawlerPatterns = [
     'facebookexternalhit',
@@ -1049,14 +1053,8 @@ function isSocialMediaCrawler(request) {
     'pinterest',
     'vkshare',
     'w3c_validator',
-    'baiduspider',
     'facebot',
     'ia_archiver',
-    'googlebot',
-    'bingbot',
-    'yandexbot',
-    'duckduckbot',
-    'applebot',
   ];
 
   return crawlerPatterns.some(pattern => userAgent.includes(pattern));

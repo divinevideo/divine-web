@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { searchFeedFallbackTab, shouldServeFeedToSearchCrawler } from './searchCrawler.js';
+import { isSearchCrawler, searchFeedFallbackTab, shouldServeFeedToSearchCrawler } from './searchCrawler.js';
 
 describe('shouldServeFeedToSearchCrawler', () => {
   it.each(['/', '/index.html', '/discovery/hot'])(
@@ -16,6 +16,30 @@ describe('shouldServeFeedToSearchCrawler', () => {
   it('keeps search crawler metadata on other route types', () => {
     expect(shouldServeFeedToSearchCrawler('/video/example', 'Googlebot/2.1')).toBe(false);
     expect(shouldServeFeedToSearchCrawler('/discovery/classics', 'Googlebot/2.1')).toBe(false);
+  });
+});
+
+describe('isSearchCrawler', () => {
+  it.each([
+    'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',
+    'Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)',
+    'DuckDuckBot/1.1; (+http://duckduckgo.com/duckduckbot.html)',
+    'Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)',
+    'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Safari/605.1.15 (Applebot/0.1)',
+  ])('recognizes %s', (userAgent) => expect(isSearchCrawler(userAgent)).toBe(true));
+
+  it('leaves link-preview bots to the social list', () => {
+    expect(isSearchCrawler('Slackbot-LinkExpanding 1.0')).toBe(false);
+  });
+
+  it('is the only search-engine list: the worker reuses it rather than repeating it', () => {
+    const worker = readFileSync('compute-js/src/index.js', 'utf8');
+
+    expect(worker).toContain('if (isSearchCrawler(userAgent)) return true;');
+    for (const crawler of ['googlebot', 'bingbot', 'yandexbot', 'duckduckbot', 'baiduspider', 'applebot']) {
+      expect(worker).not.toContain(`'${crawler}'`);
+    }
   });
 });
 
