@@ -107,9 +107,19 @@ describe('ContentNotificationRow', () => {
 
   it('resolves an untyped event ID through the event viewer instead of assuming it is a video', () => {
     const eventId = 'f'.repeat(64);
-    render(<ContentNotificationRow notification={buildVideoNotification({ videoEventId: eventId })} />);
+    render(<ContentNotificationRow notification={buildVideoNotification({ videoEventId: eventId, videoThumbnailUrl: undefined })} />);
     fireEvent.click(screen.getByRole('button', { name: /Alice liked My Cool Loop/i }));
     expect(mockNavigate).toHaveBeenCalledWith(`/event/${eventId}`);
+  });
+
+  it.each([
+    ['thumbnail', { videoThumbnailUrl: 'https://example.com/thumb.jpg' }],
+    ['video URL', { videoThumbnailUrl: undefined, videoUrl: 'https://media.divine.video/loop.mp4' }],
+  ] as const)('opens an untyped event ID with a hydrated %s directly as a video', (_label, media) => {
+    const eventId = 'f'.repeat(64);
+    render(<ContentNotificationRow notification={buildVideoNotification({ videoEventId: eventId, ...media })} />);
+    fireEvent.click(screen.getByRole('button', { name: /Alice liked My Cool Loop/i }));
+    expect(mockNavigate).toHaveBeenCalledWith(`/video/${eventId}`);
   });
 
   it('keeps direct video navigation when the target kind is known', () => {

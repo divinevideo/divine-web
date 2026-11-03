@@ -308,7 +308,11 @@ export function ContentNotificationRow({
       return;
     }
     const id = notification.videoEventId;
-    navigate(notification.eventKind == null && isHex64(id)
+    // Thumbnails and media URLs come only from the video API or Funnelcake's
+    // embedded video, so a hydrated row is a video even without a wire kind.
+    const isKnownVideo = notification.eventKind != null
+      || Boolean(notification.videoThumbnailUrl || notification.videoUrl);
+    navigate(!isKnownVideo && isHex64(id)
       ? buildEventPath(id)
       : buildVideoPath(id));
   };
