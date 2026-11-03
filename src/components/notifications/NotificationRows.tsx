@@ -1,4 +1,4 @@
-// ABOUTME: Grouped notification row components for the new video-grouping notifications UI
+// ABOUTME: Grouped notification row components for the notifications page
 // ABOUTME: Renders grouped post/video activity and individual follow notifications
 
 import { useEffect, useRef, useState } from 'react';
@@ -264,7 +264,7 @@ function getVerbKey(type: VideoNotification['type'], hasTitle: boolean, isPost: 
 interface MessageParts {
   firstName: string;
   othersText: string | null;
-  /** Complete sentence: either "liked <title>" or "liked your video". */
+  /** Complete sentence: "liked <title>", "liked your video", or "liked your post". */
   messageText: string;
   /** Accessible name for the thumbnail. */
   titleText: string;

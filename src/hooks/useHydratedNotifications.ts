@@ -27,7 +27,8 @@ export interface HydratedNotificationsResult {
 
 /**
  * Hydrates raw notifications with profile metadata and video metadata,
- * then groups them into the VideoNotification | ActorNotification UI union.
+ * then groups them into the VideoNotification | PostNotification |
+ * ActorNotification UI union. Targets known to be non-video skip video lookups.
  *
  * - Profile data comes from useBatchedAuthors (REST-first, WebSocket fallback).
  * - Video data is bulk-fetched via fetchBulkVideos (REST), seeding the

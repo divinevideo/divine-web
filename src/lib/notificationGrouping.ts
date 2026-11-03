@@ -52,6 +52,8 @@ export function hasNonVideoTarget(row: Pick<RawNotification, 'targetEventKind'>)
  *  - totalCount = number of unique actor pubkeys in the bucket.
  *  - timestamp  = newest raw timestamp.
  *  - isRead     = bucket.every(row => row.isRead).
+ *  - A bucket becomes a PostNotification when its first row carrying a target
+ *    kind names a non-video kind; otherwise it stays a VideoNotification.
  *  - Follow rows are returned as singleton ActorNotifications (never bucketed).
  *  - Final output sorted newest-first by timestamp.
  */
