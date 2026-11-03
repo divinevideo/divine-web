@@ -6,6 +6,7 @@ import { buildCrawlerHtml, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
 import { transformVideoApiResponse } from './videoMetadata.js';
 import { HOST_DEPENDENT_CRAWLER_VARY } from './templateCachePolicy.js';
+import { HOME_DESCRIPTION, HOME_TITLE, HOT_DESCRIPTION, HOT_TITLE } from './siteCopy.js';
 
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -376,8 +377,8 @@ export async function handleDiscoveryOgTags(feedType) {
   }
   const label = FEED_TITLES[type];
   const html = buildCrawlerHtml({
-    title: isHotRoute ? 'Trending Videos - Divine' : `${label} on Divine`,
-    description: isHotRoute ? 'Watch classic Vines and new short videos on Divine.' : `${label} on Divine — 6-second loops from real humans.`,
+    title: isHotRoute ? HOT_TITLE : `${label} on Divine`,
+    description: isHotRoute ? HOT_DESCRIPTION : `${label} on Divine — 6-second loops from real humans.`,
     image: topThumbnail || DEFAULT_OG_IMAGE,
     url: isHotRoute ? 'https://divine.video/discovery/hot' : type === 'trending' ? 'https://divine.video/discovery' : `https://divine.video/discovery/${type}`,
     ogType: 'website',
@@ -411,8 +412,8 @@ export async function handleApexOgTags() {
     console.error('handleApexOgTags funnelcake error:', e.message);
   }
   const html = buildCrawlerHtml({
-    title: 'Divine: Watch Classic Vines and New Short Videos',
-    description: "Watch classic Vines and new short videos on Divine. Browse on the web without signing in. Get the app when you're ready.",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     image: topThumbnail || DEFAULT_OG_IMAGE,
     url: 'https://divine.video/',
     ogType: 'website',

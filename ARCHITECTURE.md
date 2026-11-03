@@ -185,10 +185,13 @@ the hot route's feed page can't render, search crawlers get its OG response too,
 rather than the SPA shell's homepage metadata.
 The SPA updates discovery titles and canonical URLs on client navigation through
 `DiscoverySeo`; the homepage keeps its metadata in `Index`.
-Homepage copy also exists in the SPA fallback `index.html` and the apex social
-crawler response in `compute-js/src/crawlerHandlers.js`. Cloudflare's
-`functions/[[path]].ts` uses `getDefaultPageMeta` in `src/lib/serverSocialMeta.ts`
-for the homepage and generic fallback; keep all these paths aligned.
+On Fastly, the homepage and hot-route copy comes from
+[`compute-js/src/siteCopy.js`](./compute-js/src/siteCopy.js), which the feed
+templates, the shell defaults, and the crawler responses in
+`compute-js/src/crawlerHandlers.js` share. The SPA fallback `index.html` repeats
+it, and Cloudflare's `functions/[[path]].ts` uses `getDefaultPageMeta` in
+`src/lib/serverSocialMeta.ts` for the homepage and generic fallback; tests keep
+these paths aligned.
 Templates with a distinct crawler response vary by both the original host and
 user agent so one response cannot replace the other in the edge cache. Bare
 vanity-subdomain profiles vary only by original host because crawlers and

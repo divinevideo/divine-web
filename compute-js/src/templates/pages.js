@@ -8,6 +8,7 @@ import {
   serializeJsonForScript,
 } from './shell.js';
 import { navbar, discoveryTabs, videoGrid, videoDetail, profileHeader, footer } from './components.js';
+import { HOME_DESCRIPTION, HOME_TITLE, HOT_DESCRIPTION } from '../siteCopy.js';
 
 /**
  * Render a feed/discovery page (home, trending, new, classics, top).
@@ -58,10 +59,8 @@ export function renderFeedPage({ videos, feedType = 'trending', pathname = '/', 
     : '';
 
   return renderShell({
-    title: isHome ? 'Divine: Watch Classic Vines and New Short Videos' : pageTitle,
-    description: isHome
-      ? "Watch classic Vines and new short videos on Divine. Browse on the web without signing in. Get the app when you're ready."
-      : pathname === '/discovery/hot' ? 'Watch classic Vines and new short videos on Divine.' : undefined,
+    title: isHome ? HOME_TITLE : pageTitle,
+    description: isHome ? HOME_DESCRIPTION : pathname === '/discovery/hot' ? HOT_DESCRIPTION : undefined,
     ogUrl: `https://divine.video${isHome ? '/' : pathname}`,
     body,
     jsonInjection,
