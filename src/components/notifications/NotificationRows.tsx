@@ -8,9 +8,8 @@ import { useNotificationVideoPreview } from '@/hooks/useNotificationVideoPreview
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
-import { buildEventPath, buildVideoPath } from '@/lib/eventRouting';
-import { getDirectSearchTarget } from '@/lib/directSearch';
-import { isHex64 } from '@/lib/nostrCoordinates';
+import { buildAddressableRoute, buildEventPath, buildVideoPath } from '@/lib/eventRouting';
+import { isHex64, parseAddressableCoordinate } from '@/lib/nostrCoordinates';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { formatRelativeTime } from '@/lib/notificationTransform';
 import { cn } from '@/lib/utils';
@@ -304,7 +303,14 @@ export function ContentNotificationRow({
 
   const handleTargetActivate = () => {
     if (notification.kind === 'post') {
-      navigate(getDirectSearchTarget(notification.eventReference ?? '')?.path ?? buildEventPath(notification.eventId));
+      // eventReference is the grouping key: a `kind:pubkey:d-tag` coordinate
+      // when the target is addressable, otherwise the bare target ID.
+      const coordinate = notification.eventReference
+        ? parseAddressableCoordinate(notification.eventReference)
+        : null;
+      navigate(coordinate
+        ? buildAddressableRoute(coordinate.kind, coordinate.pubkey, coordinate.dTag)
+        : buildEventPath(notification.eventId));
       return;
     }
     const id = notification.videoEventId;

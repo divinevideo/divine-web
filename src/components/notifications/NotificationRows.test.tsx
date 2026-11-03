@@ -142,6 +142,21 @@ describe('ContentNotificationRow', () => {
     expect(mockNavigate).toHaveBeenCalledWith(`/event/a/30023/${pubkey}/my-post`);
   });
 
+  it.each(['123456789012345678', 'vine.co/someone'])(
+    'treats a bare post reference %s as an event ID, not a search query',
+    (reference) => {
+      const notification: PostNotification = {
+        id: 'post-notification', rawIds: ['source'], timestamp: 1_700_000_000,
+        isRead: true, kind: 'post', type: 'like', eventId: reference, eventKind: 30023,
+        eventReference: reference,
+        actors: buildVideoNotification().actors, totalCount: 1,
+      };
+      render(<ContentNotificationRow notification={notification} />);
+      fireEvent.click(screen.getByRole('button', { name: /liked your post/i }));
+      expect(mockNavigate).toHaveBeenCalledWith(`/event/${encodeURIComponent(reference)}`);
+    },
+  );
+
   it('single-actor like row shows one avatar, a whole-sentence message, and a thumbnail', () => {
     const notification = buildVideoNotification({ videoUrl: 'https://media.divine.video/loop.mp4' });
     const { container } = render(<ContentNotificationRow notification={notification} />);
