@@ -8,7 +8,7 @@ export function AppFooter() {
   const { t } = useTranslation();
 
   return (
-    <footer className="mt-auto border-t border-brand-dark-green py-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))] md:pb-6 bg-brand-dark-green">
+    <footer className="mt-auto border-t border-brand-dark-green py-6 px-safe pb-safe-offset-[5.5rem] md:pb-6 bg-brand-dark-green">
       <div className="container">
         <div className="max-w-5xl mx-auto">
           {/* Main Footer Content - Side by side on desktop */}

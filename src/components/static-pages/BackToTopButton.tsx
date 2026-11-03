@@ -29,7 +29,7 @@ export function BackToTopButton() {
       aria-hidden={!visible}
       tabIndex={visible ? 0 : -1}
       className={cn(
-        "fixed right-5 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-40 h-12 w-12 rounded-full bg-brand-green text-brand-dark-green border-2 border-brand-dark-green brand-offset-shadow-sm-dark flex items-center justify-center transition-all duration-200 hover:-translate-x-[2px] hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-green focus-visible:ring-offset-2",
+        "fixed right-safe-offset-5 bottom-safe-offset-5 z-40 h-12 w-12 rounded-full bg-brand-green text-brand-dark-green border-2 border-brand-dark-green brand-offset-shadow-sm-dark flex items-center justify-center transition-all duration-200 hover:-translate-x-[2px] hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark-green focus-visible:ring-offset-2",
         visible
           ? "opacity-100 translate-y-0 pointer-events-auto"
           : "opacity-0 translate-y-2 pointer-events-none",

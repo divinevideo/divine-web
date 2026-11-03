@@ -146,10 +146,7 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
         />
 
         {/* Progress bar - fixed at top */}
-        <div
-          className="absolute left-0 right-0 h-1 bg-white/20 z-20"
-          style={{ top: 'var(--sat)' }}
-        >
+        <div className="absolute left-0 right-0 top-safe h-1 bg-white/20 z-20">
           <div
             className="h-full bg-red-500 transition-all duration-100"
             style={{ width: `${progress * 100}%` }}
@@ -157,10 +154,7 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
         </div>
 
         {/* Duration display - top left with safe area */}
-        <div
-          className="absolute left-4 bg-black/60 px-3 py-1.5 rounded-full z-10"
-          style={{ top: `calc(1rem + var(--sat))` }}
-        >
+        <div className="absolute left-safe-offset-4 top-safe-offset-4 bg-black/60 px-3 py-1.5 rounded-full z-10">
           <span className="text-white text-sm font-medium tabular-nums">
             {t('cameraRecorder.durationOfMax', { current: formatDuration(currentDuration) })}
           </span>
@@ -171,18 +165,14 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
           onClick={onCancel}
           variant="ghost"
           size="icon"
-          className="absolute right-4 text-white hover:bg-white/20 z-10"
-          style={{ top: `calc(1rem + var(--sat))` }}
+          className="absolute right-safe-offset-4 top-safe-offset-4 text-white hover:bg-white/20 z-10"
         >
           <X className="h-6 w-6" />
         </Button>
 
         {/* Recording indicator */}
         {isRecording && (
-          <div
-            className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 bg-red-500 px-4 py-2 rounded-full shadow-lg z-10"
-            style={{ top: `calc(1rem + var(--sat))` }}
-          >
+          <div className="absolute left-1/2 top-safe-offset-4 -translate-x-1/2 flex items-center gap-2 bg-red-500 px-4 py-2 rounded-full shadow-lg z-10">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
             <span className="text-white text-sm font-medium">{t('cameraRecorder.rec')}</span>
           </div>
@@ -190,10 +180,7 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
 
         {/* Segment indicators - bottom left */}
         {segments.length > 0 && (
-          <div
-            className="absolute left-4 flex flex-col gap-1.5 z-10"
-            style={{ bottom: 'calc(6.5rem + var(--sab))' }}
-          >
+          <div className="absolute left-safe-offset-4 bottom-safe-offset-[6.5rem] flex flex-col gap-1.5 z-10">
             {segments.map((segment, index) => (
               <Badge
                 key={index}
@@ -207,10 +194,7 @@ export function CameraRecorder({ onRecordingComplete, onCancel }: CameraRecorder
       </div>
 
       {/* Controls - fixed at bottom with safe area */}
-      <div
-        className="flex-shrink-0 bg-black/90 backdrop-blur-sm"
-        style={{ paddingBottom: `calc(1.5rem + var(--sab))` }}
-      >
+      <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm pb-safe-offset-6">
         <div className="px-6 pt-6">
           <div className="flex items-center justify-center gap-6 mb-4">
             {/* Switch camera button */}
