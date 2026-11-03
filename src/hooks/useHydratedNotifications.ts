@@ -8,7 +8,7 @@ import { fetchBulkVideos, fetchVideoById } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { getSafeProfileImage, getSafeThumbnailUrl, sanitizeImageUrl } from '@/lib/imageUtils';
-import { groupRawNotifications, type NotificationVideoMeta } from '@/lib/notificationGrouping';
+import { groupRawNotifications, hasNonVideoTarget, type NotificationVideoMeta } from '@/lib/notificationGrouping';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useBatchedAuthors } from '@/hooks/useBatchedAuthors';
 import type { ActorInfo, NotificationFilters, NotificationItem, RawNotification } from '@/types/notification';
@@ -27,7 +27,8 @@ export interface HydratedNotificationsResult {
 
 /**
  * Hydrates raw notifications with profile metadata and video metadata,
- * then groups them into the VideoNotification | ActorNotification UI union.
+ * then groups them into the VideoNotification | PostNotification |
+ * ActorNotification UI union. Targets known to be non-video skip video lookups.
  *
  * - Profile data comes from useBatchedAuthors (REST-first, WebSocket fallback).
  * - Video data is bulk-fetched via fetchBulkVideos (REST), seeding the
@@ -117,10 +118,16 @@ export function useHydratedNotifications(
   }, [flatRaw]);
 
   const sortedIds = useMemo(() => {
+    // Not every row carries the target kind, and grouping classifies a whole
+    // bucket from whichever row does. Key the skip on the grouping key, the
+    // bucket's identity, so an untyped sibling of a post is skipped too, while
+    // a video that merely shares a d-tag with someone's post still hydrates.
+    const targetKey = (r: RawNotification) => r.groupingKey ?? r.targetEventId;
+    const nonVideoTargets = new Set(flatRaw.filter(hasNonVideoTarget).map(targetKey));
     const ids = Array.from(
       new Set(
         flatRaw
-          .filter((r) => r.type !== 'follow' && r.targetEventId)
+          .filter((r) => r.type !== 'follow' && r.targetEventId && !nonVideoTargets.has(targetKey(r)))
           .map((r) => r.targetEventId as string),
       ),
       // Only a row carrying BOTH fields is fully hydrated. Treating any

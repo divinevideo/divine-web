@@ -87,7 +87,20 @@ pause. A paused active video stays paused through overlays, rerenders, and mute
 changes; moving another video into the active position clears the pause so feed
 autoplay resumes when the user scrolls back.
 
-### Notification Read Marker
+### Notifications
+
+Notification targets retain `root_event_kind` (or the referenced kind when it
+describes the same target). Kinds 34235 and 34236 are videos, because Funnelcake
+serves both through its video API. Known non-video activity uses a post row and
+opens `/event/:id`, or the addressable route when the grouping key is a strict
+`kind:pubkey:d-tag` coordinate; the event resolver can read text posts from
+public fallback relays. Only video targets or older responses with no target
+kind enter thumbnail hydration and preview lookup, and a target is skipped once
+any row marks it as non-video. Untyped hex event IDs use the event resolver for
+navigation, which can redirect videos and render posts, unless hydration already
+returned a thumbnail or media URL; video d-tags keep their video route. Resolved
+video redirects retain the unique event ID. Addressable post lookup decodes the
+raw URL segment once, preserving literal percent escapes.
 
 Web and mobile both write the same Funnelcake per-pubkey notification read
 marker through `POST /api/users/{pubkey}/notifications/read` with an empty body.

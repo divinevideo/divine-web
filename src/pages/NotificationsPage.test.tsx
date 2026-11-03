@@ -23,7 +23,7 @@ vi.mock('@/hooks/useNotifications', () => ({
 }));
 
 vi.mock('@/components/notifications/NotificationRows', () => ({
-  VideoNotificationRow: ({ notification }: { notification: VideoNotification }) => (
+  ContentNotificationRow: ({ notification }: { notification: VideoNotification }) => (
     <div data-testid="video-notification-row">{notification.id}</div>
   ),
   ActorNotificationRow: ({ notification }: { notification: ActorNotification }) => (
@@ -258,7 +258,7 @@ describe('NotificationsPage', () => {
     expect(mockMarkReadMutate).toHaveBeenCalledTimes(1);
   });
 
-  it('renders VideoNotificationRow for video kind and ActorNotificationRow for actor kind', async () => {
+  it('renders ContentNotificationRow for video kind and ActorNotificationRow for actor kind', async () => {
     render(<NotificationsPage />);
 
     await screen.findByText('new-1');
