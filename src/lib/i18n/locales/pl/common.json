@@ -1099,8 +1099,8 @@
     "unpinErrorDescription": "Nie udało się odpiąć. Spróbuj jeszcze raz?"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - krótkie zapętlone wideo na Nostr",
-    "seoDescription": "Oglądaj i udostępniaj 6-sekundowe zapętlone filmy w zdecentralizowanej sieci Nostr.",
+    "seoTitle": "Divine: oglądaj klasyczne Vine i nowe krótkie filmy",
+    "seoDescription": "Oglądaj klasyczne Vine i nowe krótkie filmy na Divine. Przeglądaj w sieci bez logowania. Pobierz aplikację, kiedy zechcesz.",
     "heading": "Strona główna",
     "subheadingDefault": "Filmy od osób, które obserwujesz",
     "subheadingCount_one": "Filmy od {{count}} osoby, którą obserwujesz",

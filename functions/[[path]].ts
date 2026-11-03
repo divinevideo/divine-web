@@ -19,6 +19,7 @@ import {
   type ProfileApiResponse,
   type VideoApiResponse,
 } from '../src/lib/serverSocialMeta';
+import { getDiscoveryMeta } from '../src/lib/discoveryMeta';
 
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 
@@ -199,18 +200,10 @@ function buildSimpleRouteMeta(url: URL): PageMeta | null {
 
   const discoveryMatch = url.pathname.match(/^\/discovery(?:\/(new|hot|classics|top|hashtags|foryou))?$/);
   if (discoveryMatch) {
-    const labels = {
-      trending: 'Trending videos',
-      new: 'Trending videos',
-      hot: 'Trending videos',
-      classics: 'Classic videos',
-      top: 'Classic videos',
-      hashtags: 'Trending hashtags',
-      foryou: 'For you videos',
-    } as const;
-    const feedType = discoveryMatch[1] as keyof typeof labels | undefined;
-    const label = labels[feedType || 'trending'];
-    return buildSimplePageMeta(url, `${label} on Divine`, `${label} on Divine — 6-second loops from real humans.`);
+    // The same copy DiscoverySeo writes after hydration, so the served head and
+    // the rendered head agree.
+    const { title, description } = getDiscoveryMeta(url.pathname);
+    return buildSimplePageMeta(url, title, description);
   }
 
   if (url.pathname === '/') {

@@ -1085,8 +1085,8 @@
     "unpinErrorDescription": "Hindi na-unpin. Subukan ulit?"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - Mga Short-form na Looping Video sa Nostr",
-    "seoDescription": "Manood at mag-share ng 6-segundong looping na video sa desentralisadong Nostr network.",
+    "seoTitle": "Divine: Manood ng mga klasikong Vine at bagong maiikling video",
+    "seoDescription": "Manood ng mga klasikong Vine at bagong maiikling video sa Divine. Mag-browse sa web nang hindi nagsa-sign in. I-download ang app kapag handa ka na.",
     "heading": "Home",
     "subheadingDefault": "Mga video mula sa mga sinusundan mo",
     "subheadingCount_one": "Mga video mula sa {{count}} taong sinusundan mo",

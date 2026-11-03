@@ -2,6 +2,7 @@
 // ABOUTME: Generates complete HTML documents with head, meta tags, inline CSS, and deferred scripts
 
 import { CRITICAL_CSS } from './css.js';
+import { HOME_DESCRIPTION, HOME_TITLE } from '../siteCopy.js';
 
 /**
  * Content-Security-Policy served by the edge shell.
@@ -72,8 +73,8 @@ export function formatCount(n) {
  * @param {Object} [options.staticAssets] - Map of asset paths from the build manifest
  */
 export function renderShell({
-  title = 'Divine Web - Short-form Looping Videos on Nostr',
-  description = 'Watch and share 6-second looping videos on the decentralized Nostr network.',
+  title = HOME_TITLE,
+  description = HOME_DESCRIPTION,
   ogImage = 'https://divine.video/og.png',
   ogUrl = 'https://divine.video/',
   ogType = 'website',

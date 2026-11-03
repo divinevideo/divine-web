@@ -1085,8 +1085,8 @@
     "unpinErrorDescription": "没能取消置顶，再试一次？"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - Nostr 上的 6 秒循环短视频",
-    "seoDescription": "在去中心化的 Nostr 网络上观看和分享 6 秒循环视频。",
+    "seoTitle": "Divine：观看经典 Vine 和全新短视频",
+    "seoDescription": "在 Divine 观看经典 Vine 和全新短视频。无需登录即可在网页上浏览。准备好了再下载应用。",
     "heading": "首页",
     "subheadingDefault": "你关注的人发的视频",
     "subheadingCount_one": "你关注的 {{count}} 个人发的视频",

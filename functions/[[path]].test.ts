@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 import { onRequest } from './[[path]]';
+import { DISCOVERY_DESCRIPTION } from '../src/lib/discoveryMeta';
 
 const INDEX_HTML = readFileSync('index.html', 'utf8');
 const SHELL_META = new DOMParser().parseFromString(INDEX_HTML, 'text/html');
@@ -309,11 +310,13 @@ describe('functions/[[path]]', () => {
   it.each([
     ['/t/funny', '#funny videos on Divine', 'https://divine.video/t/funny'],
     ['/search?q=cats', '&quot;cats&quot; on Divine', 'https://divine.video/search?q=cats'],
-    ['/discovery', 'Trending videos on Divine', 'https://divine.video/discovery'],
-    ['/discovery/new', 'Trending videos on Divine', 'https://divine.video/discovery/new'],
-    ['/discovery/hot', 'Trending videos on Divine', 'https://divine.video/discovery/hot'],
-    ['/discovery/classics', 'Classic videos on Divine', 'https://divine.video/discovery/classics'],
-    ['/discovery/foryou', 'For you videos on Divine', 'https://divine.video/discovery/foryou'],
+    ['/discovery', 'Discover Videos - Divine', 'https://divine.video/discovery'],
+    // The app redirects new to hot and top to classics, so they share those titles.
+    ['/discovery/new', 'Trending Videos - Divine', 'https://divine.video/discovery/new'],
+    ['/discovery/hot', 'Trending Videos - Divine', 'https://divine.video/discovery/hot'],
+    ['/discovery/classics', 'Classic Vines - Divine', 'https://divine.video/discovery/classics'],
+    ['/discovery/top', 'Classic Vines - Divine', 'https://divine.video/discovery/top'],
+    ['/discovery/foryou', 'For You Videos - Divine', 'https://divine.video/discovery/foryou'],
     ['/@jalcine', 'The Wall! on Divine', 'https://divine.video/@jalcine'],
     ['/', SHELL_TITLE, 'https://divine.video/'],
   ])('injects route metadata for %s', async (path, title, canonicalUrl) => {
@@ -328,6 +331,19 @@ describe('functions/[[path]]', () => {
     expect(response.status).toBe(200);
     expect(html).toContain(`<title>${title}</title>`);
     expect(html).toContain(`property="og:url" content="${canonicalUrl}"`);
+  });
+
+  it('describes discovery pages with the copy the app writes after hydration', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/discovery/classics'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+    const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+
+    for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
+      expect(page.querySelector(selector)?.getAttribute('content')).toBe(DISCOVERY_DESCRIPTION);
+    }
   });
 
   it('treats dollar sequences in route text as literal characters', async () => {
@@ -437,7 +453,7 @@ describe('functions/[[path]]', () => {
     const page = new DOMParser().parseFromString(await response.text(), 'text/html');
 
     expect(page.title).toBe(SHELL_TITLE);
-    for (const selector of ['meta[name="description"]', 'meta[property="og:title"]', 'meta[property="og:description"]', 'meta[name="twitter:title"]', 'meta[name="twitter:description"]']) {
+    for (const selector of ['meta[name="description"]', 'meta[property="og:title"]', 'meta[property="og:description"]', 'meta[property="og:image:alt"]', 'meta[name="twitter:title"]', 'meta[name="twitter:description"]']) {
       expect(page.querySelector(selector)?.getAttribute('content')).toBe(SHELL_META.querySelector(selector)?.getAttribute('content'));
     }
   });

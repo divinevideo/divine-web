@@ -1092,8 +1092,8 @@
     "unpinErrorDescription": "Impossible de désépingler. On réessaie ?"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - Vidéos courtes en boucle sur Nostr",
-    "seoDescription": "Regarde et partage des vidéos en boucle de 6 secondes sur le réseau décentralisé Nostr.",
+    "seoTitle": "Divine : regarde des Vines classiques et de nouvelles vidéos courtes",
+    "seoDescription": "Regarde des Vines classiques et de nouvelles vidéos courtes sur Divine. Navigue sur le web sans te connecter. Télécharge l'appli quand tu veux.",
     "heading": "Accueil",
     "subheadingDefault": "Vidéos des gens que tu suis",
     "subheadingCount_one": "Vidéos de {{count}} personne que tu suis",

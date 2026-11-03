@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { HTMLAttributes, ReactNode } from 'react';
 import VideoPage from './VideoPage';
@@ -517,6 +517,19 @@ describe('VideoPage', () => {
     expect(screen.queryByRole('link', { name: 'Get Divine' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Start video' }));
     expect(screen.getByRole('link', { name: 'Get Divine' })).toBeInTheDocument();
+  });
+
+  it('keeps the app link under the first played video while scrolling', async () => {
+    renderPage('/video/scroll-video-1?source=search&q=scroll-window&index=0');
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Start video' }).length).toBeGreaterThan(1));
+    const [firstStart, secondStart] = screen.getAllByRole('button', { name: 'Start video' });
+
+    fireEvent.click(firstStart);
+    fireEvent.click(secondStart);
+
+    const links = screen.getAllByRole('link', { name: 'Get Divine' });
+    expect(links).toHaveLength(1);
+    expect(within(links[0].parentElement!).getByTestId('video-card')).toHaveTextContent(/^scroll-video-1$/);
   });
 
   it('navigates through bounded search results while preserving search params', () => {

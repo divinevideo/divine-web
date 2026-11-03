@@ -1085,8 +1085,8 @@
     "unpinErrorDescription": "Không bỏ ghim được. Thử lại nhé?"
   },
   "indexPage": {
-    "seoTitle": "Divine Web - Video vòng lặp ngắn trên Nostr",
-    "seoDescription": "Xem và chia sẻ video vòng lặp 6 giây trên mạng Nostr phi tập trung.",
+    "seoTitle": "Divine: Xem Vine kinh điển và video ngắn mới",
+    "seoDescription": "Xem Vine kinh điển và video ngắn mới trên Divine. Duyệt trên web mà không cần đăng nhập. Tải ứng dụng khi bạn sẵn sàng.",
     "heading": "Trang chủ",
     "subheadingDefault": "Video từ những người bạn theo dõi",
     "subheadingCount_one": "Video từ {{count}} người bạn theo dõi",

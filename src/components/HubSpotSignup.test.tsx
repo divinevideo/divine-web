@@ -1,6 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { HubSpotSignup } from './HubSpotSignup';
 
 describe('HubSpotSignup', () => {
@@ -21,6 +21,60 @@ describe('HubSpotSignup', () => {
     await userEvent.click(screen.getByRole('button', { name: /sign up for email updates/i }));
 
     expect(document.querySelector('script[src*="hsforms.net"]')).not.toBeNull();
+  });
+
+  it('offers a retry when the form script fails to load', async () => {
+    render(<HubSpotSignup />);
+    await userEvent.click(screen.getByRole('button', { name: /sign up for email updates/i }));
+
+    act(() => {
+      document.querySelector('script[src*="hsforms.net"]')?.dispatchEvent(new Event('error'));
+    });
+
+    const retry = screen.getByRole('button', { name: /email form didn't load/i });
+    expect(document.querySelector('script[src*="hsforms.net"]')).toBeNull();
+
+    await userEvent.click(retry);
+
+    expect(document.querySelector('script[src*="hsforms.net"]')).not.toBeNull();
+    expect(screen.getByRole('button', { name: /loading email form/i })).toBeInTheDocument();
+  });
+
+  it('offers a retry when the email field never appears', () => {
+    vi.useFakeTimers();
+    try {
+      render(<HubSpotSignup />);
+      fireEvent.click(screen.getByRole('button', { name: /sign up for email updates/i }));
+
+      act(() => {
+        vi.advanceTimersByTime(15_000);
+      });
+
+      expect(screen.getByRole('button', { name: /email form didn't load/i })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('ignores a late error from the attempt it gave up on', () => {
+    vi.useFakeTimers();
+    try {
+      render(<HubSpotSignup />);
+      fireEvent.click(screen.getByRole('button', { name: /sign up for email updates/i }));
+      const abandoned = document.querySelector('script[src*="hsforms.net"]');
+
+      act(() => {
+        vi.advanceTimersByTime(15_000);
+      });
+      fireEvent.click(screen.getByRole('button', { name: /email form didn't load/i }));
+      act(() => {
+        abandoned?.dispatchEvent(new Event('error'));
+      });
+
+      expect(screen.getByRole('button', { name: /loading email form/i })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('keeps keyboard focus until the email field appears, then focuses it', async () => {

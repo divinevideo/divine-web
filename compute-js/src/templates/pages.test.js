@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CRITICAL_CSS } from './css.js';
-import { renderFeedPage, renderProfilePage, renderVideoPage } from './pages.js';
+import { feedPagePath, renderFeedPage, renderProfilePage, renderVideoPage } from './pages.js';
 
 const BREAKOUT = '</script><script>alert(1)</script>\u2028\u2029';
 
@@ -12,6 +13,7 @@ describe('edge page templates', () => {
       videos: [{ title: BREAKOUT, d_tag: 'feed-video' }],
       feedJson,
       feedType: 'trending',
+      pathname: '/',
     });
 
     expect(html).not.toContain('</script><script>alert(1)</script>');
@@ -54,6 +56,7 @@ describe('edge page templates', () => {
   it('uses the resolved production app entry script when provided', () => {
     const html = renderFeedPage({
       videos: [],
+      pathname: '/',
       staticAssets: {
         mainJs: '/assets/index-abc123.js',
         mainCss: '/assets/index-abc123.css',
@@ -66,9 +69,20 @@ describe('edge page templates', () => {
   });
 
   it('does not fall back to the Vite dev entry when static assets are absent', () => {
-    const html = renderFeedPage({ videos: [] });
+    const html = renderFeedPage({ videos: [], pathname: '/' });
 
     expect(html).not.toContain('/src/main.tsx');
+  });
+
+  it('renders and caches /index.html as the homepage rather than a page of its own', () => {
+    expect(feedPagePath('/index.html')).toBe('/');
+    expect(feedPagePath('/')).toBe('/');
+    expect(feedPagePath('/discovery/hot')).toBe('/discovery/hot');
+    expect(readFileSync('compute-js/src/index.js', 'utf8')).toContain('const CACHE_KEY = `page:feed:${feedPagePath(pathname)}`;');
+  });
+
+  it('refuses to render a feed without its path instead of defaulting to the homepage', () => {
+    expect(() => renderFeedPage({ videos: [], feedType: 'trending' })).toThrow(TypeError);
   });
 
   it('keeps critical CSS free of layout gradients', () => {
@@ -82,6 +96,7 @@ describe('edge page templates', () => {
         { d_tag: 'dtag-2', title: 'B' },
       ],
       feedType: 'trending',
+      pathname: '/',
     });
 
     expect(html).toContain('href="/video/event-id-1"');

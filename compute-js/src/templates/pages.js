@@ -8,6 +8,18 @@ import {
   serializeJsonForScript,
 } from './shell.js';
 import { navbar, discoveryTabs, videoGrid, videoDetail, profileHeader, footer } from './components.js';
+import { HOME_DESCRIPTION, HOME_TITLE, HOT_DESCRIPTION } from '../siteCopy.js';
+
+/**
+ * The path a feed page is rendered and cached under. `/index.html` is the
+ * homepage, so it shares `/`'s HTML rather than keeping a copy of its own.
+ *
+ * @param {string} pathname - Request path
+ * @returns {string}
+ */
+export function feedPagePath(pathname) {
+  return pathname === '/index.html' ? '/' : pathname;
+}
 
 /**
  * Render a feed/discovery page (home, trending, new, classics, top).
@@ -15,10 +27,16 @@ import { navbar, discoveryTabs, videoGrid, videoDetail, profileHeader, footer } 
  * @param {Object} options
  * @param {Array} options.videos - Array of video objects from Funnelcake API
  * @param {string} options.feedType - Feed type (trending, recent, classics)
+ * @param {string} options.pathname - Request path; it alone decides whether this is the homepage
  * @param {string} options.feedJson - Stringified feed data for window.__DIVINE_FEED__
  * @param {Object} [options.staticAssets] - Build manifest asset paths
  */
-export function renderFeedPage({ videos, feedType = 'trending', pathname = '/', feedJson = '', staticAssets = null }) {
+export function renderFeedPage({ videos, feedType = 'trending', pathname, feedJson = '', staticAssets = null }) {
+  // No default: a discovery feed rendered without its path would silently get
+  // the homepage's title, description and canonical.
+  if (typeof pathname !== 'string') {
+    throw new TypeError('renderFeedPage needs the request pathname');
+  }
   const tabMap = { trending: 'hot', recent: 'new', classics: 'classics', top: 'top' };
   const activeTab = tabMap[feedType] || 'hot';
 
@@ -29,7 +47,7 @@ export function renderFeedPage({ videos, feedType = 'trending', pathname = '/', 
     top: 'Top Videos',
   };
   const pageTitle = `${titleMap[feedType] || 'Videos'} - Divine`;
-  const isHome = pathname === '/' || pathname === '/index.html';
+  const isHome = feedPagePath(pathname) === '/';
   const currentPath = isHome ? '/' : '/discovery';
 
   const body = `<div class="divine-shell">
@@ -58,10 +76,8 @@ export function renderFeedPage({ videos, feedType = 'trending', pathname = '/', 
     : '';
 
   return renderShell({
-    title: isHome ? 'Divine: Watch Classic Vines and New Short Videos' : pageTitle,
-    description: isHome
-      ? "Watch classic Vines and new short videos on Divine. Browse on the web without signing in. Get the app when you're ready."
-      : pathname === '/discovery/hot' ? 'Watch classic Vines and new short videos on Divine.' : undefined,
+    title: isHome ? HOME_TITLE : pageTitle,
+    description: isHome ? HOME_DESCRIPTION : pathname === '/discovery/hot' ? HOT_DESCRIPTION : undefined,
     ogUrl: `https://divine.video${isHome ? '/' : pathname}`,
     body,
     jsonInjection,

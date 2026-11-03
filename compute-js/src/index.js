@@ -36,8 +36,8 @@ import {
   createEdgeTemplateHeaders,
   HOST_DEPENDENT_CRAWLER_VARY,
 } from './templateCachePolicy.js';
-import { renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
-import { shouldServeFeedToSearchCrawler } from './searchCrawler.js';
+import { feedPagePath, renderFeedPage, renderVideoPage, renderProfilePage, renderSearchPage } from './templates/pages.js';
+import { isSearchCrawler, searchFeedFallbackTab, shouldServeFeedToSearchCrawler } from './searchCrawler.js';
 
 const publisherServer = PublisherServer.fromStaticPublishRc(rc);
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
@@ -394,6 +394,14 @@ async function handleRequest(event) {
       console.error('Edge template feed page error:', err.message);
       // Fall through to SPA
     }
+  }
+
+  // Search crawlers skipped the OG handlers above to get the feed page. When it
+  // did not render, the SPA shell would give them the homepage's metadata.
+  const searchFallbackTab = serveSearchFeed ? searchFeedFallbackTab(url.pathname) : null;
+  if (searchFallbackTab) {
+    const ogResponse = await handleDiscoveryOgTags(searchFallbackTab);
+    if (ogResponse) return ogResponse;
   }
 
   // Edge-templated search page
@@ -1024,6 +1032,10 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname,
 function isSocialMediaCrawler(request) {
   const userAgent = (request.headers.get('User-Agent') || '').toLowerCase();
 
+  // Search engine crawlers come from searchCrawler.js, which also decides which
+  // of them get the feed page instead of OG metadata.
+  if (isSearchCrawler(userAgent)) return true;
+
   // Common social media and link preview crawlers
   const crawlerPatterns = [
     'facebookexternalhit',
@@ -1041,14 +1053,8 @@ function isSocialMediaCrawler(request) {
     'pinterest',
     'vkshare',
     'w3c_validator',
-    'baiduspider',
     'facebot',
     'ia_archiver',
-    'googlebot',
-    'bingbot',
-    'yandexbot',
-    'duckduckbot',
-    'applebot',
   ];
 
   return crawlerPatterns.some(pattern => userAgent.includes(pattern));
@@ -1246,7 +1252,7 @@ async function handleVideoPage(request, videoId, url, funnelcakeTarget) {
  * Handle feed/discovery pages — render edge-templated HTML with video grid.
  */
 async function handleFeedPage(feedType, funnelcakeTarget, pathname) {
-  const CACHE_KEY = `page:feed:${pathname}`;
+  const CACHE_KEY = `page:feed:${feedPagePath(pathname)}`;
   const CACHE_TTL = 60;
   const contentStore = new KVStore('divine-web-content');
   const staticAssets = await getStaticAssets();

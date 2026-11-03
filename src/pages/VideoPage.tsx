@@ -258,6 +258,14 @@ export function VideoPage() {
     return videos.slice(0, maxRendered).filter((video, index) => index === currentIndex || !shouldHideVideo(video));
   }, [videos, maxRendered, currentIndex, shouldHideVideo]);
 
+  // Like VideoFeed: the app link stays under the first video that played, so
+  // later autoplays don't pull it out from above the viewport and shift the page.
+  const handleScrollPlaybackStarted = useCallback((videoId: string) => {
+    setPlayedVideoId((current) =>
+      current && visibleVideos.some((visibleVideo) => visibleVideo.id === current) ? current : videoId
+    );
+  }, [visibleVideos]);
+
   const hasMoreToShow = maxRendered < (videos?.length || 0);
   const hiddenRowsInWindow = visibleVideos.length < Math.min(maxRendered, videos?.length || 0);
   const hasMoreFeedVideos = hasMoreToShow || (isUsingFunnelcakeVideos && funnelcakeHasNextPage);
@@ -831,7 +839,7 @@ export function VideoPage() {
                 {shouldRender ? (
                   <VideoCardWithMetrics
                     video={video}
-                    onPlaybackStarted={() => setPlayedVideoId(video.id)}
+                    onPlaybackStarted={() => handleScrollPlaybackStarted(video.id)}
                     actions={videoCardActions}
                     showComments={showCommentsForVideo === video.id}
                     navigationContext={effectiveNavigationContext}
