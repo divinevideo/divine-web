@@ -5,7 +5,7 @@ import { renderShell } from './templates/shell.js';
 
 describe('homepage search copy', () => {
   it('names the watchable Vine archive and new videos in both HTML paths', () => {
-    const html = renderFeedPage({ videos: [], feedType: 'trending' });
+    const html = renderFeedPage({ videos: [], feedType: 'trending', pathname: '/' });
     const copy = JSON.parse(readFileSync('src/lib/i18n/locales/en/common.json', 'utf8')).indexPage;
     const fallback = new DOMParser().parseFromString(readFileSync('index.html', 'utf8'), 'text/html');
 

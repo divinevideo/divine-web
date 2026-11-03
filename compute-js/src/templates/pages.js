@@ -27,10 +27,16 @@ export function feedPagePath(pathname) {
  * @param {Object} options
  * @param {Array} options.videos - Array of video objects from Funnelcake API
  * @param {string} options.feedType - Feed type (trending, recent, classics)
+ * @param {string} options.pathname - Request path; it alone decides whether this is the homepage
  * @param {string} options.feedJson - Stringified feed data for window.__DIVINE_FEED__
  * @param {Object} [options.staticAssets] - Build manifest asset paths
  */
-export function renderFeedPage({ videos, feedType = 'trending', pathname = '/', feedJson = '', staticAssets = null }) {
+export function renderFeedPage({ videos, feedType = 'trending', pathname, feedJson = '', staticAssets = null }) {
+  // No default: a discovery feed rendered without its path would silently get
+  // the homepage's title, description and canonical.
+  if (typeof pathname !== 'string') {
+    throw new TypeError('renderFeedPage needs the request pathname');
+  }
   const tabMap = { trending: 'hot', recent: 'new', classics: 'classics', top: 'top' };
   const activeTab = tabMap[feedType] || 'hot';
 
