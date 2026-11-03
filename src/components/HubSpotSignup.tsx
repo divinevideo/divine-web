@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 
+// A blocked or stalled script never renders the email field; give up after this
+// long so the visitor gets a retry instead of a permanent loading label.
+const FORM_LOAD_TIMEOUT_MS = 15_000;
+
 export function HubSpotSignup({ onDark = false }: { onDark?: boolean }) {
   const [isRequested, setIsRequested] = useState(false);
   const [isFormReady, setIsFormReady] = useState(false);
+  const [hasLoadFailed, setHasLoadFailed] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -12,10 +17,20 @@ export function HubSpotSignup({ onDark = false }: { onDark?: boolean }) {
     const form = formRef.current;
     if (!form) return;
 
+    // A removed script can still fire `error`; only the current attempt may fail.
+    let isCurrentAttempt = true;
+    const failLoad = () => {
+      if (!isCurrentAttempt) return;
+      setHasLoadFailed(true);
+      setIsRequested(false);
+    };
+    const timeout = window.setTimeout(failLoad, FORM_LOAD_TIMEOUT_MS);
+
     const observer = new MutationObserver(() => {
       const emailInput = form.querySelector<HTMLInputElement>('input[type="email"]');
       if (!emailInput) return;
 
+      window.clearTimeout(timeout);
       if (document.activeElement === buttonRef.current) emailInput.focus();
       setIsFormReady(true);
       observer.disconnect();
@@ -26,13 +41,26 @@ export function HubSpotSignup({ onDark = false }: { onDark?: boolean }) {
     const script = document.createElement('script');
     script.src = 'https://js-na2.hsforms.net/forms/embed/developer/244466832.js';
     script.defer = true;
+    script.onerror = failLoad;
     document.body.appendChild(script);
 
     return () => {
+      isCurrentAttempt = false;
+      window.clearTimeout(timeout);
       observer.disconnect();
+      script.onerror = null;
       script.remove();
     };
   }, [isRequested]);
+
+  const requestForm = () => {
+    setHasLoadFailed(false);
+    setIsRequested(true);
+  };
+
+  let buttonLabel = 'Sign up for email updates';
+  if (isRequested) buttonLabel = 'Loading email form…';
+  else if (hasLoadFailed) buttonLabel = "Email form didn't load. Try again?";
 
   return (
     <>
@@ -41,9 +69,9 @@ export function HubSpotSignup({ onDark = false }: { onDark?: boolean }) {
           ref={buttonRef}
           type="button"
           className={`text-sm font-semibold underline ${onDark ? 'text-brand-green' : 'text-brand-dark-green dark:text-brand-green'}`}
-          onClick={() => setIsRequested(true)}
+          onClick={requestForm}
         >
-          <span aria-live="polite">{isRequested ? 'Loading email form…' : 'Sign up for email updates'}</span>
+          <span aria-live="polite">{buttonLabel}</span>
         </button>
       )}
       {isRequested && (
