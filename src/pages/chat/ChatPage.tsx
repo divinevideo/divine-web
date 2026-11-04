@@ -10,8 +10,7 @@ import { canPostToChat, foldChatRumors, foldControlEditions, heldStream, type Ru
 import { channelRumors, ConcordRelayClient, pocStreamKey } from '@/lib/chat/relay';
 import { CONCORD_RELAY_URL } from '@/lib/chat/store';
 import { CommunityChatPage } from './CommunityChatPage';
-import { peekInvite, parseInviteUrl } from '@/lib/chat/invite';
-import { encodeInviteFragment } from '@/lib/chat/protocol';
+import { peekInvite, parseInviteUrl, resumeInviteUrl } from '@/lib/chat/invite';
 
 export default function ChatPage() {
   const { communityId, channelId, threadId } = useParams();
@@ -20,7 +19,7 @@ export default function ChatPage() {
   const [initialInvite] = useState(() => parseInviteUrl(window.location.pathname, window.location.hash) ?? peekInvite());
   const invite = initialInvite ?? peekInvite();
   const configuredInvite = import.meta.env.VITE_CONCORD_INVITE_URL as string | undefined;
-  const inviteUrl = invite?.naddr && invite.tokenHex ? `${invite.naddr}#${encodeInviteFragment(invite.tokenHex, invite.relays)}` : configuredInvite;
+  const inviteUrl = resumeInviteUrl(invite) ?? configuredInvite;
   const relay = useMemo(() => {
     if (inviteUrl || !signer || !channelId) return null;
     return new ConcordRelayClient(CONCORD_RELAY_URL, signer as never);
