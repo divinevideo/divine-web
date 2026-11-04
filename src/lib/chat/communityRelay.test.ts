@@ -41,3 +41,17 @@ describe('real community relay', () => {
     off(); relay.close();
   });
 });
+
+describe('duplicate inflight carrier', () => {
+  it('coalesces identical publications so both callers receive the same acknowledgment', async () => {
+    const socket = new Socket(); const relay = new CommunityRelay('wss://relay.example', signer, () => socket);
+    await relay.connect();
+    const event = finalizeEvent({ kind: 1, tags: [], content: '', created_at: 1 }, generateSecretKey());
+    const first = relay.publish(event); const second = relay.publish(event);
+    expect(first).toBe(second);
+    socket.emit(['OK', event.id, true, '']); await expect(Promise.all([first, second])).resolves.toEqual([undefined, undefined]);
+    expect(socket.sent.filter(frame => frame[0] === 'EVENT')).toHaveLength(1);
+    const third = relay.publish(event); const fourth = relay.publish(event); relay.close();
+    await expect(third).rejects.toThrow('disconnected'); await expect(fourth).rejects.toThrow('disconnected');
+  });
+});

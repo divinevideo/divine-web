@@ -11,7 +11,7 @@ export class CommunityRelay {
   private socket: SocketLike | null = null;
   private keys = new Map<string, StreamKeyView>();
   private subscriptions = new Map<string, Subscription>();
-  private pending = new Map<string, { resolve: () => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> }>();
+  private pending = new Map<string, { resolve: () => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout>; promise: Promise<void> }>();
   private auth = new Set<string>();
   private challenge?: string;
   private authenticating = false;
@@ -99,17 +99,24 @@ export class CommunityRelay {
   query(filters: RelayFilter[]): Promise<NostrEvent[]> {
     return new Promise((resolve, reject) => {
       const found = new Map<string, NostrEvent>();
+      let off = () => {};
       const timer = setTimeout(() => { off(); reject(new Error('Community relay read timed out')); }, 12000);
-      const off = this.subscribe(filters, event => found.set(event.id, event), () => { clearTimeout(timer); off(); resolve([...found.values()]); }, error => { clearTimeout(timer); off(); reject(error); });
+      try { off = this.subscribe(filters, event => found.set(event.id, event), () => { clearTimeout(timer); off(); resolve([...found.values()]); }, error => { clearTimeout(timer); off(); reject(error); }); }
+      catch (error) { clearTimeout(timer); off(); reject(error); }
     });
   }
   publish(event: NostrEvent): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => { this.pending.delete(event.id); reject(new Error('Community relay did not acknowledge this message')); }, 8000);
-      this.pending.set(event.id, { resolve, reject, timer });
-      try { this.send(['EVENT', event]); } catch (error) { clearTimeout(timer); this.pending.delete(event.id); reject(error); }
-    });
+    const existing = this.pending.get(event.id);
+    if (existing) return existing.promise;
+    let resolve!: () => void;
+    let reject!: (error: Error) => void;
+    const promise = new Promise<void>((accepted, refused) => { resolve = accepted; reject = refused; });
+    const timer = setTimeout(() => { this.pending.delete(event.id); reject(new Error('Community relay did not acknowledge this message')); }, 8000);
+    this.pending.set(event.id, { resolve, reject, timer, promise });
+    try { this.send(['EVENT', event]); } catch (error) { clearTimeout(timer); this.pending.delete(event.id); reject(error as Error); }
+    return promise;
   }
+
   close() {
     this.stopped = true; this.challenge = undefined; this.auth.clear();
     this.fail(new Error('Community relay disconnected')); this.subscriptions.clear(); this.keys.clear();
