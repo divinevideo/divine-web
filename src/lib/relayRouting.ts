@@ -50,12 +50,14 @@ export function buildReqRouter(ctx: RoutingContext): ReqRouter {
     const otherFilters: NostrFilter[] = [];
     const hasListDeletionFilter = filters.some(filter => filter.kinds?.includes(5) &&
       filter['#a']?.some(coordinate => LIST_KINDS.some(kind => coordinate.startsWith(`${kind}:`))));
+    const hasListLookup = hasListDeletionFilter || filters.some(filter =>
+      filter.kinds?.some(kind => LIST_KINDS.includes(kind)));
 
     for (const filter of filters) {
       if (filter.kinds?.includes(0) || filter.kinds?.includes(3) || filter.kinds?.includes(10011)) {
         profileRelayFilters.push(filter);
       } else if (filter.kinds?.some((kind) => LIST_KINDS.includes(kind)) ||
-        (hasListDeletionFilter && filter.kinds?.includes(5))) {
+        (hasListLookup && filter.kinds?.includes(5))) {
         listFilters.push(filter);
       } else if (filter.kinds?.some((k) => BADGE_READ_KINDS.includes(k))) {
         badgeRelayFilters.push(filter);

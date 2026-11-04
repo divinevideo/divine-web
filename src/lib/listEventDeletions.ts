@@ -2,6 +2,17 @@ import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 
 export const LIST_KINDS = [30000, 30001, 30005];
 
+export function buildListDeletionDiscoveryFilters(filters: NostrFilter[]): NostrFilter[] {
+  return filters.flatMap((filter): NostrFilter[] => {
+    const kinds = filter.kinds?.filter(kind => LIST_KINDS.includes(kind));
+    if (!kinds?.length) return [];
+    return [{
+      kinds: [5],
+      ...(filter.authors ? { authors: filter.authors } : { '#k': kinds.map(String) }),
+    }];
+  });
+}
+
 function listCoordinate(event: NostrEvent): string {
   return `${event.kind}:${event.pubkey}:${event.tags.find(([name]) => name === 'd')?.[1] ?? ''}`;
 }

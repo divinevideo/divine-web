@@ -453,10 +453,12 @@ relays are excluded, including from list publishing; a list publish with no
 enabled destinations fails instead of reporting success.
 [`src/lib/cachedNostr.ts`](./src/lib/cachedNostr.ts) checks matching list
 addresses and event IDs for owner-authored kind-5 deletion requests before
-returning list events. These targeted deletion queries use the same list relay
-set. A stale backup copy stays hidden after deletion, while a newer version
-published after an address deletion can appear. An aborted deletion check
-fails the query rather than showing an unchecked stale copy. The shared
+returning list events. Deletion discovery runs alongside the list read, with
+targeted address/event lookup while the caller's signal remains active. These
+queries use the same list relay set, and matching locally cached deletion
+requests also apply. A stale backup copy stays hidden after a known deletion,
+while a newer version published after an address deletion can appear. A slow
+backup does not discard useful partial results or known deletion requests. The shared
 filtering lives in
 [`src/lib/listEventDeletions.ts`](./src/lib/listEventDeletions.ts).
 Writes fan out to the primary relay plus `PROFILE_RELAYS`

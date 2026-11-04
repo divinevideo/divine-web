@@ -2,9 +2,14 @@
 // ABOUTME: Provides local caching for profile and contact queries
 
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
+import { matchFilters } from 'nostr-tools';
 import { eventCache } from './eventCache';
 import { debugLog } from './debug';
-import { buildListDeletionFilters, excludeDeletedListEvents } from '@/lib/listEventDeletions';
+import {
+  buildListDeletionDiscoveryFilters,
+  buildListDeletionFilters,
+  excludeDeletedListEvents,
+} from '@/lib/listEventDeletions';
 
 interface NostrClient {
   query: (filters: NostrFilter[], opts?: { signal?: AbortSignal; relays?: string[] }) => Promise<NostrEvent[]>;
@@ -47,13 +52,14 @@ export function createCachedNostr<T extends NostrClient>(
 
     // 2. Query via WebSocket
     const _wsStart = performance.now();
-    let results = await baseNostr.query(filters, opts);
+    const discoveryFilters = buildListDeletionDiscoveryFilters(filters);
+    const response = await baseNostr.query([...filters, ...discoveryFilters], opts);
+    let results = discoveryFilters.length > 0 ? response.filter(event => matchFilters(filters, event)) : response;
     const deletionFilters = buildListDeletionFilters(results);
     if (deletionFilters.length > 0) {
-      opts?.signal?.throwIfAborted();
-      const deletions = await baseNostr.query(deletionFilters, opts);
-      opts?.signal?.throwIfAborted();
-      results = excludeDeletedListEvents(results, deletions);
+      const localDeletions = await eventCache.query(deletionFilters).catch(() => []);
+      const deletions = opts?.signal?.aborted ? [] : await baseNostr.query(deletionFilters, opts);
+      results = excludeDeletedListEvents(results, [...response, ...localDeletions, ...deletions]);
     }
     // debugLog(`[CachedNostr] WebSocket returned ${results.length} events in ${(performance.now() - _wsStart).toFixed(0)}ms`);
 

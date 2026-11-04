@@ -52,7 +52,11 @@ function listClient(deletions: NostrEvent[]) {
   return { base, nostr: createCachedNostr(base) };
 }
 
-function relayPool(context: RoutingContext, accepts: (url: string, event: NostrEvent) => boolean) {
+function relayPool(
+  context: RoutingContext,
+  accepts: (url: string, event: NostrEvent) => boolean,
+  stalled = new Set<string>(),
+) {
   const stores = new Map<string, NostrEvent[]>();
   const pool = new NPool({
     reqRouter: buildReqRouter(context),
@@ -69,8 +73,15 @@ function relayPool(context: RoutingContext, accepts: (url: string, event: NostrE
           if (!accepts(url, event)) throw new Error('Relay rejected event');
           events.push(event);
         },
-        async *req(filters: NostrFilter[]): AsyncIterable<NostrRelayEVENT | NostrRelayEOSE> {
+        async *req(filters: NostrFilter[], opts?: { signal?: AbortSignal }): AsyncIterable<NostrRelayEVENT | NostrRelayEOSE> {
           for (const event of await query(filters)) yield ['EVENT', 'test', event];
+          if (stalled.has(url)) {
+            await new Promise<void>(resolve => {
+              if (opts?.signal?.aborted) resolve();
+              else opts?.signal?.addEventListener('abort', () => resolve(), { once: true });
+            });
+            return;
+          }
           yield ['EOSE', 'test'];
         },
         close: async () => {},
@@ -88,6 +99,41 @@ const routingContext: RoutingContext = {
 describe('createCachedNostr', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockEventCache.query.mockResolvedValue([]);
+  });
+
+  it.each(['none', 'primary', 'backup'])('preserves partial results with a stalled backup (deletion: %s)', async (source) => {
+    vi.useFakeTimers();
+    try {
+      const backup = getRelayUrls(PROFILE_RELAYS).find(url => url !== routingContext.relayUrl)!;
+      const deletionRelay = source === 'backup'
+        ? getRelayUrls(PROFILE_RELAYS).find(url => url !== routingContext.relayUrl && url !== backup)!
+        : routingContext.relayUrl;
+      const { nostr, stores } = relayPool(routingContext, (url, event) => (
+        event.kind !== 5 || url === deletionRelay
+      ), new Set([backup]));
+      await nostr.event(listEvent);
+      if (source !== 'none') {
+        stores.get(deletionRelay)!.push(deletionEvent([['a', `30005:${listEvent.pubkey}:saved-list`]]));
+      }
+      const controller = new AbortController();
+      const query = nostr.query([{ kinds: [30005], authors: [listEvent.pubkey] }], { signal: controller.signal });
+      const assertion = expect(query).resolves.toEqual(source === 'none' ? [listEvent] : []);
+      setTimeout(() => controller.abort(), 50);
+
+      await vi.advanceTimersByTimeAsync(50);
+      await assertion;
+      await nostr.close();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('preserves remote lists when the optional local deletion cache is unavailable', async () => {
+    const { nostr } = listClient([]);
+    mockEventCache.query.mockRejectedValue(new Error('Storage unavailable'));
+
+    await expect(nostr.query([{ kinds: [30005] }])).resolves.toEqual([listEvent]);
   });
 
   it('reads a newly created list accepted only by a backup through the actual NPool', async () => {
@@ -159,7 +205,7 @@ describe('createCachedNostr', () => {
     expect(await nostr.query([{ kinds: [30005] }])).toEqual([listEvent]);
   });
 
-  it('rejects an incomplete deletion check instead of displaying a stale list', async () => {
+  it('uses known local deletions when the remote deletion lookup returns partial results', async () => {
     const controller = new AbortController();
     const { nostr, base } = listClient([]);
     base.query.mockReset()
@@ -168,8 +214,11 @@ describe('createCachedNostr', () => {
         controller.abort();
         return [];
       });
+    mockEventCache.query.mockResolvedValue([deletionEvent([
+      ['a', `30005:${listEvent.pubkey}:saved-list`],
+    ])]);
 
-    await expect(nostr.query([{ kinds: [30005] }], { signal: controller.signal })).rejects.toThrow();
+    await expect(nostr.query([{ kinds: [30005] }], { signal: controller.signal })).resolves.toEqual([]);
   });
 
   it('leaves req uncached for authoritative relay reads', async () => {
