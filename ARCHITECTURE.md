@@ -449,7 +449,17 @@ each group is fanned out to its relay set. List reads include the primary,
 configured, custom, and enabled profile relays without adaptive ranking.
 This keeps a list discoverable after any publish destination accepts it,
 including when the primary relay does not hold it. Explicitly disabled
-relays are excluded. Writes fan out to the primary relay plus `PROFILE_RELAYS`
+relays are excluded, including from list publishing; a list publish with no
+enabled destinations fails instead of reporting success.
+[`src/lib/cachedNostr.ts`](./src/lib/cachedNostr.ts) checks matching list
+addresses and event IDs for owner-authored kind-5 deletion requests before
+returning list events. These targeted deletion queries use the same list relay
+set. A stale backup copy stays hidden after deletion, while a newer version
+published after an address deletion can appear. An aborted deletion check
+fails the query rather than showing an unchecked stale copy. The shared
+filtering lives in
+[`src/lib/listEventDeletions.ts`](./src/lib/listEventDeletions.ts).
+Writes fan out to the primary relay plus `PROFILE_RELAYS`
 for kind 0/3/10011, list kinds 30000/30001/30005, and NIP-09 deletion
 requests whose `k` tag targets one of those list kinds. Other writes use
 `PRESET_RELAYS` (capped at 5). **Mute lists (kind 10000) are write-restricted to

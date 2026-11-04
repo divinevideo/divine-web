@@ -107,6 +107,34 @@ describe('buildEventRouter — mute list carve-out', () => {
 });
 
 describe('buildReqRouter — kind-based routing', () => {
+  it('reads targeted list address and event deletion requests from the list relay set', () => {
+    const filters: NostrFilter[] = [
+      { kinds: [5], '#a': [`30005:${'a'.repeat(64)}:saved-list`] },
+      { kinds: [5], '#e': ['b'.repeat(64)] },
+    ];
+    const readRoutes = buildReqRouter(ctx)(filters);
+
+    for (const relay of getRelayUrls(PROFILE_RELAYS)) {
+      expect(readRoutes.get(relay)).toEqual(filters);
+    }
+  });
+
+  it.each([30000, 30001, 30005, 5])('excludes a disabled primary from list kind %i publication', (kind) => {
+    const destinations = buildEventRouter({ ...ctx, disabledPresetUrls: [ctx.relayUrl] })(makeEvent(kind, {
+      id: 'd'.repeat(64), sig: 'e'.repeat(128), tags: [['k', '30005']],
+    }));
+
+    expect(destinations).not.toContain(ctx.relayUrl);
+    expect(destinations.length).toBeGreaterThan(0);
+  });
+
+  it('rejects list publication when every destination is disabled', () => {
+    const context = { ...ctx, disabledPresetUrls: getRelayUrls(PROFILE_RELAYS) };
+
+    expect(() => buildEventRouter(context)(makeEvent(30005))).toThrow();
+    expect(buildReqRouter(context)([{ kinds: [30005] }]).size).toBe(0);
+  });
+
   it.each([30000, 30001, 30005])('reads list kind %i from every publish destination', (kind) => {
     const context: RoutingContext = {
       ...ctx,
