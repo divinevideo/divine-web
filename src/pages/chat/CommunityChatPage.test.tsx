@@ -16,6 +16,7 @@ class FixtureSocket {
   static data: { inviteUrl: string; bundleEvent: typeof fixture.bundleEvent; controlEvents: typeof fixture.controlEvents; chatEvent?: typeof fixture.chatEvent } = fixture;
   static instances: FixtureSocket[] = [];
   static acceptPublications = false;
+  static refuseNextChannelRead = false;
   frames: unknown[][] = [];
   requests = new Map<string, { authors?: string[] }>();
   readyState = 0; onopen?: () => void; onclose?: () => void; onmessage?: (event: { data: string }) => void;
@@ -28,6 +29,11 @@ class FixtureSocket {
     if (frame[0] === 'REQ') queueMicrotask(() => {
       const filter = frame[2];
       const source = FixtureSocket.data;
+      if (FixtureSocket.refuseNextChannelRead && filter.kinds.includes(1059) && !filter.authors?.includes(source.controlEvents[0].pubkey)) {
+        FixtureSocket.refuseNextChannelRead = false;
+        this.emit(['CLOSED', frame[1], 'restricted: channel unavailable']);
+        return;
+      }
       const events = filter.kinds.includes(33301) ? [source.bundleEvent] : filter.authors?.includes(source.controlEvents[0].pubkey) ? source.controlEvents : source.chatEvent ? [source.chatEvent] : [];
       for (const event of events) this.emit(['EVENT', frame[1], event]);
       this.emit(['EOSE', frame[1]]);
@@ -37,7 +43,7 @@ class FixtureSocket {
   push(event: typeof fixture.bundleEvent) { for (const [id, filter] of this.requests) if (this.readyState === 1 && filter.authors?.includes(event.pubkey)) this.emit(['EVENT', id, event]); }
   close() { this.readyState = 3; this.onclose?.(); }
 }
-afterEach(() => { vi.unstubAllGlobals(); FixtureSocket.data = fixture; FixtureSocket.instances = []; FixtureSocket.acceptPublications = false; });
+afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); FixtureSocket.data = fixture; FixtureSocket.instances = []; FixtureSocket.acceptPublications = false; FixtureSocket.refuseNextChannelRead = false; });
 const sk = generateSecretKey();
 const signer = { signEvent: async (template: Parameters<typeof finalizeEvent>[0]) => finalizeEvent(template, sk) };
 
@@ -62,6 +68,33 @@ describe('real community page', () => {
     expect(screen.getByRole('textbox', { name: 'Message' })).toBeDisabled();
   });
 });
+
+it.each(['query', 'subscription', 'disconnect'])('backs off before rebootstrapping after a channel %s failure', async failure => {
+  vi.stubGlobal('WebSocket', FixtureSocket);
+  const { result } = renderHook(() => useCommunityChat(fixture.inviteUrl, signer, fixture.expected.channels[0].id));
+  await waitFor(() => expect(result.current.channelReady).toBe(true), { timeout: 10000 });
+  vi.useFakeTimers();
+  if (failure === 'query') {
+    FixtureSocket.refuseNextChannelRead = true;
+    await act(async () => { result.current.reconnect(); });
+  } else {
+    await act(async () => {
+      for (const socket of FixtureSocket.instances) {
+        if (failure === 'disconnect') socket.close();
+        else for (const id of socket.requests.keys()) socket.emit(['CLOSED', id, 'restricted: channel unavailable']);
+      }
+    });
+  }
+  const bootstrapReads = () => FixtureSocket.instances.flatMap(socket => socket.frames)
+    .filter(frame => frame[0] === 'REQ' && (frame[2] as { kinds: number[] }).kinds.includes(33301)).length;
+  const expectedReads = failure === 'query' ? 2 : 1;
+  expect(bootstrapReads()).toBe(expectedReads);
+  expect(result.current.channelReady).toBe(false);
+  await act(async () => { await vi.advanceTimersByTimeAsync(2999); });
+  expect(bootstrapReads()).toBe(expectedReads);
+  await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+  expect(bootstrapReads()).toBe(expectedReads + 1);
+}, 15000);
 
 async function makeTestCommunity() {
   const ownerKey = generateSecretKey(); const owner = getPublicKey(ownerKey);

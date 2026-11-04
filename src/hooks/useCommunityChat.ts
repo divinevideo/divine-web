@@ -8,7 +8,7 @@ import { sealRumor, wrapSeal } from '@/lib/chat/concord-core/stream';
 import { authorityChangeEvidence, communityWatchKeys, type AuthorityChange } from '@/lib/chat/authorityChanges';
 import type { Rumor } from '@/lib/chat/protocol';
 
-type Session = { generation: number; community: CommunityV2; control: FoldedControl; relays: CommunityRelay[]; pause: (change: AuthorityChange) => void; active: () => boolean };
+type Session = { generation: number; community: CommunityV2; control: FoldedControl; relays: CommunityRelay[]; pause: (change: AuthorityChange) => void; disconnected: () => void; active: () => boolean };
 export function useCommunityChat(inviteUrl: string, signer: CommunitySigner, channelRef?: string) {
   const joined = useRef<string>();
   const controlGeneration = useRef(0);
@@ -83,7 +83,7 @@ export function useCommunityChat(inviteUrl: string, signer: CommunitySigner, cha
         requireCompleteCommunity(control);
         const change = authorityChangeEvidence([...controlWraps.values()], watch, community, control);
         if (change) { pause(change); return; }
-        setSession({ generation: controlGeneration.current, community, control, relays, pause, active: () => !paused && !disposed }); setStatus('ready'); setError(undefined);
+        setSession({ generation: controlGeneration.current, community, control, relays, pause, disconnected: failed, active: () => !paused && !disposed }); setStatus('ready'); setError(undefined);
       };
       refold();
       if (paused || disposed) return;
@@ -111,8 +111,7 @@ export function useCommunityChat(inviteUrl: string, signer: CommunitySigner, cha
     const off: (() => void)[] = [];
     const failed = () => {
       if (disposed || !session.active()) return;
-      live.current = { session: undefined, channel: undefined, status: 'failure' };
-      setChannelReady(false); setStatus('reconnecting'); reconnect();
+      session.disconnected();
     };
     void (async () => {
       for (const relay of session.relays) relay.register([...groups, ...watch.map(key => key.group)]);
@@ -131,9 +130,9 @@ export function useCommunityChat(inviteUrl: string, signer: CommunitySigner, cha
           if (!disposed) setWraps(current => current.some(wrap => wrap.id === event.id) ? current : [...current, event]);
         }, undefined, failed));
       }
-    })().catch(() => { if (!disposed) { setStatus('reconnecting'); setError('Chat disconnected. Your draft is still here.'); reconnect(); } });
+    })().catch(failed);
     return () => { disposed = true; off.forEach(fn => fn()); };
-  }, [session, channel, reconnect]);
+  }, [session, channel]);
   const messages = useMemo(() => session && channel ? readCommunityChat(wraps, channel, session.community, session.control) : [], [wraps, channel, session]);
   const live = useRef({ session, channel, status });
   live.current = { session, channel, status };

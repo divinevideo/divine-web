@@ -27,6 +27,8 @@ community relay accepts its outer event with `OK true`. Rejection, disconnect
 and timeout preserve the composer draft. Nothing queues publications for later
 replay. Reconnect re-resolves the invite and signed control state. Changing
 accounts creates a fresh session and clears its sockets, timeline and draft.
+Channel read rejection and relay disconnect share one three-second retry delay,
+so repeated failures cannot trigger immediate bootstrap or signer-request loops.
 
 NIP-42 uses the existing account signer and held stream secrets on the same
 socket. It reissues reads after authentication acknowledgment. A split control
