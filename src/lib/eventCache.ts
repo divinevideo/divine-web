@@ -326,7 +326,7 @@ export class HybridEventCache implements NStore {
 
     const combined = new NSet();
     for (const event of [...memoryResults, ...persistentResults]) combined.add(event);
-    return [...combined];
+    return Array.from(combined.values());
   }
 
   async remove(filters: NostrFilter[]): Promise<void> {
