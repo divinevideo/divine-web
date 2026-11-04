@@ -29,10 +29,24 @@ export function buildListDeletionFilters(events: NostrEvent[]): NostrFilter[] {
 }
 
 export function excludeDeletedListEvents(events: NostrEvent[], deletions: NostrEvent[]): NostrEvent[] {
-  return events.filter(event => !LIST_KINDS.includes(event.kind) || !deletions.some(deletion => (
-    deletion.kind === 5 && deletion.pubkey === event.pubkey && deletion.tags.some(([name, target]) => (
-      (name === 'e' && target === event.id) ||
-      (name === 'a' && target === listCoordinate(event) && event.created_at <= deletion.created_at)
-    ))
-  )));
+  // Index owner-scoped targets once so the filter stays linear in events + deletion tags.
+  const deletedIds = new Set<string>();
+  const addressDeletedAt = new Map<string, number>();
+  for (const deletion of deletions) {
+    if (deletion.kind !== 5) continue;
+    for (const [name, target] of deletion.tags) {
+      if (name === 'e') deletedIds.add(`${deletion.pubkey}|${target}`);
+      if (name === 'a') {
+        const key = `${deletion.pubkey}|${target}`;
+        addressDeletedAt.set(key, Math.max(addressDeletedAt.get(key) ?? -Infinity, deletion.created_at));
+      }
+    }
+  }
+
+  return events.filter(event => {
+    if (!LIST_KINDS.includes(event.kind)) return true;
+    if (deletedIds.has(`${event.pubkey}|${event.id}`)) return false;
+    const deletedAt = addressDeletedAt.get(`${event.pubkey}|${listCoordinate(event)}`);
+    return deletedAt === undefined || event.created_at > deletedAt;
+  });
 }
