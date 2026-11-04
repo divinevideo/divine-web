@@ -172,6 +172,21 @@ describe('useVideoLists hooks', () => {
   });
 
   describe('useVideosInLists', () => {
+    it('shares one recent-list request between video cards while selecting their memberships separately', async () => {
+      const { useVideosInLists } = await import('./useVideoLists');
+      mockNostrQuery.mockResolvedValue([
+        listEvent({ tags: [['d', 'one'], ['a', `34236:${TEST_PUBKEY}:video-one`]] }),
+        listEvent({ id: '3'.repeat(64), tags: [['d', 'two'], ['a', `34236:${TEST_PUBKEY}:video-two`]] }),
+      ]);
+      const { result } = renderHook(() => [useVideosInLists('video-one'), useVideosInLists('video-two')], {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.every(query => query.isSuccess)).toBe(true));
+      expect(result.current[0].data?.map(list => list.id)).toEqual(['one']);
+      expect(result.current[1].data?.map(list => list.id)).toEqual(['two']);
+      expect(mockNostrQuery).toHaveBeenCalledTimes(1);
+    });
     it('queries public video lists without unsupported wildcards and filters locally', async () => {
       const { useVideosInLists } = await import('./useVideoLists');
 
@@ -444,6 +459,27 @@ describe('useVideoLists hooks', () => {
   });
 
   describe('useAddVideoToList', () => {
+    it.each(['add', 'remove'])('does not %s membership from an aborted collaborative participant read', async (operation) => {
+      const controller = new AbortController();
+      vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+      mockNostrQuery.mockResolvedValueOnce([listEvent({
+        tags: [['d', 'my-list'], ['collaborative', 'true'], ['collaborator', OTHER_PUBKEY]],
+      })]).mockImplementationOnce(async () => {
+        controller.abort();
+        return [];
+      });
+      const { useAddVideoToList, useRemoveVideoFromList } = await import('./useVideoLists');
+      const hook = operation === 'add' ? useAddVideoToList : useRemoveVideoFromList;
+      const { result } = renderHook(() => hook(), { wrapper: createWrapper() });
+      const coordinate = `34236:${TEST_PUBKEY}:new-video`;
+      const variables = {
+        listId: 'my-list', ownerPubkey: TEST_PUBKEY, videoCoordinate: coordinate,
+        videoMember: { type: 'a' as const, value: coordinate },
+      };
+
+      await expect(result.current.mutateAsync(variables)).rejects.toThrow();
+      expect(mockPublishAsync).not.toHaveBeenCalled();
+    });
     it('returns without publishing when video already in list', async () => {
       const coord = `${SHORT_VIDEO_KIND}:${TEST_PUBKEY}:vid-1`;
       mockNostrQuery.mockResolvedValue([listEvent()]);

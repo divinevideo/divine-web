@@ -107,6 +107,20 @@ describe('buildEventRouter — mute list carve-out', () => {
 });
 
 describe('buildReqRouter — kind-based routing', () => {
+  it('keeps author-less list discovery on ranked configured relays', () => {
+    const filter = { kinds: [30005], limit: 100 };
+    const routes = buildReqRouter(ctx)([filter]);
+
+    expect([...routes.keys()]).toEqual([ctx.relayUrl]);
+  });
+
+  it('preserves the existing last-resort primary fallback for non-list reads', () => {
+    const routes = buildReqRouter({
+      ...ctx, disabledPresetUrls: [ctx.relayUrl],
+    })([{ kinds: [1] }]);
+
+    expect([...routes.keys()]).toEqual([ctx.relayUrl]);
+  });
   it('reads targeted list address and event deletion requests from the list relay set', () => {
     const filters: NostrFilter[] = [
       { kinds: [5], '#a': [`30005:${'a'.repeat(64)}:saved-list`] },
@@ -156,7 +170,7 @@ describe('buildReqRouter — kind-based routing', () => {
 
   it('excludes disabled relays from list reads and preserves mixed query filters', () => {
     const disabledProfileRelay = getRelayUrls(PROFILE_RELAYS).find(url => url !== ctx.relayUrl)!;
-    const listFilter: NostrFilter = { kinds: [30005], '#d': ['fresh-list'] };
+    const listFilter: NostrFilter = { kinds: [30005], authors: ['a'.repeat(64)], '#d': ['fresh-list'] };
     const postFilter: NostrFilter = { kinds: [1], authors: ['a'.repeat(64)] };
     const readRoutes = buildReqRouter({
       ...ctx,

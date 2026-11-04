@@ -56,8 +56,8 @@ export function buildReqRouter(ctx: RoutingContext): ReqRouter {
     for (const filter of filters) {
       if (filter.kinds?.includes(0) || filter.kinds?.includes(3) || filter.kinds?.includes(10011)) {
         profileRelayFilters.push(filter);
-      } else if (filter.kinds?.some((kind) => LIST_KINDS.includes(kind)) ||
-        (hasListLookup && filter.kinds?.includes(5))) {
+      } else if ((filter.authors?.length && filter.kinds?.some((kind) => LIST_KINDS.includes(kind))) ||
+        (hasListDeletionFilter && filter.kinds?.includes(5))) {
         listFilters.push(filter);
       } else if (filter.kinds?.some((k) => BADGE_READ_KINDS.includes(k))) {
         badgeRelayFilters.push(filter);
@@ -128,7 +128,7 @@ export function buildReqRouter(ctx: RoutingContext): ReqRouter {
       }
     }
 
-    if (result.size === 0 && ctx.relayUrl && !disabled.has(ctx.relayUrl)) {
+    if (result.size === 0 && ctx.relayUrl && (!hasListLookup || !disabled.has(ctx.relayUrl))) {
       result.set(ctx.relayUrl, filters);
     }
 

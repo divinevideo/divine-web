@@ -4,6 +4,7 @@ import { NPool, type NostrFilter, type NostrRelayEVENT, type NostrRelayEOSE } fr
 import { matchFilters } from 'nostr-tools';
 import { buildEventRouter, buildReqRouter, type RoutingContext } from '@/lib/relayRouting';
 import { getRelayUrls, PROFILE_RELAYS } from '@/config/relays';
+import { publishListToPrimary } from '@/lib/publishListToPrimary';
 
 const { mockEventCache } = vi.hoisted(() => ({
   mockEventCache: {
@@ -100,6 +101,49 @@ describe('createCachedNostr', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockEventCache.query.mockResolvedValue([]);
+    mockEventCache.event.mockResolvedValue(undefined);
+  });
+
+  it('does not add network-wide deletion discovery to a recent-list read', async () => {
+    const { nostr, base } = listClient([]);
+    const filters = [{ kinds: [30005], limit: 100 }];
+
+    await nostr.query(filters);
+
+    expect(base.query.mock.calls[0][0]).toEqual(filters);
+  });
+
+  it('keeps primary acknowledgement successful if the local event cache cannot write', async () => {
+    const base = { query: vi.fn(), event: vi.fn().mockResolvedValue(undefined) };
+    mockEventCache.event.mockRejectedValue(new Error('Storage unavailable'));
+
+    await expect(createCachedNostr(base).event(listEvent)).resolves.toBeUndefined();
+  });
+
+  it('does not delay relay acknowledgement on a stalled local cache write', async () => {
+    vi.useFakeTimers();
+    let release!: () => void;
+    mockEventCache.event.mockReturnValue(new Promise<void>(resolve => { release = resolve; }));
+    const base = { query: vi.fn(), event: vi.fn().mockResolvedValue(undefined) };
+    let acknowledged = false;
+    const pending = createCachedNostr(base).event(listEvent).then(() => { acknowledged = true; });
+    try {
+      await vi.advanceTimersByTimeAsync(0);
+      expect(acknowledged).toBe(true);
+    } finally {
+      release();
+      await pending;
+      vi.useRealTimers();
+    }
+  });
+
+  it('forwards directed event destinations and timeout signals to the underlying pool', async () => {
+    const base = { query: vi.fn(), event: vi.fn().mockResolvedValue(undefined) };
+    const opts = { relays: ['wss://relay.divine.video'], signal: new AbortController().signal };
+
+    await createCachedNostr(base).event(listEvent, opts);
+
+    expect(base.event).toHaveBeenCalledWith(listEvent, opts);
   });
 
   it.each(['none', 'primary', 'backup'])('preserves partial results with a stalled backup (deletion: %s)', async (source) => {
@@ -119,12 +163,13 @@ describe('createCachedNostr', () => {
       const controller = new AbortController();
       const query = nostr.query([{ kinds: [30005], authors: [listEvent.pubkey] }], { signal: controller.signal });
       const assertion = expect(query).resolves.toEqual(source === 'none' ? [listEvent] : []);
-      setTimeout(() => controller.abort(), 50);
+      setTimeout(() => controller.abort(), 5000);
 
-      await vi.advanceTimersByTimeAsync(50);
+      await vi.advanceTimersByTimeAsync(3000);
       await assertion;
       await nostr.close();
     } finally {
+      vi.clearAllTimers();
       vi.useRealTimers();
     }
   });
@@ -199,7 +244,44 @@ describe('createCachedNostr', () => {
     expect(base.query).toHaveBeenLastCalledWith(expect.arrayContaining([
       expect.objectContaining({ kinds: [5], authors: [listEvent.pubkey], '#a': [`30005:${listEvent.pubkey}:saved-list`] }),
       expect.objectContaining({ kinds: [5], authors: [listEvent.pubkey], '#e': [listEvent.id] }),
-    ]), undefined);
+    ]), expect.objectContaining({ signal: expect.any(AbortSignal) }));
+  });
+
+  it('rejects incomplete mutation reads instead of returning a partial owner snapshot', async () => {
+    vi.useFakeTimers();
+    try {
+      const stalled = getRelayUrls(PROFILE_RELAYS).find(url => url !== routingContext.relayUrl)!;
+      const { nostr } = relayPool(routingContext, () => true, new Set([stalled]));
+      await nostr.event(listEvent);
+      const opts = { signal: new AbortController().signal, requireComplete: true };
+      const outcome = nostr.query([{ kinds: [30005], authors: [listEvent.pubkey] }], opts)
+        .then(() => undefined, error => error);
+
+      await vi.advanceTimersByTimeAsync(1500);
+
+      expect(await outcome).toEqual(expect.objectContaining({ name: 'AbortError' }));
+      await nostr.close();
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it('requires actual NPool primary acknowledgement despite healthy backup relays', async () => {
+    vi.useFakeTimers();
+    try {
+      const { nostr } = relayPool(routingContext, url => url !== routingContext.relayUrl);
+      const outcome = publishListToPrimary(nostr, listEvent).then(() => undefined, error => error);
+
+      await vi.advanceTimersByTimeAsync(3000);
+
+      expect(await outcome).toEqual(expect.objectContaining({ name: 'AggregateError' }));
+      expect(mockEventCache.event).not.toHaveBeenCalled();
+      await nostr.close();
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
   });
 
   it('does not allow a different author to delete a list', async () => {

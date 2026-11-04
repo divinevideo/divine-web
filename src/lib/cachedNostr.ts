@@ -2,18 +2,36 @@
 // ABOUTME: Provides local caching for profile and contact queries
 
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
-import { matchFilters } from 'nostr-tools';
 import { eventCache } from './eventCache';
 import { debugLog } from './debug';
 import {
-  buildListDeletionDiscoveryFilters,
+  LIST_KINDS,
   buildListDeletionFilters,
   excludeDeletedListEvents,
 } from '@/lib/listEventDeletions';
 
+export interface CachedNostrQueryOptions {
+  signal?: AbortSignal;
+  relays?: string[];
+  requireComplete?: boolean;
+}
+
 interface NostrClient {
-  query: (filters: NostrFilter[], opts?: { signal?: AbortSignal; relays?: string[] }) => Promise<NostrEvent[]>;
-  event: (event: NostrEvent) => Promise<void>;
+  query: (filters: NostrFilter[], opts?: CachedNostrQueryOptions) => Promise<NostrEvent[]>;
+  event: (event: NostrEvent, opts?: { signal?: AbortSignal; relays?: string[] }) => Promise<void>;
+}
+
+async function queryListPhase(client: NostrClient, filters: NostrFilter[], opts?: CachedNostrQueryOptions): Promise<NostrEvent[]> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 1500);
+  const signal = opts?.signal ? AbortSignal.any([opts.signal, controller.signal]) : controller.signal;
+  try {
+    const events = await client.query(filters, { ...opts, signal });
+    if (opts?.requireComplete) signal.throwIfAborted();
+    return events;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
@@ -26,7 +44,7 @@ export function createCachedNostr<T extends NostrClient>(
   const cachedNostr = Object.create(baseNostr) as T;
 
   // Wrap query method with cache-first logic
-  cachedNostr.query = async (filters: NostrFilter[], opts?: { signal?: AbortSignal; relays?: string[] }): Promise<NostrEvent[]> => {
+  cachedNostr.query = async (filters: NostrFilter[], opts?: CachedNostrQueryOptions): Promise<NostrEvent[]> => {
     const startTime = performance.now();
     // debugLog('[CachedNostr] Query with filters:', filters);
 
@@ -52,14 +70,14 @@ export function createCachedNostr<T extends NostrClient>(
 
     // 2. Query via WebSocket
     const _wsStart = performance.now();
-    const discoveryFilters = buildListDeletionDiscoveryFilters(filters);
-    const response = await baseNostr.query([...filters, ...discoveryFilters], opts);
-    let results = discoveryFilters.length > 0 ? response.filter(event => matchFilters(filters, event)) : response;
+    const isListRead = filters.some(filter => filter.kinds?.some(kind => LIST_KINDS.includes(kind)));
+    const response = isListRead ? await queryListPhase(baseNostr, filters, opts) : await baseNostr.query(filters, opts);
+    let results = response;
     const deletionFilters = buildListDeletionFilters(results);
     if (deletionFilters.length > 0) {
       const [localDeletions, deletions] = await Promise.all([
         eventCache.query(deletionFilters).catch((): NostrEvent[] => []),
-        opts?.signal?.aborted ? [] : baseNostr.query(deletionFilters, opts),
+        opts?.signal?.aborted ? [] : queryListPhase(baseNostr, deletionFilters, opts),
       ]);
       results = excludeDeletedListEvents(results, [...response, ...localDeletions, ...deletions]);
     }
@@ -74,12 +92,12 @@ export function createCachedNostr<T extends NostrClient>(
   };
 
   // Wrap event method to cache published events
-  cachedNostr.event = async (event: NostrEvent): Promise<void> => {
+  cachedNostr.event = async (event: NostrEvent, opts?: { signal?: AbortSignal; relays?: string[] }): Promise<void> => {
     // Publish to relay
-    await baseNostr.event(event);
+    await baseNostr.event(event, opts);
 
     // Cache the event
-    await eventCache.event(event);
+    void eventCache.event(event).catch(error => debugLog('[CachedNostr] Local event cache write failed:', error));
     debugLog('[CachedNostr] Event published and cached:', event.id);
   };
 

@@ -445,26 +445,43 @@ independently of the generated schema.
 [`src/components/NostrProvider.tsx`](./src/components/NostrProvider.tsx).
 Reads split filters into profile (kinds 0/3/10011), list
 (30000/30001/30005), badge (8/30008/30009), video, and other groups;
-each group is fanned out to its relay set. List reads include the primary,
-configured, custom, and enabled profile relays without adaptive ranking.
-This keeps a list discoverable after any publish destination accepts it,
-including when the primary relay does not hold it. Explicitly disabled
-relays are excluded, including from list publishing; a list publish with no
-enabled destinations fails instead of reporting success.
+each group is fanned out to its relay set. Owner-scoped list recovery reads
+include enabled primary, configured, custom, and profile relays. Author-less
+discovery keeps the existing ranked configured-relay scope, so public-relay
+lists do not enter Trending or membership badges through this change.
+Membership badges share one recent-lists query across video cards.
+Disabled relays are excluded from list reads and writes. Non-list reads retain
+their existing last-resort primary fallback, matching non-list publication.
 [`src/lib/cachedNostr.ts`](./src/lib/cachedNostr.ts) checks matching list
 addresses and event IDs for owner-authored kind-5 deletion requests before
-returning list events. Deletion discovery runs alongside the list read, with
-targeted address/event lookup while the caller's signal remains active. These
-queries use the same list relay set, and matching locally cached deletion
-requests also apply. A stale backup copy stays hidden after a known deletion,
-while a newer version published after an address deletion can appear. A slow
-backup does not discard useful partial results or known deletion requests. The shared
+returning list events. Deletion queries target only returned list addresses
+and event IDs, in a separate request; there is no network-wide deletion scan.
+Each network phase is capped at 1.5 seconds, leaving time for the targeted
+lookup within the caller's deadline. Displays can use partial results.
+Membership mutations request complete reads and reject aborted owner or
+participant lookups before publishing, rather than falling back to stale owner
+membership. The shared
 filtering lives in
 [`src/lib/listEventDeletions.ts`](./src/lib/listEventDeletions.ts).
+Deletion visibility is best effort: remote requests can be unavailable or
+truncated, and locally persisted deletion events expire after the existing
+two-hour default TTL. Known owner deletions hide older copies while available;
+newer address recreations remain visible. This is not a permanent deletion
+guarantee across browser reloads or relay outages.
 When IndexedDB is unavailable, the hybrid event cache answers from memory, so
 locally published deletion requests remain usable. When it is available,
 IndexedDB stays authoritative and its per-kind TTL still turns an expired
 event into a cache miss.
+List creation, updates, and list-targeted deletions go through
+[`src/lib/publishListToPrimary.ts`](./src/lib/publishListToPrimary.ts).
+The hook signs once and requires acceptance from the canonical Divine primary
+before reporting success. Transient failures get at most three attempts, each
+with a fresh five-second deadline and delays of one then two seconds; explicit
+permanent rejections are not retried. A disabled canonical primary fails before
+signing. Existing fanout runs after primary acknowledgement as best-effort
+replication, and its failure does not undo a successful primary save.
+The cached client forwards directed relay options and deadlines unchanged;
+local cache writes are best effort and do not delay relay acknowledgement.
 Writes fan out to the primary relay plus `PROFILE_RELAYS`
 for kind 0/3/10011, list kinds 30000/30001/30005, and NIP-09 deletion
 requests whose `k` tag targets one of those list kinds. Other writes use
