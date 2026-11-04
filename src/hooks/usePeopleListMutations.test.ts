@@ -101,6 +101,53 @@ describe('usePeopleListMutations', () => {
     });
   });
 
+  it.each(['update', 'add', 'remove'] as const)('does not %s a people list from an aborted partial read', async (action) => {
+    const controller = new AbortController();
+    const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+    mockNostrQuery.mockImplementation(async () => {
+      controller.abort();
+      return [peopleListEvent()];
+    });
+    try {
+      const hooks = await import('./usePeopleListMutations');
+      const useMutation = () => {
+        const update = hooks.useUpdatePeopleList();
+        const add = hooks.useAddToPeopleList();
+        const remove = hooks.useRemoveFromPeopleList();
+        return { update, add, remove };
+      };
+      const { result } = renderHook(useMutation, { wrapper: createWrapper() });
+      const mutation = action === 'update'
+        ? result.current.update.mutateAsync({ listId: 'friends', name: 'Renamed' })
+        : result.current[action].mutateAsync({ listId: 'friends', memberPubkey: action === 'add' ? CAROL : ALICE });
+
+      await expect(mutation).rejects.toThrow();
+      expect(mockPublishAsync).not.toHaveBeenCalled();
+      expect(mockNostrQuery.mock.calls[0][1]).toMatchObject({ requireComplete: true });
+    } finally {
+      timeout.mockRestore();
+    }
+  });
+
+  it('does not create over a coordinate after an incomplete existence check', async () => {
+    const controller = new AbortController();
+    const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+    mockNostrQuery.mockImplementation(async () => {
+      controller.abort();
+      return [];
+    });
+    try {
+      const { useCreatePeopleList } = await import('./usePeopleListMutations');
+      const { result } = renderHook(() => useCreatePeopleList(), { wrapper: createWrapper() });
+
+      await expect(result.current.mutateAsync({ id: 'friends', name: 'New list' })).rejects.toThrow();
+      expect(mockPublishAsync).not.toHaveBeenCalled();
+      expect(mockNostrQuery.mock.calls[0][1]).toMatchObject({ requireComplete: true });
+    } finally {
+      timeout.mockRestore();
+    }
+  });
+
   it('creates a new people list with empty content', async () => {
     mockNostrQuery.mockResolvedValue([]);
     const { useCreatePeopleList } = await import('./usePeopleListMutations');

@@ -469,7 +469,9 @@ to caller cancellation, so blocked
 IndexedDB cannot hold a completed relay read open. Displays can use partial results.
 Membership mutations request complete reads and reject aborted owner or
 participant lookups before publishing, rather than falling back to stale owner
-membership. The shared
+membership. People-list metadata/member edits and duplicate-coordinate checks
+before creation also require complete reads and reject cancellation, so stale
+backup copies cannot replace newer membership or encrypted content. The shared
 filtering lives in
 [`src/lib/listEventDeletions.ts`](./src/lib/listEventDeletions.ts).
 Deletion visibility is best effort: remote requests can be unavailable or

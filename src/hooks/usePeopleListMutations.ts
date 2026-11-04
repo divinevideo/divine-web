@@ -14,6 +14,7 @@ import {
   type PeopleList,
 } from '@/lib/parsePeopleListFromEvent';
 import { buildAddressableCoordinate, isHex64 } from '@/lib/nostrCoordinates';
+import type { CachedNostrQueryOptions } from '@/lib/cachedNostr';
 
 interface CreatePeopleListInput {
   id: string;
@@ -105,14 +106,16 @@ function eventToPeopleList(event: NostrEvent): PeopleList {
 }
 
 async function fetchCurrentPeopleListEvent(
-  nostr: { query: (filters: unknown[], options: { signal: AbortSignal }) => Promise<NostrEvent[]> },
+  nostr: { query: (filters: unknown[], options: CachedNostrQueryOptions) => Promise<NostrEvent[]> },
   pubkey: string,
   listId: string,
 ): Promise<{ event: NostrEvent; list: PeopleList }> {
+  const signal = AbortSignal.timeout(5000);
   const events = await nostr.query(
     [{ kinds: [PEOPLE_LIST_KIND], authors: [pubkey], '#d': [listId], limit: 10 }],
-    { signal: AbortSignal.timeout(5000) },
+    { signal, requireComplete: true },
   );
+  signal.throwIfAborted();
   const event = latestEvent(events);
 
   if (!event) throw new Error('People list not found');
@@ -161,10 +164,13 @@ export function useCreatePeopleList() {
       if (isReservedListDTag(id)) throw new Error('That list name is reserved');
       if (memberPubkeys.some((pubkey) => !isHex64(pubkey))) throw new Error('Invalid member pubkey');
 
+      const signal = AbortSignal.timeout(5000);
+      const options = { signal, requireComplete: true } satisfies CachedNostrQueryOptions;
       const events = await nostr.query(
         [{ kinds: [PEOPLE_LIST_KIND], authors: [user.pubkey], '#d': [id], limit: 1 }],
-        { signal: AbortSignal.timeout(5000) },
+        options,
       );
+      signal.throwIfAborted();
       if (events.length > 0) throw new Error('People list already exists');
 
       const tags = withMemberTags(
