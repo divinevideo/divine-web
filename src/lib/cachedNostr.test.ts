@@ -57,8 +57,10 @@ function relayPool(
   context: RoutingContext,
   accepts: (url: string, event: NostrEvent) => boolean,
   stalled = new Set<string>(),
+  listDelays = new Map<string, number>(),
 ) {
   const stores = new Map<string, NostrEvent[]>();
+  const requests = vi.fn();
   const pool = new NPool({
     reqRouter: buildReqRouter(context),
     eventRouter: buildEventRouter(context),
@@ -75,6 +77,21 @@ function relayPool(
           events.push(event);
         },
         async *req(filters: NostrFilter[], opts?: { signal?: AbortSignal }): AsyncIterable<NostrRelayEVENT | NostrRelayEOSE> {
+          requests(url, filters);
+          const delay = filters.some(filter => filter.kinds?.includes(30005)) ? listDelays.get(url) : undefined;
+          if (delay) {
+            await new Promise<void>(resolve => {
+              const finish = () => {
+                clearTimeout(timer);
+                opts?.signal?.removeEventListener('abort', finish);
+                resolve();
+              };
+              const timer = setTimeout(finish, delay);
+              if (opts?.signal?.aborted) finish();
+              else opts?.signal?.addEventListener('abort', finish, { once: true });
+            });
+            if (opts?.signal?.aborted) return;
+          }
           for (const event of await query(filters)) yield ['EVENT', 'test', event];
           if (stalled.has(url)) {
             await new Promise<void>(resolve => {
@@ -89,7 +106,7 @@ function relayPool(
       };
     },
   });
-  return { stores, nostr: createCachedNostr(pool) };
+  return { stores, requests, nostr: createCachedNostr(pool, { getReadRoutes: buildReqRouter(context) }) };
 }
 
 const routingContext: RoutingContext = {
@@ -102,6 +119,90 @@ describe('createCachedNostr', () => {
     vi.clearAllMocks();
     mockEventCache.query.mockResolvedValue([]);
     mockEventCache.event.mockResolvedValue(undefined);
+  });
+
+  it.each([
+    { owned: false, delay: 2500 },
+    { owned: true, delay: 2500 },
+    { owned: true, delay: 4200 },
+  ])('retains the primary answer without duplicate requests (owner scoped: $owned, delay: $delay)', async ({ owned, delay }) => {
+    vi.useFakeTimers();
+    try {
+      const backup = getRelayUrls(PROFILE_RELAYS).find(url => url !== routingContext.relayUrl)!;
+      const { nostr, stores, requests } = relayPool(
+        routingContext,
+        url => url === routingContext.relayUrl,
+        new Set([backup]),
+        new Map([[routingContext.relayUrl, delay]]),
+      );
+      const events = [3, 4, 5].map(value => ({
+        ...listEvent, id: String(value).repeat(64), created_at: 100 + value,
+        tags: [['d', `slow-primary-${value}`]],
+      }));
+      for (const event of events) await nostr.event(event);
+      stores.get(backup)!.push(events[0]);
+      const controller = new AbortController();
+      const filter = { kinds: [30005], limit: 100, ...(owned ? { authors: [listEvent.pubkey] } : {}) };
+      let result: NostrEvent[] | undefined;
+      const pending = nostr.query([filter], { signal: controller.signal }).then(events => { result = events; });
+      setTimeout(() => controller.abort(), 5000);
+
+      await vi.advanceTimersByTimeAsync(5000);
+
+      expect(result?.map(event => event.id).sort()).toEqual(events.map(event => event.id).sort());
+      expect(requests.mock.calls.filter(([url, filters]) => url === routingContext.relayUrl &&
+        filters.some((filter: NostrFilter) => filter.kinds?.includes(30005)))).toHaveLength(1);
+      await pending;
+      await nostr.close();
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it('preserves the caller deadline for author-less reads from a configured custom relay', async () => {
+    vi.useFakeTimers();
+    try {
+      const custom = 'wss://configured.example';
+      const context = { ...routingContext, relayUrl: custom, relayUrls: [custom] };
+      const { nostr } = relayPool(context, url => url === custom, new Set(), new Map([[custom, 2500]]));
+      await nostr.event(listEvent);
+      const controller = new AbortController();
+      let result: NostrEvent[] | undefined;
+      const pending = nostr.query([{ kinds: [30005], limit: 100 }], { signal: controller.signal })
+        .then(events => { result = events; });
+      setTimeout(() => controller.abort(), 5000);
+
+      await vi.advanceTimersByTimeAsync(4000);
+
+      expect(result).toEqual([listEvent]);
+      await pending;
+      await nostr.close();
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it('deduplicates addressable versions when merging relay answers', async () => {
+    const backup = getRelayUrls(PROFILE_RELAYS).find(url => url !== routingContext.relayUrl)!;
+    const { nostr, stores } = relayPool(routingContext, url => url === routingContext.relayUrl);
+    await nostr.event(listEvent);
+    const newer = { ...listEvent, id: '6'.repeat(64), created_at: 200 };
+    stores.get(backup)!.push(newer);
+
+    expect(await nostr.query([{ kinds: [30005], authors: [listEvent.pubkey] }])).toEqual([newer]);
+    await nostr.close();
+  });
+
+  it('does not query the primary when an explicit relay selection excludes it', async () => {
+    const backup = getRelayUrls(PROFILE_RELAYS).find(url => url !== routingContext.relayUrl)!;
+    const { nostr, requests } = relayPool(routingContext, url => url === routingContext.relayUrl);
+    await nostr.event(listEvent);
+
+    expect(await nostr.query([{ kinds: [30005] }], { relays: [backup] })).toEqual([]);
+    expect(requests.mock.calls.map(([url]) => url)).toEqual([backup]);
+    await nostr.close();
   });
 
   it('does not add network-wide deletion discovery to a recent-list read', async () => {

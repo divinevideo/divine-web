@@ -2,6 +2,8 @@
 // ABOUTME: Provides local caching for profile and contact queries
 
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
+import { NSet } from '@nostrify/nostrify';
+import { PRIMARY_RELAY } from '@/config/relays';
 import { eventCache } from './eventCache';
 import { debugLog } from './debug';
 import { isListPublication } from '@/lib/publishListToPrimary';
@@ -15,6 +17,10 @@ export interface CachedNostrQueryOptions {
   signal?: AbortSignal;
   relays?: string[];
   requireComplete?: boolean;
+}
+
+interface CachedNostrOptions {
+  getReadRoutes?: (filters: NostrFilter[]) => ReadonlyMap<string, NostrFilter[]>;
 }
 
 interface NostrClient {
@@ -32,6 +38,61 @@ async function queryListPhase(client: NostrClient, filters: NostrFilter[], opts?
     return events;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+async function queryWithCallerDeadline(client: NostrClient, filters: NostrFilter[], opts?: CachedNostrQueryOptions): Promise<NostrEvent[]> {
+  const signal = opts?.signal ?? AbortSignal.timeout(5000);
+  const events = await client.query(filters, { ...opts, signal });
+  if (opts?.requireComplete) signal.throwIfAborted();
+  return events;
+}
+
+function isPrimaryRelay(url: string): boolean {
+  try {
+    return new URL(url).href === new URL(PRIMARY_RELAY.url).href;
+  } catch {
+    return false;
+  }
+}
+
+async function queryListSources(
+  client: NostrClient,
+  filters: NostrFilter[],
+  opts: CachedNostrQueryOptions | undefined,
+  getReadRoutes: CachedNostrOptions['getReadRoutes'],
+): Promise<NostrEvent[]> {
+  const routes = opts?.relays
+    ? new Map(opts.relays.map(url => [url, filters]))
+    : getReadRoutes?.(filters);
+  if (!routes) return queryWithCallerDeadline(client, filters, opts);
+
+  const controller = new AbortController();
+  const signal = AbortSignal.any([opts?.signal ?? AbortSignal.timeout(5000), controller.signal]);
+  const primaryFilters = new Set<NostrFilter>();
+  const requests: Promise<NostrEvent[]>[] = [];
+  for (const [url, relayFilters] of routes) {
+    if (isPrimaryRelay(url)) {
+      relayFilters.forEach(filter => primaryFilters.add(filter));
+    } else {
+      const recovery = relayFilters.every(filter => filter.authors?.length &&
+        filter.kinds?.every(kind => LIST_KINDS.includes(kind)));
+      const query = recovery ? queryListPhase : queryWithCallerDeadline;
+      requests.push(query(client, relayFilters, { ...opts, signal, relays: [url] }));
+    }
+  }
+  if (primaryFilters.size > 0) {
+    requests.push(queryWithCallerDeadline(client, [...primaryFilters], { ...opts, signal, relays: [PRIMARY_RELAY.url] }));
+  }
+  try {
+    const snapshots = opts?.requireComplete
+      ? await Promise.all(requests)
+      : (await Promise.allSettled(requests)).flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
+    const merged = new NSet();
+    for (const event of snapshots.flat()) merged.add(event);
+    return Array.from(merged.values());
+  } finally {
+    controller.abort();
   }
 }
 
@@ -59,7 +120,8 @@ async function readLocalListDeletions(filters: NostrFilter[], signal?: AbortSign
  * Order: Local cache -> WebSocket
  */
 export function createCachedNostr<T extends NostrClient>(
-  baseNostr: T
+  baseNostr: T,
+  options: CachedNostrOptions = {},
 ): T {
   const cachedNostr = Object.create(baseNostr) as T;
 
@@ -91,7 +153,7 @@ export function createCachedNostr<T extends NostrClient>(
     // 2. Query via WebSocket
     const _wsStart = performance.now();
     const isListRead = filters.some(filter => filter.kinds?.some(kind => LIST_KINDS.includes(kind)));
-    const response = isListRead ? await queryListPhase(baseNostr, filters, opts) : await baseNostr.query(filters, opts);
+    const response = isListRead ? await queryListSources(baseNostr, filters, opts, options.getReadRoutes) : await baseNostr.query(filters, opts);
     let results = response;
     const deletionFilters = buildListDeletionFilters(results);
     if (deletionFilters.length > 0) {

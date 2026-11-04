@@ -456,9 +456,16 @@ their existing last-resort primary fallback, matching non-list publication.
 addresses and event IDs for owner-authored kind-5 deletion requests before
 returning list events. Deletion queries target only returned list addresses
 and event IDs, in a separate request; there is no network-wide deletion scan.
-Each network phase is capped at 1.5 seconds, leaving time for the targeted
-lookup within the caller's deadline. The optional local deletion lookup is
-also capped at 1.5 seconds and reacts to caller cancellation, so blocked
+The provider shares its routing function with the cached client. Each selected
+relay receives one list request, and addressable versions are merged using
+NSet. The canonical primary and configured author-less discovery sources keep
+the caller's full deadline (normally five seconds), so slow primary responses
+are not cut off by the backup budget. Owner-scoped backup recovery and targeted
+deletion phases are capped separately at 1.5 seconds. A stalled primary can
+therefore hold a display read to the caller's deadline; completeness of its
+answer takes priority over the earlier 1.5-second display cap.
+The optional local deletion lookup is also capped at 1.5 seconds and reacts
+to caller cancellation, so blocked
 IndexedDB cannot hold a completed relay read open. Displays can use partial results.
 Membership mutations request complete reads and reject aborted owner or
 participant lookups before publishing, rather than falling back to stale owner
