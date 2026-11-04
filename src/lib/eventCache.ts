@@ -2,7 +2,7 @@
 // ABOUTME: Automatically caches user's own events and frequently accessed events
 
 import type { NostrEvent, NostrFilter, NStore } from '@nostrify/nostrify';
-import { NCache, NSet } from '@nostrify/nostrify';
+import { NCache } from '@nostrify/nostrify';
 
 const DB_NAME = 'nostr_events';
 const DB_VERSION = 2; // Bumped for cached_at metadata
@@ -72,6 +72,10 @@ class IndexedDBStore implements NStore {
   private async ensureDB(): Promise<IDBDatabase | null> {
     await this.initPromise;
     return this.db;
+  }
+
+  async isAvailable(): Promise<boolean> {
+    return (await this.ensureDB()) !== null;
   }
 
   async event(event: NostrEvent): Promise<void> {
@@ -316,7 +320,14 @@ export class HybridEventCache implements NStore {
       return memoryResults;
     }
 
-    // Fall back to IndexedDB for more results
+    // Without IndexedDB the memory cache is the whole cache, so its hits
+    // (including locally published deletion requests) are the answer.
+    if (!(await this.persistentStore.isAvailable())) {
+      return memoryResults;
+    }
+
+    // Otherwise IndexedDB is authoritative: it applies the per-kind TTL that
+    // the memory cache lacks, so an expired event reads as a miss.
     const persistentResults = await this.persistentStore.query(filters);
 
     // Populate memory cache with results from IndexedDB
@@ -324,9 +335,7 @@ export class HybridEventCache implements NStore {
       this.memoryCache.add(event);
     }
 
-    const combined = new NSet();
-    for (const event of [...memoryResults, ...persistentResults]) combined.add(event);
-    return Array.from(combined.values());
+    return persistentResults;
   }
 
   async remove(filters: NostrFilter[]): Promise<void> {

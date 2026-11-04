@@ -461,8 +461,10 @@ while a newer version published after an address deletion can appear. A slow
 backup does not discard useful partial results or known deletion requests. The shared
 filtering lives in
 [`src/lib/listEventDeletions.ts`](./src/lib/listEventDeletions.ts).
-The hybrid event cache merges memory and disk hits, including when IndexedDB
-is unavailable, so locally published deletion requests remain usable.
+When IndexedDB is unavailable, the hybrid event cache answers from memory, so
+locally published deletion requests remain usable. When it is available,
+IndexedDB stays authoritative and its per-kind TTL still turns an expired
+event into a cache miss.
 Writes fan out to the primary relay plus `PROFILE_RELAYS`
 for kind 0/3/10011, list kinds 30000/30001/30005, and NIP-09 deletion
 requests whose `k` tag targets one of those list kinds. Other writes use
