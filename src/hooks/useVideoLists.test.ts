@@ -7,6 +7,8 @@ import React from 'react';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { VideoList } from '@/lib/parseVideoListFromEvent';
+import { buildEventRouter, buildReqRouter } from '@/lib/relayRouting';
+import { getRelayUrls, PROFILE_RELAYS } from '@/config/relays';
 
 const mockNostrQuery = vi.fn();
 vi.mock('@nostrify/react', () => ({
@@ -233,6 +235,44 @@ describe('useVideoLists hooks', () => {
   });
 
   describe('useCreateVideoList', () => {
+    it('keeps a newly published list after refetch when only a backup relay accepted it', async () => {
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      });
+      const wrapper = createWrapper(queryClient);
+      const routing = {
+        relayUrl: 'wss://relay.divine.video',
+        relayUrls: ['wss://relay.divine.video'],
+      };
+      const backupRelay = getRelayUrls(PROFILE_RELAYS).find(url => url !== routing.relayUrl)!;
+      const storedEvents = new Map<string, NostrEvent[]>();
+      mockNostrQuery.mockImplementation(async (filters) => (
+        [...buildReqRouter(routing)(filters).keys()].flatMap(relay => storedEvents.get(relay) ?? [])
+      ));
+      mockPublishAsync.mockImplementation(async (input) => {
+        expect(buildEventRouter(routing)(listEvent(input))).toContain(backupRelay);
+        const event = listEvent({ ...input, id: 'e'.repeat(64), created_at: 3000 });
+        storedEvents.set(backupRelay, [event]);
+        return event;
+      });
+      const { useVideoLists, useCreateVideoList } = await import('./useVideoLists');
+      const lists = renderHook(() => useVideoLists(TEST_PUBKEY), { wrapper });
+      await waitFor(() => expect(lists.result.current.isSuccess).toBe(true));
+      expect(lists.result.current.data).toEqual([]);
+      const create = renderHook(() => useCreateVideoList(), { wrapper });
+
+      await create.result.current.mutateAsync({
+        id: 'backup-list', name: 'Saved list', videoCoordinates: [],
+      });
+
+      await waitFor(() => expect(mockNostrQuery).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(lists.result.current.isFetching).toBe(false));
+      expect(lists.result.current.data?.map(list => list.id)).toEqual(['backup-list']);
+
+      await lists.result.current.refetch();
+      expect(lists.result.current.data?.map(list => list.id)).toEqual(['backup-list']);
+    });
+
     it('throws when not logged in', async () => {
       mockUseCurrentUser.mockReturnValue({ user: null, signer: null });
       const { useCreateVideoList } = await import('./useVideoLists');

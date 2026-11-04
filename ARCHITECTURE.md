@@ -443,9 +443,13 @@ independently of the generated schema.
 [`src/lib/relayRouting.ts`](./src/lib/relayRouting.ts) defines the
 `reqRouter` and `eventRouter` factories used by
 [`src/components/NostrProvider.tsx`](./src/components/NostrProvider.tsx).
-Reads split filters into profile (kinds 0/3/10011), badge
-(8/30008/30009), and other groups; each group is fanned out to its
-relay set. Writes fan out to the primary relay plus `PROFILE_RELAYS`
+Reads split filters into profile (kinds 0/3/10011), list
+(30000/30001/30005), badge (8/30008/30009), video, and other groups;
+each group is fanned out to its relay set. List reads include the primary,
+configured, custom, and enabled profile relays without adaptive ranking.
+This keeps a list discoverable after any publish destination accepts it,
+including when the primary relay does not hold it. Explicitly disabled
+relays are excluded. Writes fan out to the primary relay plus `PROFILE_RELAYS`
 for kind 0/3/10011, list kinds 30000/30001/30005, and NIP-09 deletion
 requests whose `k` tag targets one of those list kinds. Other writes use
 `PRESET_RELAYS` (capped at 5). **Mute lists (kind 10000) are write-restricted to

@@ -45,6 +45,7 @@ export function buildReqRouter(ctx: RoutingContext): ReqRouter {
     const result = new Map<string, NostrFilter[]>();
 
     const profileRelayFilters: NostrFilter[] = [];
+    const listFilters: NostrFilter[] = [];
     const badgeRelayFilters: NostrFilter[] = [];
     const videoFilters: NostrFilter[] = [];
     const otherFilters: NostrFilter[] = [];
@@ -52,6 +53,8 @@ export function buildReqRouter(ctx: RoutingContext): ReqRouter {
     for (const filter of filters) {
       if (filter.kinds?.includes(0) || filter.kinds?.includes(3) || filter.kinds?.includes(10011)) {
         profileRelayFilters.push(filter);
+      } else if (filter.kinds?.some((kind) => LIST_KINDS.includes(kind))) {
+        listFilters.push(filter);
       } else if (filter.kinds?.some((k) => BADGE_READ_KINDS.includes(k))) {
         badgeRelayFilters.push(filter);
       } else if (filter.kinds?.some((k) => VIDEO_KINDS.includes(k))) {
@@ -67,6 +70,18 @@ export function buildReqRouter(ctx: RoutingContext): ReqRouter {
     if (profileRelayFilters.length > 0) {
       for (const relay of profileRelayUrls) {
         addFilters(result, relay, profileRelayFilters);
+      }
+    }
+
+    if (listFilters.length > 0) {
+      const listRelayUrls = enabledUrls(Array.from(new Set([
+        ctx.relayUrl,
+        ...ctx.relayUrls,
+        ...(ctx.customRelayUrls ?? []),
+        ...profileRelayUrls,
+      ])), disabled);
+      for (const relay of listRelayUrls) {
+        addFilters(result, relay, listFilters);
       }
     }
 

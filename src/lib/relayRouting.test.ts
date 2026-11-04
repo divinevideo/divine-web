@@ -107,6 +107,46 @@ describe('buildEventRouter — mute list carve-out', () => {
 });
 
 describe('buildReqRouter — kind-based routing', () => {
+  it.each([30000, 30001, 30005])('reads list kind %i from every publish destination', (kind) => {
+    const context: RoutingContext = {
+      ...ctx,
+      relayUrls: [CUSTOM_URL],
+      customRelayUrls: [CUSTOM_URL],
+      pickTopN: (urls, count) => urls.slice(0, count),
+    };
+    const filter: NostrFilter = { kinds: [kind], authors: ['a'.repeat(64)] };
+    const publishRelays = buildEventRouter(context)(makeEvent(kind, {
+      id: 'b'.repeat(64),
+      sig: 'c'.repeat(128),
+    }));
+    const readRoutes = buildReqRouter(context)([filter]);
+
+    for (const relay of publishRelays) {
+      expect(readRoutes.get(relay) ?? []).toContainEqual(filter);
+    }
+  });
+
+  it('excludes disabled relays from list reads and preserves mixed query filters', () => {
+    const disabledProfileRelay = getRelayUrls(PROFILE_RELAYS).find(url => url !== ctx.relayUrl)!;
+    const listFilter: NostrFilter = { kinds: [30005], '#d': ['fresh-list'] };
+    const postFilter: NostrFilter = { kinds: [1], authors: ['a'.repeat(64)] };
+    const readRoutes = buildReqRouter({
+      ...ctx,
+      customRelayUrls: [CUSTOM_URL, DISABLED_URL],
+      disabledPresetUrls: [DISABLED_URL, disabledProfileRelay],
+    })([listFilter, postFilter]);
+
+    expect(readRoutes.has(DISABLED_URL)).toBe(false);
+    expect(readRoutes.has(disabledProfileRelay)).toBe(false);
+    expect(readRoutes.get(CUSTOM_URL)).toContainEqual(listFilter);
+    expect(readRoutes.get(ctx.relayUrl)).toEqual(expect.arrayContaining([listFilter, postFilter]));
+    for (const relay of getRelayUrls(PROFILE_RELAYS)) {
+      if (relay !== disabledProfileRelay) expect(readRoutes.get(relay) ?? []).toContainEqual(listFilter);
+    }
+    expect(readRoutes.get(getRelayUrls(PROFILE_RELAYS).find(url => url !== disabledProfileRelay && url !== ctx.relayUrl)!))
+      .not.toContainEqual(postFilter);
+  });
+
   it('routes kind 0 to PROFILE_RELAYS', () => {
     const result = buildReqRouter(ctx)([{ kinds: [0] }]);
     const profileUrls = new Set(getRelayUrls(PROFILE_RELAYS));
