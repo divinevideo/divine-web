@@ -1,4 +1,15 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import type { NostrEvent } from '@nostrify/nostrify';
+
+const owner = 'a'.repeat(64);
+const staleList: NostrEvent = {
+  id: 'b'.repeat(64), pubkey: owner, kind: 30005, created_at: 100,
+  tags: [['d', 'saved-list']], content: '', sig: 'c'.repeat(128),
+};
+const deletion: NostrEvent = {
+  ...staleList, id: 'd'.repeat(64), kind: 5, created_at: 200,
+  tags: [['a', `30005:${owner}:saved-list`], ['k', '30005']],
+};
 
 describe('EventCache', () => {
   const originalIndexedDB = globalThis.indexedDB;
@@ -9,6 +20,32 @@ describe('EventCache', () => {
       writable: true,
       value: originalIndexedDB,
     });
+  });
+
+  it.each([undefined, 10])('retains memory deletion markers with a query limit of %s', async (limit) => {
+    Object.defineProperty(globalThis, 'indexedDB', { writable: true, value: undefined });
+    const { eventCache } = await import('./eventCache');
+    await eventCache.event(deletion);
+
+    expect(await eventCache.query([{ kinds: [5], authors: [owner], limit }])).toEqual([deletion]);
+  });
+
+  it('keeps a stale remote list hidden using a published deletion when IndexedDB is unavailable', async () => {
+    Object.defineProperty(globalThis, 'indexedDB', { writable: true, value: undefined });
+    const { createCachedNostr } = await import('./cachedNostr');
+    const controller = new AbortController();
+    const transport = {
+      event: vi.fn().mockResolvedValue(undefined),
+      query: vi.fn().mockImplementation(async () => {
+        controller.abort();
+        return [staleList];
+      }),
+    };
+    const nostr = createCachedNostr(transport);
+    await nostr.event(deletion);
+
+    expect(await nostr.query([{ kinds: [30005], authors: [owner] }], { signal: controller.signal }))
+      .toEqual([]);
   });
 
   it('does not throw when indexedDB is unavailable', async () => {

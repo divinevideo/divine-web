@@ -2,7 +2,7 @@
 // ABOUTME: Automatically caches user's own events and frequently accessed events
 
 import type { NostrEvent, NostrFilter, NStore } from '@nostrify/nostrify';
-import { NCache } from '@nostrify/nostrify';
+import { NCache, NSet } from '@nostrify/nostrify';
 
 const DB_NAME = 'nostr_events';
 const DB_VERSION = 2; // Bumped for cached_at metadata
@@ -324,7 +324,9 @@ export class HybridEventCache implements NStore {
       this.memoryCache.add(event);
     }
 
-    return persistentResults;
+    const combined = new NSet();
+    for (const event of [...memoryResults, ...persistentResults]) combined.add(event);
+    return [...combined];
   }
 
   async remove(filters: NostrFilter[]): Promise<void> {
