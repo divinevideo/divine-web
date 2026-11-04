@@ -9,15 +9,22 @@ import { useChatSession } from '@/hooks/useChatSession';
 import { canPostToChat, foldChatRumors, foldControlEditions, heldStream, type Rumor } from '@/lib/chat/protocol';
 import { channelRumors, ConcordRelayClient, pocStreamKey } from '@/lib/chat/relay';
 import { CONCORD_RELAY_URL } from '@/lib/chat/store';
+import { CommunityChatPage } from './CommunityChatPage';
+import { peekInvite, parseInviteUrl } from '@/lib/chat/invite';
+import { encodeInviteFragment } from '@/lib/chat/protocol';
 
 export default function ChatPage() {
   const { communityId, channelId, threadId } = useParams();
   const { isLoggedIn, isAuthPending, user, signer, store } = useChatSession();
   const [rumors, setRumors] = useState<Rumor[]>([]);
+  const [initialInvite] = useState(() => parseInviteUrl(window.location.pathname, window.location.hash) ?? peekInvite());
+  const invite = initialInvite ?? peekInvite();
+  const configuredInvite = import.meta.env.VITE_CONCORD_INVITE_URL as string | undefined;
+  const inviteUrl = invite?.naddr && invite.tokenHex ? `${invite.naddr}#${encodeInviteFragment(invite.tokenHex, invite.relays)}` : configuredInvite;
   const relay = useMemo(() => {
-    if (!signer || !channelId) return null;
+    if (inviteUrl || !signer || !channelId) return null;
     return new ConcordRelayClient(CONCORD_RELAY_URL, signer as never);
-  }, [signer, channelId]);
+  }, [signer, channelId, inviteUrl]);
   // Held kind-33302 keys win (private channels especially); the labeled POC
   // key is only the fallback for communities the list does not hold yet.
   // A held channel also fixes the canonical channel id and epoch its rumors carry.
@@ -49,6 +56,8 @@ export default function ChatPage() {
       </div>
     );
   }
+  if (inviteUrl && !signer) return <p role="alert">Your account signer is unavailable. Reconnect your account to use chat.</p>;
+  if (inviteUrl && signer && user) return <CommunityChatPage key={user.pubkey} inviteUrl={inviteUrl} signer={signer as never} pubkey={user.pubkey} communityId={communityId} channelId={channelId} threadId={threadId} />;
   const control = user ? foldControlEditions(user.pubkey, []) : null;
   const live = foldChatRumors(binding ? channelRumors(rumors, binding.channelId) : []);
   return (

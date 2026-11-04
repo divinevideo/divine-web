@@ -7,7 +7,7 @@ import { controlGroups, openControlEditions, foldControlState, citationSatisfied
 import { channelsView } from './concord-core/community';
 import { checkChannelBinding, openWrap } from './concord-core/stream';
 import { foldTimeline, type OpenedChat } from './concord-core/chat';
-import { canActOnMember, Permissions } from './concord-core/roles';
+import { canActOnMember, isAuthorized, Permissions } from './concord-core/roles';
 import type { CommunityV2, ChannelV2 } from './concord-core/types';
 import type { Rumor } from './protocol';
 
@@ -57,7 +57,7 @@ export function readCommunityChat(wraps: NostrEvent[], channel: ChannelV2, commu
   return foldTimeline(opened, {
     banned: folded.banned,
     canDelete: (actor, target, action) => citationSatisfied(folded, community.id, actor, action?.citation) && canActOnMember(folded.roster, actor, community.owner, target, Permissions.MANAGE_MESSAGES),
-    canSetTimer: actor => actor === community.owner,
+    canSetTimer: actor => isAuthorized(folded.roster, actor, community.owner, Permissions.MANAGE_METADATA),
   }).messages.map(event => ({ id: event.rumorId, pubkey: event.author, kind: event.kind, content: event.content, tags: event.tags, created_at: event.createdAt }));
 }
 
