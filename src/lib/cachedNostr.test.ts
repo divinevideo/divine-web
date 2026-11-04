@@ -129,6 +129,19 @@ describe('createCachedNostr', () => {
     }
   });
 
+  it('starts the remote deletion lookup without waiting for the local cache', async () => {
+    const { base, nostr } = listClient([]);
+    let releaseLocal!: (events: NostrEvent[]) => void;
+    mockEventCache.query.mockReturnValue(new Promise<NostrEvent[]>(resolve => { releaseLocal = resolve; }));
+
+    const query = nostr.query([{ kinds: [30005], authors: [listEvent.pubkey] }]);
+    await vi.waitFor(() => expect(mockEventCache.query).toHaveBeenCalled());
+    await vi.waitFor(() => expect(base.query).toHaveBeenCalledTimes(2));
+
+    releaseLocal([]);
+    await expect(query).resolves.toEqual([listEvent]);
+  });
+
   it('preserves remote lists when the optional local deletion cache is unavailable', async () => {
     const { nostr } = listClient([]);
     mockEventCache.query.mockRejectedValue(new Error('Storage unavailable'));

@@ -57,8 +57,10 @@ export function createCachedNostr<T extends NostrClient>(
     let results = discoveryFilters.length > 0 ? response.filter(event => matchFilters(filters, event)) : response;
     const deletionFilters = buildListDeletionFilters(results);
     if (deletionFilters.length > 0) {
-      const localDeletions = await eventCache.query(deletionFilters).catch(() => []);
-      const deletions = opts?.signal?.aborted ? [] : await baseNostr.query(deletionFilters, opts);
+      const [localDeletions, deletions] = await Promise.all([
+        eventCache.query(deletionFilters).catch((): NostrEvent[] => []),
+        opts?.signal?.aborted ? [] : baseNostr.query(deletionFilters, opts),
+      ]);
       results = excludeDeletedListEvents(results, [...response, ...localDeletions, ...deletions]);
     }
     // debugLog(`[CachedNostr] WebSocket returned ${results.length} events in ${(performance.now() - _wsStart).toFixed(0)}ms`);
