@@ -8,9 +8,10 @@ import { sealRumor, wrapSeal } from '@/lib/chat/concord-core/stream';
 import { authorityChangeEvidence, communityWatchKeys, type AuthorityChange } from '@/lib/chat/authorityChanges';
 import type { Rumor } from '@/lib/chat/protocol';
 
-type Session = { community: CommunityV2; control: FoldedControl; relays: CommunityRelay[]; pause: (change: AuthorityChange) => void; active: () => boolean };
+type Session = { generation: number; community: CommunityV2; control: FoldedControl; relays: CommunityRelay[]; pause: (change: AuthorityChange) => void; active: () => boolean };
 export function useCommunityChat(inviteUrl: string, signer: CommunitySigner, channelRef?: string) {
   const joined = useRef<string>();
+  const controlGeneration = useRef(0);
   const fence = useRef({ dissolved: false, rootEpoch: 0n, channels: new Map<string, bigint>() });
   const [channelReady, setChannelReady] = useState(false);
   const [session, setSession] = useState<Session>();
@@ -74,11 +75,15 @@ export function useCommunityChat(inviteUrl: string, signer: CommunitySigner, cha
       for (const batch of batches) for (const event of batch) controlWraps.set(event.id, event);
       const refold = () => {
         if (disposed) return;
+        // React may batch this fold behind an external signer's response.
+        // Fence the old authority synchronously; a rerender is not a write gate.
+        controlGeneration.current++;
+        live.current = { session: undefined, channel: undefined, status: 'failure' };
         const control = foldCommunity(community, [...controlWraps.values()]);
         requireCompleteCommunity(control);
         const change = authorityChangeEvidence([...controlWraps.values()], watch, community, control);
         if (change) { pause(change); return; }
-        setSession({ community, control, relays, pause, active: () => !paused && !disposed }); setStatus('ready'); setError(undefined);
+        setSession({ generation: controlGeneration.current, community, control, relays, pause, active: () => !paused && !disposed }); setStatus('ready'); setError(undefined);
       };
       refold();
       if (paused || disposed) return;
@@ -134,20 +139,21 @@ export function useCommunityChat(inviteUrl: string, signer: CommunitySigner, cha
   live.current = { session, channel, status };
   useEffect(() => () => { live.current = { session: undefined, channel: undefined, status: 'failure' }; }, []);
   const send = async (rumor: Rumor) => {
-    if (!session || !channel || !channelReady || status !== 'ready' || session.control.banned.has(rumor.pubkey)) throw new Error('Chat is not ready to send.');
+    if (!session || session.generation !== controlGeneration.current || !channel || !channelReady || status !== 'ready' || session.control.banned.has(rumor.pubkey)) throw new Error('Chat is not ready to send.');
+    const generation = session.generation;
     const group = channel.current.group;
     if (!rumor.id) throw new Error('Message has no event identity');
     const coordinate = `${session.community.idHex}:${session.community.rootEpoch}`;
     if (joined.current !== coordinate) {
       const join = await sealGuestbook(buildJoinRumor(rumor.pubkey, Date.now()), currentGuestbookGroup(session.community), signer);
-      if (live.current.session !== session || live.current.status !== 'ready') throw new Error('Chat changed before joining');
+      if (controlGeneration.current !== generation || live.current.session !== session || live.current.status !== 'ready') throw new Error('Chat changed before joining');
       await Promise.any(session.relays.map(relay => relay.publish(join)));
       joined.current = coordinate;
     }
     const seal = await sealRumor({ ...rumor, id: rumor.id }, 20013, group, signer);
     // The account/channel can change while an external signer is answering.
     // Disposed relays reject instead of queuing a late send on a new session.
-    if (live.current.session !== session || live.current.channel !== channel || live.current.status !== 'ready' || live.current.session.control.banned.has(rumor.pubkey)) throw new Error('Chat changed before this message was sent.');
+    if (controlGeneration.current !== generation || live.current.session !== session || live.current.channel !== channel || live.current.status !== 'ready' || live.current.session.control.banned.has(rumor.pubkey)) throw new Error('Chat changed before this message was sent.');
     const wrap = wrapSeal(seal, group);
     await Promise.any(session.relays.map(relay => relay.publish(wrap)));
     setWraps(current => current.some(item => item.id === wrap.id) ? current : [...current, wrap]);
