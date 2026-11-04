@@ -4,6 +4,7 @@
 import type { NostrEvent, NostrFilter } from '@nostrify/nostrify';
 import { eventCache } from './eventCache';
 import { debugLog } from './debug';
+import { isListPublication } from '@/lib/publishListToPrimary';
 import {
   LIST_KINDS,
   buildListDeletionFilters,
@@ -31,6 +32,25 @@ async function queryListPhase(client: NostrClient, filters: NostrFilter[], opts?
     return events;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+async function readLocalListDeletions(filters: NostrFilter[], signal?: AbortSignal): Promise<NostrEvent[]> {
+  let timer!: ReturnType<typeof setTimeout>;
+  let cancel!: () => void;
+  const deadline = new Promise<NostrEvent[]>(resolve => {
+    cancel = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => resolve([]), 0);
+    };
+    timer = setTimeout(() => resolve([]), signal?.aborted ? 0 : 1500);
+    signal?.addEventListener('abort', cancel, { once: true });
+  });
+  try {
+    return await Promise.race([eventCache.query(filters).catch((): NostrEvent[] => []), deadline]);
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', cancel);
   }
 }
 
@@ -76,11 +96,12 @@ export function createCachedNostr<T extends NostrClient>(
     const deletionFilters = buildListDeletionFilters(results);
     if (deletionFilters.length > 0) {
       const [localDeletions, deletions] = await Promise.all([
-        eventCache.query(deletionFilters).catch((): NostrEvent[] => []),
+        readLocalListDeletions(deletionFilters, opts?.signal),
         opts?.signal?.aborted ? [] : queryListPhase(baseNostr, deletionFilters, opts),
       ]);
       results = excludeDeletedListEvents(results, [...response, ...localDeletions, ...deletions]);
     }
+    if (opts?.requireComplete) opts.signal?.throwIfAborted();
     // debugLog(`[CachedNostr] WebSocket returned ${results.length} events in ${(performance.now() - _wsStart).toFixed(0)}ms`);
 
     // Cache the results if cacheable
@@ -97,7 +118,12 @@ export function createCachedNostr<T extends NostrClient>(
     await baseNostr.event(event, opts);
 
     // Cache the event
-    void eventCache.event(event).catch(error => debugLog('[CachedNostr] Local event cache write failed:', error));
+    const cacheWrite = eventCache.event(event);
+    if (isListPublication(event)) {
+      void cacheWrite.catch(error => debugLog('[CachedNostr] Local event cache write failed:', error));
+    } else {
+      await cacheWrite;
+    }
     debugLog('[CachedNostr] Event published and cached:', event.id);
   };
 

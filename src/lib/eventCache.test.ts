@@ -65,6 +65,8 @@ describe('EventCache', () => {
   const originalKeyRange = Object.getOwnPropertyDescriptor(globalThis, 'IDBKeyRange');
 
   afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
     vi.resetModules();
     Object.defineProperty(globalThis, 'indexedDB', {
       writable: true,
@@ -72,6 +74,28 @@ describe('EventCache', () => {
     });
     if (originalKeyRange) Object.defineProperty(globalThis, 'IDBKeyRange', originalKeyRange);
     else delete (globalThis as { IDBKeyRange?: unknown }).IDBKeyRange;
+  });
+
+  it('returns healthy relay results when the actual IndexedDB open is blocked', async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(globalThis, 'indexedDB', {
+      writable: true, value: { open: vi.fn().mockReturnValue({}) },
+    });
+    const { createCachedNostr } = await import('./cachedNostr');
+    const transport = {
+      event: vi.fn(),
+      query: vi.fn().mockResolvedValueOnce([staleList]).mockResolvedValueOnce([]),
+    };
+    const controller = new AbortController();
+    let result: NostrEvent[] | undefined;
+    const pending = createCachedNostr(transport).query([{ kinds: [30005] }], { signal: controller.signal })
+      .then(events => { result = events; });
+    setTimeout(() => controller.abort(), 50);
+
+    await vi.advanceTimersByTimeAsync(51);
+
+    expect(result).toEqual([staleList]);
+    await pending;
   });
 
   it.each([undefined, 10])('retains memory deletion markers with a query limit of %s', async (limit) => {

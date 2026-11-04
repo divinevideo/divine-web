@@ -457,7 +457,9 @@ addresses and event IDs for owner-authored kind-5 deletion requests before
 returning list events. Deletion queries target only returned list addresses
 and event IDs, in a separate request; there is no network-wide deletion scan.
 Each network phase is capped at 1.5 seconds, leaving time for the targeted
-lookup within the caller's deadline. Displays can use partial results.
+lookup within the caller's deadline. The optional local deletion lookup is
+also capped at 1.5 seconds and reacts to caller cancellation, so blocked
+IndexedDB cannot hold a completed relay read open. Displays can use partial results.
 Membership mutations request complete reads and reject aborted owner or
 participant lookups before publishing, rather than falling back to stale owner
 membership. The shared
@@ -481,7 +483,8 @@ permanent rejections are not retried. A disabled canonical primary fails before
 signing. Existing fanout runs after primary acknowledgement as best-effort
 replication, and its failure does not undo a successful primary save.
 The cached client forwards directed relay options and deadlines unchanged;
-local cache writes are best effort and do not delay relay acknowledgement.
+local list-event cache writes are best effort and do not delay relay
+acknowledgement. Non-list cache-write semantics remain unchanged.
 Writes fan out to the primary relay plus `PROFILE_RELAYS`
 for kind 0/3/10011, list kinds 30000/30001/30005, and NIP-09 deletion
 requests whose `k` tag targets one of those list kinds. Other writes use

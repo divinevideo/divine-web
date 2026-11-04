@@ -137,6 +137,65 @@ describe('createCachedNostr', () => {
     }
   });
 
+  it('preserves awaited cache writes for non-list publications', async () => {
+    vi.useFakeTimers();
+    let release!: () => void;
+    mockEventCache.event.mockReturnValue(new Promise<void>(resolve => { release = resolve; }));
+    const base = { query: vi.fn(), event: vi.fn().mockResolvedValue(undefined) };
+    let completed = false;
+    const pending = createCachedNostr(base).event(contactEvent).then(() => { completed = true; });
+    try {
+      await vi.advanceTimersByTimeAsync(0);
+      expect(completed).toBe(false);
+    } finally {
+      release();
+      await pending;
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([false, true])('bounds optional local deletion reads (caller aborted: %s)', async (abort) => {
+    vi.useFakeTimers();
+    try {
+      mockEventCache.query.mockReturnValue(new Promise(() => {}));
+      const { nostr } = listClient([]);
+      const controller = new AbortController();
+      let result: NostrEvent[] | undefined;
+      const pending = nostr.query([{ kinds: [30005] }], { signal: controller.signal })
+        .then(events => { result = events; });
+      if (abort) setTimeout(() => controller.abort(), 50);
+
+      await vi.advanceTimersByTimeAsync(abort ? 51 : 1500);
+
+      expect(result).toEqual([listEvent]);
+      await pending;
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it('rejects a strict read aborted while optional storage is blocked', async () => {
+    vi.useFakeTimers();
+    try {
+      mockEventCache.query.mockReturnValue(new Promise(() => {}));
+      const { nostr } = listClient([]);
+      const controller = new AbortController();
+      const opts = { signal: controller.signal, requireComplete: true };
+      let failure: unknown;
+      const pending = nostr.query([{ kinds: [30005] }], opts).catch(error => { failure = error; });
+      setTimeout(() => controller.abort(), 50);
+
+      await vi.advanceTimersByTimeAsync(51);
+
+      expect(failure).toEqual(expect.objectContaining({ name: 'AbortError' }));
+      await pending;
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
   it('forwards directed event destinations and timeout signals to the underlying pool', async () => {
     const base = { query: vi.fn(), event: vi.fn().mockResolvedValue(undefined) };
     const opts = { relays: ['wss://relay.divine.video'], signal: new AbortController().signal };
