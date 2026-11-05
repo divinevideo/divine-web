@@ -1,4 +1,4 @@
-import { House as Home, Compass, MagnifyingGlass as Search, Bell, DotsThreeVertical as MoreVertical, Info, Code as Code2, Question as HelpCircle, Headphones, FileText, Sun, Moon, ChatCircle as MessageCircle } from '@phosphor-icons/react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, DotsThreeVertical as MoreVertical, Info, Code as Code2, Question as HelpCircle, Headphones, FileText, Sun, Moon, ChatCircle as MessageCircle, ChatsCircle } from '@phosphor-icons/react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
@@ -9,6 +9,7 @@ import { useUnreadNotificationCount } from '@/hooks/useNotifications';
 import { useDmCapability, useUnreadDmCount } from '@/hooks/useDirectMessages';
 import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
 import { cn } from '@/lib/utils';
+import { isChatEnabled } from '@/lib/chat/config';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -161,6 +162,12 @@ export function AppHeader({ className }: AppHeaderProps) {
               align="end"
               className="max-h-[var(--radix-dropdown-menu-content-available-height)] w-56 overflow-y-auto"
             >
+              {isChatEnabled() && (
+                <DropdownMenuItem onClick={() => navigate('/chat')} className="cursor-pointer hover:bg-muted focus:bg-muted">
+                  <ChatsCircle className="mr-2 h-4 w-4" />
+                  <span>{t('nav.communityChat')}</span>
+                </DropdownMenuItem>
+              )}
               {/* About Divine section */}
               <DropdownMenuItem
                 onClick={() => window.open('https://about.divine.video/', '_blank')}

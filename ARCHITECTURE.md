@@ -134,10 +134,28 @@ The retired `/discovery/new` chronological feed redirects to
 `/discovery/hot`; Discovery does not expose or mount an all-new-video feed.
 Retired `/invite/:code` links discard the obsolete code and redirect signed-out
 visitors to ordinary registration; signed-in visitors return to `/home`.
-The Concord chat proof of concept (`/chat/*`, and `/invite/<naddr>` links whose
-code starts with `naddr1`) is routed only in dev builds and in builds with
-`VITE_CHAT_POC_ENABLED=true`, which PR previews set; production builds keep
-every `/invite/:code` link on the retired-invite redirect.
+Community chat `/chat/*` and `/invite/<naddr>` capability routes always support
+verified real invites. Without a held or configured invite they show an
+invite-required state; only dev and `VITE_CHAT_POC_ENABLED=true` builds permit
+POC fallback. A nonempty `VITE_CONCORD_INVITE_URL` enables the default community
+and shell navigation through [`src/lib/chat/config.ts`](./src/lib/chat/config.ts).
+The desktop sidebar and mobile More menu expose that entry. Production’s Build
+step reads public repository variable `vars.VITE_CONCORD_INVITE_URL`; PR previews
+keep their POC flag and never inject the production default.
+[`ChatInviteProvider`](./src/contexts/ChatInviteProvider.tsx), above route changes,
+holds only the verified invite selection in memory for the current account.
+Canonical channel navigation keeps the selected community even when a different
+default is configured. Logout/account changes synchronously clear the selection
+and fence stale verification callbacks. Pending pre-login invites are consumed
+after verification. Reloading without a default requires the original invite
+again; no persistent capability/key cache is added.
+Capability links therefore support private acceptance of the exact production
+revision before publishing a default. Their fragment remains client-side.
+Missing or malformed explicit invite fragments fail closed rather than selecting
+a stashed invite, default community, or POC. A configured real-community load
+failure likewise never substitutes POC channels. Other retired `/invite/:code`
+links retain their redirect behavior. Release steps are in
+[`docs/community-chat-release.md`](./docs/community-chat-release.md).
 `/discovery/:tab` accepts the built-in Discovery tabs plus the currently
 eligible server-configured featured tab slug, when Funnelcake serves one.
 Public profiles expose a compact mixed NIP-51 list shelf and a filterable

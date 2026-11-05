@@ -2,7 +2,7 @@
 // ABOUTME: Shows main nav, login/signup, expandable Divine links section
 
 import { Link, useLocation } from 'react-router-dom';
-import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp, Handshake, Heart, Trophy } from '@phosphor-icons/react';
+import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp, Handshake, Heart, Trophy, ChatsCircle } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
@@ -21,6 +21,7 @@ import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { getSubdomainUser } from '@/hooks/useSubdomainUser';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { cn } from '@/lib/utils';
+import { isChatEnabled } from '@/lib/chat/config';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
@@ -208,6 +209,15 @@ export function AppSidebar({ className }: { className?: string }) {
             onClick={() => navigate('/services')}
             isActive={isActive('/services')}
           />
+
+          {isChatEnabled() && (
+            <NavItem
+              icon={<ChatsCircle className="h-[18px] w-[18px]" weight={location.pathname.startsWith('/chat') ? 'fill' : 'bold'} />}
+              label={t('nav.communityChat')}
+              onClick={() => navigate('/chat')}
+              isActive={location.pathname === '/chat' || location.pathname.startsWith('/chat/')}
+            />
+          )}
 
           {user && canUseDirectMessages && (
             <NavItem

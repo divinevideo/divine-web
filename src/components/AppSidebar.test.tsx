@@ -92,6 +92,7 @@ describe('AppSidebar', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   function setLanguages(languages: readonly string[]) {
@@ -100,6 +101,16 @@ describe('AppSidebar', () => {
       value: languages,
     });
   }
+
+  it.each([true, false])('offers configured community chat in production (configured: %s)', configured => {
+    vi.stubEnv('DEV', false); vi.stubEnv('VITE_CHAT_POC_ENABLED', 'false');
+    vi.stubEnv('VITE_CONCORD_INVITE_URL', configured ? 'https://synthetic.example/invite/naddr1synthetic#synthetic' : '');
+    render(<MemoryRouter><AppSidebar /></MemoryRouter>);
+    if (configured) {
+      fireEvent.click(screen.getByRole('button', { name: 'Chat de la comunidad' }));
+      expect(mockNavigate).toHaveBeenCalledWith('/chat');
+    } else expect(screen.queryByRole('button', { name: 'Chat de la comunidad' })).not.toBeInTheDocument();
+  });
 
   it('renders translated shell labels and a translated DMCA action', () => {
     render(

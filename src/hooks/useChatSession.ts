@@ -2,15 +2,18 @@
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 // ABOUTME: Chat session hook — login gate, invite resume, account-switch isolation.
 import { useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useCurrentUser } from './useCurrentUser';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { ChatStore, chatQueryScope } from '@/lib/chat/store';
-import { consumeInvite, parseInviteHash, parseInviteUrl, peekInvite, stashInvite, stripInviteFromUrl } from '@/lib/chat/invite';
+import { consumeInvite, parseInviteHash, parseInviteUrl, peekInvite, resumeInviteUrl, stashInvite, stripInviteFromUrl } from '@/lib/chat/invite';
 import { probeSignerCapabilities } from '@/lib/chat/protocol';
 
 export function useChatSession() {
   const { user, signer, isAuthPending } = useCurrentUser();
+  const { pathname, hash } = useLocation();
+  const invalidExplicitInvite = useMemo(() => pathname.startsWith('/invite/naddr1') &&
+    !resumeInviteUrl(parseInviteUrl(pathname, hash)), [pathname, hash]);
   const { openLoginDialog } = useLoginDialog();
   const navigate = useNavigate();
   const storeRef = useRef<ChatStore | null>(null);
@@ -21,25 +24,26 @@ export function useChatSession() {
 
   // Capture invite fragment before anything can log the URL; never sent to analytics.
   useEffect(() => {
-    const invite = parseInviteUrl(window.location.pathname, window.location.hash) ?? parseInviteHash(window.location.hash);
+    if (invalidExplicitInvite) return;
+    const invite = parseInviteUrl(pathname, hash) ?? parseInviteHash(hash);
     if (invite) { stashInvite(invite); stripInviteFromUrl(); }
-  }, []);
+  }, [invalidExplicitInvite, pathname, hash]);
 
   useEffect(() => {
     if (!pubkey) {
       storeRef.current?.dispose(); storeRef.current = null;
-      if (!isAuthPending && !promptedLoginRef.current) { promptedLoginRef.current = true; openLoginDialog(); }
+      if (!invalidExplicitInvite && !isAuthPending && !promptedLoginRef.current) { promptedLoginRef.current = true; openLoginDialog(); }
       return;
     }
     promptedLoginRef.current = false;
     if (storeRef.current && storeRef.current.scope !== chatQueryScope(pubkey)) { storeRef.current.dispose(); storeRef.current = null; }
     if (!storeRef.current) storeRef.current = new ChatStore(pubkey);
-    if (peekInvite()?.communityId) {
+    if (!invalidExplicitInvite && peekInvite()?.communityId) {
       const invite = consumeInvite();
       navigate(`/chat/${invite!.communityId}`, { replace: true });
     }
     // Token-only spec invites stay stashed until the bundle is fetched/decrypted; the fragment never leaves the client.
-  }, [pubkey, isAuthPending, navigate, openLoginDialog]);
+  }, [pubkey, isAuthPending, navigate, openLoginDialog, invalidExplicitInvite]);
 
   useEffect(() => () => { storeRef.current?.dispose(); storeRef.current = null; }, []);
   const capabilities = useMemo(() => probeSignerCapabilities(signer as never), [signer]);

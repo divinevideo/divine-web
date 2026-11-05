@@ -16,7 +16,7 @@ vi.mock('@/components/auth/LoginArea', () => ({
   LoginArea: () => <button type="button">Log in</button>,
 }));
 
-vi.mock('./CommunityChatPage', () => ({ CommunityChatPage: ({ inviteUrl, onVerified }: { inviteUrl: string; onVerified?: () => void }) => <><p data-testid="real-invite">{inviteUrl}</p><button onClick={onVerified}>Community verified</button></> }));
+vi.mock('./CommunityChatPage', () => ({ CommunityChatPage: ({ inviteUrl, onVerified }: { inviteUrl: string; onVerified?: (communityId: string) => void }) => <><p data-testid="real-invite">{inviteUrl}</p><button onClick={() => onVerified?.('synthetic-community')}>Community verified</button></> }));
 afterEach(() => { vi.unstubAllEnvs(); session.loggedIn = false; session.pubkey = 'a'.repeat(64); sessionStorage.clear(); window.history.replaceState(null, '', '/'); });
 
 describe('ChatPage', () => {

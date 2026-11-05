@@ -7,7 +7,7 @@ import { submitRoomReport } from '@/lib/chat/reports';
 import type { CommunitySigner } from '@/lib/chat/communityRelay';
 
 export function CommunityChatPage({ inviteUrl, signer, pubkey, communityId, channelId, threadId, onVerified }: {
-  inviteUrl: string; signer: CommunitySigner; pubkey: string; communityId?: string; channelId?: string; threadId?: string; onVerified?: () => void;
+  inviteUrl: string; signer: CommunitySigner; pubkey: string; communityId?: string; channelId?: string; threadId?: string; onVerified?: (communityId: string) => void;
 }) {
   const navigate = useNavigate();
   const reporting = useRef<AbortController>();
@@ -15,7 +15,7 @@ export function CommunityChatPage({ inviteUrl, signer, pubkey, communityId, chan
   const chat = useCommunityChat(inviteUrl, signer, channelId);
   const id = chat.session?.community.idHex;
   const mismatch = Boolean(id && communityId && communityId !== id);
-  useEffect(() => { if (chat.session && chat.status === 'ready' && !mismatch) onVerified?.(); }, [chat.session, chat.status, mismatch, onVerified]);
+  useEffect(() => { if (chat.session && chat.status === 'ready' && !mismatch) onVerified?.(chat.session.community.idHex); }, [chat.session, chat.status, mismatch, onVerified]);
   useEffect(() => {
     if (id && !communityId) navigate(`/chat/${id}`, { replace: true });
   }, [id, communityId, navigate]);

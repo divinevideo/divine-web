@@ -2,7 +2,7 @@
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { act, renderHook } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LoginDialogProvider, useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -35,6 +35,18 @@ beforeEach(() => {
 });
 
 describe('useChatSession', () => {
+  it.each([false, true])('does not resume a legacy fragment on an explicit real invite (logged in: %s)', loggedIn => {
+    setUser(loggedIn ? ALICE : undefined);
+    sessionStorage.clear();
+    window.history.replaceState(null, '', '/invite/naddr1synthetic#community=demo-community&invite=legacy');
+    try {
+      const { result } = renderHook(() => ({ session: useChatSession(), dialog: useLoginDialog(), location: useLocation() }), { wrapper: ({ children }) => <BrowserRouter><LoginDialogProvider>{children}</LoginDialogProvider></BrowserRouter> });
+      expect(result.current.location.pathname).toBe('/invite/naddr1synthetic');
+      expect(result.current.dialog.isOpen).toBe(false);
+      expect(sessionStorage.getItem('chat:pendingInvite')).toBeNull();
+    } finally { window.history.replaceState(null, '', '/'); sessionStorage.clear(); }
+  });
+
   it('waits for authentication before prompting a logged-out visitor', () => {
     setUser(undefined, true);
     const { result, rerender } = renderHook(() => ({ session: useChatSession(), dialog: useLoginDialog() }), { wrapper });
