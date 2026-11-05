@@ -45,6 +45,7 @@ jobs:
 
       - name: Build
         env:
+          VITE_CONCORD_INVITE_URL: ${{ vars.VITE_CONCORD_INVITE_URL }}
           VITE_PRODUCT_ANALYTICS_ENABLED: 'false'
         run: npm run build
 
