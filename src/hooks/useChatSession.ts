@@ -6,14 +6,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useCurrentUser } from './useCurrentUser';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { ChatStore, chatQueryScope } from '@/lib/chat/store';
-import { classifyInvitePath, consumeInvite, parseInviteHash, parseInviteUrl, peekInvite, resumeInviteUrl, stashInvite, stripInviteFromUrl } from '@/lib/chat/invite';
+import { classifyInvitePath, consumeInvite, parseExplicitInvite, parseInviteHash, parseInviteUrl, peekInvite, resumeInviteUrl, stashInvite, stripInviteFromUrl } from '@/lib/chat/invite';
 import { probeSignerCapabilities } from '@/lib/chat/protocol';
 
 export function useChatSession() {
   const { user, signer, isAuthPending } = useCurrentUser();
   const { pathname, hash } = useLocation();
   const invalidExplicitInvite = useMemo(() => classifyInvitePath(pathname).real &&
-    !resumeInviteUrl(parseInviteUrl(pathname, hash)), [pathname, hash]);
+    !resumeInviteUrl(parseExplicitInvite(pathname, hash)), [pathname, hash]);
   const { openLoginDialog } = useLoginDialog();
   const navigate = useNavigate();
   const storeRef = useRef<ChatStore | null>(null);

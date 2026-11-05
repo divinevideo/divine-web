@@ -30,6 +30,14 @@ export function parseInviteUrl(pathname: string, hash: string): Invite | null {
   if (!frag) return null;
   return { ...frag, naddr: code };
 }
+/** An explicit invite link's own fragment. A login redirect returns to the link without
+ *  its fragment, so a fragment-less link resumes the pending invite for that same locator. */
+export function parseExplicitInvite(pathname: string, hash: string): Invite | null {
+  const captured = parseInviteUrl(pathname, hash);
+  if (captured || hash.replace(/^#/, '')) return captured;
+  const pending = peekInvite();
+  return pending?.naddr && pending.naddr === classifyInvitePath(pathname).code ? pending : null;
+}
 export function stashInvite(invite: Invite): void { try { sessionStorage.setItem(PENDING_INVITE_KEY, JSON.stringify(invite)); } catch { /* private mode */ } }
 /** Read the stashed invite without removing it. */
 export function peekInvite(): Invite | null {

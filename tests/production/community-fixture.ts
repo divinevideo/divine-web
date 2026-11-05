@@ -6,13 +6,13 @@ export const fixture = JSON.parse(readFileSync(new URL('../../test-fixtures/conc
 
 export const otherFixture = JSON.parse(readFileSync(new URL('../../test-fixtures/concord/community-lifecycle.json', import.meta.url), 'utf8')) as typeof import('../../test-fixtures/concord/community-lifecycle.json');
 
-export async function prepareCommunityFixture(page: Page, baseURL: string, tamperBundle = false) {
+export async function prepareCommunityFixture(page: Page, baseURL: string, tamperBundle = false, signedIn = true) {
   const secret = generateSecretKey(); const pubkey = getPublicKey(secret);
   const account = { id: `nsec:${pubkey}`, type: 'nsec', pubkey, createdAt: new Date().toISOString(), data: { nsec: nip19.nsecEncode(secret) } };
   await page.addInitScript(login => {
-    localStorage.setItem('nostr:login', JSON.stringify([login]));
+    if (login) localStorage.setItem('nostr:login', JSON.stringify([login]));
     localStorage.setItem('divine:locale', 'en');
-  }, account);
+  }, signedIn ? account : null);
   await page.route('**/*', route => new URL(route.request().url()).origin === baseURL ? route.continue() : route.abort());
   await page.routeWebSocket('**/*', socket => {
     socket.onMessage(raw => {
@@ -28,4 +28,5 @@ export async function prepareCommunityFixture(page: Page, baseURL: string, tampe
       if (frame[0] === 'EVENT') socket.send(JSON.stringify(['OK', frame[1].id, true, 'synthetic fixture only']));
     });
   });
+  return account;
 }

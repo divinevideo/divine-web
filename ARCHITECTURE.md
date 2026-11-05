@@ -152,9 +152,11 @@ again; no persistent capability/key cache is added.
 Capability links therefore support private acceptance of the exact production
 revision before publishing a default. Their fragment remains client-side.
 Invite classification and locator parsing share React Router matching, including
-case-insensitive route segments and exactly one URI decode. Missing or malformed
-explicit invite fragments fail closed rather than selecting
-a stashed invite, default community, or POC. A configured real-community load
+case-insensitive route segments and exactly one URI decode. A login redirect
+returns to the invite link without its fragment, so a fragment-less link resumes
+the pending pre-login invite for the same locator. Otherwise missing or
+malformed explicit invite fragments fail closed rather than selecting another
+stashed invite, default community, or POC. A configured real-community load
 failure likewise never substitutes POC channels. Other retired `/invite/:code`
 links retain their redirect behavior. Release steps are in
 [`docs/community-chat-release.md`](./docs/community-chat-release.md).
