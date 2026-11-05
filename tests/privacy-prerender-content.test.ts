@@ -9,6 +9,10 @@ function readPrerenderedPrivacy(): string {
     .replace(/\s+/g, ' ');
 }
 
+function readPrivacyPage(): string {
+  return readFileSync(resolve(REPO_ROOT, 'src/pages/PrivacyPage.tsx'), 'utf8').replace(/\s+/g, ' ');
+}
+
 describe('prerendered privacy policy', () => {
   it('keeps the Shorebird update-telemetry disclosure in the prerendered copy', () => {
     const source = readPrerenderedPrivacy();
@@ -35,5 +39,28 @@ describe('prerendered privacy policy', () => {
       expect(prerendered, `prerendered copy must contain: ${sentence}`).toContain(sentence);
       expect(page, `PrivacyPage copy must contain: ${sentence}`).toContain(sentence);
     }
+  });
+
+  it('keeps the notification activity disclosure aligned with the React privacy page', () => {
+    const prerendered = readPrerenderedPrivacy();
+    const page = readPrivacyPage();
+
+    const disclosureSentences = [
+      "When you're signed in, the app tells Divine when you open and close it, and checks in once a minute while it's open.",
+      'We use this only to time notifications.',
+      'Current status is kept for three minutes, and visit counts for up to 90 days.',
+      "It isn't shown to anyone.",
+    ];
+
+    for (const sentence of disclosureSentences) {
+      expect(prerendered, `prerendered copy must contain: ${sentence}`).toContain(sentence);
+      expect(page, `PrivacyPage copy must contain: ${sentence}`).toContain(sentence);
+    }
+  });
+
+  it('keeps the notification activity effective date on the React privacy page', () => {
+    expect(readPrivacyPage()).toContain(
+      'The notification activity disclosure in Section 4 is effective November 5, 2026.',
+    );
   });
 });
