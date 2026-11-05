@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getSupportDmConversationPath } from '@/lib/dmAccessPolicy';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { initializeI18n } from '@/lib/i18n';
@@ -93,6 +93,17 @@ describe('AppHeader', () => {
     mockSetTheme.mockReset();
     shell.user = null;
     shell.canUseDirectMessages = false;
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+  it.each([true, false])('offers community chat in the mobile More menu (configured: %s)', configured => {
+    vi.stubEnv('DEV', false); vi.stubEnv('VITE_CHAT_POC_ENABLED', 'false');
+    vi.stubEnv('VITE_CONCORD_INVITE_URL', configured ? 'https://synthetic.example/invite/naddr1synthetic#synthetic' : '');
+    render(<MemoryRouter><AppHeader /></MemoryRouter>);
+    if (configured) {
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Chat de la comunidad' }));
+      expect(mockNavigate).toHaveBeenCalledWith('/chat');
+    } else expect(screen.queryByRole('menuitem', { name: 'Chat de la comunidad' })).not.toBeInTheDocument();
   });
 
   it('renders translated shell labels and a translated DMCA action in the more menu', () => {

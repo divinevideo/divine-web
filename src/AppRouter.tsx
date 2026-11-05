@@ -3,13 +3,15 @@
  */
 
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useParams } from "react-router-dom";
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { SignInLoading } from "./components/auth/SignInLoading";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
 import { getSubdomainUser } from "./hooks/useSubdomainUser";
 import { useCurrentUser } from "./hooks/useCurrentUser";
+import { classifyInvitePath } from "@/lib/chat/invite";
+import { ChatInviteProvider } from "@/contexts/ChatInviteProvider";
 
 import Index from "./pages/Index";
 import { NIP19Page } from "./pages/NIP19Page";
@@ -82,12 +84,7 @@ import CollabsPage from "./pages/CollabsPage";
 const BrandPreview = import.meta.env.DEV
   ? lazy(() => import("./pages/_BrandPreview"))
   : null;
-// Chat POC is not for production: on in dev, and in builds that set
-// VITE_CHAT_POC_ENABLED=true (PR previews). Production builds drop it.
-const ChatPage =
-  import.meta.env.DEV || import.meta.env.VITE_CHAT_POC_ENABLED === "true"
-    ? lazy(() => import("./pages/chat/ChatPage"))
-    : null;
+const ChatPage = lazy(() => import("./pages/chat/ChatPage"));
 
 // Concord invite links are /invite/<naddr>#<fragment>, which shares its shape
 // with the retired /invite/:code links; only naddr codes reach the chat page.
@@ -98,8 +95,8 @@ function InviteLinkRoute({
   hasUser: boolean;
   isSessionResolving: boolean;
 }) {
-  const { code } = useParams();
-  if (ChatPage && code?.startsWith("naddr1")) {
+  const { pathname } = useLocation();
+  if (classifyInvitePath(pathname).real) {
     return (
       <Suspense fallback={null}>
         <ChatPage />
@@ -184,16 +181,12 @@ export function AppRouter() {
         </Route>
       )}
 
-      {/* Chat POC — page itself login-gates via useChatSession so invite deep links survive */}
-      {ChatPage && (
-        <>
-          <Route path="/chat" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
-          <Route path="/chat/invite" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
-          <Route path="/chat/:communityId" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
-          <Route path="/chat/:communityId/:channelId" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
-          <Route path="/chat/:communityId/:channelId/thread/:threadId" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
-        </>
-      )}
+      {/* Community chat — the page itself login-gates via useChatSession so invite deep links survive */}
+      <Route path="/chat" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
+      <Route path="/chat/invite" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
+      <Route path="/chat/:communityId" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
+      <Route path="/chat/:communityId/:channelId" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
+      <Route path="/chat/:communityId/:channelId/thread/:threadId" element={<Suspense fallback={null}><ChatPage /></Suspense>} />
 
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
@@ -201,7 +194,7 @@ export function AppRouter() {
   );
 
   return (
-    <BrowserRouter>
+    <ChatInviteProvider account={user?.pubkey}><BrowserRouter>
       <ScrollToTop />
       {/* AnalyticsUserTracker first: it configures the analytics identity that
           AnalyticsPageTracker's identity-linked events depend on. */}
@@ -263,7 +256,7 @@ export function AppRouter() {
           {appShellRoutes}
         </Route>
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter></ChatInviteProvider>
   );
 }
 export default AppRouter;

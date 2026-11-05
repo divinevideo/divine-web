@@ -16,7 +16,7 @@ vi.mock('@/components/auth/LoginArea', () => ({
   LoginArea: () => <button type="button">Log in</button>,
 }));
 
-vi.mock('./CommunityChatPage', () => ({ CommunityChatPage: ({ inviteUrl, onVerified }: { inviteUrl: string; onVerified?: () => void }) => <><p data-testid="real-invite">{inviteUrl}</p><button onClick={onVerified}>Community verified</button></> }));
+vi.mock('./CommunityChatPage', () => ({ CommunityChatPage: ({ inviteUrl, onVerified }: { inviteUrl: string; onVerified?: (communityId: string) => void }) => <><p data-testid="real-invite">{inviteUrl}</p><button onClick={() => onVerified?.('synthetic-community')}>Community verified</button></> }));
 afterEach(() => { vi.unstubAllEnvs(); session.loggedIn = false; session.pubkey = 'a'.repeat(64); sessionStorage.clear(); window.history.replaceState(null, '', '/'); });
 
 describe('ChatPage', () => {
@@ -43,6 +43,28 @@ it.each(['captured', 'stashed', 'legacy-stash'])('opens a standard stock-relay i
   else stashInvite({ naddr: invite.naddr, tokenHex: invite.tokenHex, relays: invite.relays });
   render(<MemoryRouter><ChatPage /></MemoryRouter>);
   expect(screen.getByTestId('real-invite')).toHaveTextContent(`${invite.naddr}${parsed.hash}`);
+});
+
+it('resumes the pending invite when a login redirect returns to its invite link without the fragment', () => {
+  session.loggedIn = true;
+  const parsed = new URL(buildInviteUrl('https://chat.example', 'a'.repeat(64), new Uint8Array(16).fill(9), STOCK_RELAYS));
+  const invite = parseInviteUrl(parsed.pathname, parsed.hash)!;
+  stashInvite(invite);
+  window.history.replaceState(null, '', parsed.pathname);
+  render(<MemoryRouter><ChatPage /></MemoryRouter>);
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.getByTestId('real-invite')).toHaveTextContent(`${invite.naddr}${parsed.hash}`);
+});
+
+it('does not resume a pending invite for a different locator on a fragment-less invite link', () => {
+  session.loggedIn = true;
+  const pending = new URL(buildInviteUrl('https://chat.example', 'a'.repeat(64), new Uint8Array(16).fill(9), STOCK_RELAYS));
+  const opened = new URL(buildInviteUrl('https://chat.example', 'b'.repeat(64), new Uint8Array(16).fill(8), STOCK_RELAYS));
+  stashInvite(parseInviteUrl(pending.pathname, pending.hash)!);
+  window.history.replaceState(null, '', opened.pathname);
+  render(<MemoryRouter><ChatPage /></MemoryRouter>);
+  expect(screen.getByRole('alert')).toHaveTextContent('This community invite is invalid or incomplete.');
+  expect(screen.queryByTestId('real-invite')).not.toBeInTheDocument();
 });
 
 it('consumes a verified pending invite while retaining it for the current account session', () => {

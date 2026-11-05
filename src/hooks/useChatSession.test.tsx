@@ -2,10 +2,12 @@
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { act, renderHook } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LoginDialogProvider, useLoginDialog } from '@/contexts/LoginDialogContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { buildInviteUrl, STOCK_RELAYS } from '@/lib/chat/concord-core/invite';
+import { parseInviteUrl, stashInvite } from '@/lib/chat/invite';
 import { chatQueryScope } from '@/lib/chat/store';
 import { useChatSession } from './useChatSession';
 
@@ -35,6 +37,31 @@ beforeEach(() => {
 });
 
 describe('useChatSession', () => {
+  it.each([false, true])('does not resume a legacy fragment on an explicit real invite (logged in: %s)', loggedIn => {
+    setUser(loggedIn ? ALICE : undefined);
+    sessionStorage.clear();
+    window.history.replaceState(null, '', '/invite/naddr1synthetic#community=demo-community&invite=legacy');
+    try {
+      const { result } = renderHook(() => ({ session: useChatSession(), dialog: useLoginDialog(), location: useLocation() }), { wrapper: ({ children }) => <BrowserRouter><LoginDialogProvider>{children}</LoginDialogProvider></BrowserRouter> });
+      expect(result.current.location.pathname).toBe('/invite/naddr1synthetic');
+      expect(result.current.dialog.isOpen).toBe(false);
+      expect(sessionStorage.getItem('chat:pendingInvite')).toBeNull();
+    } finally { window.history.replaceState(null, '', '/'); sessionStorage.clear(); }
+  });
+
+  it('prompts login on an invite link a login redirect returned to without its fragment', () => {
+    setUser(undefined);
+    sessionStorage.clear();
+    const invite = new URL(buildInviteUrl('https://chat.example', ALICE, new Uint8Array(16).fill(9), STOCK_RELAYS));
+    stashInvite(parseInviteUrl(invite.pathname, invite.hash)!);
+    window.history.replaceState(null, '', invite.pathname);
+    try {
+      const { result } = renderHook(() => ({ session: useChatSession(), dialog: useLoginDialog() }), { wrapper: ({ children }) => <BrowserRouter><LoginDialogProvider>{children}</LoginDialogProvider></BrowserRouter> });
+      expect(result.current.dialog.isOpen).toBe(true);
+      expect(sessionStorage.getItem('chat:pendingInvite')).not.toBeNull();
+    } finally { window.history.replaceState(null, '', '/'); sessionStorage.clear(); }
+  });
+
   it('waits for authentication before prompting a logged-out visitor', () => {
     setUser(undefined, true);
     const { result, rerender } = renderHook(() => ({ session: useChatSession(), dialog: useLoginDialog() }), { wrapper });

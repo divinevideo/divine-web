@@ -1,11 +1,12 @@
 import { Outlet } from 'react-router-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import { createHead, UnheadProvider } from '@unhead/react/client';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getProductAnalyticsUtm } from '@/lib/analyticsClient';
 import { initializeI18n } from '@/lib/i18n';
 import AppRouter from './AppRouter';
+import communityFixture from '../test-fixtures/concord/community-interop.json';
 
 interface CurrentUserMock {
   user: { pubkey: string } | undefined;
@@ -365,5 +366,27 @@ describe('AppRouter', () => {
     expect(
       screen.getByRole('heading', { name: 'Delete your Divine account' }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('production community route entry', () => {
+  afterEach(() => { vi.unstubAllEnvs(); });
+  it.each([
+    { name: 'configured community', invite: communityFixture.inviteUrl, preview: false, path: '/chat' },
+    { name: 'configured community invite deep link', invite: communityFixture.inviteUrl, preview: false, path: '/invite/naddr1synthetic' },
+    { name: 'capability invite without a configured default', invite: '', preview: false, path: new URL(communityFixture.inviteUrl).pathname },
+    { name: 'real-only entry without configuration', invite: '', preview: false, path: '/chat' },
+    { name: 'invalid configured community', invite: 'invalid configured invite', preview: false, path: '/chat' },
+    { name: 'existing preview POC', invite: '', preview: true, path: '/chat' },
+  ])('mounts the chat page for $name in a production build', async ({ invite, preview, path }) => {
+    vi.stubEnv('DEV', false); vi.stubEnv('PROD', true);
+    vi.stubEnv('VITE_CHAT_POC_ENABLED', preview ? 'true' : 'false');
+    vi.stubEnv('VITE_CONCORD_INVITE_URL', invite);
+    vi.resetModules();
+    const { default: ProductionRouter } = await import('./AppRouter');
+    mockUseCurrentUser.mockReturnValue({ user: undefined, isAuthPending: false });
+    window.history.replaceState({}, '', path);
+    render(<UnheadProvider head={createHead()}><ProductionRouter /></UnheadProvider>);
+    expect(await screen.findByTestId('chat-page')).toBeInTheDocument();
   });
 });

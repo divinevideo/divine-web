@@ -1,8 +1,9 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-// ABOUTME: Lazy /chat routes — community/channel/thread/invite in one POC shell page.
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+// ABOUTME: Lazy /chat routes — community/channel/thread/invite in one page; the POC shell is a dev/preview fallback only.
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
+import { ChatInviteContext } from '@/contexts/ChatInviteContext';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { ChatShell } from '@/components/chat/ChatShell';
 import { useChatSession } from '@/hooks/useChatSession';
@@ -10,18 +11,27 @@ import { canPostToChat, foldChatRumors, foldControlEditions, heldStream, type Ru
 import { channelRumors, ConcordRelayClient, pocStreamKey } from '@/lib/chat/relay';
 import { CONCORD_RELAY_URL } from '@/lib/chat/store';
 import { CommunityChatPage } from './CommunityChatPage';
-import { consumeInvite, peekInvite, parseInviteUrl, resumeInviteUrl } from '@/lib/chat/invite';
+import { classifyInvitePath, consumeInvite, peekInvite, parseExplicitInvite, parseInviteUrl, resumeInviteUrl } from '@/lib/chat/invite';
 
 export default function ChatPage() {
   const { communityId, channelId, threadId } = useParams();
+  const { key: routeKey } = useLocation();
   const { isLoggedIn, isAuthPending, user, signer, store } = useChatSession();
   const [rumors, setRumors] = useState<Rumor[]>([]);
+  const configuredInvite = import.meta.env.VITE_CONCORD_INVITE_URL as string | undefined;
   const account = user?.pubkey;
-  const [invitation, setInvitation] = useState(() => {
-    const invite = parseInviteUrl(window.location.pathname, window.location.hash) ?? peekInvite();
-    return { account, invite, real: Boolean(resumeInviteUrl(invite)) };
-  });
-  if (invitation.account !== account) {
+  const retained = useContext(ChatInviteContext);
+  const captureInvitation = () => {
+    const explicit = classifyInvitePath(window.location.pathname).real;
+    const captured = (explicit ? parseExplicitInvite : parseInviteUrl)(window.location.pathname, window.location.hash);
+    const held = retained?.account === account && (communityId ? retained?.selection?.communityId === communityId : !configuredInvite)
+      ? retained?.selection?.invite ?? null : null;
+    const invite = captured ?? (explicit ? null : peekInvite() ?? held);
+    return { routeKey, account, invite, real: explicit || Boolean(resumeInviteUrl(invite)), invalid: explicit && !resumeInviteUrl(captured) };
+  };
+  const [invitation, setInvitation] = useState(captureInvitation);
+  if (invitation.routeKey !== routeKey) setInvitation(captureInvitation());
+  else if (invitation.account !== account) {
     setInvitation({ ...invitation, account, invite: invitation.account ? null : invitation.invite });
   }
   const invite = invitation.account === account ? invitation.invite : null;
@@ -30,9 +40,13 @@ export default function ChatPage() {
     if (invite?.naddr && pending?.naddr === invite.naddr && pending.tokenHex === invite.tokenHex) consumeInvite();
   }, [invite]);
   useEffect(() => () => { if (invitation.account) clearPendingInvite(); }, [invitation.account, clearPendingInvite]);
-  const configuredInvite = import.meta.env.VITE_CONCORD_INVITE_URL as string | undefined;
-  const inviteUrl = resumeInviteUrl(invite) ?? configuredInvite;
-  const needsInvite = invitation.real && !inviteUrl;
+  const inviteUrl = invitation.invalid ? undefined : resumeInviteUrl(invite) ?? configuredInvite;
+  const pocEnabled = import.meta.env.DEV || import.meta.env.VITE_CHAT_POC_ENABLED === 'true';
+  const needsInvite = !inviteUrl && (invitation.real || !pocEnabled);
+  const verified = useCallback((verifiedCommunityId: string) => {
+    if (invite && account && retained?.account === account) retained.retain(verifiedCommunityId, invite);
+    clearPendingInvite();
+  }, [invite, account, retained, clearPendingInvite]);
   const relay = useMemo(() => {
     if (inviteUrl || needsInvite || !signer || !channelId) return null;
     return new ConcordRelayClient(CONCORD_RELAY_URL, signer as never);
@@ -57,6 +71,7 @@ export default function ChatPage() {
     }).catch(() => { /* a failed connect is not shown; the shell only tracks the browser's online/offline state */ });
     return () => { off?.(); relay.close(); };
   }, [relay, channelId, stream]);
+  if (invitation.invalid) return <p role="alert">This community invite is invalid or incomplete. Open the complete invite link.</p>;
   if (isAuthPending) return <p role="status">Loading chat…</p>;
   // /invite/<naddr> renders outside the app layout, whose LoginArea is what mounts the
   // login dialog, so the page brings its own; its button also reopens a dismissed dialog.
@@ -70,7 +85,7 @@ export default function ChatPage() {
   }
   if (needsInvite) return <p role="alert">Open a community invite to use chat with this account.</p>;
   if (inviteUrl && !signer) return <p role="alert">Your account signer is unavailable. Reconnect your account to use chat.</p>;
-  if (inviteUrl && signer && user) return <CommunityChatPage key={user.pubkey} inviteUrl={inviteUrl} signer={signer as never} pubkey={user.pubkey} communityId={communityId} channelId={channelId} threadId={threadId} onVerified={clearPendingInvite} />;
+  if (inviteUrl && signer && user) return <CommunityChatPage key={user.pubkey} inviteUrl={inviteUrl} signer={signer as never} pubkey={user.pubkey} communityId={communityId} channelId={channelId} threadId={threadId} onVerified={verified} />;
   const control = user ? foldControlEditions(user.pubkey, []) : null;
   const live = foldChatRumors(binding ? channelRumors(rumors, binding.channelId) : []);
   return (
