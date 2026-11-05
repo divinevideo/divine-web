@@ -14,6 +14,8 @@ export default tseslint.config(
       ".playwright-mcp/**",
       ".worktrees/**",
       "dist",
+      // Keep the upstream protocol kernel byte-identical; validate its adapter and signed interop fixtures here.
+      "src/lib/chat/concord-core/**",
       "old_files",
       "playwright-report",
       "test-results",

@@ -35,3 +35,15 @@ describe('ChatShell', () => {
     expect(reads).toContain(eventTimeMs(rumor));
   });
 });
+
+describe('acknowledged chat sends', () => {
+  it('keeps the draft when the relay refuses the message', async () => {
+    const rejected = async () => { throw new Error('Relay refused'); };
+    render(<MemoryRouter><ChatShell channelId="general" onSendLive={rejected} /></MemoryRouter>);
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'keep this draft' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    expect(await screen.findByText('Message was not sent. Your draft is still here.')).toBeInTheDocument();
+    expect(input).toHaveValue('keep this draft');
+  });
+});

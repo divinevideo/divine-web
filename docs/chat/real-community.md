@@ -1,0 +1,81 @@
+# Real community web integration
+
+Set `VITE_CONCORD_INVITE_URL` to the approved public Concord invite URL at build
+time. It has the ordinary `/invite/<naddr>#<fragment>` shape. The fragment is
+read material for a public community: do not configure a private or staff invite.
+The web bundle necessarily contains this public invite. It must never contain
+an owner key, control root, link signing secret or private-channel access.
+
+The invite's bootstrap relays locate the signed kind-33301 bundle. The client
+verifies the link signer, live marker, expiry and self-certifying community ID,
+then reads the community relay set named by that verified bundle. Signed control
+state, including its owner-rooted delegated authority, supplies the channel
+catalog. Missing metadata/channels or an incomplete chain fails the session
+closed. Configured real community failures do not substitute deterministic POC
+keys or demo channels. Pasted invite links can also select a real community.
+Without a real invite, the existing disposable POC remains unchanged.
+
+The public catalog excludes private/deleted channels and channels or categories
+named Tickets. The bridge's explicit Discord public-channel allowlist remains
+the authority for which Discord content enters the community; this browser
+cannot infer Discord permissions from Concord channel names.
+
+Sends use the current channel stream and epoch, the existing account signer,
+and encrypted seals. Before its first send in an epoch the account publishes an
+acknowledged Guestbook Join. A message is complete only when at least one
+community relay accepts its outer event with `OK true`. Rejection, disconnect
+and timeout preserve the composer draft. Nothing queues publications for later
+replay. Reconnect re-resolves the invite and signed control state. Changing
+accounts creates a fresh session and clears its sockets, timeline and draft.
+Pasted invites are held for the account that opens them, not for later accounts
+using the tab. After verification their pending login-resume copy is removed;
+the mounted account keeps its invite for reconnects. Logout or switching accounts
+discards that selection and returns to the configured public invite.
+Without a configured invite, that account must open a new invite; the real
+community entry does not substitute the disposable POC.
+Channel read rejection and relay disconnect share one three-second retry delay,
+so repeated failures cannot trigger immediate bootstrap or signer-request loops.
+
+NIP-42 uses the existing account signer and held stream secrets on the same
+socket. It reissues reads after authentication acknowledgment. A split control
+read view deliberately has no staff signing key: a relay requiring authentication
+as that staff-only signer cannot be satisfied by a reader. Such a relay fails
+closed; test the deployed relay's public-read policy before release.
+
+Room reports use the existing signer for NIP-98 authentication bound to the
+exact request bytes. `VITE_CONCORD_REPORTS_URL` optionally overrides the default
+`https://chat-reports.divine.video/v1/reports`. The deployed API must allow the
+web origin through its existing CORS allowlist. Reports are confirmed only on
+HTTP 202 with a case ID. Coop remains the staff decision interface. Live control
+updates and signed cited moderator deletion events remove cached timeline
+messages through the same kernel used by the bridge.
+
+The checked-in synthetic interop, lifecycle and control-parity fixtures were
+generated using the bridge kernel at revision
+`3febf95aef198828fc156b08e2bda4b873e55f2a`. Their generators live under
+`scripts/fixtures/` at bridge revision `54fc8e880d67` (the connected-community
+bridge work), where the committed JSON copies match these fixtures exactly.
+They prove source interoperability, not production delivery or release readiness.
+The vendored source and its AGPL license are documented in
+`src/lib/chat/concord-core/PROVENANCE.md` and `THIRD_PARTY_NOTICES.md`.
+
+## Remaining release verification
+
+Use the approved real owner-rooted community and public-channel allowlist, prove
+Discord round trips and private/Tickets exclusions, and verify two actual
+accounts, account switching, relay downtime/reconnect, denied sends and reports
+on the deployed web revision. The source change does not provision a community,
+change admission, deploy, or publish test messages to a real relay.
+
+Owner-signed dissolution and authorized continuous base rotations are checked
+at bootstrap and watched live at the bridge kernel's eight-epoch lookahead.
+The selected public channel also watches authorized channel rotation addresses.
+Authenticated evidence immediately closes sockets and sends. Dissolution is
+terminal; a rotation triggers fresh invite/control verification, and an invite
+that has not caught up fails closed. Incomplete rotation chunks pause the client
+without claiming that the account was excluded.
+
+This entry refreshes rotation material through the public invite rather than
+adopting per-recipient rekey blobs. Its bounded channel watch covers epochs 1–8;
+private channels, thread replies and staff moderation controls remain outside
+this public text-chat entry. Keep those limits in the launch decision.
