@@ -50,8 +50,10 @@ const signer = { signEvent: async (template: Parameters<typeof finalizeEvent>[0]
 describe('real community page', () => {
   it('loads bridge channels and history and retains a refused send draft', async () => {
     vi.stubGlobal('WebSocket', FixtureSocket);
-    render(<MemoryRouter><CommunityChatPage inviteUrl={fixture.inviteUrl} signer={signer} pubkey={getPublicKey(sk)} communityId={fixture.expected.communityId} channelId={fixture.expected.channels[0].id} /></MemoryRouter>);
+    const verified = vi.fn();
+    render(<MemoryRouter><CommunityChatPage inviteUrl={fixture.inviteUrl} signer={signer} pubkey={getPublicKey(sk)} communityId={fixture.expected.communityId} channelId={fixture.expected.channels[0].id} onVerified={verified} /></MemoryRouter>);
     expect(await screen.findByText('Synthetic relay message', {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(verified).toHaveBeenCalled();
     expect(screen.getByRole('link', { name: 'general' })).toHaveAttribute('href', `/chat/${fixture.expected.communityId}/${fixture.expected.channels[0].id}`);
     expect(screen.queryByText('Divine test community')).not.toBeInTheDocument();
     const input = screen.getByRole('textbox', { name: 'Message' });
@@ -62,10 +64,12 @@ describe('real community page', () => {
     expect(input).toHaveValue('preserve this message');
   }, 15000);
   it('shows a failed real invite without demo communities or posting', async () => {
-    render(<MemoryRouter><CommunityChatPage inviteUrl="invalid" signer={signer} pubkey={getPublicKey(sk)} /></MemoryRouter>);
+    const verified = vi.fn();
+    render(<MemoryRouter><CommunityChatPage inviteUrl="invalid" signer={signer} pubkey={getPublicKey(sk)} onVerified={verified} /></MemoryRouter>);
     expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument();
     expect(screen.queryByText('Divine test community')).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Message' })).toBeDisabled();
+    expect(verified).not.toHaveBeenCalled();
   });
 });
 

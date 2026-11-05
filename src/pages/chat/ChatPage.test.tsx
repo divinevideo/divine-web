@@ -1,23 +1,23 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ChatPage from './ChatPage';
 import { buildInviteUrl, STOCK_RELAYS } from '@/lib/chat/concord-core/invite';
-import { parseInviteUrl, stashInvite } from '@/lib/chat/invite';
-const session = vi.hoisted(() => ({ loggedIn: false }));
+import { parseInviteUrl, peekInvite, stashInvite } from '@/lib/chat/invite';
+const session = vi.hoisted(() => ({ loggedIn: false, pubkey: 'a'.repeat(64) }));
 
 vi.mock('@/hooks/useChatSession', () => ({
-  useChatSession: () => ({ isLoggedIn: session.loggedIn, isAuthPending: false, user: session.loggedIn ? { pubkey: 'a'.repeat(64) } : undefined, signer: session.loggedIn ? {} : undefined, store: null }),
+  useChatSession: () => ({ isLoggedIn: session.loggedIn, isAuthPending: false, user: session.loggedIn ? { pubkey: session.pubkey } : undefined, signer: session.loggedIn ? {} : undefined, store: null }),
 }));
 
 vi.mock('@/components/auth/LoginArea', () => ({
   LoginArea: () => <button type="button">Log in</button>,
 }));
 
-vi.mock('./CommunityChatPage', () => ({ CommunityChatPage: ({ inviteUrl }: { inviteUrl: string }) => <p data-testid="real-invite">{inviteUrl}</p> }));
-afterEach(() => { session.loggedIn = false; sessionStorage.clear(); window.history.replaceState(null, '', '/'); });
+vi.mock('./CommunityChatPage', () => ({ CommunityChatPage: ({ inviteUrl, onVerified }: { inviteUrl: string; onVerified?: () => void }) => <><p data-testid="real-invite">{inviteUrl}</p><button onClick={onVerified}>Community verified</button></> }));
+afterEach(() => { vi.unstubAllEnvs(); session.loggedIn = false; session.pubkey = 'a'.repeat(64); sessionStorage.clear(); window.history.replaceState(null, '', '/'); });
 
 describe('ChatPage', () => {
   it('gives a logged-out visitor a login control on invite links, which render outside the app layout', () => {
@@ -43,4 +43,70 @@ it.each(['captured', 'stashed', 'legacy-stash'])('opens a standard stock-relay i
   else stashInvite({ naddr: invite.naddr, tokenHex: invite.tokenHex, relays: invite.relays });
   render(<MemoryRouter><ChatPage /></MemoryRouter>);
   expect(screen.getByTestId('real-invite')).toHaveTextContent(`${invite.naddr}${parsed.hash}`);
+});
+
+it('consumes a verified pending invite while retaining it for the current account session', () => {
+  session.loggedIn = true;
+  const url = buildInviteUrl('https://chat.example', 'a'.repeat(64), new Uint8Array(16).fill(9), STOCK_RELAYS);
+  const parsed = new URL(url);
+  const invite = parseInviteUrl(parsed.pathname, parsed.hash)!;
+  stashInvite(invite);
+  const { rerender } = render(<MemoryRouter><ChatPage /></MemoryRouter>);
+  expect(peekInvite()).not.toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Community verified' }));
+  expect(peekInvite()).toBeNull();
+  rerender(<MemoryRouter><ChatPage /></MemoryRouter>);
+  expect(screen.getByTestId('real-invite')).toHaveTextContent(`${invite.naddr}${parsed.hash}`);
+});
+
+it.each([false, true])('does not carry a verified URL invite to another account (logout: %s)', logout => {
+  session.loggedIn = true;
+  const url = buildInviteUrl('https://chat.example', 'a'.repeat(64), new Uint8Array(16).fill(9), STOCK_RELAYS);
+  const parsed = new URL(url);
+  stashInvite(parseInviteUrl(parsed.pathname, parsed.hash)!);
+  const configured = buildInviteUrl('https://approved.example', 'b'.repeat(64), new Uint8Array(16).fill(8), STOCK_RELAYS);
+  vi.stubEnv('VITE_CONCORD_INVITE_URL', configured);
+  const { rerender } = render(<MemoryRouter><ChatPage /></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button', { name: 'Community verified' }));
+  if (logout) {
+    session.loggedIn = false;
+    rerender(<MemoryRouter><ChatPage /></MemoryRouter>);
+  }
+  session.loggedIn = true;
+  session.pubkey = 'c'.repeat(64);
+  rerender(<MemoryRouter><ChatPage /></MemoryRouter>);
+  expect(screen.getByTestId('real-invite')).toHaveTextContent(configured);
+});
+
+it('discards an unverified invite when its account session ends', () => {
+  session.loggedIn = true;
+  const url = new URL(buildInviteUrl('https://chat.example', 'a'.repeat(64), new Uint8Array(16).fill(9), STOCK_RELAYS));
+  stashInvite(parseInviteUrl(url.pathname, url.hash)!);
+  const { rerender } = render(<MemoryRouter><ChatPage /></MemoryRouter>);
+  session.loggedIn = false;
+  rerender(<MemoryRouter><ChatPage /></MemoryRouter>);
+  expect(peekInvite()).toBeNull();
+});
+
+it('keeps a captured invite through the first login', () => {
+  const url = new URL(buildInviteUrl('https://chat.example', 'a'.repeat(64), new Uint8Array(16).fill(9), STOCK_RELAYS));
+  const invite = parseInviteUrl(url.pathname, url.hash)!;
+  stashInvite(invite);
+  const { rerender } = render(<MemoryRouter><ChatPage /></MemoryRouter>);
+  session.loggedIn = true;
+  rerender(<MemoryRouter><ChatPage /></MemoryRouter>);
+  expect(screen.getByTestId('real-invite')).toHaveTextContent(`${invite.naddr}${url.hash}`);
+});
+
+it('does not substitute the POC after an account switch without a configured public invite', () => {
+  session.loggedIn = true;
+  const url = new URL(buildInviteUrl('https://chat.example', 'a'.repeat(64), new Uint8Array(16).fill(9), STOCK_RELAYS));
+  stashInvite(parseInviteUrl(url.pathname, url.hash)!);
+  vi.stubEnv('VITE_CONCORD_INVITE_URL', '');
+  const { rerender } = render(<MemoryRouter><ChatPage /></MemoryRouter>);
+  session.pubkey = 'c'.repeat(64);
+  rerender(<MemoryRouter><ChatPage /></MemoryRouter>);
+  expect(screen.getByRole('alert')).toHaveTextContent('Open a community invite');
+  expect(screen.queryByText('Divine test community')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('real-invite')).not.toBeInTheDocument();
 });

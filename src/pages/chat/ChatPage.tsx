@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 // ABOUTME: Lazy /chat routes — community/channel/thread/invite in one POC shell page.
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { LoginArea } from '@/components/auth/LoginArea';
 import { ChatShell } from '@/components/chat/ChatShell';
@@ -10,20 +10,33 @@ import { canPostToChat, foldChatRumors, foldControlEditions, heldStream, type Ru
 import { channelRumors, ConcordRelayClient, pocStreamKey } from '@/lib/chat/relay';
 import { CONCORD_RELAY_URL } from '@/lib/chat/store';
 import { CommunityChatPage } from './CommunityChatPage';
-import { peekInvite, parseInviteUrl, resumeInviteUrl } from '@/lib/chat/invite';
+import { consumeInvite, peekInvite, parseInviteUrl, resumeInviteUrl } from '@/lib/chat/invite';
 
 export default function ChatPage() {
   const { communityId, channelId, threadId } = useParams();
   const { isLoggedIn, isAuthPending, user, signer, store } = useChatSession();
   const [rumors, setRumors] = useState<Rumor[]>([]);
-  const [initialInvite] = useState(() => parseInviteUrl(window.location.pathname, window.location.hash) ?? peekInvite());
-  const invite = initialInvite ?? peekInvite();
+  const account = user?.pubkey;
+  const [invitation, setInvitation] = useState(() => {
+    const invite = parseInviteUrl(window.location.pathname, window.location.hash) ?? peekInvite();
+    return { account, invite, real: Boolean(resumeInviteUrl(invite)) };
+  });
+  if (invitation.account !== account) {
+    setInvitation({ ...invitation, account, invite: invitation.account ? null : invitation.invite });
+  }
+  const invite = invitation.account === account ? invitation.invite : null;
+  const clearPendingInvite = useCallback(() => {
+    const pending = peekInvite();
+    if (invite?.naddr && pending?.naddr === invite.naddr && pending.tokenHex === invite.tokenHex) consumeInvite();
+  }, [invite]);
+  useEffect(() => () => { if (invitation.account) clearPendingInvite(); }, [invitation.account, clearPendingInvite]);
   const configuredInvite = import.meta.env.VITE_CONCORD_INVITE_URL as string | undefined;
   const inviteUrl = resumeInviteUrl(invite) ?? configuredInvite;
+  const needsInvite = invitation.real && !inviteUrl;
   const relay = useMemo(() => {
-    if (inviteUrl || !signer || !channelId) return null;
+    if (inviteUrl || needsInvite || !signer || !channelId) return null;
     return new ConcordRelayClient(CONCORD_RELAY_URL, signer as never);
-  }, [signer, channelId, inviteUrl]);
+  }, [signer, channelId, inviteUrl, needsInvite]);
   // Held kind-33302 keys win (private channels especially); the labeled POC
   // key is only the fallback for communities the list does not hold yet.
   // A held channel also fixes the canonical channel id and epoch its rumors carry.
@@ -55,8 +68,9 @@ export default function ChatPage() {
       </div>
     );
   }
+  if (needsInvite) return <p role="alert">Open a community invite to use chat with this account.</p>;
   if (inviteUrl && !signer) return <p role="alert">Your account signer is unavailable. Reconnect your account to use chat.</p>;
-  if (inviteUrl && signer && user) return <CommunityChatPage key={user.pubkey} inviteUrl={inviteUrl} signer={signer as never} pubkey={user.pubkey} communityId={communityId} channelId={channelId} threadId={threadId} />;
+  if (inviteUrl && signer && user) return <CommunityChatPage key={user.pubkey} inviteUrl={inviteUrl} signer={signer as never} pubkey={user.pubkey} communityId={communityId} channelId={channelId} threadId={threadId} onVerified={clearPendingInvite} />;
   const control = user ? foldControlEditions(user.pubkey, []) : null;
   const live = foldChatRumors(binding ? channelRumors(rumors, binding.channelId) : []);
   return (
