@@ -74,6 +74,10 @@ class IndexedDBStore implements NStore {
     return this.db;
   }
 
+  async isAvailable(): Promise<boolean> {
+    return (await this.ensureDB()) !== null;
+  }
+
   async event(event: NostrEvent): Promise<void> {
     const db = await this.ensureDB();
     if (!db) return;
@@ -316,7 +320,14 @@ export class HybridEventCache implements NStore {
       return memoryResults;
     }
 
-    // Fall back to IndexedDB for more results
+    // Without IndexedDB the memory cache is the whole cache, so its hits
+    // (including locally published deletion requests) are the answer.
+    if (!(await this.persistentStore.isAvailable())) {
+      return memoryResults;
+    }
+
+    // Otherwise IndexedDB is authoritative: it applies the per-kind TTL that
+    // the memory cache lacks, so an expired event reads as a miss.
     const persistentResults = await this.persistentStore.query(filters);
 
     // Populate memory cache with results from IndexedDB

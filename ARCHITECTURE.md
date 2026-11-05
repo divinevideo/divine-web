@@ -443,9 +443,58 @@ independently of the generated schema.
 [`src/lib/relayRouting.ts`](./src/lib/relayRouting.ts) defines the
 `reqRouter` and `eventRouter` factories used by
 [`src/components/NostrProvider.tsx`](./src/components/NostrProvider.tsx).
-Reads split filters into profile (kinds 0/3/10011), badge
-(8/30008/30009), and other groups; each group is fanned out to its
-relay set. Writes fan out to the primary relay plus `PROFILE_RELAYS`
+Reads split filters into profile (kinds 0/3/10011), list
+(30000/30001/30005), badge (8/30008/30009), video, and other groups;
+each group is fanned out to its relay set. Owner-scoped list recovery reads
+include enabled primary, configured, custom, and profile relays. Author-less
+discovery keeps the existing ranked configured-relay scope, so public-relay
+lists do not enter Trending or membership badges through this change.
+Membership badges share one recent-lists query across video cards.
+Disabled relays are excluded from list reads and writes. Non-list reads retain
+their existing last-resort primary fallback, matching non-list publication.
+[`src/lib/cachedNostr.ts`](./src/lib/cachedNostr.ts) checks matching list
+addresses and event IDs for owner-authored kind-5 deletion requests before
+returning list events. Deletion queries target only returned list addresses
+and event IDs, in a separate request; there is no network-wide deletion scan.
+The provider shares its routing function with the cached client. Each selected
+relay receives one list request, and addressable versions are merged using
+NSet. The canonical primary and configured author-less discovery sources keep
+the caller's full deadline (normally five seconds), so slow primary responses
+are not cut off by the backup budget. Owner-scoped backup recovery and targeted
+deletion phases are capped separately at 1.5 seconds. A stalled primary can
+therefore hold a display read to the caller's deadline; completeness of its
+answer takes priority over the earlier 1.5-second display cap.
+The optional local deletion lookup is also capped at 1.5 seconds and reacts
+to caller cancellation, so blocked
+IndexedDB cannot hold a completed relay read open. Displays can use partial results.
+Membership mutations request complete reads and reject aborted owner or
+participant lookups before publishing, rather than falling back to stale owner
+membership. People-list metadata/member edits and duplicate-coordinate checks
+before creation also require complete reads and reject cancellation, so stale
+backup copies cannot replace newer membership or encrypted content. The shared
+filtering lives in
+[`src/lib/listEventDeletions.ts`](./src/lib/listEventDeletions.ts).
+Deletion visibility is best effort: remote requests can be unavailable or
+truncated, and locally persisted deletion events expire after the existing
+two-hour default TTL. Known owner deletions hide older copies while available;
+newer address recreations remain visible. This is not a permanent deletion
+guarantee across browser reloads or relay outages.
+When IndexedDB is unavailable, the hybrid event cache answers from memory, so
+locally published deletion requests remain usable. When it is available,
+IndexedDB stays authoritative and its per-kind TTL still turns an expired
+event into a cache miss.
+List creation, updates, and list-targeted deletions go through
+[`src/lib/publishListToPrimary.ts`](./src/lib/publishListToPrimary.ts).
+The hook signs once and requires acceptance from the canonical Divine primary
+before reporting success. Transient failures get at most three attempts, each
+with a fresh five-second deadline and delays of one then two seconds; explicit
+permanent rejections are not retried. A disabled canonical primary fails before
+signing. Existing fanout runs after primary acknowledgement as best-effort
+replication, and its failure does not undo a successful primary save.
+The cached client forwards directed relay options and deadlines unchanged;
+local list-event cache writes are best effort and do not delay relay
+acknowledgement. Non-list cache-write semantics remain unchanged.
+Writes fan out to the primary relay plus `PROFILE_RELAYS`
 for kind 0/3/10011, list kinds 30000/30001/30005, and NIP-09 deletion
 requests whose `k` tag targets one of those list kinds. Other writes use
 `PRESET_RELAYS` (capped at 5). **Mute lists (kind 10000) are write-restricted to

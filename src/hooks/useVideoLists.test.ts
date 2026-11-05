@@ -7,6 +7,8 @@ import React from 'react';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import type { VideoList } from '@/lib/parseVideoListFromEvent';
+import { buildEventRouter, buildReqRouter } from '@/lib/relayRouting';
+import { getRelayUrls, PROFILE_RELAYS } from '@/config/relays';
 
 const mockNostrQuery = vi.fn();
 vi.mock('@nostrify/react', () => ({
@@ -170,6 +172,21 @@ describe('useVideoLists hooks', () => {
   });
 
   describe('useVideosInLists', () => {
+    it('shares one recent-list request between video cards while selecting their memberships separately', async () => {
+      const { useVideosInLists } = await import('./useVideoLists');
+      mockNostrQuery.mockResolvedValue([
+        listEvent({ tags: [['d', 'one'], ['a', `34236:${TEST_PUBKEY}:video-one`]] }),
+        listEvent({ id: '3'.repeat(64), tags: [['d', 'two'], ['a', `34236:${TEST_PUBKEY}:video-two`]] }),
+      ]);
+      const { result } = renderHook(() => [useVideosInLists('video-one'), useVideosInLists('video-two')], {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.every(query => query.isSuccess)).toBe(true));
+      expect(result.current[0].data?.map(list => list.id)).toEqual(['one']);
+      expect(result.current[1].data?.map(list => list.id)).toEqual(['two']);
+      expect(mockNostrQuery).toHaveBeenCalledTimes(1);
+    });
     it('queries public video lists without unsupported wildcards and filters locally', async () => {
       const { useVideosInLists } = await import('./useVideoLists');
 
@@ -233,6 +250,44 @@ describe('useVideoLists hooks', () => {
   });
 
   describe('useCreateVideoList', () => {
+    it('keeps a newly published list after refetch when only a backup relay accepted it', async () => {
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      });
+      const wrapper = createWrapper(queryClient);
+      const routing = {
+        relayUrl: 'wss://relay.divine.video',
+        relayUrls: ['wss://relay.divine.video'],
+      };
+      const backupRelay = getRelayUrls(PROFILE_RELAYS).find(url => url !== routing.relayUrl)!;
+      const storedEvents = new Map<string, NostrEvent[]>();
+      mockNostrQuery.mockImplementation(async (filters) => (
+        [...buildReqRouter(routing)(filters).keys()].flatMap(relay => storedEvents.get(relay) ?? [])
+      ));
+      mockPublishAsync.mockImplementation(async (input) => {
+        expect(buildEventRouter(routing)(listEvent(input))).toContain(backupRelay);
+        const event = listEvent({ ...input, id: 'e'.repeat(64), created_at: 3000 });
+        storedEvents.set(backupRelay, [event]);
+        return event;
+      });
+      const { useVideoLists, useCreateVideoList } = await import('./useVideoLists');
+      const lists = renderHook(() => useVideoLists(TEST_PUBKEY), { wrapper });
+      await waitFor(() => expect(lists.result.current.isSuccess).toBe(true));
+      expect(lists.result.current.data).toEqual([]);
+      const create = renderHook(() => useCreateVideoList(), { wrapper });
+
+      await create.result.current.mutateAsync({
+        id: 'backup-list', name: 'Saved list', videoCoordinates: [],
+      });
+
+      await waitFor(() => expect(mockNostrQuery).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(lists.result.current.isFetching).toBe(false));
+      expect(lists.result.current.data?.map(list => list.id)).toEqual(['backup-list']);
+
+      await lists.result.current.refetch();
+      expect(lists.result.current.data?.map(list => list.id)).toEqual(['backup-list']);
+    });
+
     it('throws when not logged in', async () => {
       mockUseCurrentUser.mockReturnValue({ user: null, signer: null });
       const { useCreateVideoList } = await import('./useVideoLists');
@@ -404,6 +459,27 @@ describe('useVideoLists hooks', () => {
   });
 
   describe('useAddVideoToList', () => {
+    it.each(['add', 'remove'])('does not %s membership from an aborted collaborative participant read', async (operation) => {
+      const controller = new AbortController();
+      vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+      mockNostrQuery.mockResolvedValueOnce([listEvent({
+        tags: [['d', 'my-list'], ['collaborative', 'true'], ['collaborator', OTHER_PUBKEY]],
+      })]).mockImplementationOnce(async () => {
+        controller.abort();
+        return [];
+      });
+      const { useAddVideoToList, useRemoveVideoFromList } = await import('./useVideoLists');
+      const hook = operation === 'add' ? useAddVideoToList : useRemoveVideoFromList;
+      const { result } = renderHook(() => hook(), { wrapper: createWrapper() });
+      const coordinate = `34236:${TEST_PUBKEY}:new-video`;
+      const variables = {
+        listId: 'my-list', ownerPubkey: TEST_PUBKEY, videoCoordinate: coordinate,
+        videoMember: { type: 'a' as const, value: coordinate },
+      };
+
+      await expect(result.current.mutateAsync(variables)).rejects.toThrow();
+      expect(mockPublishAsync).not.toHaveBeenCalled();
+    });
     it('returns without publishing when video already in list', async () => {
       const coord = `${SHORT_VIDEO_KIND}:${TEST_PUBKEY}:vid-1`;
       mockNostrQuery.mockResolvedValue([listEvent()]);

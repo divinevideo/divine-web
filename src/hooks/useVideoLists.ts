@@ -20,6 +20,7 @@ import {
 } from '@/lib/parseVideoListFromEvent';
 import { resolveListPermissions } from '@/lib/listPermissions';
 import { debugLog } from '@/lib/debug';
+import type { CachedNostrQueryOptions } from '@/lib/cachedNostr';
 
 export type { PlayOrder, VideoList };
 
@@ -136,12 +137,14 @@ async function fetchListByOwner(
   listId: string,
   signal: AbortSignal,
 ): Promise<VideoList> {
+  const options = { signal, requireComplete: true } satisfies CachedNostrQueryOptions;
   const ownerEvents = await nostr.query([{
     kinds: [30005],
     authors: [ownerPubkey],
     '#d': [listId],
     limit: 1,
-  }], { signal });
+  }], options);
+  signal.throwIfAborted();
 
   if (ownerEvents.length === 0) {
     throw new Error('List not found');
@@ -162,7 +165,8 @@ async function fetchListByOwner(
     authors: participantPubkeys,
     '#d': [listId],
     limit: 50,
-  }], { signal });
+  }], options);
+  signal.throwIfAborted();
 
   const participantSet = new Set(participantPubkeys);
   const latestList = participantEvents
@@ -223,10 +227,8 @@ export function useVideosInLists(videoId?: string, videoEventId?: string) {
   const { nostr } = useNostr();
 
   return useQuery({
-    queryKey: ['videos-in-lists', videoId, videoEventId],
+    queryKey: ['videos-in-lists'],
     queryFn: async (context) => {
-      if (!videoId) return [];
-
       const signal = AbortSignal.any([
         context.signal,
         AbortSignal.timeout(5000)
@@ -239,11 +241,9 @@ export function useVideosInLists(videoId?: string, videoEventId?: string) {
         limit: 100
       }], { signal });
 
-      const lists = deduplicateVideoLists(events)
-        .filter((list) => list.members.some((member) => memberMatchesVideoId(member, videoId, videoEventId)));
-
-      return lists;
+      return deduplicateVideoLists(events);
     },
+    select: lists => videoId ? lists.filter(list => list.members.some(member => memberMatchesVideoId(member, videoId, videoEventId))) : [],
     enabled: !!videoId,
     staleTime: 60000,
     gcTime: 300000,

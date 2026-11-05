@@ -82,7 +82,7 @@ export function AddToListDialog({
       });
 
       // Invalidate queries to update the UI
-      queryClient.invalidateQueries({ queryKey: ['videos-in-lists', videoId] });
+      queryClient.invalidateQueries({ queryKey: ['videos-in-lists'] });
       queryClient.invalidateQueries({ queryKey: ['video-lists'] });
 
       onClose();
@@ -115,7 +115,7 @@ export function AddToListDialog({
       });
 
       // Invalidate queries to update the UI
-      queryClient.invalidateQueries({ queryKey: ['videos-in-lists', videoId] });
+      queryClient.invalidateQueries({ queryKey: ['videos-in-lists'] });
       queryClient.invalidateQueries({ queryKey: ['video-lists'] });
 
       onClose();

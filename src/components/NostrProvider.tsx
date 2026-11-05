@@ -111,6 +111,15 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
   // Initialize NPool only once
   if (!pool.current) {
     debugLog('[NostrProvider] Creating NPool instance');
+    const reqRouter = buildReqRouter({
+      get relayUrl() { return relayUrl.current; },
+      get relayUrls() { return relayUrls.current; },
+      get customRelayUrls() { return customRelayUrls.current; },
+      get disabledPresetUrls() { return disabledPresetUrls.current; },
+      presetRelays,
+      pickTopN,
+      refreshSticky,
+    });
     pool.current = new NPool({
       open(url: string) {
         verboseLog('[NostrProvider] Opening relay connection to:', url);
@@ -183,15 +192,7 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
         verboseLog('[NostrProvider] NRelay1 instance created, readyState:', relay.socket?.readyState);
         return relay;
       },
-      reqRouter: buildReqRouter({
-        get relayUrl() { return relayUrl.current; },
-        get relayUrls() { return relayUrls.current; },
-        get customRelayUrls() { return customRelayUrls.current; },
-        get disabledPresetUrls() { return disabledPresetUrls.current; },
-        presetRelays,
-        pickTopN,
-        refreshSticky,
-      }),
+      reqRouter,
       eventRouter: buildEventRouter({
         get relayUrl() { return relayUrl.current; },
         get relayUrls() { return relayUrls.current; },
@@ -203,7 +204,7 @@ const NostrProvider: React.FC<NostrProviderProps> = (props) => {
     });
 
     // Wrap with caching layer for profile/contact queries
-    cachedPool.current = createCachedNostr(pool.current);
+    cachedPool.current = createCachedNostr(pool.current, { getReadRoutes: reqRouter });
     debugLog('[NostrProvider] Wrapped NPool with caching layer');
 
     // Pre-establish WebSocket connections synchronously

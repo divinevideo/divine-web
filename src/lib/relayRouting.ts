@@ -7,8 +7,7 @@ import { MUTE_LIST_KIND } from '@/hooks/useModeration';
 import { BADGE_RELAYS, PROFILE_RELAYS, getRelayUrls } from '@/config/relays';
 import { BADGE_READ_KINDS } from '@/lib/badges';
 import { VIDEO_KINDS } from '@/types/video';
-
-const LIST_KINDS = [30000, 30001, 30005];
+import { LIST_KINDS } from '@/lib/listEventDeletions';
 
 export interface RoutingContext {
   relayUrl: string;
@@ -45,13 +44,21 @@ export function buildReqRouter(ctx: RoutingContext): ReqRouter {
     const result = new Map<string, NostrFilter[]>();
 
     const profileRelayFilters: NostrFilter[] = [];
+    const listFilters: NostrFilter[] = [];
     const badgeRelayFilters: NostrFilter[] = [];
     const videoFilters: NostrFilter[] = [];
     const otherFilters: NostrFilter[] = [];
+    const hasListDeletionFilter = filters.some(filter => filter.kinds?.includes(5) &&
+      filter['#a']?.some(coordinate => LIST_KINDS.some(kind => coordinate.startsWith(`${kind}:`))));
+    const hasListLookup = hasListDeletionFilter || filters.some(filter =>
+      filter.kinds?.some(kind => LIST_KINDS.includes(kind)));
 
     for (const filter of filters) {
       if (filter.kinds?.includes(0) || filter.kinds?.includes(3) || filter.kinds?.includes(10011)) {
         profileRelayFilters.push(filter);
+      } else if ((filter.authors?.length && filter.kinds?.some((kind) => LIST_KINDS.includes(kind))) ||
+        (hasListDeletionFilter && filter.kinds?.includes(5))) {
+        listFilters.push(filter);
       } else if (filter.kinds?.some((k) => BADGE_READ_KINDS.includes(k))) {
         badgeRelayFilters.push(filter);
       } else if (filter.kinds?.some((k) => VIDEO_KINDS.includes(k))) {
@@ -67,6 +74,18 @@ export function buildReqRouter(ctx: RoutingContext): ReqRouter {
     if (profileRelayFilters.length > 0) {
       for (const relay of profileRelayUrls) {
         addFilters(result, relay, profileRelayFilters);
+      }
+    }
+
+    if (listFilters.length > 0) {
+      const listRelayUrls = enabledUrls(Array.from(new Set([
+        ctx.relayUrl,
+        ...ctx.relayUrls,
+        ...(ctx.customRelayUrls ?? []),
+        ...profileRelayUrls,
+      ])), disabled);
+      for (const relay of listRelayUrls) {
+        addFilters(result, relay, listFilters);
       }
     }
 
@@ -109,7 +128,7 @@ export function buildReqRouter(ctx: RoutingContext): ReqRouter {
       }
     }
 
-    if (result.size === 0 && ctx.relayUrl) {
+    if (result.size === 0 && ctx.relayUrl && (!hasListLookup || !disabled.has(ctx.relayUrl))) {
       result.set(ctx.relayUrl, filters);
     }
 
@@ -131,6 +150,10 @@ export function buildEventRouter(ctx: RoutingContext): EventRouter {
     const isListDeletion = event.kind === 5 && event.tags.some(
       ([name, kind]) => name === 'k' && LIST_KINDS.includes(Number(kind)),
     );
+
+    if ((isListEvent || isListDeletion) && disabled.has(ctx.relayUrl)) {
+      allRelays.delete(ctx.relayUrl);
+    }
 
     if (isListEvent || isListDeletion) {
       profileRelayUrls.forEach((url) => allRelays.add(url));
@@ -163,7 +186,11 @@ export function buildEventRouter(ctx: RoutingContext): EventRouter {
 
     const ranked = pick(ctx, [...allRelays], 5);
     if (isProfileOrList) {
-      return Array.from(new Set([...ranked, ...profileRelayUrls]));
+      const destinations = Array.from(new Set([...ranked, ...profileRelayUrls]));
+      if ((isListEvent || isListDeletion) && destinations.length === 0) {
+        throw new Error('No enabled relays for lists');
+      }
+      return destinations;
     }
     return ranked;
   };
