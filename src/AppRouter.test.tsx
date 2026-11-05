@@ -372,13 +372,13 @@ describe('AppRouter', () => {
 describe('production community route entry', () => {
   afterEach(() => { vi.unstubAllEnvs(); });
   it.each([
-    { name: 'configured community', invite: communityFixture.inviteUrl, preview: false, path: '/chat', enabled: true },
-    { name: 'configured community invite deep link', invite: communityFixture.inviteUrl, preview: false, path: '/invite/naddr1synthetic', enabled: true },
-    { name: 'capability invite without a configured default', invite: '', preview: false, path: new URL(communityFixture.inviteUrl).pathname, enabled: true },
-    { name: 'real-only entry without configuration', invite: '', preview: false, path: '/chat', enabled: true },
-    { name: 'invalid configured community', invite: 'invalid configured invite', preview: false, path: '/chat', enabled: true },
-    { name: 'existing preview POC', invite: '', preview: true, path: '/chat', enabled: true },
-  ])('routes $name appropriately without a production POC flag', async ({ invite, preview, path, enabled }) => {
+    { name: 'configured community', invite: communityFixture.inviteUrl, preview: false, path: '/chat' },
+    { name: 'configured community invite deep link', invite: communityFixture.inviteUrl, preview: false, path: '/invite/naddr1synthetic' },
+    { name: 'capability invite without a configured default', invite: '', preview: false, path: new URL(communityFixture.inviteUrl).pathname },
+    { name: 'real-only entry without configuration', invite: '', preview: false, path: '/chat' },
+    { name: 'invalid configured community', invite: 'invalid configured invite', preview: false, path: '/chat' },
+    { name: 'existing preview POC', invite: '', preview: true, path: '/chat' },
+  ])('mounts the chat page for $name in a production build', async ({ invite, preview, path }) => {
     vi.stubEnv('DEV', false); vi.stubEnv('PROD', true);
     vi.stubEnv('VITE_CHAT_POC_ENABLED', preview ? 'true' : 'false');
     vi.stubEnv('VITE_CONCORD_INVITE_URL', invite);
@@ -387,7 +387,6 @@ describe('production community route entry', () => {
     mockUseCurrentUser.mockReturnValue({ user: undefined, isAuthPending: false });
     window.history.replaceState({}, '', path);
     render(<UnheadProvider head={createHead()}><ProductionRouter /></UnheadProvider>);
-    if (enabled) expect(await screen.findByTestId('chat-page')).toBeInTheDocument();
-    else expect(await screen.findByTestId('nip19-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('chat-page')).toBeInTheDocument();
   });
 });

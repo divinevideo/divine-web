@@ -1,6 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-// ABOUTME: Lazy /chat routes — community/channel/thread/invite in one POC shell page.
+// ABOUTME: Lazy /chat routes — community/channel/thread/invite in one page; the POC shell is a dev/preview fallback only.
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { ChatInviteContext } from '@/contexts/ChatInviteContext';
