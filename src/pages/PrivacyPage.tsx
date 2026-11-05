@@ -131,6 +131,9 @@ export function PrivacyPage() {
               minutes, and visit counts for up to 90 days. It isn't shown to anyone.
             </p>
             <p className="mb-3">
+              The notification activity disclosure in Section 4 is effective November 5, 2026.
+            </p>
+            <p className="mb-3">
               We may also collect and generate information for safety and moderation purposes, including reports,
               enforcement actions, and identifiers or hashes used to detect abuse, fraud, or prohibited content.
             </p>
