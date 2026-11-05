@@ -11,7 +11,7 @@ import { canPostToChat, foldChatRumors, foldControlEditions, heldStream, type Ru
 import { channelRumors, ConcordRelayClient, pocStreamKey } from '@/lib/chat/relay';
 import { CONCORD_RELAY_URL } from '@/lib/chat/store';
 import { CommunityChatPage } from './CommunityChatPage';
-import { consumeInvite, peekInvite, parseInviteUrl, resumeInviteUrl } from '@/lib/chat/invite';
+import { classifyInvitePath, consumeInvite, peekInvite, parseInviteUrl, resumeInviteUrl } from '@/lib/chat/invite';
 
 export default function ChatPage() {
   const { communityId, channelId, threadId } = useParams();
@@ -23,7 +23,7 @@ export default function ChatPage() {
   const retained = useContext(ChatInviteContext);
   const captureInvitation = () => {
     const captured = parseInviteUrl(window.location.pathname, window.location.hash);
-    const explicit = window.location.pathname.startsWith('/invite/naddr1');
+    const explicit = classifyInvitePath(window.location.pathname).real;
     const held = retained?.account === account && (communityId ? retained?.selection?.communityId === communityId : !configuredInvite)
       ? retained?.selection?.invite ?? null : null;
     const invite = captured ?? (explicit ? null : peekInvite() ?? held);

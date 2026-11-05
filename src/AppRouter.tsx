@@ -3,13 +3,14 @@
  */
 
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useParams } from "react-router-dom";
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { SignInLoading } from "./components/auth/SignInLoading";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
 import { getSubdomainUser } from "./hooks/useSubdomainUser";
 import { useCurrentUser } from "./hooks/useCurrentUser";
+import { classifyInvitePath } from "@/lib/chat/invite";
 import { ChatInviteProvider } from "@/contexts/ChatInviteProvider";
 
 import Index from "./pages/Index";
@@ -94,8 +95,8 @@ function InviteLinkRoute({
   hasUser: boolean;
   isSessionResolving: boolean;
 }) {
-  const { code } = useParams();
-  if (code?.startsWith("naddr1")) {
+  const { pathname } = useLocation();
+  if (classifyInvitePath(pathname).real) {
     return (
       <Suspense fallback={null}>
         <ChatPage />

@@ -151,7 +151,9 @@ after verification. Reloading without a default requires the original invite
 again; no persistent capability/key cache is added.
 Capability links therefore support private acceptance of the exact production
 revision before publishing a default. Their fragment remains client-side.
-Missing or malformed explicit invite fragments fail closed rather than selecting
+Invite classification and locator parsing share React Router matching, including
+case-insensitive route segments and exactly one URI decode. Missing or malformed
+explicit invite fragments fail closed rather than selecting
 a stashed invite, default community, or POC. A configured real-community load
 failure likewise never substitutes POC channels. Other retired `/invite/:code`
 links retain their redirect behavior. Release steps are in

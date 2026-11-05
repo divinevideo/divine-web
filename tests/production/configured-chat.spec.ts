@@ -37,3 +37,23 @@ test('an explicit capability keeps its own community through channel navigation 
   await page.evaluate(path => { history.pushState(null, '', path); dispatchEvent(new PopStateEvent('popstate')); }, invite.pathname);
   await expect(page.getByRole('alert')).toHaveText('This community invite is invalid or incomplete. Open the complete invite link.');
 });
+
+for (const variant of ['encoded', 'uppercase']) test(`normalized ${variant} capability keeps community B over default A`, async ({ page, baseURL }) => {
+  await prepareCommunityFixture(page, baseURL!);
+  const invite = new URL(otherFixture.inviteUrl);
+  const path = variant === 'encoded' ? invite.pathname.replace('naddr1', 'n%61ddr1') : invite.pathname.replace('/invite/', '/INVITE/');
+  await page.goto(path + invite.hash);
+  await expect(page).toHaveURL(`/chat/${otherFixture.expected.communityId}`);
+  await page.getByRole('link', { name: otherFixture.expected.channels[0].name, exact: true }).click();
+  await expect(page).toHaveURL(`/chat/${otherFixture.expected.communityId}/${otherFixture.expected.channels[0].id}`);
+});
+
+for (const variant of ['encoded', 'uppercase']) for (const hash of ['', '#community=demo-community&invite=legacy']) test(`normalized ${variant} explicit invite refuses incomplete fragment ${JSON.stringify(hash)}`, async ({ page, baseURL }) => {
+  await prepareCommunityFixture(page, baseURL!);
+  const invite = new URL(fixture.inviteUrl);
+  const path = variant === 'encoded' ? invite.pathname.replace('naddr1', 'n%61ddr1') : invite.pathname.replace('/invite/', '/INVITE/');
+  await page.goto(path + hash);
+  await expect(page.getByRole('alert')).toHaveText('This community invite is invalid or incomplete. Open the complete invite link.');
+  await expect(page).toHaveURL(path + hash);
+  await expect(page.getByText('Divine test community')).toHaveCount(0);
+});

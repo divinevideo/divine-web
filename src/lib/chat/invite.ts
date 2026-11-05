@@ -1,6 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 // ABOUTME: Invite fragment handling — fragment stays client-side only, never logged or sent to analytics.
+import { matchRoutes } from 'react-router-dom';
 import { decodeFragment, encodeFragment, STOCK_RELAYS } from './concord-core/invite';
 import { bytesToHex, hexToBytes } from './protocol';
 export const PENDING_INVITE_KEY = 'chat:pendingInvite';
@@ -18,12 +19,16 @@ export function parseInviteHash(hash: string): Invite | null {
     return { tokenHex: bytesToHex(decoded.token), relays: decoded.relays, fragment: raw };
   } catch { return null; }
 }
+export function classifyInvitePath(pathname: string): { code?: string; real: boolean } {
+  const code = matchRoutes([{ path: '/invite/:code' }], { pathname })?.[0]?.params.code;
+  return { code, real: code?.startsWith('naddr1') ?? false };
+}
 /** Spec link: /invite/<naddr>#<fragment> — naddr is a public locator, fragment is the secret. */
 export function parseInviteUrl(pathname: string, hash: string): Invite | null {
-  const m = pathname.match(/\/invite\/([^/?#]+)/);
+  const { code } = classifyInvitePath(pathname);
   const frag = parseInviteHash(hash);
   if (!frag) return null;
-  return { ...frag, naddr: m?.[1] };
+  return { ...frag, naddr: code };
 }
 export function stashInvite(invite: Invite): void { try { sessionStorage.setItem(PENDING_INVITE_KEY, JSON.stringify(invite)); } catch { /* private mode */ } }
 /** Read the stashed invite without removing it. */
