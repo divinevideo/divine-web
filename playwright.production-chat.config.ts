@@ -6,6 +6,7 @@ const quotedOutDir = "'" + outDir.replace(/'/g, "'\"'\"'") + "'";
 const port = Number(process.env.PLAYWRIGHT_PORT ?? 8099);
 export default defineConfig({
   testDir: './tests/production',
+  outputDir: 'test-results/production-chat-run',
   workers: 1,
   reporter: 'list',
   use: { baseURL: `http://127.0.0.1:${port}`, serviceWorkers: 'block', channel: process.env.PLAYWRIGHT_CHANNEL || undefined },

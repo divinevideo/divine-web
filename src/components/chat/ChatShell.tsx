@@ -54,23 +54,23 @@ export function ChatShell({ communityId, channelId, threadId, canPost = true, in
     } catch { setSendError(true); } finally { setSending(false); }
   };
   return (
-    <div style={{ display: 'flex', gap: 16 }}>
-      <nav aria-label="Communities">
+    <div className="flex w-full min-w-0 flex-col gap-4 p-4 md:flex-row">
+      <nav aria-label="Communities" className="w-full min-w-0 break-words md:w-56 md:shrink-0">
         <h2>Communities</h2>
         <ul>{communities.map((c) => (
           <li key={c.id}><Link to={`/chat/${c.id}`}>{c.name}</Link>
-            <ul>{c.channels.map((ch) => { const id = typeof ch === 'string' ? ch : ch.id; const name = typeof ch === 'string' ? ch : ch.name; return <li key={id}><Link to={`/chat/${c.id}/${id}`}><Hash aria-hidden /> {name}</Link></li>; })}</ul>
+            <ul>{c.channels.map((ch) => { const id = typeof ch === 'string' ? ch : ch.id; const name = typeof ch === 'string' ? ch : ch.name; return <li key={id}><Link to={`/chat/${c.id}/${id}`}><Hash size={20} className="inline-block shrink-0 align-text-bottom" aria-hidden /> {name}</Link></li>; })}</ul>
           </li>))}
         </ul>
       </nav>
-      <section aria-label="Channel timeline" style={{ flex: 1 }}>
-        <h2><ChatCircle aria-hidden /> {channelLabel ?? 'Pick a channel'}{communityId ? ` in ${displayCommunity?.name ?? communityId}` : ''}{threadId ? ` · thread ${threadId}` : ''}</h2>
-        {viewState === 'reconnecting' && <p role="status"><WifiSlash aria-hidden /> Reconnecting…</p>}
+      <section aria-label="Channel timeline" className="min-w-0 flex-1 break-words">
+        <h2><ChatCircle size={20} className="inline-block shrink-0 align-text-bottom" aria-hidden /> {channelLabel ?? 'Pick a channel'}{communityId ? ` in ${displayCommunity?.name ?? communityId}` : ''}{threadId ? ` · thread ${threadId}` : ''}</h2>
+        {viewState === 'reconnecting' && <p role="status"><WifiSlash size={20} className="inline-block shrink-0 align-text-bottom" aria-hidden /> Reconnecting…</p>}
         {viewState === 'loading' && <p role="status">Loading chat…</p>}
-        {viewState === 'failure' && <div role="alert"><WarningCircle aria-hidden /> Could not load this community. <button type="button" onClick={onRetry ?? (() => setState('empty'))}>Try again</button></div>}
+        {viewState === 'failure' && <div role="alert"><WarningCircle size={20} className="inline-block shrink-0 align-text-bottom" aria-hidden /> Could not load this community. <button type="button" onClick={onRetry ?? (() => setState('empty'))}>Try again</button></div>}
         {sendError && <p role="alert">Message was not sent. Your draft is still here.</p>}
         {messages.length === 0 ? <p>Nothing looping yet. Go find your people.</p> : (
-          <ol>{messages.map((m) => <li key={m.id}><strong>{m.pubkey}:</strong> {m.content}{onReportLive && m.id && <button type="button" onClick={() => { setReportTarget(m.id); setReportStatus(''); }}>Report message</button>}</li>)}</ol>
+          <ol className="space-y-3">{messages.map((m) => <li key={m.id} className="break-words"><strong className="block break-all">{m.pubkey}:</strong> {m.content}{onReportLive && m.id && <button type="button" onClick={() => { setReportTarget(m.id); setReportStatus(''); }}>Report message</button>}</li>)}</ol>
         )}
         {reportTarget && onReportLive && <form onSubmit={async event => {
           event.preventDefault(); if (reporting || !reportReason.trim()) return;
@@ -80,18 +80,18 @@ export function ChatShell({ communityId, channelId, threadId, canPost = true, in
           finally { setReporting(false); }
         }}>
           <label htmlFor="room-report-reason">Why are you reporting this message?</label>
-          <textarea id="room-report-reason" maxLength={2048} value={reportReason} onChange={event => setReportReason(event.target.value)} />
+          <textarea className="block w-full min-w-0" id="room-report-reason" maxLength={2048} value={reportReason} onChange={event => setReportReason(event.target.value)} />
           <button type="submit" disabled={reporting || !reportReason.trim()}>Submit report</button>
           <button type="button" disabled={reporting} onClick={() => setReportTarget(undefined)}>Cancel</button>
         </form>}
         {reportStatus && <p role="status">{reportStatus}</p>}
-        <div>
+        <div className="mt-4 min-w-0">
           <label htmlFor="chat-composer">Message</label>
-          <textarea id="chat-composer" ref={composerRef} value={draft} disabled={!canPost}
+          <textarea className="block w-full min-w-0" id="chat-composer" ref={composerRef} value={draft} disabled={!canPost}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} />
-          <button type="button" onClick={send} disabled={!canPost || sending || !draft.trim()}>
-            <PaperPlaneTilt aria-hidden /> Send
+          <button className="inline-flex items-center gap-2" type="button" onClick={send} disabled={!canPost || sending || !draft.trim()}>
+            <PaperPlaneTilt size={20} className="inline-block shrink-0 align-text-bottom" aria-hidden /> Send
           </button>
           {!canPost && <p role="alert">You do not have permission to post here.</p>}
         </div>

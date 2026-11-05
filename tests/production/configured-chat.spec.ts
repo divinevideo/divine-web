@@ -14,7 +14,13 @@ for (const width of [390, 1280]) test(`production community entry loads signed h
   await page.getByRole('link', { name: 'general', exact: true }).click();
   await expect(page.getByRole('listitem').filter({ hasText: fixture.expected.message.content })).toBeVisible();
   await expect(page.getByText('Divine test community')).toHaveCount(0);
-  await expect(page.getByRole('textbox', { name: 'Message' })).toBeEnabled();
+  const composer = page.getByRole('textbox', { name: 'Message' });
+  await expect(composer).toBeEnabled();
+  await expect(composer).toBeInViewport({ ratio: 1 });
+  const icon = await page.getByRole('region', { name: 'Channel timeline' }).getByRole('heading', { level: 2 }).locator('svg').boundingBox();
+  expect(icon!.width).toBeLessThanOrEqual(24);
+  expect(icon!.height).toBeLessThanOrEqual(24);
+  await expect(page.locator('body')).toHaveJSProperty('scrollWidth', width);
   await page.screenshot({ path: `test-results/production-chat-${width}.png`, fullPage: true });
 });
 

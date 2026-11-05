@@ -14,3 +14,5 @@
 - [x] Commit focused changes and hand back the frozen local head for independent review before any GitHub publication.
 
 Capability acceptance also requires real-only canonical continuation routes and an account-scoped in-memory verified selection above route changes. Those are included, with direct switch/logout and stale callback fencing; no persistent capability cache was added.
+
+- [x] Bound production icons and minimally stack/wrap the chat shell on mobile; production browser assertions keep the composer visible, retain full IDs, and prevent horizontal overflow.
