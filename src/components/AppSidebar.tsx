@@ -93,6 +93,8 @@ export function AppSidebar({ className }: { className?: string }) {
   const isPopularActive = () => location.pathname === '/popular';
   const isMessagesActive = () =>
     location.pathname === '/messages' || location.pathname.startsWith('/messages/');
+  const isChatActive = () =>
+    location.pathname === '/chat' || location.pathname.startsWith('/chat/');
   const isCategoryActive = (name: string) => location.pathname === `/category/${name}`;
 
   const toggleTheme = () => {
@@ -212,10 +214,10 @@ export function AppSidebar({ className }: { className?: string }) {
 
           {isChatEnabled() && (
             <NavItem
-              icon={<ChatsCircle className="h-[18px] w-[18px]" weight={location.pathname.startsWith('/chat') ? 'fill' : 'bold'} />}
+              icon={<ChatsCircle className="h-[18px] w-[18px]" weight={isChatActive() ? 'fill' : 'bold'} />}
               label={t('nav.communityChat')}
               onClick={() => navigate('/chat')}
-              isActive={location.pathname === '/chat' || location.pathname.startsWith('/chat/')}
+              isActive={isChatActive()}
             />
           )}
 
