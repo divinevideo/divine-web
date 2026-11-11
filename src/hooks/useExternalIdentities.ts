@@ -8,6 +8,7 @@ import { nip19 } from 'nostr-tools';
 import { getCachedVerification, setCachedVerification } from '@/lib/verificationCache';
 import { API_CONFIG, getFeatureFlag } from '@/config/api';
 import { isDiscordMessageLink } from '@/lib/discordProof';
+import { isYouTubeChannelId } from '@/lib/youtubeIdentity';
 
 export interface ExternalIdentity {
   platform: string;
@@ -31,6 +32,10 @@ export interface PlatformConfig {
 function buildYouTubeProfileUrl(identity: string): string {
   const normalized = identity.trim();
   if (normalized.startsWith('@')) return `https://www.youtube.com/${normalized}`;
+  // A channel id has no @ form: youtube.com/@UC... is a handle that may not
+  // exist, or may belong to someone else.
+  if (isYouTubeChannelId(normalized)) return `https://www.youtube.com/channel/${normalized}`;
+  // Tags published before the verifier settled on a channel id or an @handle.
   if (normalized.startsWith('channel/') || normalized.startsWith('c/') || normalized.startsWith('user/')) {
     return `https://www.youtube.com/${normalized}`;
   }
