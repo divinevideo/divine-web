@@ -339,6 +339,14 @@ describe('SUPPORTED_PLATFORMS', () => {
   it('generates correct YouTube URLs', () => {
     const config = SUPPORTED_PLATFORMS.youtube;
     expect(config.profileUrl('alice')).toBe('https://www.youtube.com/@alice');
+    expect(config.profileUrl('@alice')).toBe('https://www.youtube.com/@alice');
+    // A channel id has no @ form: youtube.com/@UC... is a handle that may not
+    // exist, or may belong to someone else.
+    expect(config.profileUrl('UC_x5XG1OV2P6uZZ5FSM9Ttw'))
+      .toBe('https://www.youtube.com/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw');
+    // Tags published before the verifier settled on these forms still link.
+    expect(config.profileUrl('channel/UC_x5XG1OV2P6uZZ5FSM9Ttw'))
+      .toBe('https://www.youtube.com/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw');
     expect(config.proofUrl('alice', 'dQw4w9WgXcQ'))
       .toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
   });
