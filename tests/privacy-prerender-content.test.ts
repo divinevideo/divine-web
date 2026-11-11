@@ -25,8 +25,7 @@ describe('prerendered privacy policy', () => {
 
   it('keeps the prerendered Shorebird disclosure aligned with the React privacy page', () => {
     const prerendered = readPrerenderedPrivacy();
-    const page = readFileSync(resolve(REPO_ROOT, 'src/pages/PrivacyPage.tsx'), 'utf8')
-      .replace(/\s+/g, ' ');
+    const page = readPrivacyPage();
 
     const disclosureSentences = [
       'Divine uses Shorebird to check for and deliver app updates.',
