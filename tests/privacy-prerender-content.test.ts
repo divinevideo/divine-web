@@ -48,7 +48,9 @@ describe('prerendered privacy policy', () => {
     const disclosureSentences = [
       "When you're signed in, the app tells Divine when you open and close it, and checks in once a minute while it's open.",
       'We use this only to time notifications.',
-      'Current status is kept for three minutes, and visit counts for up to 90 days.',
+      'Whether the app is open right now is kept for three minutes.',
+      "Each app session's latest check-in, including when it happened, its last reported open or closed state, and visit and sequence numbers, is kept for seven days.",
+      'Visit-related notification state for your account is kept until 90 days after its last accepted check-in.',
       "It isn't shown to anyone.",
     ];
 

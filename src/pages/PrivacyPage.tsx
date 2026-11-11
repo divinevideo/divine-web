@@ -127,8 +127,11 @@ export function PrivacyPage() {
             </p>
             <p className="mb-3">
               When you're signed in, the app tells Divine when you open and close it, and checks in once a
-              minute while it's open. We use this only to time notifications. Current status is kept for three
-              minutes, and visit counts for up to 90 days. It isn't shown to anyone.
+              minute while it's open. We use this only to time notifications. Whether the app is open right
+              now is kept for three minutes. Each app session's latest check-in, including when it happened,
+              its last reported open or closed state, and visit and sequence numbers, is kept for seven days.
+              Visit-related notification state for your account is kept until 90 days after its last accepted
+              check-in. It isn't shown to anyone.
             </p>
             <p className="mb-3">
               The notification activity disclosure in Section 4 is effective November 5, 2026.
