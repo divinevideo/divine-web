@@ -52,6 +52,32 @@ interface UseVideoByIdResult {
   error: Error | null;
 }
 
+/** How many of an author's newest videos to scan, as fetchVideoById's own author-list step does. */
+const AUTHOR_VIDEO_SCAN_LIMIT = 50;
+
+/**
+ * Find `author`'s video with d tag `dTag` among their newest videos. A failed
+ * request returns null, so the page falls back to the relay, which queries by
+ * author and d tag; an abort still propagates.
+ */
+async function fetchAuthorVideoByDTag(
+  apiUrl: string,
+  author: string,
+  dTag: string,
+  signal: AbortSignal,
+): Promise<ParsedVideoData | null> {
+  try {
+    const { videos } = await fetchUserVideos(apiUrl, author, { limit: AUTHOR_VIDEO_SCAN_LIMIT, signal });
+    const raw = videos.find(candidate => candidate.d_tag === dTag);
+    const video = raw ? transformFunnelcakeVideo(raw) : null;
+    return video && matchesVideoRoute(video, dTag, author) ? video : null;
+  } catch (err) {
+    if (signal.aborted) throw err;
+    debugLog(`[useVideoByIdFunnelcake] Could not read the video list of ${author}; leaving ${dTag} to the relay`, err);
+    return null;
+  }
+}
+
 const NAVIGATION_WINDOW_SIZE = 16;
 const NAVIGATION_PAGE_BUDGET = 5;
 const ALL_VIDEOS_VISIBLE = () => true;
@@ -394,8 +420,11 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
       const raw = await fetchVideoById(funnelcakeUrl, videoId, author ?? pubkey, signal);
 
       const video = raw ? transformFunnelcakeVideo(raw) : null;
-      if (!video || (author && !isTarget(video))) return null;
-      return video;
+      // A miss has already been through fetchVideoById's author-list step.
+      if (!author || !video || isTarget(video)) return video;
+      // `/api/videos/{d}` answered with another account's video for a shared
+      // d tag, and fetchVideoById stops at its first answer.
+      return fetchAuthorVideoByDTag(funnelcakeUrl, author, videoId, signal);
     },
     // Fall back to a direct lookup when the narrowed context window misses the target.
     enabled: shouldLookupSingleVideo,

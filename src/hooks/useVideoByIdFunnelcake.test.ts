@@ -829,6 +829,7 @@ describe('useVideoByIdFunnelcake', () => {
 
     it("rejects another author's video that the d-tag lookup answers with", async () => {
       mockFetchVideoById.mockResolvedValueOnce({ id: 'other-event', pubkey: otherAuthor, d_tag: sharedDTag });
+      mockFetchUserVideos.mockResolvedValueOnce({ videos: [{ id: 'unrelated', pubkey: author, d_tag: 'unrelated' }] });
 
       const { result } = renderHook(
         () => useVideoByIdFunnelcake({ videoId: sharedDTag, author }),
@@ -837,6 +838,57 @@ describe('useVideoByIdFunnelcake', () => {
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
       expect(mockFetchVideoById).toHaveBeenCalledWith('https://api.divine.video', sharedDTag, author, expect.any(AbortSignal));
+      expect(result.current.video).toBeNull();
+      expect(result.current.error).toBeNull();
+    });
+
+    it("finds the author's own video in their list when the d-tag lookup answers with another account's", async () => {
+      mockFetchVideoById.mockResolvedValueOnce({ id: 'other-event', pubkey: otherAuthor, d_tag: sharedDTag });
+      mockFetchUserVideos.mockResolvedValueOnce({
+        videos: [
+          { id: 'newer', pubkey: author, d_tag: 'newer' },
+          { id: 'author-event', pubkey: author, d_tag: sharedDTag },
+        ],
+      });
+
+      const { result } = renderHook(
+        () => useVideoByIdFunnelcake({ videoId: sharedDTag, author }),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => expect(result.current.video?.id).toBe('author-event'));
+      expect(mockFetchUserVideos).toHaveBeenCalledWith(
+        'https://api.divine.video',
+        author,
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
+    });
+
+    it("does not take another account's video from the author's list", async () => {
+      mockFetchVideoById.mockResolvedValueOnce({ id: 'other-event', pubkey: otherAuthor, d_tag: sharedDTag });
+      // e.g. a repost of someone else's video in the author's feed
+      mockFetchUserVideos.mockResolvedValueOnce({ videos: [{ id: 'reposted', pubkey: otherAuthor, d_tag: sharedDTag }] });
+
+      const { result } = renderHook(
+        () => useVideoByIdFunnelcake({ videoId: sharedDTag, author }),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => expect(mockFetchUserVideos).toHaveBeenCalled());
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.video).toBeNull();
+    });
+
+    it("leaves the author's video to the relay when their list cannot be read", async () => {
+      mockFetchVideoById.mockResolvedValueOnce({ id: 'other-event', pubkey: otherAuthor, d_tag: sharedDTag });
+      mockFetchUserVideos.mockRejectedValueOnce(new Error('Funnelcake 503'));
+
+      const { result } = renderHook(
+        () => useVideoByIdFunnelcake({ videoId: sharedDTag, author }),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
       expect(result.current.video).toBeNull();
       expect(result.current.error).toBeNull();
     });

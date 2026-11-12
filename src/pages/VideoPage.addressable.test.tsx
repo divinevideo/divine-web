@@ -50,7 +50,9 @@ function matchesFilter(event: NostrEvent, filter: NostrFilter): boolean {
 vi.mock('@nostrify/react', () => ({ useNostr: () => ({ nostr: { query: mockQuery } }) }));
 vi.mock('@/lib/funnelcakeClient', () => ({
   fetchVideoById: mockFetchVideoById,
-  fetchUserVideos: vi.fn(),
+  // The author's newest videos do not include this one, so after REST
+  // answers with another account's video only the relay can find it.
+  fetchUserVideos: vi.fn(async () => ({ videos: [] })),
   searchVideos: vi.fn(),
 }));
 vi.mock('@/hooks/useAppContext', () => ({ useAppContext: () => ({ config: { relayUrl: 'wss://relay.divine.video' } }) }));
