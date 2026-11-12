@@ -1,10 +1,19 @@
 // ABOUTME: Hook to publish/update NIP-39 external identity claims (kind 10011)
-// ABOUTME: Provides add/remove operations for identity tags on the replaceable event
+// ABOUTME: Provides add/remove operations; removing a sign-in row also clears the verifier's sign-in record
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from './useCurrentUser';
 import { useExternalIdentities } from './useExternalIdentities';
+import { revokeSignInLink, signInPlatform, type SignInRevokeResult } from '@/lib/signInRevoke';
+import type { NostrEvent } from '@nostrify/nostrify';
+
+export interface RemoveIdentityResult {
+  /** The kind 10011 list that was published without the removed row. */
+  event: NostrEvent;
+  /** The verifier's answer, or null when the platform has no sign-in. */
+  signIn: SignInRevokeResult | null;
+}
 
 export function usePublishIdentity() {
   const { nostr } = useNostr();
@@ -62,12 +71,21 @@ export function useRemoveIdentity() {
   const { data: existingIdentities = [] } = useExternalIdentities(user?.pubkey);
 
   return useMutation({
-    mutationFn: async ({ platform, identity }: { platform: string; identity: string }) => {
+    mutationFn: async ({ platform, identity }: { platform: string; identity: string }): Promise<RemoveIdentityResult> => {
       const tags = existingIdentities
         .filter((id) => !(id.platform === platform && id.identity === identity))
         .map((id) => ['i', `${id.platform}:${id.identity}`, id.proof]);
 
-      return publishEvent(tags);
+      const event = await publishEvent(tags);
+
+      // Only after the new list is published: the verifier checks it before clearing.
+      // A refusal never undoes the removal; revokeSignInLink does not reject.
+      const signInName = signInPlatform(platform);
+      const signIn = signInName && user
+        ? await revokeSignInLink({ platform: signInName, identity, pubkey: user.pubkey, list: event })
+        : null;
+
+      return { event, signIn };
     },
     onSuccess: () => invalidate(),
   });

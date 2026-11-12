@@ -9,6 +9,7 @@ import React from 'react';
 const mockSignEvent = vi.fn();
 const mockNostrEvent = vi.fn();
 const mockNostrQuery = vi.fn();
+const mockRevoke = vi.hoisted(() => vi.fn());
 
 const TEST_PUBKEY = 'a'.repeat(64);
 
@@ -32,6 +33,12 @@ vi.mock('./useCurrentUser', () => ({
       signEvent: mockSignEvent,
     },
   }),
+}));
+
+// Keep the real platform mapping; replace only the network call
+vi.mock('@/lib/signInRevoke', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/signInRevoke')>()),
+  revokeSignInLink: mockRevoke,
 }));
 
 import { useAddIdentity, useRemoveIdentity } from './usePublishIdentity';
@@ -129,6 +136,7 @@ describe('useAddIdentity', () => {
 describe('useRemoveIdentity', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mockRevoke.mockResolvedValue({ revoked: true });
     mockSignEvent.mockImplementation(async (event: Record<string, unknown>) => ({
       ...event,
       id: 'signed-event-id',
@@ -204,5 +212,101 @@ describe('useRemoveIdentity', () => {
     const signedArgs = mockSignEvent.mock.calls[0][0];
     expect(signedArgs.tags).toEqual([]);
     expect(signedArgs.kind).toBe(10011);
+  });
+  async function setup(tags: string[][]) {
+    mockNostrQuery.mockResolvedValue([{
+      kind: 10011,
+      pubkey: TEST_PUBKEY,
+      created_at: 1700000000,
+      tags,
+      content: '',
+      id: 'event1',
+      sig: 'sig1',
+    }]);
+    const hook = renderHook(() => useRemoveIdentity(), { wrapper: createWrapper() });
+    await waitFor(() => expect(mockNostrQuery).toHaveBeenCalled());
+    // Let the identities query settle inside act so it does not warn
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    return hook;
+  }
+
+  it('clears the sign-in record with the list it just published', async () => {
+    const { result } = await setup([
+      ['i', 'bluesky:alice.bsky.social', 'oauth'],
+      ['i', 'github:alice', 'proof1'],
+    ]);
+
+    let removed!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
+    await act(async () => {
+      removed = await result.current.mutateAsync({ platform: 'bluesky', identity: 'alice.bsky.social' });
+    });
+
+    expect(mockRevoke).toHaveBeenCalledTimes(1);
+    expect(mockRevoke).toHaveBeenCalledWith({
+      platform: 'bluesky',
+      identity: 'alice.bsky.social',
+      pubkey: TEST_PUBKEY,
+      list: removed.event,
+    });
+    expect(removed.event.tags).toEqual([['i', 'github:alice', 'proof1']]);
+    expect(mockNostrEvent.mock.invocationCallOrder[0]).toBeLessThan(mockRevoke.mock.invocationCallOrder[0]);
+    expect(removed.signIn).toEqual({ revoked: true });
+  });
+
+  it('sends twitter for an x: row', async () => {
+    const { result } = await setup([['i', 'x:alice', 'oauth']]);
+
+    await act(async () => {
+      await result.current.mutateAsync({ platform: 'x', identity: 'alice' });
+    });
+
+    expect(mockRevoke).toHaveBeenCalledWith(
+      expect.objectContaining({ platform: 'twitter', identity: 'alice' }),
+    );
+  });
+
+  it('does not ask the verifier about a platform without sign-in', async () => {
+    const { result } = await setup([['i', 'github:alice', 'proof1']]);
+
+    let removed!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
+    await act(async () => {
+      removed = await result.current.mutateAsync({ platform: 'github', identity: 'alice' });
+    });
+
+    expect(mockRevoke).not.toHaveBeenCalled();
+    expect(removed.signIn).toBeNull();
+  });
+
+  it('keeps the removal when the verifier refuses', async () => {
+    const refusal = { revoked: false, code: 'unlink_claim_listed', error: 'This list still holds the linked account.' };
+    mockRevoke.mockResolvedValueOnce(refusal);
+    const { result } = await setup([
+      ['i', 'bluesky:alice.bsky.social', 'oauth'],
+      ['i', 'bluesky:Alice.bsky.social', 'oauth'],
+    ]);
+
+    let removed!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
+    await act(async () => {
+      removed = await result.current.mutateAsync({ platform: 'bluesky', identity: 'alice.bsky.social' });
+    });
+
+    expect(removed.signIn).toEqual(refusal);
+    expect(removed.event.tags).toEqual([['i', 'bluesky:Alice.bsky.social', 'oauth']]);
+    expect(mockNostrEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends nothing to the verifier when publishing fails', async () => {
+    mockNostrEvent.mockRejectedValueOnce(new Error('relay timeout'));
+    const { result } = await setup([['i', 'bluesky:alice.bsky.social', 'oauth']]);
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ platform: 'bluesky', identity: 'alice.bsky.social' }),
+      ).rejects.toThrow('relay timeout');
+    });
+
+    expect(mockRevoke).not.toHaveBeenCalled();
   });
 });
