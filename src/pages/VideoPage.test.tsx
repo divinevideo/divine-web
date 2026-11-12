@@ -23,6 +23,15 @@ const { openLoginDialogMock } = vi.hoisted(() => ({
   openLoginDialogMock: vi.fn(),
 }));
 
+const { lastFunnelcakeOptions } = vi.hoisted(() => ({
+  lastFunnelcakeOptions: {
+    value: null as null | {
+      videoId: string;
+      isVideoVisible?: (video: { id: string; pubkey: string; vineId: string | null }) => boolean;
+    },
+  },
+}));
+
 const { publishAsyncMock, currentUser } = vi.hoisted(() => ({
   publishAsyncMock: vi.fn(),
   currentUser: { value: null as { pubkey: string } | null },
@@ -38,7 +47,13 @@ vi.mock('@/hooks/useSubdomainNavigate', () => ({
 }));
 
 vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
-  useVideoByIdFunnelcake: (options: { videoId: string; query?: string; featuredTabId?: string }) => {
+  useVideoByIdFunnelcake: (options: {
+    videoId: string;
+    query?: string;
+    featuredTabId?: string;
+    isVideoVisible?: (video: { id: string; pubkey: string; vineId: string | null }) => boolean;
+  }) => {
+    lastFunnelcakeOptions.value = options;
     const videos = [
       {
         id: 'video-1',
@@ -557,6 +572,25 @@ describe('VideoPage', () => {
     fireEvent.keyDown(document.body, { key: 'ArrowDown' });
 
     expect(mockNavigate).toHaveBeenCalledWith('/video/video-3?source=search&q=twerking&sort=top&index=2');
+  });
+
+  it('navigates on from a video opened by its author-named route', () => {
+    renderPage(`/video/34236:${VIDEO_2_AUTHOR_PK}:vine-two?source=search&q=twerking&sort=top&index=1`);
+
+    fireEvent.keyDown(document.body, { key: 'ArrowDown' });
+
+    expect(mockNavigate).toHaveBeenCalledWith('/video/video-3?source=search&q=twerking&sort=top&index=2');
+  });
+
+  it('keeps a hidden video opened by its author-named route visible, but not a same-d-tag video by someone else', () => {
+    localStorage.setItem('hide-age-restricted-videos', 'true');
+    localStorage.setItem('discovered-age-restricted-video-ids', JSON.stringify(['video-2', 'other-video']));
+    renderPage(`/video/34236:${VIDEO_2_AUTHOR_PK}:vine-two`);
+
+    const isVideoVisible = lastFunnelcakeOptions.value?.isVideoVisible;
+    expect(lastFunnelcakeOptions.value?.videoId).toBe('vine-two');
+    expect(isVideoVisible?.({ id: 'video-2', pubkey: VIDEO_2_AUTHOR_PK, vineId: 'vine-two' })).toBe(true);
+    expect(isVideoVisible?.({ id: 'other-video', pubkey: VIDEO_3_AUTHOR_PK, vineId: 'vine-two' })).toBe(false);
   });
 
   it('retains a hidden video explicitly opened by its direct link', () => {

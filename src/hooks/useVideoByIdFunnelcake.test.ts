@@ -886,5 +886,32 @@ describe('useVideoByIdFunnelcake', () => {
       expect(result.current.video).toBeNull();
       expect(result.current.videos).toBeNull();
     });
+
+    it("keeps paging a featured feed past another author's video with the same d tag", async () => {
+      mockUseFeaturedTab.mockReturnValue({ tab: { id: 'ft_1234abcd' }, isResolved: true });
+      mockFetchFeaturedTabVideos
+        .mockResolvedValueOnce({
+          videos: [
+            { id: 'other-event', pubkey: otherAuthor, d_tag: sharedDTag },
+            { id: 'neighbor-1', pubkey: otherAuthor, d_tag: 'neighbor-1' },
+          ],
+          has_more: true,
+          next_cursor: 'cursor-2',
+        })
+        .mockResolvedValueOnce({
+          videos: [{ id: 'author-event', pubkey: author, d_tag: sharedDTag }],
+          has_more: false,
+        });
+      mockFetchVideoById.mockResolvedValueOnce(null);
+
+      const { result } = renderHook(
+        () => useVideoByIdFunnelcake({ videoId: sharedDTag, author, featuredTabId: 'ft_1234abcd', currentIndex: 0 }),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => expect(result.current.video?.id).toBe('author-event'));
+      expect(mockFetchFeaturedTabVideos).toHaveBeenCalledTimes(2);
+      expect(result.current.featuredNavigationState).toBe('ok');
+    });
   });
 });
