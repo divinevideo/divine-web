@@ -68,9 +68,14 @@ async function fetchAuthorVideoByDTag(
 ): Promise<ParsedVideoData | null> {
   try {
     const { videos } = await fetchUserVideos(apiUrl, author, { limit: AUTHOR_VIDEO_SCAN_LIMIT, signal });
-    const raw = videos.find(candidate => candidate.d_tag === dTag);
-    const video = raw ? transformFunnelcakeVideo(raw) : null;
-    return video && matchesVideoRoute(video, dTag, author) ? video : null;
+    // The list can hold another account's entry with the same d tag (a
+    // repost, say), so match the author and d tag together.
+    for (const raw of videos) {
+      if (raw.d_tag !== dTag) continue;
+      const video = transformFunnelcakeVideo(raw);
+      if (video && matchesVideoRoute(video, dTag, author)) return video;
+    }
+    return null;
   } catch (err) {
     if (signal.aborted) throw err;
     debugLog(`[useVideoByIdFunnelcake] Could not read the video list of ${author}; leaving ${dTag} to the relay`, err);

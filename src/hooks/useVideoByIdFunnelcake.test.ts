@@ -879,6 +879,23 @@ describe('useVideoByIdFunnelcake', () => {
       expect(result.current.video).toBeNull();
     });
 
+    it("finds the author's video in their list even after another account's entry with the same d tag", async () => {
+      mockFetchVideoById.mockResolvedValueOnce({ id: 'other-event', pubkey: otherAuthor, d_tag: sharedDTag });
+      mockFetchUserVideos.mockResolvedValueOnce({
+        videos: [
+          { id: 'reposted', pubkey: otherAuthor, d_tag: sharedDTag },
+          { id: 'author-event', pubkey: author, d_tag: sharedDTag },
+        ],
+      });
+
+      const { result } = renderHook(
+        () => useVideoByIdFunnelcake({ videoId: sharedDTag, author }),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => expect(result.current.video?.id).toBe('author-event'));
+    });
+
     it("leaves the author's video to the relay when their list cannot be read", async () => {
       mockFetchVideoById.mockResolvedValueOnce({ id: 'other-event', pubkey: otherAuthor, d_tag: sharedDTag });
       mockFetchUserVideos.mockRejectedValueOnce(new Error('Funnelcake 503'));
