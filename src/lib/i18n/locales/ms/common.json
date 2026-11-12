@@ -717,7 +717,8 @@
     "toastFailedPublish": "Gagal menerbitkan acara identiti",
     "toastRemovedTitle": "Dibuang",
     "toastAccountUnlinked": "Akaun dinyahpaut",
-    "toastFailedRemove": "Gagal membuang identiti"
+    "toastFailedRemove": "Gagal membuang identiti",
+    "toastSignInNotCleared": "Dibuang daripada profil anda, tetapi rekod log masuknya tidak dapat dipadam."
   },
   "linkedAccounts": {
     "verifying": "Mengesahkan...",

@@ -724,7 +724,8 @@
     "toastFailedPublish": "Échec de la publication de l'événement d'identité",
     "toastRemovedTitle": "Supprimé",
     "toastAccountUnlinked": "Compte délié",
-    "toastFailedRemove": "Échec de la suppression de l'identité"
+    "toastFailedRemove": "Échec de la suppression de l'identité",
+    "toastSignInNotCleared": "Retiré de votre profil, mais son enregistrement de connexion n'a pas pu être effacé."
   },
   "linkedAccounts": {
     "verifying": "Vérification...",

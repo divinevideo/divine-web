@@ -724,7 +724,8 @@
     "toastFailedPublish": "Pubblicazione dell'evento identità non riuscita",
     "toastRemovedTitle": "Rimosso",
     "toastAccountUnlinked": "Account scollegato",
-    "toastFailedRemove": "Rimozione dell'identità non riuscita"
+    "toastFailedRemove": "Rimozione dell'identità non riuscita",
+    "toastSignInNotCleared": "Rimosso dal tuo profilo, ma non è stato possibile cancellare il relativo record di accesso."
   },
   "linkedAccounts": {
     "verifying": "Verifica...",

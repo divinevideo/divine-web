@@ -717,7 +717,8 @@
     "toastFailedPublish": "Kimlik olayı yayınlanamadı",
     "toastRemovedTitle": "Kaldırıldı",
     "toastAccountUnlinked": "Hesap bağlantısı kaldırıldı",
-    "toastFailedRemove": "Kimlik kaldırılamadı"
+    "toastFailedRemove": "Kimlik kaldırılamadı",
+    "toastSignInNotCleared": "Profilinden kaldırıldı, ancak oturum açma kaydı temizlenemedi."
   },
   "linkedAccounts": {
     "verifying": "Doğrulanıyor...",

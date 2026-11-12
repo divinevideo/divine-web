@@ -717,7 +717,8 @@
     "toastFailedPublish": "Failed to publish identity event",
     "toastRemovedTitle": "Removed",
     "toastAccountUnlinked": "Account unlinked",
-    "toastFailedRemove": "Failed to remove identity"
+    "toastFailedRemove": "Failed to remove identity",
+    "toastSignInNotCleared": "Removed from your profile, but its sign-in record could not be cleared."
   },
   "linkedAccounts": {
     "verifying": "Verifying...",

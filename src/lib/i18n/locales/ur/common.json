@@ -717,7 +717,8 @@
     "toastFailedPublish": "شناختی ایونٹ شائع نہیں ہو سکا",
     "toastRemovedTitle": "ہٹا دیا گیا",
     "toastAccountUnlinked": "اکاؤنٹ کی نسبت ختم",
-    "toastFailedRemove": "شناخت ہٹائی نہیں جا سکی"
+    "toastFailedRemove": "شناخت ہٹائی نہیں جا سکی",
+    "toastSignInNotCleared": "آپ کی پروفائل سے ہٹا دیا گیا، لیکن اس کا سائن اِن ریکارڈ صاف نہیں ہو سکا۔"
   },
   "linkedAccounts": {
     "verifying": "تصدیق ہو رہی ہے...",

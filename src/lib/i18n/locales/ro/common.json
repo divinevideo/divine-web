@@ -724,7 +724,8 @@
     "toastFailedPublish": "Publicarea evenimentului de identitate a eșuat",
     "toastRemovedTitle": "Eliminat",
     "toastAccountUnlinked": "Cont deconectat",
-    "toastFailedRemove": "Eliminarea identității a eșuat"
+    "toastFailedRemove": "Eliminarea identității a eșuat",
+    "toastSignInNotCleared": "Eliminat din profilul tău, dar înregistrarea de autentificare nu a putut fi ștearsă."
   },
   "linkedAccounts": {
     "verifying": "Se verifică...",

@@ -7,8 +7,11 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import LinkedAccountsSettingsPage from './LinkedAccountsSettingsPage';
 
-const { mockAdd } = vi.hoisted(() => ({
+const { mockAdd, mockRemove, mockToast, state } = vi.hoisted(() => ({
   mockAdd: vi.fn().mockResolvedValue(undefined),
+  mockRemove: vi.fn(),
+  mockToast: vi.fn(),
+  state: { identities: [] as unknown[] },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -20,12 +23,12 @@ vi.mock('@/hooks/useCurrentUser', () => ({
 }));
 
 vi.mock('@/hooks/useToast', () => ({
-  useToast: () => ({ toast: vi.fn() }),
+  useToast: () => ({ toast: mockToast }),
 }));
 
 vi.mock('@/hooks/usePublishIdentity', () => ({
   useAddIdentity: () => ({ mutateAsync: mockAdd, isPending: false }),
-  useRemoveIdentity: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useRemoveIdentity: () => ({ mutateAsync: mockRemove, isPending: false }),
 }));
 
 vi.mock('@/hooks/useExternalIdentities', async (importOriginal) => {
@@ -33,7 +36,7 @@ vi.mock('@/hooks/useExternalIdentities', async (importOriginal) => {
     await importOriginal<typeof import('@/hooks/useExternalIdentities')>();
   return {
     ...actual,
-    useExternalIdentities: () => ({ data: [], isLoading: false }),
+    useExternalIdentities: () => ({ data: state.identities, isLoading: false }),
     verifyIdentityClaim: vi.fn().mockResolvedValue({ verified: true }),
   };
 });
@@ -53,11 +56,14 @@ async function selectDiscord(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByText('Discord'));
 }
 
-describe('LinkedAccountsSettingsPage Discord flow', () => {
-  beforeEach(() => {
-    mockAdd.mockClear();
-  });
+beforeEach(() => {
+  state.identities = [];
+  mockAdd.mockClear();
+  mockRemove.mockReset();
+  mockToast.mockClear();
+});
 
+describe('LinkedAccountsSettingsPage Discord flow', () => {
   it('publishes the typed username, not the pasted link, as the identity', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -115,5 +121,48 @@ describe('LinkedAccountsSettingsPage Discord flow', () => {
     await user.click(screen.getByRole('button', { name: /linkedAccountsSettings.linkAccountButton/i }));
 
     expect(mockAdd).not.toHaveBeenCalled();
+  });
+});
+
+const BLUESKY_ROW = {
+  platform: 'bluesky',
+  identity: 'alice.bsky.social',
+  proof: 'oauth',
+  profileUrl: '',
+  proofUrl: '',
+};
+
+describe('LinkedAccountsSettingsPage unlinking', () => {
+  it('warns when the sign-in record could not be cleared, and keeps the removal', async () => {
+    const user = userEvent.setup();
+    state.identities = [BLUESKY_ROW];
+    mockRemove.mockResolvedValueOnce({ event: {}, signIn: { revoked: false, code: 'unlink_claim_listed' } });
+    renderPage();
+
+    await user.click(screen.getByTitle('linkedAccountsSettings.removeTooltip'));
+
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith({
+      title: 'linkedAccountsSettings.toastRemovedTitle',
+      description: 'linkedAccountsSettings.toastSignInNotCleared',
+    }));
+    expect(mockToast).not.toHaveBeenCalledWith(expect.objectContaining({ variant: 'destructive' }));
+    expect(mockRemove).toHaveBeenCalledWith({ platform: 'bluesky', identity: 'alice.bsky.social' });
+  });
+
+  it.each([
+    ['the record was cleared', { revoked: true }],
+    ['the platform has no sign-in', null],
+  ])('confirms a plain unlink when %s', async (_label, signIn) => {
+    const user = userEvent.setup();
+    state.identities = [BLUESKY_ROW];
+    mockRemove.mockResolvedValueOnce({ event: {}, signIn });
+    renderPage();
+
+    await user.click(screen.getByTitle('linkedAccountsSettings.removeTooltip'));
+
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith({
+      title: 'linkedAccountsSettings.toastRemovedTitle',
+      description: 'linkedAccountsSettings.toastAccountUnlinked',
+    }));
   });
 });

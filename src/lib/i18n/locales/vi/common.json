@@ -717,7 +717,8 @@
     "toastFailedPublish": "Không đăng được sự kiện danh tính",
     "toastRemovedTitle": "Đã gỡ",
     "toastAccountUnlinked": "Đã hủy liên kết tài khoản",
-    "toastFailedRemove": "Không gỡ được danh tính"
+    "toastFailedRemove": "Không gỡ được danh tính",
+    "toastSignInNotCleared": "Đã gỡ khỏi hồ sơ của bạn, nhưng không thể xóa bản ghi đăng nhập của nó."
   },
   "linkedAccounts": {
     "verifying": "Đang xác minh...",

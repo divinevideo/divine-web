@@ -717,7 +717,8 @@
     "toastFailedPublish": "Gagal mempublikasikan event identitas",
     "toastRemovedTitle": "Dihapus",
     "toastAccountUnlinked": "Akun dilepas",
-    "toastFailedRemove": "Gagal menghapus identitas"
+    "toastFailedRemove": "Gagal menghapus identitas",
+    "toastSignInNotCleared": "Dihapus dari profilmu, tetapi catatan masuknya tidak dapat dihapus."
   },
   "linkedAccounts": {
     "verifying": "Memverifikasi...",

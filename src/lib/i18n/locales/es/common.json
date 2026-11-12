@@ -724,7 +724,8 @@
     "toastFailedPublish": "Falló al publicar el evento de identidad",
     "toastRemovedTitle": "Eliminada",
     "toastAccountUnlinked": "Cuenta desvinculada",
-    "toastFailedRemove": "Falló al eliminar la identidad"
+    "toastFailedRemove": "Falló al eliminar la identidad",
+    "toastSignInNotCleared": "Se eliminó de tu perfil, pero no se pudo borrar su registro de inicio de sesión."
   },
   "linkedAccounts": {
     "verifying": "Verificando...",

@@ -717,7 +717,8 @@
     "toastFailedPublish": "Hindi na-publish ang identity event",
     "toastRemovedTitle": "Inalis",
     "toastAccountUnlinked": "Na-unlink ang account",
-    "toastFailedRemove": "Hindi na-alis ang identity"
+    "toastFailedRemove": "Hindi na-alis ang identity",
+    "toastSignInNotCleared": "Naalis na sa iyong profile, pero hindi nabura ang sign-in record nito."
   },
   "linkedAccounts": {
     "verifying": "Sinusuri...",

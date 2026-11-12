@@ -717,7 +717,8 @@
     "toastFailedPublish": "身份事件发布失败",
     "toastRemovedTitle": "已移除",
     "toastAccountUnlinked": "账号已取消关联",
-    "toastFailedRemove": "移除身份失败"
+    "toastFailedRemove": "移除身份失败",
+    "toastSignInNotCleared": "已从你的个人资料中移除，但无法清除其登录记录。"
   },
   "linkedAccounts": {
     "verifying": "验证中…",
