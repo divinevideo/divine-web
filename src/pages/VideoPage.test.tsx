@@ -645,6 +645,7 @@ describe('VideoPage', () => {
     expect(mockUseVideoNavigation).toHaveBeenCalledWith('video-2', {
       enabled: true,
       context: { source: 'trending' },
+      address: null,
     });
     expect(screen.getByText("That featured tab wrapped. Here's trending.")).toBeInTheDocument();
 
@@ -706,6 +707,7 @@ describe('VideoPage', () => {
         source: 'featured',
         featuredTabId: 'ft_out_of_range',
       }),
+      address: null,
     });
     expect(screen.getByText('This video is still here, but it is not in the loaded tab window anymore.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back to Live Tab' })).toBeInTheDocument();

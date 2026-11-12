@@ -820,4 +820,71 @@ describe('useVideoByIdFunnelcake', () => {
     expect(pagedIds).toContain('visible-next');
     expect(mockSearchVideos).toHaveBeenCalledTimes(3);
   });
+
+  describe('with an author named by the link', () => {
+    const author = 'a'.repeat(64);
+    const otherAuthor = 'b'.repeat(64);
+    // Divine's d tag is the file's sha256, so identical uploads share it.
+    const sharedDTag = 'c'.repeat(64);
+
+    it("rejects another author's video that the d-tag lookup answers with", async () => {
+      mockFetchVideoById.mockResolvedValueOnce({ id: 'other-event', pubkey: otherAuthor, d_tag: sharedDTag });
+
+      const { result } = renderHook(
+        () => useVideoByIdFunnelcake({ videoId: sharedDTag, author }),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(mockFetchVideoById).toHaveBeenCalledWith('https://api.divine.video', sharedDTag, author, expect.any(AbortSignal));
+      expect(result.current.video).toBeNull();
+      expect(result.current.error).toBeNull();
+    });
+
+    it("accepts the named author's video", async () => {
+      mockFetchVideoById.mockResolvedValueOnce({ id: 'author-event', pubkey: author, d_tag: sharedDTag });
+
+      const { result } = renderHook(
+        () => useVideoByIdFunnelcake({ videoId: sharedDTag, author }),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => expect(result.current.video?.id).toBe('author-event'));
+      expect(result.current.video?.pubkey).toBe(author);
+    });
+
+    it("does not reuse a cached bare lookup that found another author's video", async () => {
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: React.ReactNode }) =>
+        React.createElement(QueryClientProvider, { client: queryClient }, children);
+      mockFetchVideoById
+        .mockResolvedValueOnce({ id: 'other-event', pubkey: otherAuthor, d_tag: sharedDTag })
+        .mockResolvedValueOnce({ id: 'author-event', pubkey: author, d_tag: sharedDTag });
+
+      const bare = renderHook(() => useVideoByIdFunnelcake({ videoId: sharedDTag }), { wrapper });
+      await waitFor(() => expect(bare.result.current.video?.id).toBe('other-event'));
+
+      const scoped = renderHook(() => useVideoByIdFunnelcake({ videoId: sharedDTag, author }), { wrapper });
+      await waitFor(() => expect(scoped.result.current.video?.id).toBe('author-event'));
+      expect(mockFetchVideoById).toHaveBeenCalledTimes(2);
+    });
+
+    it("does not take another author's video with the same d tag from a context feed", async () => {
+      mockSearchVideos.mockResolvedValueOnce({
+        videos: [{ id: 'other-event', pubkey: otherAuthor, d_tag: sharedDTag }],
+        has_more: false,
+      });
+      mockFetchVideoById.mockResolvedValueOnce(null);
+
+      const { result } = renderHook(
+        () => useVideoByIdFunnelcake({ videoId: sharedDTag, author, query: 'cats' }),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => expect(mockFetchVideoById).toHaveBeenCalled());
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(result.current.video).toBeNull();
+      expect(result.current.videos).toBeNull();
+    });
+  });
 });

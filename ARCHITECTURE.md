@@ -180,6 +180,16 @@ accounts and older or non-Divine clients.
 People-list detail routes preserve `?relays=` hints from NIP-19 addresses and
 generic event redirects so lists published only to non-default relays can still
 be resolved.
+A video named by its author (an `naddr1` or a raw `kind:pubkey:d` coordinate)
+routes to `/video/<kind>:<pubkey>:<d>`, not `/video/<d>`. Divine's `d` tag is
+the sha256 of the uploaded file, so accounts that upload the same file share
+one, and any account can publish under any `d` tag.
+[`parseVideoRouteId`](./src/lib/videoRoute.ts) turns that route into a lookup
+held to the author: `VideoPage` rejects a REST answer by another account and
+falls back to a relay query with `authors` and `#d`, then shows "not found" if
+the author has no such video. A bare `/video/<id>` names no author and still
+resolves by event id or `d` tag. The mobile app accepts the same coordinate as
+a `/video/:id` route id.
 
 ## Styling
 

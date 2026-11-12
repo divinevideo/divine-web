@@ -3,6 +3,7 @@ import { nip19 } from 'nostr-tools';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import {
   buildAddressableEventPath,
+  buildAddressableVideoPath,
   buildEventPath,
   buildListPath,
   buildPeopleListPath,
@@ -55,7 +56,7 @@ describe('directSearch', () => {
     });
   });
 
-  it('routes video naddr and raw coordinates to the video page', () => {
+  it('routes video naddr and raw coordinates to the video page of their author', () => {
     const identifier = 'folder/video-123';
     const naddr = nip19.naddrEncode({
       identifier,
@@ -65,13 +66,28 @@ describe('directSearch', () => {
     const coordinate = `${SHORT_VIDEO_KIND}:${pubkey}:${identifier}`;
 
     expect(getDirectSearchTarget(naddr)).toEqual({
-      path: buildVideoPath(identifier),
+      path: buildAddressableVideoPath(SHORT_VIDEO_KIND, pubkey, identifier),
       entity: 'video',
     });
     expect(getDirectSearchTarget(coordinate)).toEqual({
-      path: buildVideoPath(identifier),
+      path: buildAddressableVideoPath(SHORT_VIDEO_KIND, pubkey, identifier),
       entity: 'video',
     });
+    expect(getDirectSearchTarget(`a:${SHORT_VIDEO_KIND}:${pubkey.toUpperCase()}:${identifier}`)).toEqual({
+      path: buildAddressableVideoPath(SHORT_VIDEO_KIND, pubkey, identifier),
+      entity: 'video',
+    });
+  });
+
+  it('sends naddrs for one d tag by two authors to two different video pages', () => {
+    const sharedDTag = 'c'.repeat(64);
+    const otherPubkey = 'd'.repeat(64);
+    const mine = getDirectSearchTarget(nip19.naddrEncode({ identifier: sharedDTag, pubkey, kind: SHORT_VIDEO_KIND }));
+    const theirs = getDirectSearchTarget(nip19.naddrEncode({ identifier: sharedDTag, pubkey: otherPubkey, kind: SHORT_VIDEO_KIND }));
+
+    expect(mine?.path).toContain(pubkey);
+    expect(theirs?.path).toContain(otherPubkey);
+    expect(mine?.path).not.toBe(theirs?.path);
   });
 
   it('routes list naddrs and generic addressable events to useful paths', () => {
