@@ -147,6 +147,18 @@ describe('VideoPage author-named video links', () => {
     expect(screen.queryByTestId('video-card')).not.toBeInTheDocument();
   });
 
+  it("shows not found for an naddr1 with an empty identifier, never a video whose d tag is the literal segment", async () => {
+    relayEvents.push(videoEvent(SQUATTER, 'squatter-event'));
+
+    client = renderAt(`/${nip19.naddrEncode({ kind: 34236, pubkey: AUTHOR, identifier: '' })}`);
+
+    expect(await screen.findByText('Video not found')).toBeInTheDocument();
+    expect(screen.queryByTestId('video-card')).not.toBeInTheDocument();
+    expect(mockFetchVideoById).not.toHaveBeenCalledWith(
+      expect.any(String), `34236:${AUTHOR}:`, expect.anything(), expect.anything(),
+    );
+  });
+
   it('keeps resolving a bare d-tag link, which names no author, as before', async () => {
     client = renderAt(`/video/${SHARED_D_TAG}`);
 

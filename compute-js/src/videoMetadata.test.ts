@@ -15,6 +15,11 @@ describe('isAddressableVideoRouteId', () => {
     expect(isAddressableVideoRouteId(`34236%3A${pubkey}%3A${dTag}`)).toBe(true);
   });
 
+  it('recognises it with an empty d tag or one that starts with a line break', () => {
+    expect(isAddressableVideoRouteId(`34236:${pubkey}:`)).toBe(true);
+    expect(isAddressableVideoRouteId(`34236:${pubkey}:%0Aclip`)).toBe(true);
+  });
+
   it.each([
     ['an event id', 'e'.repeat(64)],
     ['a d tag', dTag],

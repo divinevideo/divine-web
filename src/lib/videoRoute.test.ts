@@ -30,6 +30,20 @@ describe('parseVideoRouteId', () => {
     });
   });
 
+  it('holds a route with an empty d tag to its author instead of looking the whole segment up', () => {
+    // NIP-19 allows an naddr1 with an empty identifier. No valid video has an
+    // empty d tag, so this must resolve to nothing, never to whichever video
+    // carries the literal `kind:pubkey:` text as its d tag.
+    expect(parseVideoRouteId(`${SHORT_VIDEO_KIND}:${AUTHOR}:`)).toEqual({
+      lookupId: '',
+      address: { kind: SHORT_VIDEO_KIND, pubkey: AUTHOR, dTag: '' },
+    });
+  });
+
+  it('keeps a d tag that starts with a line break', () => {
+    expect(parseVideoRouteId(`${SHORT_VIDEO_KIND}:${AUTHOR}:\nclip`).address?.dTag).toBe('\nclip');
+  });
+
   it('lowercases an upper-case author so exact author checks still hold', () => {
     expect(parseVideoRouteId(`${SHORT_VIDEO_KIND}:${AUTHOR.toUpperCase()}:${SHARED_D_TAG}`).address?.pubkey).toBe(AUTHOR);
   });

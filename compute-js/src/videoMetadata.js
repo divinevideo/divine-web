@@ -3,7 +3,9 @@
 
 import { cleanText, truncateText } from './ogTags.js';
 
-const ADDRESSABLE_ROUTE_ID = /^\d+:[0-9a-f]{64}:./i;
+// The d tag after the second colon may be empty or start with any character,
+// line breaks included; the SPA holds all of these to the author.
+const ADDRESSABLE_ROUTE_ID = /^\d+:[0-9a-f]{64}:/i;
 
 /**
  * Whether a raw `/video/:id` segment is an author-named `kind:pubkey:d` route,

@@ -20,7 +20,7 @@ import {
   type VideoApiResponse,
 } from '../src/lib/serverSocialMeta';
 import { getDiscoveryMeta } from '../src/lib/discoveryMeta';
-import { parseAddressableCoordinate } from '../src/lib/nostrCoordinates';
+import { parseCoordinateWithOptionalDTag } from '../src/lib/nostrCoordinates';
 
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 
@@ -31,7 +31,7 @@ const FUNNELCAKE_API_URL = 'https://relay.divine.video';
  * tag, so these routes keep the generic shell and the app resolves the video.
  */
 function isAddressableVideoRoute(identifier: string): boolean {
-  return parseAddressableCoordinate(identifier) !== null;
+  return parseCoordinateWithOptionalDTag(identifier) !== null;
 }
 
 function escapeHtml(value: string): string {

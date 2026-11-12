@@ -183,11 +183,13 @@ describe('functions/[[path]]', () => {
     expect(await response.text()).toBe('Video not found');
   });
 
-  it('serves the generic shell for an author-named video route without a d-tag lookup', async () => {
+  it.each([
+    ['a d tag', `34236:${'a'.repeat(64)}:${'c'.repeat(64)}`],
+    ['an empty d tag', `34236:${'a'.repeat(64)}:`],
+  ])('serves the generic shell for an author-named video route with %s, without a d-tag lookup', async (_label, route) => {
     // `/api/videos/{id}` would read the whole coordinate as one d tag, which
     // can name a different video than the coordinate's author and d tag.
     const fetchMock = vi.mocked(fetch);
-    const route = `34236:${'a'.repeat(64)}:${'c'.repeat(64)}`;
 
     const response = await onRequest({
       request: new Request(`https://divine.video/video/${route}`),

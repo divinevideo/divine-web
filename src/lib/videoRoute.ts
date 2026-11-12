@@ -1,7 +1,7 @@
 // ABOUTME: Decodes the /video/:id route segment into what the video page looks a video up by
 // ABOUTME: A kind:pubkey:d coordinate holds the lookup to that author; anything else is a bare id
 
-import { parseAddressableCoordinate, type AddressableCoordinate } from '@/lib/nostrCoordinates';
+import { parseCoordinateWithOptionalDTag, type AddressableCoordinate } from '@/lib/nostrCoordinates';
 import { VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 
 export interface VideoRouteTarget {
@@ -21,10 +21,11 @@ export interface VideoRouteTarget {
  * Decode a `/video/:id` segment. A video-kind `kind:pubkey:d` coordinate (what
  * `buildAddressableVideoPath` writes for an `naddr1`) becomes an author-held
  * lookup of its `d` tag; an event id, a bare `d` tag, or anything else stays a
- * bare lookup id, as before.
+ * bare lookup id, as before. An empty `d` tag, which NIP-19 allows, stays held
+ * to the author and so resolves to nothing: no valid video has one.
  */
 export function parseVideoRouteId(routeId: string): VideoRouteTarget {
-  const coordinate = parseAddressableCoordinate(routeId);
+  const coordinate = parseCoordinateWithOptionalDTag(routeId);
   if (!coordinate || !VIDEO_KINDS.includes(coordinate.kind as typeof VIDEO_KINDS[number])) {
     return { lookupId: routeId, address: null };
   }
