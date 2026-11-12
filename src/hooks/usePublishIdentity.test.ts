@@ -113,6 +113,27 @@ describe('useAddIdentity', () => {
     expect(signedArgs.content).toBe('');
   });
 
+  it('refuses to publish when the signer signs as another account', async () => {
+    mockSignEvent.mockImplementationOnce(async (event: Record<string, unknown>) => ({
+      ...event,
+      id: 'signed-event-id',
+      pubkey: 'b'.repeat(64),
+      sig: 'test-sig',
+    }));
+
+    const { result } = renderHook(
+      () => useAddIdentity(),
+      { wrapper: createWrapper() },
+    );
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ platform: 'github', identity: 'test', proof: 'abc' }),
+      ).rejects.toThrow('Signer pubkey does not match the logged-in account');
+    });
+    expect(mockNostrEvent).not.toHaveBeenCalled();
+  });
+
   it('throws when sign event fails', async () => {
     mockSignEvent.mockRejectedValueOnce(new Error('Signing failed'));
 
@@ -213,6 +234,7 @@ describe('useRemoveIdentity', () => {
     expect(signedArgs.tags).toEqual([]);
     expect(signedArgs.kind).toBe(10011);
   });
+
   async function setup(tags: string[][]) {
     mockNostrQuery.mockResolvedValue([{
       kind: 10011,
@@ -231,6 +253,25 @@ describe('useRemoveIdentity', () => {
     });
     return hook;
   }
+
+  it('refuses to publish or revoke when the signer signs as another account', async () => {
+    mockSignEvent.mockImplementation(async (event: Record<string, unknown>) => ({
+      ...event,
+      id: 'signed-event-id',
+      pubkey: 'b'.repeat(64),
+      sig: 'test-sig',
+    }));
+    const { result } = await setup([['i', 'bluesky:alice.bsky.social', 'oauth']]);
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ platform: 'bluesky', identity: 'alice.bsky.social' }),
+      ).rejects.toThrow('Signer pubkey does not match the logged-in account');
+    });
+
+    expect(mockNostrEvent).not.toHaveBeenCalled();
+    expect(mockRevoke).not.toHaveBeenCalled();
+  });
 
   it('clears the sign-in record with the list it just published', async () => {
     const { result } = await setup([

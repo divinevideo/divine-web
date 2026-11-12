@@ -30,6 +30,13 @@ export function usePublishIdentity() {
       created_at: Math.floor(Date.now() / 1000),
     });
 
+    // The signer is live state behind an async gap (e.g. an extension whose
+    // active account changed), and the signed list is also sent to the verifier
+    // as an auth proof, so never publish something signed as another account.
+    if (event.pubkey !== user.pubkey) {
+      throw new Error('Signer pubkey does not match the logged-in account');
+    }
+
     await nostr.event(event, { signal: AbortSignal.timeout(5000) });
     return event;
   };
