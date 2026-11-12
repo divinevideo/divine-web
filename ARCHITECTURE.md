@@ -185,14 +185,16 @@ routes to `/video/<kind>:<pubkey>:<d>`, not `/video/<d>`. Divine's `d` tag is
 the sha256 of the uploaded file, so accounts that upload the same file share
 one, and any account can publish under any `d` tag.
 [`parseVideoRouteId`](./src/lib/videoRoute.ts) turns that route into a lookup
-held to the author: `VideoPage` rejects a REST answer by another account and
-falls back to a relay query with `authors` and `#d`, then shows "not found" if
-the author has no such video. A bare `/video/<id>` names no author and still
+held to the author, even with an empty `d` tag. `VideoPage` rejects a REST
+answer by another account, checks the author's own newest videos, then falls
+back to a relay query with `authors` and `#d`, and shows "not found" if the
+author has no such video. A bare `/video/<id>` names no author and still
 resolves by event id or `d` tag. The mobile app accepts the same coordinate as
 a `/video/:id` route id. Both edges (Fastly `compute-js` and the Cloudflare
-function) skip their per-video metadata lookup and oEmbed link for these
-routes, because `/api/videos/{id}` would read the whole coordinate as one `d`
-tag; they serve the generic shell metadata instead.
+function) skip their per-video metadata lookup for these routes, because
+`/api/videos/{id}` would read the whole coordinate as one `d` tag, and the
+Cloudflare function also omits its oEmbed link. They fall back to generic
+metadata: the shell's, or for crawlers on Fastly its "Video on Divine" card.
 
 ## Styling
 
