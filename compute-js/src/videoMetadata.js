@@ -3,6 +3,25 @@
 
 import { cleanText, truncateText } from './ogTags.js';
 
+const ADDRESSABLE_ROUTE_ID = /^\d+:[0-9a-f]{64}:./i;
+
+/**
+ * Whether a raw `/video/:id` segment is an author-named `kind:pubkey:d` route,
+ * which the app writes for an naddr1. Funnelcake's `/api/videos/{id}` reads the
+ * whole segment as one d tag, which can name a different video than the
+ * coordinate's author and d tag, so these routes keep the generic metadata
+ * and the app resolves the video itself.
+ */
+export function isAddressableVideoRouteId(rawId) {
+  let id = rawId;
+  try {
+    id = decodeURIComponent(rawId);
+  } catch {
+    // A malformed escape is not a coordinate the app wrote.
+  }
+  return ADDRESSABLE_ROUTE_ID.test(id);
+}
+
 export function parseImetaTag(tag) {
   if (!Array.isArray(tag) || tag[0] !== 'imeta') return {};
   const out = {};

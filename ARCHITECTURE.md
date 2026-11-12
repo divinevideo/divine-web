@@ -189,7 +189,10 @@ held to the author: `VideoPage` rejects a REST answer by another account and
 falls back to a relay query with `authors` and `#d`, then shows "not found" if
 the author has no such video. A bare `/video/<id>` names no author and still
 resolves by event id or `d` tag. The mobile app accepts the same coordinate as
-a `/video/:id` route id.
+a `/video/:id` route id. Both edges (Fastly `compute-js` and the Cloudflare
+function) skip their per-video metadata lookup and oEmbed link for these
+routes, because `/api/videos/{id}` would read the whole coordinate as one `d`
+tag; they serve the generic shell metadata instead.
 
 ## Styling
 

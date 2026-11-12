@@ -20,8 +20,19 @@ import {
   type VideoApiResponse,
 } from '../src/lib/serverSocialMeta';
 import { getDiscoveryMeta } from '../src/lib/discoveryMeta';
+import { parseAddressableCoordinate } from '../src/lib/nostrCoordinates';
 
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
+
+/**
+ * An author-named video route (`kind:pubkey:d`, written for an naddr1).
+ * Funnelcake's `/api/videos/{id}` and oEmbed read the whole segment as one d
+ * tag, which can name a different video than the coordinate's author and d
+ * tag, so these routes keep the generic shell and the app resolves the video.
+ */
+function isAddressableVideoRoute(identifier: string): boolean {
+  return parseAddressableCoordinate(identifier) !== null;
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -132,7 +143,7 @@ function injectMetaTags(html: string, meta: PageMeta, path: string): string {
 
   if (isVideoPage(path)) {
     const videoId = extractVideoId(path);
-    if (videoId) {
+    if (videoId && !isAddressableVideoRoute(safeDecodeURIComponent(videoId))) {
       const videoUrl = `https://divine.video/video/${videoId}`;
       const oembedUrl = `https://relay.divine.video/api/oembed?url=${encodeURIComponent(videoUrl)}`;
       updatedHtml = upsertLinkTag(updatedHtml, 'alternate', 'application/json+oembed', oembedUrl);
@@ -149,6 +160,9 @@ async function fetchVideoMeta(url: URL): Promise<PageMeta | null> {
   }
 
   const identifier = safeDecodeURIComponent(match[1]);
+  if (isAddressableVideoRoute(identifier)) {
+    return null;
+  }
 
   try {
     const response = await fetch(`${FUNNELCAKE_API_URL}/api/videos/${identifier}`);

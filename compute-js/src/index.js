@@ -23,7 +23,7 @@ import {
   handleDownloadOgTags,
   handleApexOgTags,
 } from './crawlerHandlers.js';
-import { transformVideoApiResponse } from './videoMetadata.js';
+import { isAddressableVideoRouteId, transformVideoApiResponse } from './videoMetadata.js';
 import { compactVideoForHydration, normalizeFeedResponse } from './feedHydration.js';
 import { renderEmbedPage } from './embedPage.js';
 import {
@@ -1064,6 +1064,7 @@ function isSocialMediaCrawler(request) {
  * Fetch video metadata from Funnelcake API using Fastly backend
  */
 async function fetchVideoMetadata(videoId, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
+  if (isAddressableVideoRouteId(videoId)) return null;
   try {
     const response = await fetchFromFunnelcake(funnelcakeTarget, `/api/videos/${videoId}`);
     if (!response.ok) {
