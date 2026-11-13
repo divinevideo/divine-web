@@ -75,6 +75,77 @@ export function setCachedVerification(
 }
 
 /**
+ * Clear cached verification entries for one account under a Nostr pubkey.
+ */
+export function clearAccountVerificationCache(
+  platform: string,
+  identity: string,
+  pubkey: string,
+): void {
+  if (typeof window === 'undefined') return;
+
+  const targetPlatform = normalizeAccountPlatform(platform);
+  const targetIdentity = normalizeAccountIdentity(targetPlatform, identity);
+
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(KEY_PREFIX)) continue;
+      if (matchesAccountKey(key, targetPlatform, targetIdentity, pubkey)) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // localStorage unavailable, ignore
+  }
+}
+
+function normalizeAccountPlatform(platform: string): string {
+  const normalized = platform.trim().toLowerCase();
+  return normalized === 'x' ? 'twitter' : normalized;
+}
+
+function normalizeAccountIdentity(platform: string, identity: string): string {
+  const trimmed = identity.trim().toLowerCase();
+  if (platform === 'twitter' || platform === 'tiktok' || platform === 'bluesky') {
+    return trimmed.replace(/^@/, '');
+  }
+  if (
+    platform === 'youtube'
+    && !trimmed.startsWith('channel/')
+    && !trimmed.startsWith('c/')
+    && !trimmed.startsWith('user/')
+  ) {
+    return trimmed.replace(/^@/, '');
+  }
+  return trimmed;
+}
+
+function matchesAccountKey(
+  key: string,
+  targetPlatform: string,
+  targetIdentity: string,
+  targetPubkey: string,
+): boolean {
+  try {
+    const parsed: unknown = JSON.parse(key.slice(KEY_PREFIX.length));
+    if (!Array.isArray(parsed) || parsed.length < 4) return false;
+    const [entryPlatform, entryIdentity, , entryPubkey] = parsed;
+    return (
+      typeof entryPlatform === 'string'
+      && typeof entryIdentity === 'string'
+      && entryPubkey === targetPubkey
+      && normalizeAccountPlatform(entryPlatform) === targetPlatform
+      && normalizeAccountIdentity(targetPlatform, entryIdentity) === targetIdentity
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Clear all verification cache entries.
  */
 export function clearVerificationCache(): void {

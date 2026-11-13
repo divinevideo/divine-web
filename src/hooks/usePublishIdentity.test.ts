@@ -42,6 +42,7 @@ vi.mock('@/lib/signInRevoke', async (importOriginal) => ({
 }));
 
 import { useAddIdentity, useRemoveIdentity } from './usePublishIdentity';
+import { getCachedVerification, setCachedVerification } from '@/lib/verificationCache';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -58,6 +59,7 @@ function createWrapper() {
 describe('useAddIdentity', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    window.localStorage.clear();
     // Default: no existing identities
     mockNostrQuery.mockResolvedValue([]);
     mockSignEvent.mockImplementation(async (event: Record<string, unknown>) => ({
@@ -184,11 +186,34 @@ describe('useAddIdentity', () => {
 
     expect(mockSignEvent.mock.calls[0][0].tags).toEqual([['i', 'twitter:alice', 'new-proof']]);
   });
+
+  it('clears stale cached verification for an added or updated account', async () => {
+    setCachedVerification('twitter', 'alice', 'new-proof', TEST_PUBKEY, {
+      verified: false,
+      error: 'HTTP 404',
+    });
+
+    const { result } = renderHook(
+      () => useAddIdentity(),
+      { wrapper: createWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        platform: 'x',
+        identity: 'alice',
+        proof: 'new-proof',
+      });
+    });
+
+    expect(getCachedVerification('twitter', 'alice', 'new-proof', TEST_PUBKEY)).toBeNull();
+  });
 });
 
 describe('useRemoveIdentity', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    window.localStorage.clear();
     mockRevoke.mockResolvedValue({ revoked: true });
     mockSignEvent.mockImplementation(async (event: Record<string, unknown>) => ({
       ...event,
@@ -346,6 +371,22 @@ describe('useRemoveIdentity', () => {
       pubkey: TEST_PUBKEY,
       list: removed.event,
     });
+  });
+
+  it('clears cached verification for the unlinked account while keeping other accounts cached', async () => {
+    setCachedVerification('bluesky', 'alice.bsky.social', 'oauth', TEST_PUBKEY, { verified: true });
+    setCachedVerification('github', 'alice', 'proof1', TEST_PUBKEY, { verified: true });
+    const { result } = await setup([
+      ['i', 'bluesky:alice.bsky.social', 'oauth'],
+      ['i', 'github:alice', 'proof1'],
+    ]);
+
+    await act(async () => {
+      await result.current.mutateAsync({ platform: 'bluesky', identity: 'alice.bsky.social' });
+    });
+
+    expect(getCachedVerification('bluesky', 'alice.bsky.social', 'oauth', TEST_PUBKEY)).toBeNull();
+    expect(getCachedVerification('github', 'alice', 'proof1', TEST_PUBKEY)).toEqual({ verified: true });
   });
 
   it('dates the replacement list one second past an ahead-of-clock predecessor within the verifier skew window', async () => {

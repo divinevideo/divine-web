@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   getCachedVerification,
   setCachedVerification,
+  clearAccountVerificationCache,
   clearVerificationCache,
 } from './verificationCache';
 
@@ -128,5 +129,26 @@ describe('clearVerificationCache', () => {
 
   it('handles empty localStorage', () => {
     expect(() => clearVerificationCache()).not.toThrow();
+  });
+});
+
+describe('clearAccountVerificationCache', () => {
+  it('clears matching platform/identity entries case-insensitively (including x as twitter) for that pubkey only', () => {
+    const otherPubkey = 'b'.repeat(64);
+    setCachedVerification('bluesky', 'Alice.bsky.social', 'oauth', PUBKEY, { verified: true });
+    setCachedVerification('bluesky', 'alice.bsky.social', 'post123', PUBKEY, { verified: true });
+    setCachedVerification('twitter', 'alice', 'oauth', PUBKEY, { verified: true });
+    setCachedVerification('github', 'alice', 'gist1', PUBKEY, { verified: true });
+    setCachedVerification('bluesky', 'alice.bsky.social', 'oauth', otherPubkey, { verified: true });
+
+    clearAccountVerificationCache('bluesky', 'alice.bsky.social', PUBKEY);
+    expect(getCachedVerification('bluesky', 'Alice.bsky.social', 'oauth', PUBKEY)).toBeNull();
+    expect(getCachedVerification('bluesky', 'alice.bsky.social', 'post123', PUBKEY)).toBeNull();
+    expect(getCachedVerification('twitter', 'alice', 'oauth', PUBKEY)).toEqual({ verified: true });
+    expect(getCachedVerification('github', 'alice', 'gist1', PUBKEY)).toEqual({ verified: true });
+    expect(getCachedVerification('bluesky', 'alice.bsky.social', 'oauth', otherPubkey)).toEqual({ verified: true });
+
+    clearAccountVerificationCache('x', '@ALICE', PUBKEY);
+    expect(getCachedVerification('twitter', 'alice', 'oauth', PUBKEY)).toBeNull();
   });
 });

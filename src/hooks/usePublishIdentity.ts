@@ -6,6 +6,7 @@ import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from './useCurrentUser';
 import { useExternalIdentities } from './useExternalIdentities';
 import { revokeSignInLink, signInPlatform, type SignInRevokeResult } from '@/lib/signInRevoke';
+import { clearAccountVerificationCache } from '@/lib/verificationCache';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 export interface RemoveIdentityResult {
@@ -103,7 +104,11 @@ export function useAddIdentity() {
 
       tags.push(['i', `${targetPlatform}:${identity}`, proof]);
 
-      return publishEvent(tags);
+      const event = await publishEvent(tags);
+      if (user) {
+        clearAccountVerificationCache(targetPlatform, identity, user.pubkey);
+      }
+      return event;
     },
     onSuccess: () => invalidate(),
   });
@@ -128,6 +133,10 @@ export function useRemoveIdentity() {
       const signIn = signInName && user
         ? await revokeSignInLink({ platform: signInName, identity, pubkey: user.pubkey, list: event })
         : null;
+
+      if (user) {
+        clearAccountVerificationCache(targetPlatform, identity, user.pubkey);
+      }
 
       return { event, signIn };
     },
