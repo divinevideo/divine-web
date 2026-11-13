@@ -608,6 +608,38 @@ describe('useExternalIdentities', () => {
     expect(result.current.data![0].identity).toBe('new');
   });
 
+  it('breaks same-second replaceable event ties by lowest event id (NIP-01)', async () => {
+    mockNostrQuery.mockResolvedValueOnce([
+      {
+        kind: 10011,
+        pubkey: TEST_PUBKEY,
+        created_at: 1700001000,
+        tags: [['i', 'github:higher-id', 'proof1']],
+        content: '',
+        id: 'f'.repeat(64),
+        sig: 'sig1',
+      },
+      {
+        kind: 10011,
+        pubkey: TEST_PUBKEY,
+        created_at: 1700001000,
+        tags: [['i', 'github:lower-id', 'proof2']],
+        content: '',
+        id: '1'.repeat(64),
+        sig: 'sig2',
+      },
+    ]);
+
+    const { result } = renderHook(
+      () => useExternalIdentities(TEST_PUBKEY),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data![0].identity).toBe('lower-id');
+  });
+
   it('skips non-i tags', async () => {
     mockNostrQuery.mockResolvedValueOnce([{
       kind: 10011,

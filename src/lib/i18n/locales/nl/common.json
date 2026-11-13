@@ -717,7 +717,8 @@
     "toastFailedPublish": "Identity event publiceren mislukt",
     "toastRemovedTitle": "Verwijderd",
     "toastAccountUnlinked": "Account ontkoppeld",
-    "toastFailedRemove": "Identiteit verwijderen mislukt"
+    "toastFailedRemove": "Identiteit verwijderen mislukt",
+    "toastSignInNotCleared": "Verwijderd van je profiel, maar het bijbehorende inlogrecord kon niet worden gewist."
   },
   "linkedAccounts": {
     "verifying": "Verifiëren...",

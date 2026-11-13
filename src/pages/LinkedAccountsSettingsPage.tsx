@@ -470,8 +470,15 @@ export default function LinkedAccountsSettingsPage() {
     const key = `${id.platform}:${id.identity}`;
     setRemovingKey(key);
     try {
-      await removeIdentity.mutateAsync({ platform: id.platform, identity: id.identity });
-      toast({ title: t('linkedAccountsSettings.toastRemovedTitle'), description: t('linkedAccountsSettings.toastAccountUnlinked') });
+      const { signIn } = await removeIdentity.mutateAsync({ platform: id.platform, identity: id.identity });
+      // The row is gone either way, so this is a plain toast, not a destructive one.
+      // It only adds that the verifier's sign-in record is still there.
+      toast({
+        title: t('linkedAccountsSettings.toastRemovedTitle'),
+        description: signIn && !signIn.revoked
+          ? t('linkedAccountsSettings.toastSignInNotCleared')
+          : t('linkedAccountsSettings.toastAccountUnlinked'),
+      });
     } catch {
       toast({ title: t('linkedAccountsSettings.toastErrorTitle'), description: t('linkedAccountsSettings.toastFailedRemove'), variant: 'destructive' });
     } finally {

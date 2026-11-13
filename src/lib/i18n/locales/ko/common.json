@@ -717,7 +717,8 @@
     "toastFailedPublish": "신원 이벤트 발행 실패",
     "toastRemovedTitle": "삭제됨",
     "toastAccountUnlinked": "계정 연결 해제됨",
-    "toastFailedRemove": "신원 삭제 실패"
+    "toastFailedRemove": "신원 삭제 실패",
+    "toastSignInNotCleared": "프로필에서 삭제되었지만 로그인 기록은 지우지 못했습니다."
   },
   "linkedAccounts": {
     "verifying": "확인 중...",

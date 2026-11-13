@@ -1,7 +1,7 @@
 // ABOUTME: Hook to fetch and parse NIP-39 external identity claims (kind 10011)
 // ABOUTME: Returns linked accounts with platform, identity, and proof info for a given pubkey
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { nip19 } from 'nostr-tools';
@@ -200,6 +200,7 @@ function isAbortLikeError(error: unknown): boolean {
 
 export function useExternalIdentities(pubkey: string | undefined) {
   const { nostr } = useNostr();
+  const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ['external-identities', pubkey],
@@ -222,8 +223,14 @@ export function useExternalIdentities(pubkey: string | undefined) {
 
       if (events.length === 0) return [];
 
-      // Replaceable event — take the most recent
-      const event = events.sort((a, b) => b.created_at - a.created_at)[0];
+      // Replaceable event — take the most recent (NIP-01 breaks same-second ties by lowest id)
+      const event = [...events].sort(
+        (a, b) => b.created_at - a.created_at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+      )[0];
+      queryClient.setQueryData<number>(
+        ['external-identities-created-at', pubkey],
+        (prev) => Math.max(prev ?? 0, event.created_at),
+      );
 
       const identities: ExternalIdentity[] = [];
       for (const tag of event.tags) {

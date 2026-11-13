@@ -717,7 +717,8 @@
     "toastFailedPublish": "Identitäts-Event konnte nicht veröffentlicht werden",
     "toastRemovedTitle": "Entfernt",
     "toastAccountUnlinked": "Account entkoppelt",
-    "toastFailedRemove": "Identität konnte nicht entfernt werden"
+    "toastFailedRemove": "Identität konnte nicht entfernt werden",
+    "toastSignInNotCleared": "Aus deinem Profil entfernt, aber der zugehörige Anmeldeeintrag konnte nicht gelöscht werden."
   },
   "linkedAccounts": {
     "verifying": "Wird geprüft...",

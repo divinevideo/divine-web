@@ -731,7 +731,8 @@
     "toastFailedPublish": "Nie udało się opublikować wydarzenia tożsamości",
     "toastRemovedTitle": "Usunięte",
     "toastAccountUnlinked": "Konto odpięte",
-    "toastFailedRemove": "Nie udało się usunąć tożsamości"
+    "toastFailedRemove": "Nie udało się usunąć tożsamości",
+    "toastSignInNotCleared": "Usunięto z profilu, ale nie udało się wyczyścić powiązanego zapisu logowania."
   },
   "linkedAccounts": {
     "verifying": "Weryfikacja...",

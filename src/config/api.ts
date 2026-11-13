@@ -203,6 +203,7 @@ export const API_CONFIG = {
     timeout: 10000,
     endpoints: {
       verify: '/api/verify',
+      revoke: '/auth/oauth/revoke',
     },
   },
 

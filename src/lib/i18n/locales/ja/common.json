@@ -717,7 +717,8 @@
     "toastFailedPublish": "本人確認イベントの公開に失敗しました",
     "toastRemovedTitle": "削除しました",
     "toastAccountUnlinked": "アカウントの連携を解除しました",
-    "toastFailedRemove": "本人確認の削除に失敗しました"
+    "toastFailedRemove": "本人確認の削除に失敗しました",
+    "toastSignInNotCleared": "プロフィールから削除しましたが、サインイン記録は消去できませんでした。"
   },
   "linkedAccounts": {
     "verifying": "確認中...",

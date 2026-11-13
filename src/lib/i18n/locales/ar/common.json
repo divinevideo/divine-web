@@ -769,7 +769,8 @@
     "toastFailedPublish": "فشل نشر حدث الهوية",
     "toastRemovedTitle": "تمت الإزالة",
     "toastAccountUnlinked": "تم فك ربط الحساب",
-    "toastFailedRemove": "فشل إزالة الهوية"
+    "toastFailedRemove": "فشل إزالة الهوية",
+    "toastSignInNotCleared": "تمت الإزالة من ملفك الشخصي، لكن تعذر مسح سجل تسجيل الدخول الخاص به."
   },
   "linkedAccounts": {
     "verifying": "جارٍ التحقق...",

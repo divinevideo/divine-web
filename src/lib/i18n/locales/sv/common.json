@@ -717,7 +717,8 @@
     "toastFailedPublish": "Kunde inte publicera identitetshändelsen",
     "toastRemovedTitle": "Borttagen",
     "toastAccountUnlinked": "Konto avlänkat",
-    "toastFailedRemove": "Kunde inte ta bort identiteten"
+    "toastFailedRemove": "Kunde inte ta bort identiteten",
+    "toastSignInNotCleared": "Borttaget från din profil, men dess inloggningspost kunde inte rensas."
   },
   "linkedAccounts": {
     "verifying": "Verifierar...",
