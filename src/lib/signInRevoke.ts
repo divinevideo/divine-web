@@ -36,6 +36,8 @@ export function signInPlatform(platform: string): SignInPlatform | null {
  */
 export async function revokeSignInLink(request: SignInRevokeRequest): Promise<SignInRevokeResult> {
   const { baseUrl, timeout, endpoints } = API_CONFIG.verificationService;
+  if (!baseUrl) return { revoked: false };
+
   const failure: { code?: string; error?: string } = {};
   try {
     const response = await fetch(`${baseUrl}${endpoints.revoke}`, {
@@ -49,10 +51,14 @@ export async function revokeSignInLink(request: SignInRevokeRequest): Promise<Si
       }),
       signal: AbortSignal.timeout(timeout),
     });
-    if (response.ok) return { revoked: true };
     const body: unknown = await response.json();
     if (body && typeof body === 'object') {
-      const { code, error } = body as { code?: unknown; error?: unknown };
+      const { revoked, code, error } = body as {
+        revoked?: unknown;
+        code?: unknown;
+        error?: unknown;
+      };
+      if (response.ok && revoked === true) return { revoked: true };
       if (typeof code === 'string') failure.code = code;
       if (typeof error === 'string') failure.error = error;
     }

@@ -4,10 +4,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NostrEvent } from '@nostrify/nostrify';
 
+const apiState = vi.hoisted(() => ({ baseUrl: 'https://verifier.example' }));
+
 vi.mock('@/config/api', () => ({
   API_CONFIG: {
     verificationService: {
-      baseUrl: 'https://verifier.example',
+      get baseUrl() {
+        return apiState.baseUrl;
+      },
       timeout: 10000,
       endpoints: { verify: '/api/verify', revoke: '/auth/oauth/revoke' },
     },
@@ -44,6 +48,7 @@ describe('signInPlatform', () => {
 
 describe('revokeSignInLink', () => {
   beforeEach(() => {
+    apiState.baseUrl = 'https://verifier.example';
     vi.restoreAllMocks();
   });
 
@@ -84,5 +89,30 @@ describe('revokeSignInLink', () => {
   it('resolves when the verifier cannot be reached', async () => {
     global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
     expect(await revokeSignInLink(REQUEST)).toEqual({ revoked: false });
+  });
+
+  it('does not treat a non-JSON 200 response (such as an SPA fallback page) as revoked', async () => {
+    mockAnswer({
+      ok: true,
+      status: 200,
+      json: async () => { throw new SyntaxError('Unexpected token <'); },
+    });
+    expect(await revokeSignInLink(REQUEST)).toEqual({ revoked: false });
+  });
+
+  it('does not treat a 200 JSON payload without revoked: true as revoked', async () => {
+    mockAnswer({
+      ok: true,
+      status: 200,
+      json: async () => ({ revoked: false }),
+    });
+    expect(await revokeSignInLink(REQUEST)).toEqual({ revoked: false });
+  });
+
+  it('returns revoked: false without fetching when verificationService.baseUrl is empty', async () => {
+    apiState.baseUrl = '';
+    global.fetch = vi.fn();
+    expect(await revokeSignInLink(REQUEST)).toEqual({ revoked: false });
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
