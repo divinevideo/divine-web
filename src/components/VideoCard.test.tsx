@@ -653,7 +653,9 @@ describe('VideoCard', () => {
     expect(screen.queryByText('Log in to view')).not.toBeInTheDocument();
   });
 
-  it('wraps a title made of one unbroken run of text instead of letting it widen the card', () => {
+  it('lets the title break mid-word so a long unbroken run wraps instead of overflowing', () => {
+    // break-words keeps the title inside its box; the feed grid's grid-cols-1 is what
+    // keeps the card from widening. tests/visual/video-card-layout.spec.ts measures both.
     const unbrokenTitle = `singing #showoffnostr:npub1${'x'.repeat(58)}`;
     render(<VideoCard video={makeVideo({ title: unbrokenTitle, content: '' })} mode="thumbnail" />);
 
