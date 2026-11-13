@@ -653,6 +653,13 @@ describe('VideoCard', () => {
     expect(screen.queryByText('Log in to view')).not.toBeInTheDocument();
   });
 
+  it('wraps a title made of one unbroken run of text instead of letting it widen the card', () => {
+    const unbrokenTitle = `singing #showoffnostr:npub1${'x'.repeat(58)}`;
+    render(<VideoCard video={makeVideo({ title: unbrokenTitle, content: '' })} mode="thumbnail" />);
+
+    expect(screen.getByRole('heading', { level: 3 })).toHaveClass('break-words');
+  });
+
   it('renders the native playback total instead of raw loop count', () => {
     render(
       <VideoCard

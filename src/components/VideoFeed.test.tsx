@@ -405,6 +405,15 @@ describe('VideoFeed', () => {
     );
   });
 
+  it('keeps every feed card inside the feed column however wide its content is', () => {
+    render(<MemoryRouter><VideoFeed feedType="classics" /></MemoryRouter>);
+
+    // An implicit grid column grows to the widest card's longest unbreakable
+    // string, which pushes card controls past the feed's clipping edge.
+    const feedGrid = screen.getByTestId('video-card').parentElement?.parentElement;
+    expect(feedGrid).toHaveClass('grid', 'grid-cols-1');
+  });
+
   it('passes featured tab context to feed cards', () => {
     render(
       <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>
