@@ -362,7 +362,7 @@ export function VideoFeed({
         data-hashtag-testid={hashtagTestId}
         data-profile-testid={profileTestId}
       >
-        <div className="grid gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {[...Array(3)].map((_, i) => (
             <Card key={i} className="overflow-hidden" data-testid="video-skeleton">
               <div className="flex items-center gap-3 p-4">
@@ -590,7 +590,7 @@ export function VideoFeed({
           ) : null
         }
       >
-        <div className="grid gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {filteredVideos.map((video, index) => (
             <div key={video.id}>
               <VideoCardWithMetrics

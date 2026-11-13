@@ -405,6 +405,34 @@ describe('VideoFeed', () => {
     );
   });
 
+  it('keeps every feed card inside the feed column however wide its content is', () => {
+    render(<MemoryRouter><VideoFeed feedType="classics" /></MemoryRouter>);
+
+    // An implicit grid column grows to the widest card's longest unbreakable
+    // string, which pushes card controls past the feed's clipping edge.
+    expect(screen.getByTestId('video-card').closest('.grid')).toHaveClass('grid-cols-1');
+  });
+
+  it('lays out the loading skeletons in the same bounded column', () => {
+    mockUseVideoProvider.mockReturnValue({
+      data: undefined,
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
+      fetchedCount: 0,
+      dataSource: 'funnelcake',
+    });
+    render(<MemoryRouter><VideoFeed feedType="classics" /></MemoryRouter>);
+
+    const skeletons = screen.getAllByTestId('video-skeleton');
+    expect(skeletons).toHaveLength(3);
+    for (const skeleton of skeletons) {
+      expect(skeleton.closest('.grid')).toHaveClass('grid-cols-1');
+    }
+  });
+
   it('passes featured tab context to feed cards', () => {
     render(
       <MemoryRouter initialEntries={['/discovery/seasonal-theme']}>

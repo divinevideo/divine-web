@@ -818,7 +818,7 @@ export function VideoCard({
             isHorizontal ? "space-y-1" : "p-4 space-y-2"
           )}>
             {video.title && (
-              <h3 className={cn("font-semibold line-clamp-2", isHorizontal ? "text-sm" : "text-lg")}>
+              <h3 className={cn("font-semibold line-clamp-2 break-words", isHorizontal ? "text-sm" : "text-lg")}>
                 <InlineNostrText text={video.title} textLinkTo={`/video/${video.id}`} textLinkOwnerPubkey={video.pubkey} textLinkClassName="hover:underline" />
               </h3>
             )}
@@ -884,9 +884,9 @@ export function VideoCard({
             </div>
           )}
 
-          {/* Interaction buttons */}
-          <div className={cn(
-            "flex items-center",
+          {/* Interaction buttons - wrap on narrow cards; the card clips anything past its edge */}
+          <div data-testid="video-card-actions" className={cn(
+            "flex flex-wrap items-center",
             isHorizontal ? "pt-2 gap-1" : "px-4 pb-4 gap-0.5"
           )}>
           {/* Like button - icon toggles, count shows modal */}
