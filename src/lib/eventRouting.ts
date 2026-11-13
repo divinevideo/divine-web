@@ -24,6 +24,17 @@ export function buildVideoPath(identifier: string): string {
   return `/video/${encodeURIComponent(identifier)}`;
 }
 
+/**
+ * Path for a video named by its author and `d` tag, as an `naddr1` or a
+ * `kind:pubkey:d` coordinate names it. Divine's `d` tag is the sha256 of the
+ * uploaded file, so it is not unique across accounts; the route keeps the
+ * author, and the video page resolves only that author's video
+ * (see `parseVideoRouteId`). The mobile app accepts the same route id.
+ */
+export function buildAddressableVideoPath(kind: number, pubkey: string, identifier: string): string {
+  return `/video/${kind}:${pubkey.toLowerCase()}:${encodeURIComponent(identifier)}`;
+}
+
 export function buildProfilePath(identifier: string): string {
   return buildProfileLinkPath({
     pubkey: identifier,
@@ -61,7 +72,7 @@ export function getEventDTag(event: Pick<NostrEvent, 'tags'>): string | null {
 
 export function buildAddressableRoute(kind: number, pubkey: string, identifier: string): string {
   if (VIDEO_KINDS.includes(kind as typeof VIDEO_KINDS[number])) {
-    return buildVideoPath(identifier);
+    return buildAddressableVideoPath(kind, pubkey, identifier);
   }
 
   if (kind === VIDEO_LIST_EVENT_KIND) {

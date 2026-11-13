@@ -4,6 +4,7 @@ import { SHORT_VIDEO_KIND } from '@/types/video';
 import {
   buildAddressableRoute,
   buildAddressableEventPath,
+  buildAddressableVideoPath,
   buildEventPath,
   buildListPath,
   buildPeopleListPath,
@@ -36,6 +37,28 @@ describe('eventRouting', () => {
     expect(buildResolvedEventRoute(event)).toBe(buildVideoPath(event.id));
     const other = makeEvent({ id: 'a'.repeat(64), pubkey: 'b'.repeat(64), kind: SHORT_VIDEO_KIND, tags: event.tags });
     expect(buildResolvedEventRoute(other)).not.toBe(buildResolvedEventRoute(event));
+  });
+
+  it('keeps the author when routing an addressable video', () => {
+    // Divine's d tag is the sha256 of the uploaded file, so two accounts that
+    // upload the same file share one. The author is what tells them apart.
+    const sharedDTag = 'c'.repeat(64);
+    const authorA = 'a'.repeat(64);
+    const authorB = 'b'.repeat(64);
+
+    expect(buildAddressableRoute(SHORT_VIDEO_KIND, authorA, sharedDTag)).toBe(
+      `/video/${SHORT_VIDEO_KIND}:${authorA}:${sharedDTag}`,
+    );
+    expect(buildAddressableRoute(SHORT_VIDEO_KIND, authorB, sharedDTag)).not.toBe(
+      buildAddressableRoute(SHORT_VIDEO_KIND, authorA, sharedDTag),
+    );
+    expect(buildAddressableRoute(SHORT_VIDEO_KIND, authorA, sharedDTag)).not.toBe(buildVideoPath(sharedDTag));
+  });
+
+  it('lowercases the author and escapes the d tag of an addressable video path', () => {
+    expect(buildAddressableVideoPath(SHORT_VIDEO_KIND, 'A'.repeat(64), 'folder/clip 1')).toBe(
+      `/video/${SHORT_VIDEO_KIND}:${'a'.repeat(64)}:folder%2Fclip%201`,
+    );
   });
 
   it('routes video list events to the public list page', () => {

@@ -1,6 +1,35 @@
 // ABOUTME: Vitest unit tests for parseImetaTag and transformVideoApiResponse
 import { describe, expect, it } from 'vitest';
-import { parseImetaTag, transformVideoApiResponse } from './videoMetadata.js';
+import { isAddressableVideoRouteId, parseImetaTag, transformVideoApiResponse } from './videoMetadata.js';
+
+describe('isAddressableVideoRouteId', () => {
+  const pubkey = 'a'.repeat(64);
+  const dTag = 'c'.repeat(64);
+
+  it('recognises the kind:pubkey:d route id the app writes for an author-named video', () => {
+    expect(isAddressableVideoRouteId(`34236:${pubkey}:${dTag}`)).toBe(true);
+    expect(isAddressableVideoRouteId(`34236:${pubkey.toUpperCase()}:folder%2Fclip`)).toBe(true);
+  });
+
+  it('recognises it when the separators arrive percent-encoded', () => {
+    expect(isAddressableVideoRouteId(`34236%3A${pubkey}%3A${dTag}`)).toBe(true);
+  });
+
+  it('recognises it with an empty d tag or one that starts with a line break', () => {
+    expect(isAddressableVideoRouteId(`34236:${pubkey}:`)).toBe(true);
+    expect(isAddressableVideoRouteId(`34236:${pubkey}:%0Aclip`)).toBe(true);
+  });
+
+  it.each([
+    ['an event id', 'e'.repeat(64)],
+    ['a d tag', dTag],
+    ['a legacy vine id', 'hBFP5LFKUOU'],
+    ['a short-pubkey look-alike', `34236:abc:${dTag}`],
+    ['a malformed escape', '%E0%A4%A'],
+  ])('leaves %s to the normal lookup', (_label, id) => {
+    expect(isAddressableVideoRouteId(id)).toBe(false);
+  });
+});
 
 describe('parseImetaTag', () => {
   it('returns empty object when tag is null or not an imeta tag', () => {
