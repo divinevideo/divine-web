@@ -7,6 +7,7 @@ import { useCurrentUser } from './useCurrentUser';
 import { useExternalIdentities } from './useExternalIdentities';
 import { revokeSignInLink, signInPlatform, type SignInRevokeResult } from '@/lib/signInRevoke';
 import { clearAccountVerificationCache } from '@/lib/verificationCache';
+import { canonicalPlatform } from '@/lib/identityPlatform';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 export interface RemoveIdentityResult {
@@ -24,11 +25,6 @@ export interface RemoveIdentityResult {
  * propagating bogus far-future timestamps.
  */
 const MAX_CLOCK_SKEW_SECONDS = 600;
-
-function canonicalPlatform(platform: string): string {
-  const normalized = platform.trim().toLowerCase();
-  return normalized === 'x' ? 'twitter' : normalized;
-}
 
 function nextCreatedAt(nowSeconds: number, previousCreatedAt: number | undefined): number {
   if (

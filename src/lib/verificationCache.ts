@@ -1,6 +1,8 @@
 // ABOUTME: localStorage cache for NIP-39 identity verification results
 // ABOUTME: Verified results cached 24hr, failed results cached 15min
 
+import { canonicalPlatform } from '@/lib/identityPlatform';
+
 const VERIFIED_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const FAILED_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const KEY_PREFIX = 'divine_verify_';
@@ -84,7 +86,7 @@ export function clearAccountVerificationCache(
 ): void {
   if (typeof window === 'undefined') return;
 
-  const targetPlatform = normalizeAccountPlatform(platform);
+  const targetPlatform = canonicalPlatform(platform);
   const targetIdentity = normalizeAccountIdentity(targetPlatform, identity);
 
   try {
@@ -100,11 +102,6 @@ export function clearAccountVerificationCache(
   } catch {
     // localStorage unavailable, ignore
   }
-}
-
-function normalizeAccountPlatform(platform: string): string {
-  const normalized = platform.trim().toLowerCase();
-  return normalized === 'x' ? 'twitter' : normalized;
 }
 
 function normalizeAccountIdentity(platform: string, identity: string): string {
@@ -137,7 +134,7 @@ function matchesAccountKey(
       typeof entryPlatform === 'string'
       && typeof entryIdentity === 'string'
       && entryPubkey === targetPubkey
-      && normalizeAccountPlatform(entryPlatform) === targetPlatform
+      && canonicalPlatform(entryPlatform) === targetPlatform
       && normalizeAccountIdentity(targetPlatform, entryIdentity) === targetIdentity
     );
   } catch {

@@ -3,6 +3,7 @@
 
 import type { NostrEvent } from '@nostrify/nostrify';
 import { API_CONFIG } from '@/config/api';
+import { canonicalPlatform } from '@/lib/identityPlatform';
 
 export type SignInPlatform = 'twitter' | 'bluesky' | 'youtube' | 'tiktok';
 
@@ -23,8 +24,7 @@ export type SignInRevokeResult =
  * verifier keeps no sign-in record for it. The verifier refuses `x`.
  */
 export function signInPlatform(platform: string): SignInPlatform | null {
-  const name = platform.trim().toLowerCase();
-  if (name === 'x') return 'twitter';
+  const name = canonicalPlatform(platform);
   if (name === 'twitter' || name === 'bluesky' || name === 'youtube' || name === 'tiktok') return name;
   return null;
 }
