@@ -1,5 +1,5 @@
 // ABOUTME: Lays out video cards from synthetic Funnelcake data and checks that each card stays inside
-// ABOUTME: its column, so the controls along its right edge (mute, More options) don't end up out of view.
+// ABOUTME: its column and each card button inside its card, so its right-edge controls stay reachable.
 import { expect, test, type Page } from '@playwright/test';
 
 // One run of text with no break opportunity, wider than any card. A classic Vine
@@ -91,23 +91,42 @@ test('a title with no break opportunities wraps inside the video card', async ({
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
-test('every feed card fits inside the feed column', async ({ page }) => {
-  test.setTimeout(60_000);
-  await serveSyntheticFeed(page);
-  await page.setViewportSize({ width: 1505, height: 900 });
-  // Hot's first page is the /api/v2/videos response served above. Classic reads
-  // /api/videos at a random offset instead, which this stub does not serve.
-  await page.goto('/discovery/hot');
-  // A card wider than the feed column pushes its right edge, and the video's mute
-  // button with it, out of view behind a sideways scroll.
-  const feed = page.locator('.infinite-scroll-component').first();
-  await expect(feed.locator('.brand-card')).toHaveCount(FEED.length, { timeout: 30_000 });
+// Phone widths are where the action row runs out of room; 1505 is where the
+// unbroken title once set the width of every card.
+for (const width of [320, 360, 390, 1505]) {
+  test(`every feed card and its controls fit inside the feed column at ${width}px`, async ({ page }) => {
+    test.setTimeout(60_000);
+    await serveSyntheticFeed(page);
+    await page.setViewportSize({ width, height: 900 });
+    // Hot's first page is the /api/v2/videos response served above. Classic reads
+    // /api/videos at a random offset instead, which this stub does not serve.
+    await page.goto('/discovery/hot');
+    const feed = page.locator('.infinite-scroll-component').first();
+    await expect(feed.locator('.brand-card')).toHaveCount(FEED.length, { timeout: 30_000 });
+    await expect(feed.getByRole('button', { name: 'More options' })).toHaveCount(FEED.length);
 
-  const overhangs = await feed.evaluate((container) => {
-    const right = container.getBoundingClientRect().right;
-    return [...container.querySelectorAll('.brand-card')].map(
-      (card) => Math.round(card.getBoundingClientRect().right - right),
-    );
+    // A card wider than the feed column pushes its right edge, and the video's mute
+    // button with it, out of view behind a sideways scroll. A card clips its own
+    // overflow, so a button past its edge can't be reached at all. Media isn't
+    // served, so mute itself never renders here; the card's edge stands in for it.
+    const outOfBounds = await feed.evaluate((container) => {
+      const column = container.getBoundingClientRect();
+      return [...container.querySelectorAll('.brand-card')].flatMap((card, index) => {
+        const box = card.getBoundingClientRect();
+        const problems: string[] = [];
+        const overhang = Math.round(Math.max(box.right - column.right, column.left - box.left));
+        if (overhang > 0) problems.push(`card ${index + 1} overhangs the feed by ${overhang}px`);
+        for (const button of card.querySelectorAll('button')) {
+          const rect = button.getBoundingClientRect();
+          const past = Math.round(Math.max(rect.right - box.right, box.left - rect.left));
+          if (rect.width > 0 && past > 0) {
+            const name = button.getAttribute('aria-label') ?? button.textContent?.trim();
+            problems.push(`card ${index + 1} "${name}" ends ${past}px past the card`);
+          }
+        }
+        return problems;
+      });
+    });
+    expect(outOfBounds).toEqual([]);
   });
-  expect(overhangs.filter((px) => px > 0)).toEqual([]);
-});
+}

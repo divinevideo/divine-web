@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import type {
   ButtonHTMLAttributes,
   HTMLAttributes,
@@ -658,6 +658,16 @@ describe('VideoCard', () => {
     render(<VideoCard video={makeVideo({ title: unbrokenTitle, content: '' })} mode="thumbnail" />);
 
     expect(screen.getByRole('heading', { level: 3 })).toHaveClass('break-words');
+  });
+
+  it('wraps the action row so a narrow card does not clip More options', () => {
+    // The card clips its own overflow, so on a phone a row that cannot wrap
+    // hides its last buttons. tests/visual/video-card-layout.spec.ts measures it.
+    render(<VideoCard video={makeVideo()} mode="thumbnail" />);
+
+    const actions = screen.getByTestId('video-card-actions');
+    expect(actions).toHaveClass('flex-wrap');
+    expect(within(actions).getByRole('button', { name: 'More options' })).toBeInTheDocument();
   });
 
   it('renders the native playback total instead of raw loop count', () => {
