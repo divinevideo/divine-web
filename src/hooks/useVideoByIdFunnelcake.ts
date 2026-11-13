@@ -422,13 +422,15 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
       : ['funnelcake-video', videoId, funnelcakeUrl],
     queryFn: async ({ signal }) => {
       debugLog(`[useVideoByIdFunnelcake] Fetching single video ${videoId}${author ? ` by ${author}` : ''}`);
-      const raw = await fetchVideoById(funnelcakeUrl, videoId, author ?? pubkey, signal);
+      // With an author named, no pubkey goes to fetchVideoById: its own
+      // author-list step matches a d tag from any account, and
+      // fetchAuthorVideoByDTag below scans that list holding the author.
+      const raw = await fetchVideoById(funnelcakeUrl, videoId, author ? undefined : pubkey, signal);
 
       const video = raw ? transformFunnelcakeVideo(raw) : null;
-      // A miss has already been through fetchVideoById's author-list step.
-      if (!author || !video || isTarget(video)) return video;
-      // `/api/videos/{d}` answered with another account's video for a shared
-      // d tag, and fetchVideoById stops at its first answer.
+      if (!author || (video && isTarget(video))) return video;
+      // `/api/videos/{d}` found nothing, or answered with another account's
+      // video for a shared d tag.
       return fetchAuthorVideoByDTag(funnelcakeUrl, author, videoId, signal);
     },
     // Fall back to a direct lookup when the narrowed context window misses the target.

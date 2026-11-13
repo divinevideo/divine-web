@@ -837,9 +837,41 @@ describe('useVideoByIdFunnelcake', () => {
       );
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
-      expect(mockFetchVideoById).toHaveBeenCalledWith('https://api.divine.video', sharedDTag, author, expect.any(AbortSignal));
       expect(result.current.video).toBeNull();
       expect(result.current.error).toBeNull();
+    });
+
+    it("leaves the author's list to the one scan that holds the author, not fetchVideoById's", async () => {
+      mockFetchVideoById.mockResolvedValueOnce({ id: 'other-event', pubkey: otherAuthor, d_tag: sharedDTag });
+      mockFetchUserVideos.mockResolvedValueOnce({ videos: [] });
+
+      const { result } = renderHook(
+        () => useVideoByIdFunnelcake({ videoId: sharedDTag, author }),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      // Given a pubkey, fetchVideoById scans that account's list for a d tag
+      // from any account, and the scan below would fetch the same list again.
+      expect(mockFetchVideoById).toHaveBeenCalledWith('https://api.divine.video', sharedDTag, undefined, expect.any(AbortSignal));
+    });
+
+    it("finds the author's video in their list when the d-tag lookup finds nothing", async () => {
+      mockFetchVideoById.mockResolvedValueOnce(null);
+      mockFetchUserVideos.mockResolvedValueOnce({
+        videos: [
+          { id: 'reposted', pubkey: otherAuthor, d_tag: sharedDTag },
+          { id: 'author-event', pubkey: author, d_tag: sharedDTag },
+        ],
+      });
+
+      const { result } = renderHook(
+        () => useVideoByIdFunnelcake({ videoId: sharedDTag, author }),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => expect(result.current.video?.id).toBe('author-event'));
+      expect(mockFetchUserVideos).toHaveBeenCalledTimes(1);
     });
 
     it("finds the author's own video in their list when the d-tag lookup answers with another account's", async () => {
