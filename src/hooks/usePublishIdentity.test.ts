@@ -414,6 +414,38 @@ describe('useRemoveIdentity', () => {
     expect(removed.event.created_at).toBe(now + 11);
   });
 
+  it('dates the replacement list one second past a predecessor from the same second', async () => {
+    const nowMs = Date.now();
+    const now = Math.floor(nowMs / 1000);
+    // Pin the clock so the list and the replacement are signed in the same second
+    const dateNow = vi.spyOn(Date, 'now').mockReturnValue(nowMs);
+    try {
+      mockNostrQuery.mockResolvedValue([{
+        kind: 10011,
+        pubkey: TEST_PUBKEY,
+        created_at: now,
+        tags: [['i', 'bluesky:alice.bsky.social', 'oauth']],
+        content: '',
+        id: 'event1',
+        sig: 'sig1',
+      }]);
+      const { result } = renderHook(() => useRemoveIdentity(), { wrapper: createWrapper() });
+      await waitFor(() => expect(mockNostrQuery).toHaveBeenCalled());
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 50));
+      });
+
+      let removed!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
+      await act(async () => {
+        removed = await result.current.mutateAsync({ platform: 'bluesky', identity: 'alice.bsky.social' });
+      });
+
+      expect(removed.event.created_at).toBe(now + 1);
+    } finally {
+      dateNow.mockRestore();
+    }
+  });
+
   it('does not propagate a bogus far-future predecessor timestamp past the 600s verifier window', async () => {
     const now = Math.floor(Date.now() / 1000);
     mockNostrQuery.mockResolvedValue([{
