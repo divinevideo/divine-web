@@ -15,6 +15,11 @@ export interface RemoveIdentityResult {
   signIn: SignInRevokeResult | null;
 }
 
+function canonicalPlatform(platform: string): string {
+  const normalized = platform.trim().toLowerCase();
+  return normalized === 'x' ? 'twitter' : normalized;
+}
+
 export function usePublishIdentity() {
   const { nostr } = useNostr();
   const { user, signer } = useCurrentUser();
@@ -60,12 +65,13 @@ export function useAddIdentity() {
 
   return useMutation({
     mutationFn: async ({ platform, identity, proof }: { platform: string; identity: string; proof: string }) => {
+      const targetPlatform = canonicalPlatform(platform);
       // Build tags: keep existing, add new
       const tags = existingIdentities
-        .filter((id) => !(id.platform === platform && id.identity === identity))
+        .filter((id) => !(id.platform === targetPlatform && id.identity === identity))
         .map((id) => ['i', `${id.platform}:${id.identity}`, id.proof]);
 
-      tags.push(['i', `${platform}:${identity}`, proof]);
+      tags.push(['i', `${targetPlatform}:${identity}`, proof]);
 
       return publishEvent(tags);
     },
@@ -79,8 +85,9 @@ export function useRemoveIdentity() {
 
   return useMutation({
     mutationFn: async ({ platform, identity }: { platform: string; identity: string }): Promise<RemoveIdentityResult> => {
+      const targetPlatform = canonicalPlatform(platform);
       const tags = existingIdentities
-        .filter((id) => !(id.platform === platform && id.identity === identity))
+        .filter((id) => !(id.platform === targetPlatform && id.identity === identity))
         .map((id) => ['i', `${id.platform}:${id.identity}`, id.proof]);
 
       const event = await publishEvent(tags);

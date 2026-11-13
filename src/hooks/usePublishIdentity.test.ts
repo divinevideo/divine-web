@@ -152,6 +152,38 @@ describe('useAddIdentity', () => {
       }),
     ).rejects.toThrow('Signing failed');
   });
+
+  it('replaces an existing x: row cleanly without duplicating it', async () => {
+    mockNostrQuery.mockResolvedValue([{
+      kind: 10011,
+      pubkey: TEST_PUBKEY,
+      created_at: 1700000000,
+      tags: [['i', 'x:alice', 'old-proof']],
+      content: '',
+      id: 'event1',
+      sig: 'sig1',
+    }]);
+
+    const { result } = renderHook(
+      () => useAddIdentity(),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(mockNostrQuery).toHaveBeenCalled());
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        platform: 'x',
+        identity: 'alice',
+        proof: 'new-proof',
+      });
+    });
+
+    expect(mockSignEvent.mock.calls[0][0].tags).toEqual([['i', 'twitter:alice', 'new-proof']]);
+  });
 });
 
 describe('useRemoveIdentity', () => {
@@ -296,16 +328,24 @@ describe('useRemoveIdentity', () => {
     expect(removed.signIn).toEqual({ revoked: true });
   });
 
-  it('sends twitter for an x: row', async () => {
-    const { result } = await setup([['i', 'x:alice', 'oauth']]);
+  it('sends twitter for an x: row and removes the row from the published list', async () => {
+    const { result } = await setup([
+      ['i', 'x:alice', 'oauth'],
+      ['i', 'github:alice', 'proof1'],
+    ]);
 
+    let removed!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
     await act(async () => {
-      await result.current.mutateAsync({ platform: 'x', identity: 'alice' });
+      removed = await result.current.mutateAsync({ platform: 'x', identity: 'alice' });
     });
 
-    expect(mockRevoke).toHaveBeenCalledWith(
-      expect.objectContaining({ platform: 'twitter', identity: 'alice' }),
-    );
+    expect(removed.event.tags).toEqual([['i', 'github:alice', 'proof1']]);
+    expect(mockRevoke).toHaveBeenCalledWith({
+      platform: 'twitter',
+      identity: 'alice',
+      pubkey: TEST_PUBKEY,
+      list: removed.event,
+    });
   });
 
   it('does not ask the verifier about a platform without sign-in', async () => {
