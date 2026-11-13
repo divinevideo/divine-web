@@ -15,9 +15,29 @@ export interface RemoveIdentityResult {
   signIn: SignInRevokeResult | null;
 }
 
+/**
+ * Matches the verifier's LINKED_ACCOUNTS_MAX_SECONDS_AHEAD window (600s).
+ * Confirming lists created by verifier.divine.video or divine-mobile can sit
+ * slightly ahead of this browser's clock; advancing by 1s keeps replacement
+ * lists newer on NIP-01 relays and accepted by /auth/oauth/revoke without
+ * propagating bogus far-future timestamps.
+ */
+const MAX_CLOCK_SKEW_SECONDS = 600;
+
 function canonicalPlatform(platform: string): string {
   const normalized = platform.trim().toLowerCase();
   return normalized === 'x' ? 'twitter' : normalized;
+}
+
+function nextCreatedAt(nowSeconds: number, previousCreatedAt: number | undefined): number {
+  if (
+    typeof previousCreatedAt === 'number'
+    && previousCreatedAt >= nowSeconds
+    && previousCreatedAt < nowSeconds + MAX_CLOCK_SKEW_SECONDS
+  ) {
+    return previousCreatedAt + 1;
+  }
+  return nowSeconds;
 }
 
 export function usePublishIdentity() {
@@ -28,11 +48,17 @@ export function usePublishIdentity() {
   const publishEvent = async (tags: string[][]) => {
     if (!user || !signer) throw new Error('User is not logged in');
 
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const previousCreatedAt = queryClient.getQueryData<number>([
+      'external-identities-created-at',
+      user.pubkey,
+    ]);
+
     const event = await signer.signEvent({
       kind: 10011,
       content: '',
       tags,
-      created_at: Math.floor(Date.now() / 1000),
+      created_at: nextCreatedAt(nowSeconds, previousCreatedAt),
     });
 
     // The signer is live state behind an async gap (e.g. an extension whose
@@ -43,6 +69,10 @@ export function usePublishIdentity() {
     }
 
     await nostr.event(event, { signal: AbortSignal.timeout(5000) });
+    queryClient.setQueryData<number>(
+      ['external-identities-created-at', user.pubkey],
+      (prev) => Math.max(prev ?? 0, event.created_at),
+    );
     return event;
   };
 

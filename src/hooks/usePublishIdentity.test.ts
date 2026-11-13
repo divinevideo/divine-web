@@ -348,6 +348,57 @@ describe('useRemoveIdentity', () => {
     });
   });
 
+  it('dates the replacement list one second past an ahead-of-clock predecessor within the verifier skew window', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    mockNostrQuery.mockResolvedValue([{
+      kind: 10011,
+      pubkey: TEST_PUBKEY,
+      created_at: now + 10,
+      tags: [['i', 'bluesky:alice.bsky.social', 'oauth']],
+      content: '',
+      id: 'event1',
+      sig: 'sig1',
+    }]);
+    const { result } = renderHook(() => useRemoveIdentity(), { wrapper: createWrapper() });
+    await waitFor(() => expect(mockNostrQuery).toHaveBeenCalled());
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    let removed!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
+    await act(async () => {
+      removed = await result.current.mutateAsync({ platform: 'bluesky', identity: 'alice.bsky.social' });
+    });
+
+    expect(removed.event.created_at).toBe(now + 11);
+  });
+
+  it('does not propagate a bogus far-future predecessor timestamp past the 600s verifier window', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    mockNostrQuery.mockResolvedValue([{
+      kind: 10011,
+      pubkey: TEST_PUBKEY,
+      created_at: now + 1000,
+      tags: [['i', 'bluesky:alice.bsky.social', 'oauth']],
+      content: '',
+      id: 'event1',
+      sig: 'sig1',
+    }]);
+    const { result } = renderHook(() => useRemoveIdentity(), { wrapper: createWrapper() });
+    await waitFor(() => expect(mockNostrQuery).toHaveBeenCalled());
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    let removed!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
+    await act(async () => {
+      removed = await result.current.mutateAsync({ platform: 'bluesky', identity: 'alice.bsky.social' });
+    });
+
+    expect(removed.event.created_at).toBeGreaterThanOrEqual(now);
+    expect(removed.event.created_at).toBeLessThan(now + 5);
+  });
+
   it('does not ask the verifier about a platform without sign-in', async () => {
     const { result } = await setup([['i', 'github:alice', 'proof1']]);
 
