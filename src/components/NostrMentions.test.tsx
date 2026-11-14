@@ -92,6 +92,7 @@ describe.each(['title', 'description'])('%s profile mentions', (renderer) => {
     [`${NPUB}s`, '@alice.divine.videos'],
     [`nostr:${NPROFILE}ne`, '@alice.divine.videone'],
     [`(${NPUB}),`, '(@alice.divine.video),'],
+    [`${NPUB.toUpperCase()}s`, '@alice.divine.videos'],
   ])('recovers a valid reference and preserves surrounding text', (text, expected) => {
     const { container } = render(<Content renderer={renderer} text={text} />);
     expect(screen.getByRole('link', { name: '@alice.divine.video' })).toHaveAttribute('href', '/u/alice');
@@ -129,6 +130,8 @@ describe.each(['title', 'description'])('%s profile mentions', (renderer) => {
     `${NPUB}_suffix`,
     `nostr:${NPUB.slice(0, -6)}qqqqqqs`,
     `nostr:${NPROFILE}sssss`,
+    `nostr:${NPUB.slice(0, 10)}${NPUB.slice(10).toUpperCase()}`,
+    `nostr:${NPROFILE.slice(0, 9).toUpperCase()}${NPROFILE.slice(9)}`,
     `nostr:${nip19.npubEncode('a'.repeat(40))}`,
     `nostr:${nip19.nprofileEncode({ pubkey: 'a'.repeat(40) })}`,
     `nostr:${nip19.noteEncode('a'.repeat(40))}`,

@@ -18,7 +18,10 @@ export interface NostrReference {
 
 type DecodedReference = Pick<NostrReference, 'identifier' | 'pubkey'>;
 
-function decodeReference(identifier: string): DecodedReference | undefined {
+function decodeReference(candidate: string): DecodedReference | undefined {
+  // bech32 rejects mixed case; lowercasing first would hide that from nip19.decode.
+  const identifier = candidate.toLowerCase();
+  if (candidate !== identifier && candidate !== candidate.toUpperCase()) return undefined;
   try {
     const decoded = nip19.decode(identifier);
     if (decoded.type === 'npub' || decoded.type === 'note') {
@@ -41,14 +44,14 @@ function parseLeadingReference(token: string): (DecodedReference & { length: num
   const prefixLength = /^nostr:/i.test(token) ? 6 : 0;
   const body = token.slice(prefixLength);
   const nextPrefix = body.slice(1).search(REFERENCE_PREFIX);
-  const identifier = (nextPrefix === -1 ? body : body.slice(0, nextPrefix + 1)).toLowerCase();
-  const complete = decodeReference(identifier);
-  if (complete) return { ...complete, length: prefixLength + identifier.length };
+  const bounded = nextPrefix === -1 ? body : body.slice(0, nextPrefix + 1);
+  const complete = decodeReference(bounded);
+  if (complete) return { ...complete, length: prefixLength + bounded.length };
 
-  const fixedLength = /^(?:npub1|note1)/.test(identifier);
+  const fixedLength = /^(?:npub1|note1)/i.test(bounded);
   const candidates = fixedLength
-    ? (identifier.length > 63 ? [identifier.slice(0, 63)] : [])
-    : Array.from({ length: Math.min(4, Math.max(0, identifier.length - 20)) }, (_, index) => identifier.slice(0, -index - 1));
+    ? (bounded.length > 63 ? [bounded.slice(0, 63)] : [])
+    : Array.from({ length: Math.min(4, Math.max(0, bounded.length - 20)) }, (_, index) => bounded.slice(0, -index - 1));
 
   for (const candidate of candidates) {
     const decoded = decodeReference(candidate);
