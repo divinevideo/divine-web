@@ -85,6 +85,10 @@ describe.each(['title', 'description'])('%s profile mentions', (renderer) => {
   it.each([
     [`wnostr:${NPUB}ne`, 'w@alice.divine.videone'],
     [`nostr:${NPUB}and more`, '@alice.divine.videoand more'],
+    [`nostr:${NPUB}with`, '@alice.divine.videowith'],
+    [`nostr:${NPUB}is`, '@alice.divine.videois'],
+    [`nostr:${NPUB}andmore`, '@alice.divine.videoandmore'],
+    [`nostr:${NPROFILE}with`, '@alice.divine.videowith'],
     [`${NPUB}s`, '@alice.divine.videos'],
     [`nostr:${NPROFILE}ne`, '@alice.divine.videone'],
     [`(${NPUB}),`, '(@alice.divine.video),'],
