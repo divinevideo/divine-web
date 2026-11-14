@@ -353,9 +353,9 @@ export function VideoFeed({
     });
   }, [allVideos.length, filteredVideos, trackFirstPlayback]);
 
-  // Loading state (initial load only)
   usePageContentReady(isLoading || (!data && !error) ? null : error ? 'error' : filteredVideos.length ? 'ready' : 'empty');
 
+  // Loading state (initial load only)
   if (isLoading && !data) {
     return (
       <div
