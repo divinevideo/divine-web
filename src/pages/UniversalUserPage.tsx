@@ -1,6 +1,7 @@
 // ABOUTME: Universal user page that handles both NIP-05 and Vine user ID lookups
 // ABOUTME: Determines whether the parameter is a NIP-05 identifier or Vine user ID and routes accordingly
 
+import { usePageContentReady } from '@/hooks/usePageContentReady';
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
@@ -367,6 +368,8 @@ export function UniversalUserPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { data, isLoading, error } = useUniversalUserLookup(userId);
+
+  usePageContentReady(error || !userId ? 'error' : null);
 
   useEffect(() => {
     if (!userId) return;
