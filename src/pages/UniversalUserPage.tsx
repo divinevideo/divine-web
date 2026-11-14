@@ -226,7 +226,7 @@ async function resolveCandidates(candidates: string[], callerSignal: AbortSignal
       const pubkey = fresh ? state.data : await resolveNip05ToPubkey(candidate, { signal });
       if (pubkey) {
         callerSignal.throwIfAborted();
-        queryClient.setQueryData(nip05QueryOptions(candidate).queryKey, pubkey);
+        if (!fresh) queryClient.setQueryData(nip05QueryOptions(candidate).queryKey, pubkey);
         return { pubkey, metadata: {}, type: 'nip05' };
       }
     } catch (error) {
