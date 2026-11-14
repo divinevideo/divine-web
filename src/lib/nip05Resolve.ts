@@ -1,3 +1,5 @@
+import { shareRequest } from '@/lib/sharedRequest';
+
 export interface ParsedNip05 {
   name: string;
   domain: string;
@@ -62,13 +64,16 @@ export async function resolveNip05(
   if (!parsed) return null;
   const url = `https://${parsed.domain}/.well-known/nostr.json?name=${encodeURIComponent(parsed.name)}`;
 
-  const res = await fetch(url, {
-    signal: signal ?? AbortSignal.timeout(5000),
-    headers: { Accept: 'application/json' },
-  });
-  if (!res.ok) return null;
-
-  const body = await res.json().catch(() => null) as { names?: Record<string, string> } | null;
+  const body = await shareRequest(url, async sharedSignal => {
+    const res = await fetch(url, {
+      signal: AbortSignal.any([sharedSignal, AbortSignal.timeout(5000)]),
+      headers: { Accept: 'application/json' },
+      priority: 'high',
+    });
+    if (res.status >= 500 || res.status === 429) throw new Error(`NIP-05 lookup failed: ${res.status}`);
+    if (!res.ok) return null;
+    return res.json().catch(() => null) as Promise<{ names?: Record<string, string> } | null>;
+  }, signal);
   const pubkey = body?.names?.[parsed.name];
   if (typeof pubkey !== 'string' || !/^[0-9a-f]{64}$/i.test(pubkey)) return null;
   return { pubkey: pubkey.toLowerCase(), name: parsed.name, domain: parsed.domain };

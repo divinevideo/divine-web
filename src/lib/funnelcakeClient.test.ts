@@ -82,6 +82,8 @@ describe('funnelcakeClient', () => {
         },
         engagement: {
           total_reactions: 500,
+          total_loops: 1200,
+          total_views: 800,
         },
       };
 
@@ -99,6 +101,8 @@ describe('funnelcakeClient', () => {
       expect(result?.following_count).toBe(50);
       expect(result?.video_count).toBe(10);
       expect(result?.total_reactions).toBe(500);
+      expect(result?.total_loops).toBe(1200);
+      expect(result?.total_views).toBe(800);
 
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining(`/api/users/${TEST_PUBKEY}`),
@@ -106,6 +110,60 @@ describe('funnelcakeClient', () => {
           signal: expect.any(AbortSignal),
         })
       );
+    });
+
+    it('shares concurrent profile reads without coupling caller cancellation', async () => {
+      let respond!: (value: unknown) => void;
+      let transportSignal: AbortSignal | undefined;
+      vi.mocked(global.fetch).mockImplementation((_url, options) => {
+        transportSignal = options?.signal ?? undefined;
+        return new Promise((resolve, reject) => {
+          respond = resolve;
+          options?.signal?.addEventListener('abort', () => reject(options.signal?.reason), { once: true });
+        });
+      });
+      const controller = new AbortController();
+      const first = fetchUserProfile(API_URL, TEST_PUBKEY, controller.signal);
+      const cancelled = expect(first).rejects.toMatchObject({ name: 'AbortError' });
+      const second = fetchUserProfile(API_URL, TEST_PUBKEY);
+      controller.abort();
+      await cancelled;
+      expect(transportSignal?.aborted).toBe(false);
+      respond({ ok: true, json: async () => ({ pubkey: TEST_PUBKEY, profile: { name: 'Alice' } }) });
+      expect((await second)?.name).toBe('Alice');
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('cancels transport after the last caller leaves and allows a fresh request', async () => {
+      let transportSignal: AbortSignal | undefined;
+      vi.mocked(global.fetch).mockImplementationOnce((_url, options) => {
+        transportSignal = options?.signal ?? undefined;
+        return new Promise((_resolve, reject) => {
+          options?.signal?.addEventListener('abort', () => reject(options.signal?.reason), { once: true });
+        });
+      });
+      const firstController = new AbortController();
+      const secondController = new AbortController();
+      const first = fetchUserProfile(API_URL, TEST_PUBKEY, firstController.signal);
+      const second = fetchUserProfile(API_URL, TEST_PUBKEY, secondController.signal);
+      const outcomes = Promise.allSettled([first, second]);
+      await Promise.resolve();
+      firstController.abort();
+      expect(transportSignal?.aborted).toBe(false);
+      secondController.abort();
+      expect(transportSignal?.aborted).toBe(true);
+      expect((await outcomes).every(outcome => outcome.status === 'rejected')).toBe(true);
+      vi.mocked(global.fetch).mockResolvedValueOnce({ ok: true, json: async () => ({ pubkey: TEST_PUBKEY }) } as Response);
+      expect((await fetchUserProfile(API_URL, TEST_PUBKEY))?.pubkey).toBe(TEST_PUBKEY);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not retain a failed profile request for the next caller', async () => {
+      vi.mocked(global.fetch).mockRejectedValueOnce(new TypeError('offline'));
+      expect(await fetchUserProfile(API_URL, TEST_PUBKEY)).toBeNull();
+      vi.mocked(global.fetch).mockResolvedValueOnce({ ok: true, json: async () => ({ pubkey: TEST_PUBKEY }) } as Response);
+      expect((await fetchUserProfile(API_URL, TEST_PUBKEY))?.pubkey).toBe(TEST_PUBKEY);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
     it('returns null on network error', async () => {
