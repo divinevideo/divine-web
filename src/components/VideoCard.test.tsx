@@ -449,7 +449,7 @@ describe('VideoCard', () => {
     expect(playbackMocks.navigate).not.toHaveBeenCalled();
   });
 
-  it('shows a visible Unmute label while a video is muted', () => {
+  it('labels the sound button Unmute in text while a video is muted', () => {
     render(<VideoCard video={baseVideo} />);
 
     expect(screen.getByRole('button', { name: 'Unmute' })).toHaveTextContent('Unmute');

@@ -88,7 +88,7 @@ async function serveSyntheticFeed(page: Page) {
       return route.fulfill({
         json: {
           event: { id, pubkey, created_at, kind, tags, content, sig: '0'.repeat(128) },
-          stats: { text_track_content: video.text_track_content, author_name: video.author_name, author_avatar: '', reactions: 0, comments: 0, reposts: 0, engagement_score: 0 },
+          stats: { author_name: video.author_name, author_avatar: '', reactions: 0, comments: 0, reposts: 0, engagement_score: 0 },
         },
       });
     }
@@ -106,7 +106,7 @@ async function expectControlsFit(card: Locator) {
     const issues: string[] = [];
     for (const button of element.querySelectorAll('button')) {
       const box = button.getBoundingClientRect();
-      if (box.width && (box.left < bounds.left - 1 || box.right > bounds.right + 1)) {
+      if (box.width && Math.round(Math.max(box.right - bounds.right, bounds.left - box.left)) > 0) {
         issues.push(`${button.getAttribute('aria-label')} outside card`);
       }
     }
@@ -164,7 +164,7 @@ for (const width of [320, 360, 390, 1505]) {
         const column = card.closest('.infinite-scroll-component')?.getBoundingClientRect() ?? card.parentElement!.getBoundingClientRect();
         return Math.max(bounds.right - column.right, column.left - bounds.left);
       }));
-      expect(overhang.every((pixels) => pixels <= 1)).toBe(true);
+      expect(overhang.every((pixels) => Math.round(pixels) <= 0)).toBe(true);
       for (const card of await cards.all()) {
         await expect(card.locator('video')).toHaveJSProperty('readyState', 4);
         await expect(card.getByRole('button', { name: 'Unmute', exact: true }).getByText('Unmute')).toBeVisible();
