@@ -4,6 +4,8 @@ import { NostrMention } from '@/components/NostrMention';
 import { SmartLink } from '@/components/SmartLink';
 import { NOSTR_REFERENCE_PATTERN, parseNostrReferences } from '@/lib/nostrReferences';
 
+type TitlePart = { kind: 'text'; text: string } | { kind: 'mention'; pubkey: string };
+
 interface InlineNostrTextProps {
   text: string;
   textLinkTo?: string;
@@ -13,7 +15,7 @@ interface InlineNostrTextProps {
 
 export function InlineNostrText({ text, textLinkTo, textLinkOwnerPubkey, textLinkClassName }: InlineNostrTextProps) {
   const parts = useMemo(() => {
-    const result: { text: string; pubkey?: string }[] = [];
+    const result: TitlePart[] = [];
     const regex = new RegExp(`https?:\\/\\/[^\\s]+|(${NOSTR_REFERENCE_PATTERN})`, 'gi');
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -26,9 +28,9 @@ export function InlineNostrText({ text, textLinkTo, textLinkOwnerPubkey, textLin
         if (!reference.pubkey) continue;
         const start = match.index + reference.start;
         if (start > lastIndex) {
-          result.push({ text: text.slice(lastIndex, start) });
+          result.push({ kind: 'text', text: text.slice(lastIndex, start) });
         }
-        result.push({ text: '', pubkey: reference.pubkey });
+        result.push({ kind: 'mention', pubkey: reference.pubkey });
         lastIndex = match.index + reference.end;
       }
       if (references.length > 0) {
@@ -36,7 +38,7 @@ export function InlineNostrText({ text, textLinkTo, textLinkOwnerPubkey, textLin
       }
     }
     if (lastIndex < text.length || result.length === 0) {
-      result.push({ text: text.slice(lastIndex) });
+      result.push({ kind: 'text', text: text.slice(lastIndex) });
     }
     return result;
   }, [text]);
@@ -44,7 +46,7 @@ export function InlineNostrText({ text, textLinkTo, textLinkOwnerPubkey, textLin
   return (
     <>
       {parts.map((part, index) => {
-        if (part.pubkey) return <NostrMention key={index} pubkey={part.pubkey} />;
+        if (part.kind === 'mention') return <NostrMention key={index} pubkey={part.pubkey} />;
         if (!textLinkTo || part.text.trim() === '') return <span key={index}>{part.text}</span>;
         return (
           <SmartLink key={index} to={textLinkTo} ownerPubkey={textLinkOwnerPubkey} className={textLinkClassName}>

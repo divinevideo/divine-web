@@ -8,10 +8,9 @@ import { cn } from '@/lib/utils';
 
 interface NostrMentionProps {
   pubkey: string;
-  className?: string;
 }
 
-export function NostrMention({ pubkey, className }: NostrMentionProps) {
+export function NostrMention({ pubkey }: NostrMentionProps) {
   const author = useAuthor(pubkey);
   const metadata = author.data?.metadata;
   const nip05 = metadata?.nip05?.trim();
@@ -30,7 +29,6 @@ export function NostrMention({ pubkey, className }: NostrMentionProps) {
       className={cn(
         'font-medium hover:underline',
         hasIdentity ? 'text-blue-500' : 'text-gray-500 hover:text-gray-700',
-        className,
       )}
     >
       {label}
