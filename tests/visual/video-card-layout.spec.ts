@@ -1,5 +1,5 @@
-// ABOUTME: Lays out video cards from synthetic Funnelcake data and checks that each card stays inside
-// ABOUTME: its column and each card button inside its card, so its right-edge controls stay reachable.
+// ABOUTME: Plays synthetic cards with real media and checks that cards fit their column, that the
+// ABOUTME: player's sound, caption and fullscreen controls stay reachable, legible and clear of captions.
 import { fileURLToPath } from 'node:url';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
@@ -158,7 +158,7 @@ for (const width of [320, 360, 390, 1505]) {
       if (route.startsWith('/discovery/')) await expect(cards).toHaveCount(FEED.length);
       const title = page.locator('main h3').filter({ hasText: 'Sing along' });
       await expect(title).toBeVisible();
-      expect(await title.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+      expect(await title.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
       const overhang = await cards.evaluateAll((elements) => elements.map((card) => {
         const bounds = card.getBoundingClientRect();
         const column = card.closest('.infinite-scroll-component')?.getBoundingClientRect() ?? card.parentElement!.getBoundingClientRect();
