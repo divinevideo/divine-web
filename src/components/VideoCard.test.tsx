@@ -642,6 +642,33 @@ describe('VideoCard', () => {
     expect(screen.queryByRole('button', { name: 'Unmute' })).not.toBeInTheDocument();
   });
 
+  it('starts fitting the Unmute label to its player once the age gate lifts', () => {
+    const video = makeVideo({ ageRestricted: true });
+    const observers = vi.mocked(ResizeObserver);
+    const { rerender } = render(<VideoCard video={video} />);
+    const before = observers.mock.results.length;
+
+    authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    authMocks.useAdultVerification.mockReturnValue({
+      isVerified: true,
+      confirmAdult: authMocks.confirmAdult,
+      revokeVerification: vi.fn(),
+      getAuthHeader: vi.fn(),
+      isLoading: false,
+      hasSigner: true,
+    });
+    rerender(<VideoCard video={video} />);
+
+    // The sound group mounts only now, so the fit check has to run again and
+    // watch the player it sits in.
+    const player = screen.getByRole('button', { name: 'Unmute' }).parentElement?.parentElement;
+    const watched = observers.mock.results.slice(before).flatMap(
+      ({ value }) => (value as { observe: ReturnType<typeof vi.fn> }).observe.mock.calls.map(([target]) => target)
+    );
+    expect(player).toBeTruthy();
+    expect(watched).toContain(player);
+  });
+
   it('lets a viewer hide age-restricted cards from feeds', () => {
     render(<VideoCard video={makeVideo({ ageRestricted: true })} mode="thumbnail" />);
 
