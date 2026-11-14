@@ -1,6 +1,8 @@
 // ABOUTME: Lays out video cards from synthetic Funnelcake data and checks that each card stays inside
 // ABOUTME: its column and each card button inside its card, so its right-edge controls stay reachable.
-import { expect, test, type Page } from '@playwright/test';
+import { fileURLToPath } from 'node:url';
+import AxeBuilder from '@axe-core/playwright';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // One run of text with no break opportunity, wider than any card. A classic Vine
 // caption like this once set the width of every card in the feed.
@@ -20,6 +22,7 @@ function syntheticVideo(index: number, title: string) {
     d_tag: dTag,
     title,
     content: '',
+    text_track_content: 'WEBVTT\n\n00:00.000 --> 00:06.000\nSynthetic captions\n',
     thumbnail: `${media}.jpg`,
     video_url: `${media}.mp4`,
     dimensions: '480x480',
@@ -55,13 +58,27 @@ const FEED = [
   syntheticVideo(3, 'Another short caption'),
 ];
 
-// Serves FEED for every Funnelcake read and keeps every other host and relay out,
-// so the layout depends on nothing but this file.
+const MEDIA_PATH = fileURLToPath(new URL('./fixtures/loop-with-audio.mp4', import.meta.url));
 async function serveSyntheticFeed(page: Page) {
   await page.routeWebSocket(/^wss:\/\//, (ws) => ws.close());
   await page.route(/^https?:\/\/(?!localhost[:/])/, (route) => {
     const url = new URL(route.request().url());
+    if (url.hostname === 'media.divine.video') {
+      if (url.pathname.endsWith('.jpg')) {
+        return route.fulfill({
+          contentType: 'image/svg+xml',
+          body: '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480"><rect width="480" height="480" fill="#0b483c"/></svg>',
+          headers: { 'access-control-allow-origin': '*' },
+        });
+      }
+      return route.fulfill({
+        path: MEDIA_PATH,
+        contentType: 'video/mp4',
+        headers: { 'access-control-allow-origin': '*' },
+      });
+    }
     if (url.hostname !== 'api.divine.video') return route.abort();
+    if (url.pathname === '/api/videos') return route.fulfill({ json: FEED });
     if (url.pathname === '/api/v2/videos') {
       return route.fulfill({ json: { data: FEED, pagination: { next_cursor: null, has_more: false } } });
     }
@@ -71,7 +88,7 @@ async function serveSyntheticFeed(page: Page) {
       return route.fulfill({
         json: {
           event: { id, pubkey, created_at, kind, tags, content, sig: '0'.repeat(128) },
-          stats: { author_name: video.author_name, author_avatar: '', reactions: 0, comments: 0, reposts: 0, engagement_score: 0 },
+          stats: { text_track_content: video.text_track_content, author_name: video.author_name, author_avatar: '', reactions: 0, comments: 0, reposts: 0, engagement_score: 0 },
         },
       });
     }
@@ -79,54 +96,133 @@ async function serveSyntheticFeed(page: Page) {
   });
 }
 
-test('a title with no break opportunities wraps inside the video card', async ({ page }) => {
-  // A cold dev server compiles the app on first load.
+async function expectControlsFit(card: Locator) {
+  const sound = card.getByRole('button', { name: /^(Unmute|Mute|Activează sunetul)$/ });
+  await expect(sound).toBeVisible();
+  const problems = await card.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    const video = element.querySelector('video')!;
+    const player = video.parentElement!.parentElement!.getBoundingClientRect();
+    const issues: string[] = [];
+    for (const button of element.querySelectorAll('button')) {
+      const box = button.getBoundingClientRect();
+      if (box.width && (box.left < bounds.left - 1 || box.right > bounds.right + 1)) {
+        issues.push(`${button.getAttribute('aria-label')} outside card`);
+      }
+    }
+    const controls = [...video.parentElement!.parentElement!.querySelectorAll('button')];
+    for (const [index, button] of controls.entries()) {
+      const box = button.getBoundingClientRect();
+      if (box.width < 44 || box.height < 44) issues.push(`${button.getAttribute('aria-label')} below 44px`);
+      if (box.left < player.left || box.right > player.right || box.top < player.top || box.bottom > player.bottom) {
+        issues.push(`${button.getAttribute('aria-label')} outside player`);
+      }
+      for (const other of controls.slice(index + 1)) {
+        const next = other.getBoundingClientRect();
+        if (box.left < next.right && box.right > next.left && box.top < next.bottom && box.bottom > next.top) {
+          issues.push(`${button.getAttribute('aria-label')} overlaps ${other.getAttribute('aria-label')}`);
+        }
+      }
+    }
+    return issues;
+  });
+  expect(problems).toEqual([]);
+}
+
+for (const width of [320, 360, 390, 1505]) {
+  for (const route of ['/discovery/classics', '/discovery/hot', `/video/${FEED[1].id}`]) {
+    test(`cards and playable sound controls fit at ${width}px on ${route}`, async ({ page }, testInfo) => {
+      test.setTimeout(60_000);
+      await serveSyntheticFeed(page);
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(route);
+      const cards = page.locator('main .brand-card');
+      await expect(cards.first()).toBeVisible({ timeout: 30_000 });
+      if (route.startsWith('/discovery/')) await expect(cards).toHaveCount(FEED.length);
+      const title = page.locator('main h3').filter({ hasText: 'Sing along' });
+      await expect(title).toBeVisible();
+      expect(await title.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+      const overhang = await cards.evaluateAll((elements) => elements.map((card) => {
+        const bounds = card.getBoundingClientRect();
+        const column = card.closest('.infinite-scroll-component')?.getBoundingClientRect() ?? card.parentElement!.getBoundingClientRect();
+        return Math.max(bounds.right - column.right, column.left - bounds.left);
+      }));
+      expect(overhang.every((pixels) => pixels <= 1)).toBe(true);
+      for (const card of await cards.all()) {
+        await expect(card.locator('video')).toHaveJSProperty('readyState', 4);
+        await expect(card.getByRole('button', { name: 'Unmute', exact: true })).toHaveText('Unmute');
+        await expectControlsFit(card);
+        await card.getByRole('button', { name: 'More options', exact: true }).click({ trial: true });
+      }
+      const active = cards.first();
+      await active.scrollIntoViewIfNeeded();
+      await expect(active.locator('video')).toHaveJSProperty('paused', false);
+      if (route.startsWith('/discovery/')) {
+        await expect(active.getByRole('button', { name: 'Hide subtitles' })).toBeVisible();
+        await expectControlsFit(active);
+      }
+      await active.getByRole('button', { name: 'Unmute', exact: true }).click({ trial: true });
+      await testInfo.attach('card-layout', { body: await active.screenshot(), contentType: 'image/png' });
+    });
+  }
+}
+
+test('unmuting keeps playback running and the next active video inherits sound', async ({ page }) => {
   test.setTimeout(60_000);
   await serveSyntheticFeed(page);
-  await page.goto(`/video/${FEED[1].id}`);
-  const title = page.locator('main h3').first();
-  await expect(title).toContainText('Sing along', { timeout: 30_000 });
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto('/discovery/classics');
+  const cards = page.locator('main .brand-card');
+  await expect(cards).toHaveCount(FEED.length, { timeout: 30_000 });
+  const first = cards.first();
+  const video = first.locator('video');
+  await first.scrollIntoViewIfNeeded();
+  await expect(video).toHaveJSProperty('paused', false);
+  await expect(video).toHaveJSProperty('muted', true);
+  await first.getByRole('button', { name: 'Unmute', exact: true }).click();
+  await expect(video).toHaveJSProperty('muted', false);
+  await expect(video).toHaveJSProperty('paused', false);
+  const mute = first.getByRole('button', { name: 'Mute', exact: true });
+  await expect(mute).toHaveText('');
+  expect(page.url()).toContain('/discovery/classics');
+  await expectControlsFit(first);
+  await expect.poll(() => video.evaluate((el) => (el as HTMLVideoElement).currentTime)).toBeGreaterThan(0.25);
 
-  const overflow = await title.evaluate((el) => el.scrollWidth - el.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(0);
+  const second = cards.nth(1);
+  await second.scrollIntoViewIfNeeded();
+  await expect(second.locator('video')).toHaveJSProperty('paused', false);
+  await expect(second.locator('video')).toHaveJSProperty('muted', false);
+  await expect(video).toHaveJSProperty('paused', true);
+  await second.getByRole('button', { name: 'Mute', exact: true }).click();
+  await expect(second.locator('video')).toHaveJSProperty('muted', true);
+  await expect(second.locator('video')).toHaveJSProperty('paused', false);
+  await expect(second.getByRole('button', { name: 'Unmute', exact: true })).toHaveText('Unmute');
 });
 
-// Phone widths are where the action row runs out of room; 1505 is where the
-// unbroken title once set the width of every card.
-for (const width of [320, 360, 390, 1505]) {
-  test(`every feed card and its controls fit inside the feed column at ${width}px`, async ({ page }) => {
+test('translated Unmute stays clear of captions and fullscreen on a narrow screen', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.addInitScript(() => localStorage.setItem('divine:locale', 'ro'));
+  await serveSyntheticFeed(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/discovery/classics');
+  const card = page.locator('main .brand-card').first();
+  await expect(card.getByRole('button', { name: 'Activează sunetul', exact: true })).toHaveText('Activează sunetul', { timeout: 30_000 });
+  await expectControlsFit(card);
+});
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`Unmute label meets contrast requirements in ${colorScheme} mode`, async ({ page }) => {
     test.setTimeout(60_000);
     await serveSyntheticFeed(page);
-    await page.setViewportSize({ width, height: 900 });
-    // Hot's first page is the /api/v2/videos response served above. Classic reads
-    // /api/videos at a random offset instead, which this stub does not serve.
-    await page.goto('/discovery/hot');
-    const feed = page.locator('.infinite-scroll-component').first();
-    await expect(feed.locator('.brand-card')).toHaveCount(FEED.length, { timeout: 30_000 });
-    await expect(feed.getByRole('button', { name: 'More options' })).toHaveCount(FEED.length);
-
-    // A card wider than the feed column pushes its right edge, and the video's mute
-    // button with it, out of view behind a sideways scroll. A card clips its own
-    // overflow, so a button past its edge can't be reached at all. Media isn't
-    // served, so mute itself never renders here; the card's edge stands in for it.
-    const outOfBounds = await feed.evaluate((container) => {
-      const column = container.getBoundingClientRect();
-      return [...container.querySelectorAll('.brand-card')].flatMap((card, index) => {
-        const box = card.getBoundingClientRect();
-        const problems: string[] = [];
-        const overhang = Math.round(Math.max(box.right - column.right, column.left - box.left));
-        if (overhang > 0) problems.push(`card ${index + 1} overhangs the feed by ${overhang}px`);
-        for (const button of card.querySelectorAll('button')) {
-          const rect = button.getBoundingClientRect();
-          const past = Math.round(Math.max(rect.right - box.right, box.left - rect.left));
-          if (rect.width > 0 && past > 0) {
-            const name = button.getAttribute('aria-label') ?? button.textContent?.trim();
-            problems.push(`card ${index + 1} "${name}" ends ${past}px past the card`);
-          }
-        }
-        return problems;
-      });
-    });
-    expect(outOfBounds).toEqual([]);
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/discovery/classics');
+    const button = page.getByRole('button', { name: 'Unmute', exact: true }).first();
+    await expect(button).toBeVisible({ timeout: 30_000 });
+    await button.scrollIntoViewIfNeeded();
+    const result = await new AxeBuilder({ page })
+      .include('button[aria-label="Unmute"]')
+      .withRules(['color-contrast'])
+      .analyze();
+    expect(result.violations).toEqual([]);
   });
 }

@@ -13,6 +13,7 @@ import { VideoCard } from './VideoCard';
 
 const playbackMocks = vi.hoisted(() => ({
   activeVideoId: null as string | null,
+  globalMuted: true,
   setActiveVideo: vi.fn(),
   setGlobalMuted: vi.fn(),
   navigate: vi.fn(),
@@ -251,7 +252,7 @@ vi.mock('@/hooks/useVideoPlayback', () => ({
     registerVideo: vi.fn(),
     unregisterVideo: vi.fn(),
     updateVideoVisibility: vi.fn(),
-    globalMuted: true,
+    globalMuted: playbackMocks.globalMuted,
     setGlobalMuted: playbackMocks.setGlobalMuted,
   }),
 }));
@@ -409,6 +410,7 @@ describe('VideoCard', () => {
     });
     await initializeI18n({ force: true, languages: ['en-US'] });
     playbackMocks.activeVideoId = null;
+    playbackMocks.globalMuted = true;
     playbackMocks.setActiveVideo.mockClear();
     playbackMocks.setGlobalMuted.mockClear();
     playbackMocks.navigate.mockClear();
@@ -445,6 +447,45 @@ describe('VideoCard', () => {
     const link = screen.getByTestId('thumbnail-link');
     expect(link).toHaveAttribute('href', `/video/${baseVideo.id}`);
     expect(playbackMocks.navigate).not.toHaveBeenCalled();
+  });
+
+  it('shows a visible Unmute label while a video is muted', () => {
+    render(<VideoCard video={baseVideo} />);
+
+    expect(screen.getByRole('button', { name: 'Unmute' })).toHaveTextContent('Unmute');
+  });
+
+  it('toggles sound in both directions without navigating or entering fullscreen', () => {
+    const enterFullscreen = vi.fn();
+    const onPlay = vi.fn();
+    const { rerender } = render(
+      <VideoCard video={baseVideo} onEnterFullscreen={enterFullscreen} onPlay={onPlay} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unmute' }));
+    expect(playbackMocks.setGlobalMuted).toHaveBeenLastCalledWith(false);
+
+    playbackMocks.globalMuted = false;
+    rerender(<VideoCard video={baseVideo} onEnterFullscreen={enterFullscreen} onPlay={onPlay} />);
+    const mute = screen.getByRole('button', { name: 'Mute' });
+    expect(mute.textContent).toBe('');
+    expect(screen.queryByText('Unmute')).not.toBeInTheDocument();
+    fireEvent.click(mute);
+    expect(playbackMocks.setGlobalMuted).toHaveBeenLastCalledWith(true);
+    expect(enterFullscreen).not.toHaveBeenCalled();
+    expect(playbackMocks.navigate).not.toHaveBeenCalled();
+    expect(onPlay).not.toHaveBeenCalled();
+
+    playbackMocks.globalMuted = true;
+    rerender(<VideoCard video={baseVideo} onEnterFullscreen={enterFullscreen} onPlay={onPlay} />);
+    expect(screen.getByRole('button', { name: 'Unmute' })).toHaveTextContent('Unmute');
+  });
+
+  it('hides the sound control when playback fails', () => {
+    render(<VideoCard video={baseVideo} />);
+
+    fireEvent.click(screen.getByRole('button', { name: `fail-video-${baseVideo.id}` }));
+    expect(screen.queryByRole('button', { name: 'Unmute' })).not.toBeInTheDocument();
   });
 
   it('links the author through a friendly profile path when NIP-05 is valid', () => {

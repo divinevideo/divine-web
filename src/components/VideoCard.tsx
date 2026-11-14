@@ -701,63 +701,65 @@ export function VideoCard({
                 </div>
               )}
 
-              {/* CC button overlay - bottom right, next to mute */}
-              {isPlaying && !videoError && hasSubtitles && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "absolute bottom-3 right-14 z-30",
-                    "bg-black/50 hover:bg-black/70",
-                    showSubtitles ? "text-white" : "text-white/50",
-                    "backdrop-blur-sm rounded-full",
-                    "w-10 h-10 p-0 flex items-center justify-center",
-                    "transition-all duration-200"
-                  )}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setSubtitlesVisible(prev => !prev);
-                  }}
-                  onTouchStart={(e) => { e.stopPropagation(); }}
-                  onTouchEnd={(e) => { e.stopPropagation(); }}
-                  aria-label={showSubtitles ? t('videoCard.ariaHideSubtitles') : t('videoCard.ariaShowSubtitles')}
-                >
-                  <Captions className="h-5 w-5" />
-                </Button>
-              )}
-
-              {/* Mute/Unmute button overlay - bottom right corner */}
               {isPlaying && !videoError && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "absolute bottom-3 right-3 z-30",
-                    "bg-black/50 hover:bg-black/70 text-white",
-                    "backdrop-blur-sm rounded-full",
-                    "w-10 h-10 p-0 flex items-center justify-center",
-                    "transition-all duration-200"
+                <div className="absolute bottom-3 right-3 z-30 flex max-w-[calc(100%-5rem)] flex-wrap items-center justify-end gap-2">
+                  {hasSubtitles && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        "bg-black/75 hover:bg-black/80 hover:text-white",
+                        showSubtitles ? "text-white" : "text-white/50",
+                        "backdrop-blur-sm rounded-full",
+                        "w-11 h-11 shrink-0 p-0 flex items-center justify-center",
+                        "transition-all duration-200"
+                      )}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSubtitlesVisible(prev => !prev);
+                      }}
+                      onTouchStart={(e) => { e.stopPropagation(); }}
+                      onTouchEnd={(e) => { e.stopPropagation(); }}
+                      aria-label={showSubtitles ? t('videoCard.ariaHideSubtitles') : t('videoCard.ariaShowSubtitles')}
+                    >
+                      <Captions className="h-5 w-5" />
+                    </Button>
                   )}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setGlobalMuted(!globalMuted);
-                  }}
-                  onTouchStart={(e) => {
-                    e.stopPropagation();
-                  }}
-                  onTouchEnd={(e) => {
-                    e.stopPropagation();
-                  }}
-                  aria-label={globalMuted ? t('videoCard.ariaUnmute') : t('videoCard.ariaMute')}
-                >
-                  {globalMuted ? (
-                    <VolumeX className="h-5 w-5" />
-                  ) : (
-                    <Volume2 className="h-5 w-5" />
-                  )}
-                </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "bg-black/75 hover:bg-black/80 text-white hover:text-white",
+                      "backdrop-blur-sm rounded-full",
+                      "min-h-11 min-w-11 max-w-full flex items-center justify-center",
+                      globalMuted ? "h-auto gap-2 whitespace-normal px-3 py-2" : "w-11 h-11 p-0",
+                      "transition-all duration-200"
+                    )}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setGlobalMuted(!globalMuted);
+                    }}
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                    }}
+                    onTouchEnd={(e) => {
+                      e.stopPropagation();
+                    }}
+                    aria-label={globalMuted ? t('videoCard.ariaUnmute') : t('videoCard.ariaMute')}
+                  >
+                    {globalMuted ? (
+                      <>
+                        <VolumeX className="h-5 w-5" />
+                        <span>{t('videoCard.ariaUnmute')}</span>
+                      </>
+                    ) : (
+                      <Volume2 className="h-5 w-5" />
+                    )}
+                  </Button>
+                </div>
               )}
 
               {/* Fullscreen button overlay - bottom left corner */}
@@ -769,7 +771,7 @@ export function VideoCard({
                     "absolute bottom-3 left-3 z-30",
                     "bg-black/50 hover:bg-black/70 text-white",
                     "backdrop-blur-sm rounded-full",
-                    "w-10 h-10 p-0 flex items-center justify-center",
+                    "w-11 h-11 p-0 flex items-center justify-center",
                     "transition-all duration-200"
                   )}
                   onClick={(e) => {
