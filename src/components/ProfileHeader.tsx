@@ -232,7 +232,7 @@ export function ProfileHeader({
         {/* Avatar */}
         <div className="flex-shrink-0 self-center sm:self-start">
           <Avatar size="2xl" className="sm:h-24 sm:w-24 sm:rounded-[32px]" data-testid="profile-avatar">
-            <AvatarImage loading="eager" fetchPriority="high" src={profileImage} alt={displayName} />
+            <AvatarImage src={profileImage} alt={displayName} />
             <AvatarFallback className="text-lg">
               {displayName.slice(0, 2).toUpperCase()}
             </AvatarFallback>

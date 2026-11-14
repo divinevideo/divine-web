@@ -46,8 +46,9 @@ vi.mock('./ProfilePage', () => ({
 function renderPage(
   initialEntry: string,
   queryDefaults: Record<string, unknown> = { retry: false },
+  existingClient?: QueryClient,
 ) {
-  const queryClient = new QueryClient({
+  const queryClient = existingClient ?? new QueryClient({
     defaultOptions: {
       queries: queryDefaults,
     },
@@ -111,6 +112,18 @@ describe('UniversalUserPage', () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it('does not renew the verification lifetime when a registered name comes from cache', async () => {
+    const pubkey = 'c'.repeat(64);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const verifiedAt = Date.now() - 40_000;
+    const key = ['nip05-pubkey', 'alice@divine.video'];
+    queryClient.setQueryData(key, pubkey, { updatedAt: verifiedAt });
+    renderPage('/u/alice', { retry: false }, queryClient);
+    await waitFor(() => expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey));
+    expect(queryClient.getQueryState(key)?.dataUpdatedAt).toBe(verifiedAt);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   it('opens a registered bare Divine name without scanning legacy profiles', async () => {
