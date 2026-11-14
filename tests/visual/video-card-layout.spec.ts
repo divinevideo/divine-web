@@ -229,23 +229,38 @@ test('a translated Unmute too long for the row falls back to the icon until ther
   await expect(unmute.getByText('Activează sunetul')).toBeHidden();
   await expectControlsFit(card);
 
+  // Muting again remounts the label, so it must be measured at the pill's final
+  // size. Let the compact Mute button settle first, as it does for a real viewer.
+  await unmute.click();
+  const mute = card.getByRole('button', { name: 'Mută sunetul', exact: true });
+  await expect.poll(() => mute.evaluate((button) => getComputedStyle(button).paddingLeft)).toBe('0px');
+  await mute.click();
+  await expect(unmute.getByText('Activează sunetul')).toBeHidden();
+  await expectControlsFit(card);
+
   await page.setViewportSize({ width: 390, height: 900 });
   await expect(unmute.getByText('Activează sunetul')).toBeVisible();
   await expectControlsFit(card);
 });
 
-test('a player as narrow as one cell of a two-column phone grid keeps Unmute inside its pill', async ({ page }) => {
-  test.setTimeout(60_000);
-  await serveSyntheticFeed(page);
-  await page.setViewportSize({ width: 320, height: 900 });
-  await page.goto(`/video/${FEED[1].id}`);
-  const card = page.locator('main .brand-card').first();
-  await expect(card.getByRole('button', { name: 'Unmute', exact: true })).toBeVisible({ timeout: 30_000 });
-  // The collabs grid lays auto-play cards out two to a row, without fullscreen,
-  // which leaves each player about 144px wide on a 320px phone.
-  await card.locator('video').evaluate((video) => { video.parentElement!.parentElement!.style.width = '144px'; });
-  await expectControlsFit(card);
-});
+for (const [locale, label, fits] of [['en', 'Unmute', true], ['ro', 'Activează sunetul', false]] as const) {
+  test(`a player as narrow as one cell of a two-column phone grid keeps ${locale} Unmute inside its pill`, async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.addInitScript((code) => localStorage.setItem('divine:locale', code), locale);
+    await serveSyntheticFeed(page);
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto(`/video/${FEED[1].id}`);
+    const card = page.locator('main .brand-card').first();
+    const unmute = card.getByRole('button', { name: label, exact: true });
+    await expect(unmute).toBeVisible({ timeout: 30_000 });
+    // The collabs grid lays auto-play cards out two to a row, without fullscreen,
+    // which leaves each player about 144px wide on a 320px phone. With no
+    // fullscreen button to clear, the short English label still fits.
+    await card.locator('video').evaluate((video) => { video.parentElement!.parentElement!.style.width = '144px'; });
+    await expect(unmute.getByText(label)).toBeVisible({ visible: fits });
+    await expectControlsFit(card);
+  });
+}
 
 for (const colorScheme of ['light', 'dark'] as const) {
   test(`Unmute label meets contrast requirements in ${colorScheme} mode`, async ({ page }) => {
