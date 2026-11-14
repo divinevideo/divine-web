@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { type NostrEvent } from '@nostrify/nostrify';
 import { SmartLink } from '@/components/SmartLink';
 import { NostrMention } from '@/components/NostrMention';
-import { NOSTR_REFERENCE_PATTERN, parseNostrReference } from '@/lib/nostrReferences';
+import { NOSTR_REFERENCE_PATTERN, parseNostrReferences } from '@/lib/nostrReferences';
 import { cn } from '@/lib/utils';
 
 interface NoteContentProps {
@@ -67,21 +67,22 @@ export function NoteContent({
           parts.push(fullMatch.slice(linkText.length));
         }
       } else if (nostrId) {
-        const reference = parseNostrReference(nostrId);
-        if (reference) {
-          const referenceText = fullMatch.slice(0, reference.consumedLength);
-          parts.push(reference.pubkey ? (
-            <NostrMention key={`mention-${keyCounter++}`} pubkey={reference.pubkey} />
-          ) : (
-            <SmartLink
-              key={`nostr-${keyCounter++}`}
-              to={`/${reference.identifier}`}
-              className="text-blue-500 hover:underline"
-            >
-              {referenceText}
-            </SmartLink>
-          ));
-          lastIndex = index + reference.consumedLength;
+        const references = parseNostrReferences(nostrId);
+        if (references.length > 0) {
+          for (const reference of references) {
+            parts.push(reference.pubkey ? (
+              <NostrMention key={`mention-${keyCounter++}`} pubkey={reference.pubkey} />
+            ) : (
+              <SmartLink
+                key={`nostr-${keyCounter++}`}
+                to={`/${reference.identifier}`}
+                className="text-blue-500 hover:underline"
+              >
+                {fullMatch.slice(reference.start, reference.end)}
+              </SmartLink>
+            ));
+          }
+          lastIndex = index + references[references.length - 1].end;
           regex.lastIndex = lastIndex;
           continue;
         }

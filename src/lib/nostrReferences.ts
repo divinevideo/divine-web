@@ -2,13 +2,23 @@ import { nip19 } from 'nostr-tools';
 
 export const NOSTR_REFERENCE_PATTERN = `(?:nostr:|\\b)(?:npub1|note1|nprofile1|nevent1|naddr1)[a-z0-9]+?(?=$|[^A-Za-z0-9_]|nostr:)`;
 
-interface NostrReference {
+// Every prefix contains `1`, which bech32 never uses as a data character, so a
+// prefix found inside a token always marks where the reference before it ends.
+const REFERENCE_PREFIX = /npub1|note1|nprofile1|nevent1|naddr1/i;
+const LEADING_REFERENCE_PREFIX = /^(?:npub1|note1|nprofile1|nevent1|naddr1)/i;
+
+export interface NostrReference {
   identifier: string;
   pubkey?: string;
-  consumedLength: number;
+  /** Offset of the reference, including any `nostr:` prefix, within the parsed token. */
+  start: number;
+  /** Offset just past the reference within the parsed token. */
+  end: number;
 }
 
-function decodeReference(identifier: string): Omit<NostrReference, 'consumedLength'> | undefined {
+type DecodedReference = Pick<NostrReference, 'identifier' | 'pubkey'>;
+
+function decodeReference(identifier: string): DecodedReference | undefined {
   try {
     const decoded = nip19.decode(identifier);
     if (decoded.type === 'npub' || decoded.type === 'note') {
@@ -27,11 +37,13 @@ function decodeReference(identifier: string): Omit<NostrReference, 'consumedLeng
   }
 }
 
-export function parseNostrReference(token: string): NostrReference | undefined {
+function parseLeadingReference(token: string): (DecodedReference & { length: number }) | undefined {
   const prefixLength = /^nostr:/i.test(token) ? 6 : 0;
-  const identifier = token.slice(prefixLength).toLowerCase();
+  const body = token.slice(prefixLength);
+  const nextPrefix = body.slice(1).search(REFERENCE_PREFIX);
+  const identifier = (nextPrefix === -1 ? body : body.slice(0, nextPrefix + 1)).toLowerCase();
   const complete = decodeReference(identifier);
-  if (complete) return { ...complete, consumedLength: token.length };
+  if (complete) return { ...complete, length: prefixLength + identifier.length };
 
   const fixedLength = /^(?:npub1|note1)/.test(identifier);
   const candidates = fixedLength
@@ -40,7 +52,25 @@ export function parseNostrReference(token: string): NostrReference | undefined {
 
   for (const candidate of candidates) {
     const decoded = decodeReference(candidate);
-    if (decoded) return { ...decoded, consumedLength: prefixLength + candidate.length };
+    if (decoded) return { ...decoded, length: prefixLength + candidate.length };
   }
   return undefined;
+}
+
+/**
+ * Parse the references at the start of a token matched by NOSTR_REFERENCE_PATTERN.
+ * A reference glued directly onto the one before it is returned as its own entry;
+ * any other trailing text is left unconsumed after the last entry's `end`.
+ */
+export function parseNostrReferences(token: string): NostrReference[] {
+  const references: NostrReference[] = [];
+  let start = 0;
+  do {
+    const reference = parseLeadingReference(token.slice(start));
+    if (!reference) break;
+    const { length, ...decoded } = reference;
+    references.push({ ...decoded, start, end: start + length });
+    start += length;
+  } while (LEADING_REFERENCE_PREFIX.test(token.slice(start)));
+  return references;
 }

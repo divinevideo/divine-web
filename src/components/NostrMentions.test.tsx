@@ -112,9 +112,16 @@ describe.each(['title', 'description'])('%s profile mentions', (renderer) => {
     }
   });
 
-  it.each([NPUB, NPROFILE])('keeps adjacent references as separate links', (first) => {
-    render(<Content renderer={renderer} text={`nostr:${first}nostr:${NPUB}`} />);
+  it.each([
+    `nostr:${NPUB}nostr:${NPUB}`,
+    `nostr:${NPROFILE}nostr:${NPUB}`,
+    `${NPUB}${NPUB}`,
+    `nostr:${NPUB}${NPROFILE}`,
+    `nostr:${NPROFILE}${NPUB}`,
+  ])('keeps adjacent references as separate links', (text) => {
+    const { container } = render(<Content renderer={renderer} text={text} />);
     expect(screen.getAllByRole('link', { name: '@alice.divine.video' })).toHaveLength(2);
+    expect(container.textContent).toBe('@alice.divine.video@alice.divine.video');
   });
 
   it.each([
@@ -147,11 +154,14 @@ describe('description non-profile references', () => {
   });
 
   it.each([
-    nip19.noteEncode('c'.repeat(64)),
-    nip19.neventEncode({ id: 'd'.repeat(64) }),
-    nip19.naddrEncode({ kind: 34236, pubkey: PUBKEY, identifier: 'synthetic-video' }),
-  ])('keeps a non-profile reference followed by a profile reference', (reference) => {
-    render(<Content renderer="description" text={`nostr:${reference}nostr:${NPUB}`} />);
+    [nip19.noteEncode('c'.repeat(64)), 'nostr:'],
+    [nip19.neventEncode({ id: 'd'.repeat(64) }), 'nostr:'],
+    [nip19.naddrEncode({ kind: 34236, pubkey: PUBKEY, identifier: 'synthetic-video' }), 'nostr:'],
+    [nip19.noteEncode('c'.repeat(64)), ''],
+    [nip19.neventEncode({ id: 'd'.repeat(64) }), ''],
+    [nip19.naddrEncode({ kind: 34236, pubkey: PUBKEY, identifier: 'synthetic-video' }), ''],
+  ])('keeps a non-profile reference followed by a profile reference', (reference, separator) => {
+    render(<Content renderer="description" text={`nostr:${reference}${separator}${NPUB}`} />);
     expect(screen.getAllByRole('link')).toHaveLength(2);
     expect(screen.getByRole('link', { name: `nostr:${reference}` })).toHaveAttribute('href', `/${reference}`);
     expect(screen.getByRole('link', { name: '@alice.divine.video' })).toHaveAttribute('href', '/u/alice');
@@ -161,5 +171,15 @@ describe('description non-profile references', () => {
     const url = `https://example.com/${NPUB}`;
     render(<Content renderer="description" text={url} />);
     expect(screen.getByRole('link', { name: url })).toHaveAttribute('href', url);
+  });
+});
+
+describe('title non-profile references', () => {
+  it('keeps a non-profile reference as text before a glued profile reference', () => {
+    const note = nip19.noteEncode('c'.repeat(64));
+    const { container } = render(<Content renderer="title" text={`nostr:${note}${NPUB}`} />);
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByRole('link', { name: '@alice.divine.video' })).toHaveAttribute('href', '/u/alice');
+    expect(container.textContent).toBe(`nostr:${note}@alice.divine.video`);
   });
 });
