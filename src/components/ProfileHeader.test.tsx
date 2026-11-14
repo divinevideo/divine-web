@@ -33,6 +33,7 @@ vi.mock('@/hooks/useRssFeedAvailable', () => ({
 const pm = vi.hoisted(() => ({
   state: 'not_protected' as 'protected' | 'not_protected' | 'unknown',
   canUseDirectMessages: false,
+  nip05State: 'valid',
   approved: new Set<string>(),
   blocked: new Set<string>(),
 }));
@@ -99,7 +100,7 @@ vi.mock('@/hooks/useBlockList', () => ({
 }));
 
 vi.mock('@/hooks/useNip05Validation', () => ({
-  useNip05Validation: () => ({ state: 'valid' }),
+  useNip05Validation: () => ({ state: pm.nip05State }),
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -127,6 +128,7 @@ const baseStats: ProfileStats = {
 describe('ProfileHeader', () => {
   beforeEach(async () => {
     pm.state = 'not_protected';
+    pm.nip05State = 'valid';
     pm.canUseDirectMessages = false;
     pm.approved.clear();
     pm.blocked.clear();
@@ -376,4 +378,64 @@ describe('ProfileHeader', () => {
     expect(screen.getByRole('link', { name: /divine.video\/profile\/alice/i }))
       .toHaveAttribute('href', 'https://divine.video/profile/alice');
   });
+  describe('friendly website links', () => {
+    const pubkey = 'a'.repeat(64);
+    const npub = nip19.npubEncode(pubkey);
+    const renderWebsite = (website: string, nip05 = '_@alice.divine.video') => render(
+      <MemoryRouter>
+        <ProfileHeader
+          pubkey={pubkey}
+          metadata={{ display_name: 'Alice', website, nip05 }}
+          stats={baseStats}
+          isOwnProfile={false}
+          isFollowing={false}
+          onFollowToggle={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    it.each([
+      `https://divine.video/profile/${pubkey}`,
+      `https://divine.video/profile/${npub}`,
+      `https://divine.video/${npub}`,
+      `https://dvine.video/profile/${pubkey}`,
+      `https://www.divine.video/profile/${pubkey}`,
+      'divine.video/u/alice',
+    ])('replaces an own-profile website with the verified domain', (website) => {
+      renderWebsite(website);
+      expect(screen.getByRole('link', { name: 'alice.divine.video' }))
+        .toHaveAttribute('href', 'https://alice.divine.video');
+      expect(screen.queryByRole('link', { name: website })).not.toBeInTheDocument();
+    });
+
+    it('preserves query and fragment when using the friendly destination', () => {
+      renderWebsite(`https://divine.video/profile/${pubkey}?tab=videos#pinned`);
+      expect(screen.getByRole('link', { name: 'alice.divine.video' }))
+        .toHaveAttribute('href', 'https://alice.divine.video?tab=videos#pinned');
+    });
+
+    it('uses the friendly profile path for a verified third-party NIP-05', () => {
+      renderWebsite(`https://divine.video/profile/${pubkey}`, 'alice@example.com');
+      expect(screen.getByRole('link', { name: 'divine.video/u/alice.example.com' }))
+        .toHaveAttribute('href', 'https://divine.video/u/alice.example.com');
+    });
+
+    it.each(['loading', 'invalid', 'idle'])('keeps the original link while NIP-05 is %s', (state) => {
+      pm.nip05State = state;
+      const website = `https://divine.video/profile/${pubkey}`;
+      renderWebsite(website);
+      expect(screen.getByRole('link', { name: website })).toHaveAttribute('href', website);
+    });
+
+    it.each([
+      'https://example.com/my-work',
+      `https://divine.video/profile/${'b'.repeat(64)}`,
+      `https://divine.video.evil.example/profile/${pubkey}`,
+      'https://divine.video/about',
+    ])('keeps external websites and other destinations unchanged', (website) => {
+      renderWebsite(website);
+      expect(screen.getByRole('link', { name: website })).toHaveAttribute('href', website);
+    });
+  });
+
 });
