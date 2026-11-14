@@ -88,7 +88,7 @@ function IdentityBadge({ identity, pubkey, verificationEnabled }: { identity: Ex
     : undefined;
   const cachedResult = rawCached?.error === 'manual' ? undefined : rawCached;
 
-  // Eager verification — runs as soon as proof exists (uses verifyer service for all platforms)
+  // Runs once the caller enables verification and a proof exists (uses verifyer service for all platforms)
   const verification = useQuery({
     queryKey: ['identity-verify', pubkey, identity.platform, identity.identity, identity.proof],
     // "Couldn't check right now" isn't an answer: treat it as a failed attempt,

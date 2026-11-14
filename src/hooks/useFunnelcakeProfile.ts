@@ -15,7 +15,7 @@ interface UseFunnelcakeProfileResult {
 /**
  * Hook to fetch profile data from Funnelcake /api/users/{pubkey} endpoint
  *
- * Uses direct fetch with retries for reliability.
+ * Uses the shared fetchUserProfile request, with retries for reliability.
  */
 export function useFunnelcakeProfile(
   pubkey: string | undefined,
