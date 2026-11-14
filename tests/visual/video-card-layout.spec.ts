@@ -273,6 +273,9 @@ for (const [locale, label, fits] of [['en', 'Unmute', true], ['ro', 'Activează 
     // which leaves each player about 144px wide on a 320px phone. With no
     // fullscreen button to clear, the short English label still fits.
     await card.locator('video').evaluate((video) => { video.parentElement!.parentElement!.style.width = '144px'; });
+    // The label was visible before the resize, so let the resize observer report
+    // the new width (it runs in the next rendering step) before checking it.
+    await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
     await expect(unmute.getByText(label)).toBeVisible({ visible: fits });
     await expectControlsFit(card);
   });
