@@ -86,4 +86,20 @@ describe('InviteCollaboratorsDialog', () => {
     expect(screen.queryByText(/to add/i)).not.toBeInTheDocument();
     expect(screen.getByText(/already tagged/i)).toBeInTheDocument();
   });
+
+  it('reports a handle whose NIP-05 server fails as not found', async () => {
+    resolveNip05Mock.mockRejectedValue(new Error('NIP-05 lookup failed: 503'));
+    const user = userEvent.setup();
+
+    render(
+      <InviteCollaboratorsDialog video={video} open={true} onOpenChange={() => {}} />,
+      { wrapper: TestApp },
+    );
+
+    await user.type(screen.getByPlaceholderText(/handle/i), 'name@example.com');
+    await user.click(screen.getByRole('button', { name: /add/i }));
+
+    expect(await screen.findByText(/couldn't find that handle/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add/i })).toBeEnabled();
+  });
 });
