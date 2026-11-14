@@ -27,6 +27,8 @@ export function startContentLoad(route: string, key: string, initial: boolean, o
     if (outcome === 'ready' || outcome === 'empty' || outcome === 'error') root.dataset.performanceReady = 'true';
   }
   document.addEventListener('visibilitychange', onVisibility);
+  // A route opened in a background tab gets no frames until it is shown.
+  onVisibility();
   return { key, finish, report(outcome: ContentOutcome) {
     if (finished || frame !== undefined) return;
     frame = requestAnimationFrame(() => {

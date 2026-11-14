@@ -89,6 +89,16 @@ it('excludes time spent in a background tab from content readiness', () => {
   vi.restoreAllMocks();
 });
 
+it('does not time a route that opens in a background tab', () => {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+  render(<Page ready />);
+  act(() => vi.advanceTimersByTime(40));
+  expect(spans[0].setAttribute).toHaveBeenCalledWith('content.outcome', 'cancelled');
+  expect(spans[0].setAttribute).not.toHaveBeenCalledWith('content.outcome', 'ready');
+  expect(document.documentElement.dataset.performanceReady).toBe('false');
+  vi.restoreAllMocks();
+});
+
 it('waits for a presented video frame and cancels its callback on unmount', () => {
   const view = render(<Page />);
   const video = document.createElement('video');
