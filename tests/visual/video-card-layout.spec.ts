@@ -97,7 +97,7 @@ async function serveSyntheticFeed(page: Page) {
 }
 
 async function expectControlsFit(card: Locator) {
-  const sound = card.getByRole('button', { name: /^(Unmute|Mute|Activează sunetul)$/ });
+  const sound = card.getByRole('button', { name: /^(Unmute|Mute|Activează sunetul|إلغاء الكتم)$/ });
   await expect(sound).toBeVisible();
   const problems = await card.evaluate((element) => {
     const bounds = element.getBoundingClientRect();
@@ -240,6 +240,22 @@ test('a translated Unmute too long for the row falls back to the icon until ther
 
   await page.setViewportSize({ width: 390, height: 900 });
   await expect(unmute.getByText('Activează sunetul')).toBeVisible();
+  await expectControlsFit(card);
+});
+
+test('in a right-to-left locale the sound button keeps the corner beside captions', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.addInitScript(() => localStorage.setItem('divine:locale', 'ar'));
+  await serveSyntheticFeed(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/discovery/classics');
+  const card = page.locator('main .brand-card').first();
+  const sound = card.getByRole('button', { name: 'إلغاء الكتم', exact: true });
+  const captions = card.getByRole('button', { name: 'إخفاء الترجمة', exact: true });
+  await expect(sound).toBeVisible({ timeout: 30_000 });
+  await expect(captions).toBeVisible();
+  const [soundBox, captionsBox] = await Promise.all([sound.boundingBox(), captions.boundingBox()]);
+  expect(soundBox!.x).toBeGreaterThan(captionsBox!.x);
   await expectControlsFit(card);
 });
 
