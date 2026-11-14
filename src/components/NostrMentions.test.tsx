@@ -112,8 +112,8 @@ describe.each(['title', 'description'])('%s profile mentions', (renderer) => {
     }
   });
 
-  it('keeps adjacent references as separate links', () => {
-    render(<Content renderer={renderer} text={`nostr:${NPUB}nostr:${NPROFILE}`} />);
+  it.each([NPUB, NPROFILE])('keeps adjacent references as separate links', (first) => {
+    render(<Content renderer={renderer} text={`nostr:${first}nostr:${NPUB}`} />);
     expect(screen.getAllByRole('link', { name: '@alice.divine.video' })).toHaveLength(2);
   });
 
@@ -144,6 +144,17 @@ describe('description non-profile references', () => {
     expect(screen.getByRole('link')).toHaveAttribute('href', `/${reference}`);
     expect(screen.getByRole('link')).toHaveTextContent(`nostr:${reference}`);
     expect(container.textContent).toBe(`see nostr:${reference}ne!`);
+  });
+
+  it.each([
+    nip19.noteEncode('c'.repeat(64)),
+    nip19.neventEncode({ id: 'd'.repeat(64) }),
+    nip19.naddrEncode({ kind: 34236, pubkey: PUBKEY, identifier: 'synthetic-video' }),
+  ])('keeps a non-profile reference followed by a profile reference', (reference) => {
+    render(<Content renderer="description" text={`nostr:${reference}nostr:${NPUB}`} />);
+    expect(screen.getAllByRole('link')).toHaveLength(2);
+    expect(screen.getByRole('link', { name: `nostr:${reference}` })).toHaveAttribute('href', `/${reference}`);
+    expect(screen.getByRole('link', { name: '@alice.divine.video' })).toHaveAttribute('href', '/u/alice');
   });
 
   it('preserves URL precedence over Nostr parsing', () => {
