@@ -29,6 +29,7 @@ interface VideoGridProps {
   navigationIndices?: ReadonlyMap<string, number>;
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
+  prioritizeFirstThumbnail?: boolean;
 }
 
 interface VideoGridMediaProps {
@@ -36,6 +37,7 @@ interface VideoGridMediaProps {
   thumbnailFailed: boolean;
   onThumbnailError: (videoId: string) => void;
   videoRefs: React.MutableRefObject<Map<string, HTMLVideoElement>>;
+  priority?: boolean;
 }
 
 function formatLoops(loops?: number): string {
@@ -60,6 +62,7 @@ function VideoGridMedia({
   thumbnailFailed,
   onThumbnailError,
   videoRefs,
+  priority = false,
 }: VideoGridMediaProps) {
   const shouldShowVideo = !video.thumbnailUrl || thumbnailFailed;
   const baseThumbnailUrl = video.thumbnailUrl || video.videoUrl;
@@ -127,7 +130,8 @@ function VideoGridMedia({
         className="w-full h-full object-cover"
         src={authenticatedMediaUrl}
         alt={video.content || 'Video thumbnail'}
-        loading="lazy"
+        loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : 'auto'}
         crossOrigin="anonymous"
         data-testid={`video-thumbnail-${video.id}`}
         onError={() => onThumbnailError(video.id)}
@@ -145,7 +149,7 @@ function VideoGridMedia({
   );
 }
 
-export function VideoGrid({ videos, loading = false, className, navigationContext, navigationIndices, onLoadMore, isLoadingMore }: VideoGridProps) {
+export function VideoGrid({ videos, loading = false, className, navigationContext, navigationIndices, onLoadMore, isLoadingMore, prioritizeFirstThumbnail = false }: VideoGridProps) {
   const { t } = useTranslation();
   const { user } = useCurrentUser();
   const { isVerified: isAdultVerified, confirmAdult, isLoading: isCheckingAge, isProtectedMinor } = useAdultVerification();
@@ -228,6 +232,9 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
   const visibleVideos = videos
     .map((video, index) => ({ video, index }))
     .filter(({ video }) => !shouldHideVideo(video));
+  const priorityVideoId = prioritizeFirstThumbnail ? visibleVideos.find(({ video }) => (
+    !((video.ageRestricted || discoveredAgeRestrictedVideos.has(video.id)) && (!user || !isAdultVerified))
+  ))?.video.id : undefined;
   const pagingControl = onLoadMore && visibleVideos.length < videos.length ? (
     <Button type="button" variant="outline" disabled={isLoadingMore} aria-busy={isLoadingMore} onClick={onLoadMore}>
       {isLoadingMore ? t('profilePage.loadingMore') : t('uiPagination.goToNext')}
@@ -315,6 +322,7 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
                   thumbnailFailed={thumbnailFailed}
                   onThumbnailError={() => void handleThumbnailError(gridVideo)}
                   videoRefs={videoRefs}
+                  priority={video.id === priorityVideoId}
                 />
               )}
 

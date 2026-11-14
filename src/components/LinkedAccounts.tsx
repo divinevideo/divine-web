@@ -75,7 +75,7 @@ function PlatformIcon({ platform, className }: { platform: string; className?: s
   }
 }
 
-function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubkey: string }) {
+function IdentityBadge({ identity, pubkey, verificationEnabled }: { identity: ExternalIdentity; pubkey: string; verificationEnabled: boolean }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
@@ -100,7 +100,7 @@ function IdentityBadge({ identity, pubkey }: { identity: ExternalIdentity; pubke
       }
       return result;
     },
-    enabled: !!identity.proof,
+    enabled: verificationEnabled && !!identity.proof,
     staleTime: 10 * 60 * 1000, // Cache 10 min (re-check periodically)
     gcTime: 30 * 60 * 1000,
     retry: 2,
@@ -234,10 +234,11 @@ function VerificationSummary({ identities }: { identities: ExternalIdentity[] })
 
 interface LinkedAccountsProps {
   pubkey: string;
+  verificationEnabled?: boolean;
   className?: string;
 }
 
-export function LinkedAccounts({ pubkey, className }: LinkedAccountsProps) {
+export function LinkedAccounts({ pubkey, className, verificationEnabled = true }: LinkedAccountsProps) {
   const { data: identities, isLoading } = useExternalIdentities(pubkey);
 
   if (isLoading || !identities || identities.length === 0) return null;
@@ -250,6 +251,7 @@ export function LinkedAccounts({ pubkey, className }: LinkedAccountsProps) {
           key={`${identity.platform}:${identity.identity}`}
           identity={identity}
           pubkey={pubkey}
+          verificationEnabled={verificationEnabled}
         />
       ))}
     </div>

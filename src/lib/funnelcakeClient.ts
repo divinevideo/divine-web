@@ -21,6 +21,7 @@ import type { NotificationsResponse } from '@/types/notification';
 import type { NostrSigner } from '@nostrify/nostrify';
 import { createNip98AuthHeader } from '@/lib/nip98Auth';
 import { looksLikeSecretKey } from '@/lib/searchUtils';
+import { shareRequest } from '@/lib/sharedRequest';
 
 /**
  * Convert a byte array to hex string
@@ -986,6 +987,8 @@ interface FunnelcakeUserResponse {
   };
   engagement: {
     total_reactions: number;
+    total_loops?: number;
+    total_views?: number;
   };
 }
 
@@ -1030,11 +1033,10 @@ export async function fetchUserProfile(
   const endpoint = API_CONFIG.funnelcake.endpoints.userProfile.replace('{pubkey}', pubkey);
 
   try {
-    const response = await funnelcakeRequest<FunnelcakeUserResponse>(
-      apiUrl,
-      endpoint,
-      {},
-      signal
+    const response = await shareRequest(
+      buildUrl(apiUrl, endpoint, {}),
+      sharedSignal => funnelcakeRequest<FunnelcakeUserResponse>(apiUrl, endpoint, {}, sharedSignal),
+      signal,
     );
 
     // Flatten the nested response into FunnelcakeProfile
@@ -1054,6 +1056,8 @@ export async function fetchUserProfile(
       follower_count: response.social?.follower_count,
       following_count: response.social?.following_count,
       total_reactions: response.engagement?.total_reactions,
+      total_loops: response.engagement?.total_loops,
+      total_views: response.engagement?.total_views,
     };
 
     debugLog(`[FunnelcakeClient] Got profile:`, profile);

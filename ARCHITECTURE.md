@@ -674,3 +674,15 @@ The Actions PR preview build explicitly disables short-link sending because its
 pages.dev origin is not allowed by the production gateway. Those previews share
 canonical URLs without requesting a signature. Other preview build integrations
 must set the same build override to opt out of production shortening.
+
+### Profile loading
+
+Profile URLs resolve registered Divine names before the legacy Vine fallback. Numeric
+Vine IDs retain their legacy lookup. Successful NIP-05 resolution is shared with
+validation; the expected pubkey is still checked before showing a verified identity.
+Lookup metadata supplies the header while REST refreshes, and identical in-flight
+profile reads share transport without coupling caller cancellation. Profile grids
+prioritize their first accessible thumbnail while retaining lazy loading below it.
+Optional linked-account proof checks wait for the critical name/NIP-05 reads; cached
+verified badges remain visible. Both HTML entry surfaces preconnect to the canonical
+REST API and media origins.

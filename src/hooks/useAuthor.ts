@@ -22,6 +22,7 @@ function parseProfileMetadata(event: NostrEvent): { event: NostrEvent; metadata?
 }
 
 export interface UseAuthorOptions {
+  initialMetadata?: NostrMetadata;
   /** Pre-cached name from Funnelcake video response — shown instantly while full profile loads */
   initialName?: string;
   /** Pre-cached avatar from Funnelcake video response */
@@ -34,6 +35,9 @@ export function useAuthor(pubkey: string | undefined, options?: UseAuthorOptions
 
   // Build placeholder from Funnelcake-embedded data so we never show "Loading..."
   const placeholderData = useMemo(() => {
+    if (options?.initialMetadata && Object.keys(options.initialMetadata).length > 0) {
+      return { metadata: options.initialMetadata };
+    }
     if (!options?.initialName && !options?.initialAvatar) return undefined;
     return {
       metadata: {
@@ -41,7 +45,7 @@ export function useAuthor(pubkey: string | undefined, options?: UseAuthorOptions
         picture: options.initialAvatar,
       } as NostrMetadata,
     };
-  }, [options?.initialName, options?.initialAvatar]);
+  }, [options?.initialMetadata, options?.initialName, options?.initialAvatar]);
 
   return useQuery<{ event?: NostrEvent; metadata?: NostrMetadata }>({
     queryKey: ['author', pubkey ?? ''],

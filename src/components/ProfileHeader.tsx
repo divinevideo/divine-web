@@ -231,7 +231,7 @@ export function ProfileHeader({
         {/* Avatar */}
         <div className="flex-shrink-0 self-center sm:self-start">
           <Avatar size="2xl" className="sm:h-24 sm:w-24 sm:rounded-[32px]" data-testid="profile-avatar">
-            <AvatarImage src={profileImage} alt={displayName} />
+            <AvatarImage loading="eager" fetchPriority="high" src={profileImage} alt={displayName} />
             <AvatarFallback className="text-lg">
               {displayName.slice(0, 2).toUpperCase()}
             </AvatarFallback>
@@ -337,7 +337,7 @@ export function ProfileHeader({
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-2 justify-center sm:justify-start">
-            <LinkedAccounts pubkey={pubkey} />
+            <LinkedAccounts pubkey={pubkey} verificationEnabled={!stillLoadingName && nip05State !== 'loading'} />
             <ProfileBadges badges={badgesQuery.data ?? []} />
           </div>
 

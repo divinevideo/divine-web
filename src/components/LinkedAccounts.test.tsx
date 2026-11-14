@@ -6,6 +6,7 @@ import { LinkedAccounts } from './LinkedAccounts';
 
 const mockUseExternalIdentities = vi.fn();
 const mockVerifyIdentityClaim = vi.fn();
+const mockGetCachedVerification = vi.fn();
 
 vi.mock('@/hooks/useExternalIdentities', async (importOriginal) => {
   const actual =
@@ -27,7 +28,7 @@ vi.mock('@/hooks/useExternalIdentities', async (importOriginal) => {
 });
 
 vi.mock('@/lib/verificationCache', () => ({
-  getCachedVerification: () => null,
+  getCachedVerification: (...args: unknown[]) => mockGetCachedVerification(...args),
 }));
 
 function withQueryClient(children: ReactNode) {
@@ -49,6 +50,32 @@ function withQueryClient(children: ReactNode) {
 describe('LinkedAccounts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetCachedVerification.mockReturnValue(null);
+  });
+
+  it('defers uncached proofs until critical identity reads finish', async () => {
+    mockUseExternalIdentities.mockReturnValue({ data: [{
+      platform: 'github', identity: 'alice', proof: 'abc123',
+      profileUrl: 'https://github.com/alice', proofUrl: 'https://gist.github.com/alice/abc123',
+    }], isLoading: false });
+    mockVerifyIdentityClaim.mockResolvedValue({ verified: true });
+    const view = render(withQueryClient(<LinkedAccounts pubkey={'a'.repeat(64)} verificationEnabled={false} />));
+    expect(screen.queryByTestId('identity-badge-github')).not.toBeInTheDocument();
+    expect(mockVerifyIdentityClaim).not.toHaveBeenCalled();
+    view.rerender(withQueryClient(<LinkedAccounts pubkey={'a'.repeat(64)} verificationEnabled />));
+    expect(await screen.findByTestId('identity-badge-github')).toBeInTheDocument();
+    expect(mockVerifyIdentityClaim).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a cached verified badge visible while new proof checks are deferred', async () => {
+    mockUseExternalIdentities.mockReturnValue({ data: [{
+      platform: 'github', identity: 'alice', proof: 'abc123',
+      profileUrl: 'https://github.com/alice', proofUrl: 'https://gist.github.com/alice/abc123',
+    }], isLoading: false });
+    mockGetCachedVerification.mockReturnValue({ verified: true });
+    render(withQueryClient(<LinkedAccounts pubkey={'a'.repeat(64)} verificationEnabled={false} />));
+    expect(await screen.findByTestId('identity-badge-github')).toBeInTheDocument();
+    expect(mockVerifyIdentityClaim).not.toHaveBeenCalled();
   });
 
   it('renders verified identity badge on profile', async () => {
