@@ -685,4 +685,5 @@ profile reads share transport without coupling caller cancellation. Profile grid
 prioritize their first accessible thumbnail while retaining lazy loading below it.
 Optional linked-account proof checks wait for the critical name/NIP-05 reads; cached
 verified badges remain visible. Both HTML entry surfaces preconnect to the canonical
-REST API and media origins.
+REST API and media origins. HLS playback runtime code is imported only when a
+player needs an HLS source; MP4 playback and profile thumbnails do not load it.

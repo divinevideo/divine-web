@@ -11,6 +11,7 @@ const mockUpdateVideoVisibility = vi.fn();
 const mockSetUserPaused = vi.fn();
 const hlsTestState = vi.hoisted(() => ({
   inViewRef: vi.fn(),
+  moduleLoaded: false,
   instances: [] as Array<{
     attachMedia: ReturnType<typeof vi.fn>;
     destroy: ReturnType<typeof vi.fn>;
@@ -94,6 +95,7 @@ vi.mock('@/components/AgeRestrictedMediaPlaceholder', () => ({
 }));
 
 vi.mock('hls.js', () => {
+  hlsTestState.moduleLoaded = true;
   const HlsMock = vi.fn(function (this: {
     attachMedia: ReturnType<typeof vi.fn>;
     destroy: ReturnType<typeof vi.fn>;
@@ -188,7 +190,20 @@ describe('VideoPlayer', () => {
   });
 
   describe('URL handling - allUrls state management', () => {
-    it('should synchronously compute allUrls from props (not async useState)', async () => {
+    it('does not load the HLS runtime for an MP4 player', () => {
+    render(<VideoPlayer videoId={'a'.repeat(64)} src="https://example.com/video.mp4" />);
+    expect(hlsTestState.moduleLoaded).toBe(false);
+  });
+
+  it('does not attach HLS after a player unmounts during runtime loading', async () => {
+    hlsTestState.isSupported.mockReturnValue(true);
+    const view = render(<VideoPlayer videoId={'b'.repeat(64)} src="https://example.com/video.mp4" hlsUrl="https://example.com/video.m3u8" />);
+    view.unmount();
+    await act(async () => { await vi.dynamicImportSettled(); });
+    expect(hlsTestState.instances).toHaveLength(0);
+  });
+
+  it('should synchronously compute allUrls from props (not async useState)', async () => {
       // This test verifies the bug: allUrls should use useMemo not useState
       //
       // The bug: When using useState + useEffect to set allUrls:

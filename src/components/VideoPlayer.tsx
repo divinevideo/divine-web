@@ -19,10 +19,9 @@ import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
 import { markAgeRestricted } from '@/hooks/useAgeRestrictedPreference';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 import { SubtitleOverlay } from '@/components/SubtitleOverlay';
-import { createAuthLoader } from '@/lib/hlsAuthLoader';
 import { bandwidthTracker } from '@/lib/bandwidthTracker';
 import { isProtectedDivineMediaUrl, useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
-import Hls from 'hls.js';
+import type HlsInstance from 'hls.js';
 
 // Maximum playback duration limit - videos loop back to start after this many seconds
 const MAX_PLAYBACK_DURATION = 6.3;
@@ -117,7 +116,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
   ) => {
     const { t } = useTranslation();
     const videoRef = useRef<HTMLVideoElement | null>(null);
-    const hlsRef = useRef<Hls | null>(null);
+    const hlsRef = useRef<HlsInstance | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -820,6 +819,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       };
 
+      const handleSourceSetupError = (error: unknown) => {
+        if (abortController.signal.aborted) return;
+        debugError(`[VideoPlayer ${videoId}] Source setup failed:`, error);
+        setHasError(true);
+        setIsLoading(false);
+      };
+
       if (isKnownAgeRestricted && !isAdultVerified && urlToCheck) {
         // Known age-restricted media keeps the blocking gate: show the age check
         // before ever requesting the protected blob.
@@ -827,7 +833,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           if (abortController.signal.aborted) return;
           handleProbeResult(authResult);
           if (!(authResult && !authResult.authorized && (authResult.status === 401 || authResult.status === 403))) {
-            loadVideoSource();
+            void loadVideoSource().catch(handleSourceSetupError);
           }
         });
       } else {
@@ -835,7 +841,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         // the background — if it's actually protected, the probe (or the element's own
         // error handler) flips requiresAuth and swaps in the age gate. Public media just
         // plays without waiting on anything.
-        loadVideoSource();
+        void loadVideoSource().catch(handleSourceSetupError);
         if (urlToCheck && !isAdultVerified) {
           checkMediaAuth(urlToCheck).then(handleProbeResult);
         } else {
@@ -843,17 +849,24 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       }
 
-      function loadVideoSource() {
+      async function loadVideoSource() {
         if (!video) return; // Guard for TypeScript - video was checked before calling
         verboseLog(`[VideoPlayer ${videoId}] loadVideoSource called - isAdultVerified: ${isAdultVerified}, authRetryCount: ${authRetryCount}`);
 
+      const hlsRuntime = hlsUrl ? await import('@/lib/hlsPlayback').catch((error) => {
+        debugError(`[VideoPlayer ${videoId}] HLS runtime unavailable, using direct playback:`, error);
+        return null;
+      }) : null;
+      if (abortController.signal.aborted || videoRef.current !== video) return;
+
       // Priority: HLS URL > fallback URLs > primary src
       // Try HLS first for adaptive bitrate streaming on slower connections
-      if (hlsUrl && Hls.isSupported()) {
+      if (hlsUrl && hlsRuntime?.Hls.isSupported()) {
+        const { Hls, createAuthLoader } = hlsRuntime;
         verboseLog(`[VideoPlayer ${videoId}] Using HLS.js for adaptive streaming: ${hlsUrl}`);
 
         // Use custom auth loader if adult verified - generates fresh NIP-98 signature for each request
-        const hlsConfig: Partial<Hls['config']> = {
+        const hlsConfig: Partial<HlsInstance['config']> = {
           enableWorker: true,
           lowLatencyMode: false,
           backBufferLength: 90,
