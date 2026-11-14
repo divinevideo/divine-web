@@ -11,6 +11,10 @@ vi.mock('@/hooks/useAuthor', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useNip05Validation', () => ({
+  useNip05Validation: () => ({ state: 'idle' }),
+}));
+
 const PUBKEY_HEX = 'a'.repeat(64);
 const NPUB = nip19.npubEncode(PUBKEY_HEX);
 

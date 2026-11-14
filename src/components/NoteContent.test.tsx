@@ -187,7 +187,8 @@ describe('NoteContent — bare nostr identifiers', () => {
   it('linkifies a bare nprofile1...', () => {
     renderContent(`hi ${NPROFILE}`);
     const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', `/${NPROFILE}`);
+    expect(link).toHaveAttribute('href', `/${NPUB}`);
+    expect(link).toHaveTextContent('@rabble');
   });
 
   it('uses a friendly mention profile link when the NIP-05 is valid', () => {
@@ -205,7 +206,7 @@ describe('NoteContent — bare nostr identifiers', () => {
 
     renderContent(`hello ${NPUB}`);
 
-    expect(screen.getByRole('link', { name: '@rabble' })).toHaveAttribute('href', '/u/rabble');
+    expect(screen.getByRole('link', { name: '@rabble.divine.video' })).toHaveAttribute('href', '/u/rabble');
   });
 
   it('uses the npub mention profile link when the NIP-05 is invalid', () => {
