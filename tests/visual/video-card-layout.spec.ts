@@ -216,13 +216,31 @@ for (const colorScheme of ['light', 'dark'] as const) {
     await serveSyntheticFeed(page);
     await page.emulateMedia({ colorScheme });
     await page.goto('/discovery/classics');
+    await expect(page.locator('main .brand-card')).toHaveCount(FEED.length, { timeout: 30_000 });
     const button = page.getByRole('button', { name: 'Unmute', exact: true }).first();
-    await expect(button).toBeVisible({ timeout: 30_000 });
+    await expect(button).toBeVisible();
     await button.scrollIntoViewIfNeeded();
+    const videos = page.locator('main .brand-card video');
+    for (const video of await videos.all()) await expect(video).toHaveJSProperty('readyState', 4);
+    // Axe cannot read a color from a video frame, so over live media it files the label
+    // under incomplete and never reports a violation. Hide every layer behind the
+    // controls and paint the brightest possible frame, the worst case for white text.
+    await videos.evaluateAll((elements) => {
+      for (const video of elements) {
+        const player = video.parentElement!.parentElement!;
+        for (const layer of player.children) {
+          if (!layer.querySelector('button[aria-label="Unmute"]')) (layer as HTMLElement).style.visibility = 'hidden';
+        }
+        player.style.backgroundColor = '#fff';
+      }
+    });
     const result = await new AxeBuilder({ page })
       .include('button[aria-label="Unmute"]')
       .withRules(['color-contrast'])
       .analyze();
     expect(result.violations).toEqual([]);
+    expect(result.incomplete).toEqual([]);
+    const measured = result.passes.flatMap((rule) => rule.nodes);
+    expect(measured).toHaveLength(FEED.length);
   });
 }
