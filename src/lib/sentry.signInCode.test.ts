@@ -10,7 +10,7 @@ const sentryMock = vi.hoisted(() => ({
 
 vi.mock('@sentry/react', () => ({
   init: sentryMock.init,
-  browserTracingIntegration: () => ({}),
+  reactRouterV6BrowserTracingIntegration: () => ({}),
   replayIntegration: (options: typeof sentryMock.replayOptions) => {
     sentryMock.replayOptions = options;
     return {};
@@ -245,4 +245,16 @@ describe('Sentry setup keeps the sign-in code out of what it sends', () => {
     expect(kept).not.toBeNull();
     expect(JSON.stringify(kept)).not.toContain(CODE);
   });
+});
+
+
+it('uses the configured DSN and separates preview from production telemetry', () => {
+  vi.stubEnv('VITE_SENTRY_DEV_ENABLED', 'true');
+  vi.stubEnv('VITE_SENTRY_DSN', 'https://public@example.invalid/1');
+  vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'preview');
+  initializeSentry();
+  expect(sentryMock.init).toHaveBeenLastCalledWith(expect.objectContaining({
+    dsn: 'https://public@example.invalid/1', environment: 'preview',
+  }));
+  vi.unstubAllEnvs();
 });

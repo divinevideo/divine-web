@@ -58,3 +58,6 @@ playwright-report/
 playwright/.cache/
 scripts/.bonfire-snapshot.html
 scripts/.bonfire-campaign-snapshot.html
+
+# Anonymous performance audit reports
+performance-results/

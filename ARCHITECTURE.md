@@ -449,6 +449,12 @@ startup. HubSpot email forms load after a visitor requests one. Sentry handles
 error tracking. Media assets come from cdn.divine.video. Content moderation
 uses moderation-api.divine.video.
 
+### Browser performance monitoring
+
+Sentry uses React Router instrumentation to group page loads and in-app navigation by route template. `PagePerformanceProvider` records primary-content readiness for browsing pages, while `observeVideoStartup` records the first visible player's startup after play intent. Empty, error, timeout and cancelled outcomes remain distinct. Existing sign-in URL redaction still applies. Production and preview build workflows supply the public client DSN and separate environments; other build surfaces need equivalent configuration.
+
+The standalone Playwright audit in `scripts/performance/` checks cold desktop/mobile page loads, primary content and advancing video. Its PR/nightly workflow writes anonymous reports with explicit coverage and missing-data outcomes. See [performance monitoring](docs/performance-monitoring.md) for measurement semantics and investigation steps.
+
 ### Product Analytics Contract
 
 The cross-platform product-event vocabulary lives in the `divine-context`

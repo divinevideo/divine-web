@@ -1,6 +1,7 @@
 // ABOUTME: Comprehensive search page with debounced input, filter tabs, infinite scroll, and sort modes
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
+import { usePageContentReady } from '@/hooks/usePageContentReady';
 import { useState, useEffect, useRef, useMemo, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
@@ -431,6 +432,8 @@ export function SearchPage() {
 
   // Check if we have any results
   const hasResults = videoResults.length > 0 || userResults.length > 0 || hashtagResults.length > 0;
+  usePageContentReady(isLoading ? null : error || isSecretKeyQuery ? 'error' : hasResults || !searchableQuery.trim() ? 'ready' : 'empty');
+
   const showCompilationButton =
     searchableQuery.trim().length > 0 &&
     videoResults.length > 0 &&
