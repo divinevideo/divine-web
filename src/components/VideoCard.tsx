@@ -727,7 +727,9 @@ export function VideoCard({
                   ref={soundControlsRef}
                   className={cn(
                     // Only the buttons take taps; the gaps between them belong to the video.
-                    "pointer-events-none absolute bottom-3 right-3 z-30 flex flex-wrap items-center justify-end gap-2",
+                    // The group is pinned to the physical right edge, so its order is too:
+                    // sound keeps the corner in right-to-left locales as well.
+                    "pointer-events-none absolute bottom-3 right-3 z-30 flex flex-wrap items-center justify-end gap-2 rtl:flex-row-reverse",
                     onEnterFullscreen ? "max-w-[calc(100%-5rem)]" : "max-w-[calc(100%-1.5rem)]"
                   )}
                   // Taps on these buttons still bubble through it; stop them here, once.
