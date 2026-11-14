@@ -10,6 +10,8 @@ import { genUserName } from '@/lib/genUserName';
 const mocks = vi.hoisted(() => ({
   metadata: {} as { name?: string; display_name?: string; nip05?: string },
   validationState: 'valid',
+  validationCalls: [] as [string | undefined, string][],
+  mentionedPubkey: 'a'.repeat(64),
 }));
 
 vi.mock('@/hooks/useAuthor', () => ({
@@ -17,7 +19,12 @@ vi.mock('@/hooks/useAuthor', () => ({
 }));
 
 vi.mock('@/hooks/useNip05Validation', () => ({
-  useNip05Validation: () => ({ state: mocks.validationState }),
+  // Only the mentioned user's own nip05, checked against their own pubkey, can validate.
+  useNip05Validation: (nip05: string | undefined, pubkey: string) => {
+    mocks.validationCalls.push([nip05, pubkey]);
+    const matches = nip05 === mocks.metadata.nip05 && pubkey === mocks.mentionedPubkey;
+    return { state: matches ? mocks.validationState : 'idle' };
+  },
 }));
 
 const PUBKEY = 'a'.repeat(64);
@@ -38,6 +45,7 @@ function Content({ renderer, text }: { renderer: string; text: string }) {
 beforeEach(() => {
   mocks.metadata = { name: 'alice', display_name: 'Alice', nip05: '_@alice.divine.video' };
   mocks.validationState = 'valid';
+  mocks.validationCalls = [];
 });
 
 describe.each(['title', 'description'])('%s profile mentions', (renderer) => {
@@ -72,6 +80,15 @@ describe.each(['title', 'description'])('%s profile mentions', (renderer) => {
   it.each(['invalid', 'idle', 'loading'])('does not display an unverified handle while %s', (state) => {
     mocks.validationState = state;
     render(<Content renderer={renderer} text={NPROFILE} />);
+    expect(screen.getByRole('link', { name: '@Alice' })).toHaveAttribute('href', `/${NPUB}`);
+  });
+
+  it('validates the nip05 as published, the same value profile links validate', () => {
+    mocks.metadata.nip05 = ' _@alice.divine.video';
+    mocks.validationState = 'invalid';
+    render(<Content renderer={renderer} text={NPUB} />);
+    expect(mocks.validationCalls).toContainEqual([' _@alice.divine.video', PUBKEY]);
+    expect(mocks.validationCalls).not.toContainEqual(['_@alice.divine.video', PUBKEY]);
     expect(screen.getByRole('link', { name: '@Alice' })).toHaveAttribute('href', `/${NPUB}`);
   });
 
