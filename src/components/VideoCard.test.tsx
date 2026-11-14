@@ -455,29 +455,38 @@ describe('VideoCard', () => {
     expect(screen.getByRole('button', { name: 'Unmute' })).toHaveTextContent('Unmute');
   });
 
-  it('toggles sound in both directions without navigating or entering fullscreen', () => {
-    const enterFullscreen = vi.fn();
-    const onPlay = vi.fn();
-    const { rerender } = render(
-      <VideoCard video={baseVideo} onEnterFullscreen={enterFullscreen} onPlay={onPlay} />
+  it("toggles sound in both directions without its clicks or taps reaching the card's ancestors", () => {
+    // Nothing inside the card listens above the sound button, so only an
+    // ancestor can tell whether a click or tap escaped it.
+    const ancestorClick = vi.fn();
+    const ancestorTouch = vi.fn();
+    const inAncestor = () => (
+      <div onClick={ancestorClick} onTouchStart={ancestorTouch} onTouchEnd={ancestorTouch}>
+        <VideoCard video={baseVideo} onEnterFullscreen={vi.fn()} />
+      </div>
     );
+    const press = (button: HTMLElement) => {
+      fireEvent.touchStart(button);
+      fireEvent.touchEnd(button);
+      fireEvent.click(button);
+    };
+    const { rerender } = render(inAncestor());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Unmute' }));
+    press(screen.getByRole('button', { name: 'Unmute' }));
     expect(playbackMocks.setGlobalMuted).toHaveBeenLastCalledWith(false);
 
     playbackMocks.globalMuted = false;
-    rerender(<VideoCard video={baseVideo} onEnterFullscreen={enterFullscreen} onPlay={onPlay} />);
+    rerender(inAncestor());
     const mute = screen.getByRole('button', { name: 'Mute' });
     expect(mute.textContent).toBe('');
     expect(screen.queryByText('Unmute')).not.toBeInTheDocument();
-    fireEvent.click(mute);
+    press(mute);
     expect(playbackMocks.setGlobalMuted).toHaveBeenLastCalledWith(true);
-    expect(enterFullscreen).not.toHaveBeenCalled();
-    expect(playbackMocks.navigate).not.toHaveBeenCalled();
-    expect(onPlay).not.toHaveBeenCalled();
+    expect(ancestorClick).not.toHaveBeenCalled();
+    expect(ancestorTouch).not.toHaveBeenCalled();
 
     playbackMocks.globalMuted = true;
-    rerender(<VideoCard video={baseVideo} onEnterFullscreen={enterFullscreen} onPlay={onPlay} />);
+    rerender(inAncestor());
     expect(screen.getByRole('button', { name: 'Unmute' })).toHaveTextContent('Unmute');
   });
 
