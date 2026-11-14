@@ -59,8 +59,10 @@ import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPl
 import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 
 // Shared by the controls laid over a playing video. The ghost button's base
-// classes already round, center and animate them, and size their icons.
-const PLAYER_CONTROL_CLASS = 'bg-black/75 hover:bg-black/90 text-white hover:text-white backdrop-blur-sm h-11';
+// classes already round and center them and size their icons. Only colors and the
+// press scale animate: an animated padding would let the Unmute fit check measure
+// a pill that has not reached its final width.
+const PLAYER_CONTROL_CLASS = 'bg-black/75 hover:bg-black/90 text-white hover:text-white backdrop-blur-sm h-11 transition-[color,background-color,transform]';
 
 interface VideoCardProps {
   video: ParsedVideoData;
