@@ -1,6 +1,11 @@
 import { nip19 } from 'nostr-tools';
 
-export const NOSTR_REFERENCE_PATTERN = `(?:nostr:|\\b)(?:npub1|note1|nprofile1|nevent1|naddr1)[a-z0-9]+?(?=$|[^A-Za-z0-9_]|nostr:)`;
+/**
+ * Source for a candidate reference token; pass the match to parseNostrReferences.
+ * Compile it with the `i` flag: the body is written lowercase, and an all-uppercase
+ * bech32 reference is valid.
+ */
+export const NOSTR_REFERENCE_PATTERN =`(?:nostr:|\\b)(?:npub1|note1|nprofile1|nevent1|naddr1)[a-z0-9]+?(?=$|[^A-Za-z0-9_]|nostr:)`;
 
 // Every prefix contains `1`, which bech32 never uses as a data character, so a
 // prefix found inside a token always marks where the reference before it ends.
