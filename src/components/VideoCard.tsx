@@ -1,7 +1,7 @@
 // ABOUTME: Video card component for displaying individual videos in feeds
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff, ArrowClockwise } from '@phosphor-icons/react';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
@@ -261,6 +261,32 @@ export function VideoCard({
   // Subtitles default to ON when available, independent of mute state
   const [subtitlesVisible, setSubtitlesVisible] = useState(true);
   const showSubtitles = subtitlesVisible && hasSubtitles;
+  const unmuteLabel = t('videoCard.ariaUnmute');
+  const soundControlsRef = useRef<HTMLDivElement>(null);
+  const unmuteLabelRef = useRef<HTMLSpanElement>(null);
+
+  // The Unmute label shows only while it fits on one row beside captions. A
+  // wrapped row climbs over the subtitles, and a squeezed pill spills its label,
+  // so a narrow player or a long translation falls back to the bare icon.
+  // Toggling `hidden` directly measures both states in one pass, with no render loop.
+  useLayoutEffect(() => {
+    const group = soundControlsRef.current;
+    const label = unmuteLabelRef.current;
+    const pill = label?.parentElement;
+    if (!group || !label || !pill) return;
+    const fitLabel = () => {
+      label.hidden = false;
+      const wrapped = Array.from(group.children).some(
+        (control) => (control as HTMLElement).offsetTop !== pill.offsetTop
+      );
+      label.hidden = wrapped || pill.offsetWidth > group.clientWidth;
+    };
+    fitLabel();
+    void document.fonts?.ready.then(fitLabel);
+    const observer = new ResizeObserver(fitLabel);
+    observer.observe(group.parentElement ?? group);
+    return () => observer.disconnect();
+  }, [globalMuted, hasSubtitles, unmuteLabel, isPlaying, videoError]);
 
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const isOwnVideo = useIsOwnVideo(video);
@@ -691,7 +717,13 @@ export function VideoCard({
               )}
 
               {isPlaying && !videoError && (
-                <div className="absolute bottom-3 right-3 z-30 flex max-w-[calc(100%-5rem)] flex-wrap items-center justify-end gap-2">
+                <div
+                  ref={soundControlsRef}
+                  className={cn(
+                    "absolute bottom-3 right-3 z-30 flex flex-wrap items-center justify-end gap-2",
+                    onEnterFullscreen ? "max-w-[calc(100%-5rem)]" : "max-w-[calc(100%-1.5rem)]"
+                  )}
+                >
                   {hasSubtitles && (
                     <Button
                       variant="ghost"
@@ -722,8 +754,8 @@ export function VideoCard({
                     className={cn(
                       "bg-black/75 hover:bg-black/80 text-white hover:text-white",
                       "backdrop-blur-sm rounded-full",
-                      "min-h-11 min-w-11 max-w-full flex items-center justify-center",
-                      globalMuted ? "h-auto gap-2 whitespace-normal px-3 py-2" : "w-11 h-11 p-0",
+                      "h-11 min-w-11 flex items-center justify-center",
+                      globalMuted ? "shrink-0 gap-2 px-3" : "w-11 p-0",
                       "transition-all duration-200"
                     )}
                     onClick={(e) => {
@@ -737,12 +769,12 @@ export function VideoCard({
                     onTouchEnd={(e) => {
                       e.stopPropagation();
                     }}
-                    aria-label={globalMuted ? t('videoCard.ariaUnmute') : t('videoCard.ariaMute')}
+                    aria-label={globalMuted ? unmuteLabel : t('videoCard.ariaMute')}
                   >
                     {globalMuted ? (
                       <>
                         <VolumeX className="h-5 w-5" />
-                        <span>{t('videoCard.ariaUnmute')}</span>
+                        <span ref={unmuteLabelRef}>{unmuteLabel}</span>
                       </>
                     ) : (
                       <Volume2 className="h-5 w-5" />
