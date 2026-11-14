@@ -263,7 +263,6 @@ function useUniversalUserLookup(identifier: string | undefined) {
         }
       }
 
-
       const relaySignal = AbortSignal.any([
         context.signal,
         AbortSignal.timeout(RELAY_QUERY_TIMEOUT_MS),
@@ -280,9 +279,9 @@ function useUniversalUserLookup(identifier: string | undefined) {
         // Caller navigated away — abort the whole lookup, don't mask it.
         if (context.signal.aborted) throw err;
         // Relay was slow/unavailable. Remember it so a transient failure stays
-        // retryable, but continue: the NIP-05 DNS fallback may still resolve.
+        // retryable instead of becoming a definitive not-found.
         relayError = err;
-        debugLog(`[UniversalUserPage] relay kind-0 query failed, continuing to NIP-05 DNS fallback: ${(err as Error).message}`);
+        debugLog(`[UniversalUserPage] relay kind-0 query failed: ${(err as Error).message}`);
       }
 
       if (isVineUserId(decodedIdentifier)) {
@@ -325,8 +324,8 @@ function useUniversalUserLookup(identifier: string | undefined) {
         }
       }
 
-      // NIP-05 path: expand the URL segment into the canonical NIP-05 strings we
-      // expect to find in kind-0 metadata (or resolve via NIP-05 DNS).
+      // NIP-05 path: no registered name resolved above, so match the canonical
+      // NIP-05 strings against declared kind-0 metadata.
       debugLog(`[UniversalUserPage] NIP-05 candidates for "${decodedIdentifier}": ${JSON.stringify(nip05Candidates)}`);
 
       const normalizedCandidates = new Set(nip05Candidates.map(c => c.toLowerCase()));
