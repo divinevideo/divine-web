@@ -111,11 +111,20 @@ async function expectControlsFit(card: Locator) {
       }
     }
     const controls = [...video.parentElement!.parentElement!.querySelectorAll('button')];
+    const cue = [...video.parentElement!.querySelectorAll('span')]
+      .find((span) => span.textContent === 'Synthetic captions')?.getBoundingClientRect();
     for (const [index, button] of controls.entries()) {
       const box = button.getBoundingClientRect();
       if (box.width < 44 || box.height < 44) issues.push(`${button.getAttribute('aria-label')} below 44px`);
       if (box.left < player.left || box.right > player.right || box.top < player.top || box.bottom > player.bottom) {
         issues.push(`${button.getAttribute('aria-label')} outside player`);
+      }
+      if (cue && box.top < cue.bottom - 0.5) issues.push(`${button.getAttribute('aria-label')} covers the captions`);
+      for (const part of button.children) {
+        const inner = part.getBoundingClientRect();
+        if (!(part as HTMLElement).hidden && (inner.left < box.left - 0.5 || inner.right > box.right + 0.5)) {
+          issues.push(`${button.getAttribute('aria-label')} spills its ${part.tagName.toLowerCase()}`);
+        }
       }
       for (const other of controls.slice(index + 1)) {
         const next = other.getBoundingClientRect();
@@ -150,7 +159,7 @@ for (const width of [320, 360, 390, 1505]) {
       expect(overhang.every((pixels) => pixels <= 1)).toBe(true);
       for (const card of await cards.all()) {
         await expect(card.locator('video')).toHaveJSProperty('readyState', 4);
-        await expect(card.getByRole('button', { name: 'Unmute', exact: true })).toHaveText('Unmute');
+        await expect(card.getByRole('button', { name: 'Unmute', exact: true }).getByText('Unmute')).toBeVisible();
         await expectControlsFit(card);
         await card.getByRole('button', { name: 'More options', exact: true }).click({ trial: true });
       }
@@ -199,14 +208,34 @@ test('unmuting keeps playback running and the next active video inherits sound',
   await expect(second.getByRole('button', { name: 'Unmute', exact: true })).toHaveText('Unmute');
 });
 
-test('translated Unmute stays clear of captions and fullscreen on a narrow screen', async ({ page }) => {
+test('a translated Unmute too long for the row falls back to the icon until there is room', async ({ page }) => {
   test.setTimeout(60_000);
   await page.addInitScript(() => localStorage.setItem('divine:locale', 'ro'));
   await serveSyntheticFeed(page);
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto('/discovery/classics');
   const card = page.locator('main .brand-card').first();
-  await expect(card.getByRole('button', { name: 'Activează sunetul', exact: true })).toHaveText('Activează sunetul', { timeout: 30_000 });
+  const unmute = card.getByRole('button', { name: 'Activează sunetul', exact: true });
+  await expect(unmute).toBeVisible({ timeout: 30_000 });
+  await expect(card.getByRole('button', { name: 'Ascunde subtitrările' })).toBeVisible();
+  await expect(unmute.getByText('Activează sunetul')).toBeHidden();
+  await expectControlsFit(card);
+
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect(unmute.getByText('Activează sunetul')).toBeVisible();
+  await expectControlsFit(card);
+});
+
+test('a player as narrow as one cell of a two-column phone grid keeps Unmute inside its pill', async ({ page }) => {
+  test.setTimeout(60_000);
+  await serveSyntheticFeed(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto(`/video/${FEED[1].id}`);
+  const card = page.locator('main .brand-card').first();
+  await expect(card.getByRole('button', { name: 'Unmute', exact: true })).toBeVisible({ timeout: 30_000 });
+  // The collabs grid lays auto-play cards out two to a row, without fullscreen,
+  // which leaves each player about 144px wide on a 320px phone.
+  await card.locator('video').evaluate((video) => { video.parentElement!.parentElement!.style.width = '144px'; });
   await expectControlsFit(card);
 });
 
