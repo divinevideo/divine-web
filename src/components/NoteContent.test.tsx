@@ -287,6 +287,13 @@ describe('NoteContent — non-matches', () => {
     expect(link).toHaveAttribute('href', 'https://example.com');
   });
 
+  // The combined pattern is case-insensitive so uppercase Nostr references match;
+  // URL schemes are case-insensitive too (RFC 3986 section 3.1), so these link.
+  it.each(['HTTPS://example.com/x', 'Http://example.com/x'])('linkifies %s with an uppercase scheme', (url) => {
+    renderContent(`see ${url} now`);
+    expect(screen.getByRole('link', { name: url })).toHaveAttribute('href', url);
+  });
+
   it('still linkifies hashtags', () => {
     renderContent('check #skating out');
     const link = screen.getByRole('link');
