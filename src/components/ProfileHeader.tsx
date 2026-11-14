@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { getDivineNip05Info } from '@/lib/nip05Utils';
+import { formatNip05Label, getDivineNip05Info } from '@/lib/nip05Utils';
 import { linkifyProfileBioText } from '@/lib/profileBioLinkify';
 import { getProfileWebsiteLink } from '@/lib/profileWebsite';
 import { OwnSupporterRecognition, PublicSupporterRecognition } from '@/components/SupporterRecognition';
@@ -288,9 +288,7 @@ export function ProfileHeader({
                             ? 'text-muted-foreground line-through'
                             : 'text-muted-foreground'
                       }`;
-                      const displayText = divineInfo
-                        ? divineInfo.displayName
-                        : nip05.startsWith('_@') ? `@${nip05.slice(2)}` : `@${nip05}`;
+                      const displayText = formatNip05Label(nip05);
 
                       return divineInfo ? (
                         <a
