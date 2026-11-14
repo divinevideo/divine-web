@@ -6,6 +6,7 @@ export const NOSTR_REFERENCE_PATTERN = `(?:nostr:|\\b)(?:npub1|note1|nprofile1|n
 // prefix found inside a token always marks where the reference before it ends.
 const REFERENCE_PREFIX = /npub1|note1|nprofile1|nevent1|naddr1/i;
 const LEADING_REFERENCE_PREFIX = /^(?:npub1|note1|nprofile1|nevent1|naddr1)/i;
+const HEX64 = /^[0-9a-f]{64}$/i;
 
 export interface NostrReference {
   identifier: string;
@@ -25,14 +26,14 @@ function decodeReference(candidate: string): DecodedReference | undefined {
   try {
     const decoded = nip19.decode(identifier);
     if (decoded.type === 'npub' || decoded.type === 'note') {
-      if (!/^[0-9a-f]{64}$/i.test(decoded.data)) return undefined;
+      if (!HEX64.test(decoded.data)) return undefined;
       return { identifier, pubkey: decoded.type === 'npub' ? decoded.data : undefined };
     }
     if (decoded.type === 'nprofile' || decoded.type === 'naddr') {
-      if (!/^[0-9a-f]{64}$/i.test(decoded.data.pubkey)) return undefined;
+      if (!HEX64.test(decoded.data.pubkey)) return undefined;
       return { identifier, pubkey: decoded.type === 'nprofile' ? decoded.data.pubkey : undefined };
     }
-    if (decoded.type === 'nevent' && /^[0-9a-f]{64}$/i.test(decoded.data.id)) {
+    if (decoded.type === 'nevent' && HEX64.test(decoded.data.id)) {
       return { identifier };
     }
   } catch {
