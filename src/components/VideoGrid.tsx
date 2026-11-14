@@ -229,12 +229,17 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
     }
   };
 
+  const isKnownAgeRestrictedVideo = (video: ParsedVideoData) =>
+    video.ageRestricted === true || discoveredAgeRestrictedVideos.has(video.id);
+  const isAgeGatedVideo = (video: ParsedVideoData) =>
+    isKnownAgeRestrictedVideo(video) && (!user || !isAdultVerified);
+
   const visibleVideos = videos
     .map((video, index) => ({ video, index }))
     .filter(({ video }) => !shouldHideVideo(video));
-  const priorityVideoId = prioritizeFirstThumbnail ? visibleVideos.find(({ video }) => (
-    !((video.ageRestricted || discoveredAgeRestrictedVideos.has(video.id)) && (!user || !isAdultVerified))
-  ))?.video.id : undefined;
+  const priorityVideoId = prioritizeFirstThumbnail
+    ? visibleVideos.find(({ video }) => !isAgeGatedVideo(video))?.video.id
+    : undefined;
   const pagingControl = onLoadMore && visibleVideos.length < videos.length ? (
     <Button type="button" variant="outline" disabled={isLoadingMore} aria-busy={isLoadingMore} onClick={onLoadMore}>
       {isLoadingMore ? t('profilePage.loadingMore') : t('uiPagination.goToNext')}
@@ -293,9 +298,8 @@ export function VideoGrid({ videos, loading = false, className, navigationContex
       {visibleVideos.map(({ video, index }) => {
         const isHovered = hoveredVideo === video.id;
         const thumbnailFailed = failedThumbnails.has(video.id);
-        const isKnownAgeRestricted = video.ageRestricted === true || discoveredAgeRestrictedVideos.has(video.id);
-        const gridVideo = isKnownAgeRestricted ? { ...video, ageRestricted: true } : video;
-        const isAgeGated = isKnownAgeRestricted && (!user || !isAdultVerified);
+        const gridVideo = isKnownAgeRestrictedVideo(video) ? { ...video, ageRestricted: true } : video;
+        const isAgeGated = isAgeGatedVideo(video);
         const visiblePlaybackCount = getVisiblePlaybackCount({
           isVineMigrated: video.isVineMigrated,
           loopCount: video.loopCount,
