@@ -110,7 +110,8 @@ async function expectControlsFit(card: Locator) {
         issues.push(`${button.getAttribute('aria-label')} outside card`);
       }
     }
-    const controls = [...video.parentElement!.parentElement!.querySelectorAll('button')];
+    const playerElement = video.parentElement!.parentElement!;
+    const controls = [...playerElement.querySelectorAll('button')];
     const cue = [...video.parentElement!.querySelectorAll('span')]
       .find((span) => span.textContent === 'Synthetic captions')?.getBoundingClientRect();
     for (const [index, button] of controls.entries()) {
@@ -130,6 +131,13 @@ async function expectControlsFit(card: Locator) {
         const next = other.getBoundingClientRect();
         if (box.left < next.right && box.right > next.left && box.top < next.bottom && box.bottom > next.top) {
           issues.push(`${button.getAttribute('aria-label')} overlaps ${other.getAttribute('aria-label')}`);
+        }
+        // The group that holds two controls must let a tap between them through.
+        const group = button.parentElement!;
+        const [first, second] = box.left < next.left ? [box, next] : [next, box];
+        if (other.parentElement === group && group !== playerElement && second.left - first.right > 2) {
+          const hit = document.elementFromPoint((first.right + second.left) / 2, (first.top + first.bottom) / 2);
+          if (hit === group) issues.push(`gap beside ${button.getAttribute('aria-label')} swallows taps`);
         }
       }
     }

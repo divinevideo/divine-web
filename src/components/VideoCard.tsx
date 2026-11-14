@@ -720,7 +720,8 @@ export function VideoCard({
                 <div
                   ref={soundControlsRef}
                   className={cn(
-                    "absolute bottom-3 right-3 z-30 flex flex-wrap items-center justify-end gap-2",
+                    // Only the buttons take taps; the gaps between them belong to the video.
+                    "pointer-events-none absolute bottom-3 right-3 z-30 flex flex-wrap items-center justify-end gap-2",
                     onEnterFullscreen ? "max-w-[calc(100%-5rem)]" : "max-w-[calc(100%-1.5rem)]"
                   )}
                 >
@@ -729,7 +730,7 @@ export function VideoCard({
                       variant="ghost"
                       size="sm"
                       className={cn(
-                        "bg-black/75 hover:bg-black/80 hover:text-white",
+                        "pointer-events-auto bg-black/75 hover:bg-black/80 hover:text-white",
                         showSubtitles ? "text-white" : "text-white/50",
                         "backdrop-blur-sm rounded-full",
                         "w-11 h-11 shrink-0 p-0 flex items-center justify-center",
@@ -752,7 +753,7 @@ export function VideoCard({
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "bg-black/75 hover:bg-black/80 text-white hover:text-white",
+                      "pointer-events-auto bg-black/75 hover:bg-black/80 text-white hover:text-white",
                       "backdrop-blur-sm rounded-full",
                       "h-11 min-w-11 flex items-center justify-center",
                       globalMuted ? "shrink-0 gap-2 px-3" : "w-11 p-0",
