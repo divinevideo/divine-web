@@ -1,6 +1,6 @@
 import { nip19 } from 'nostr-tools';
 
-export const NOSTR_REFERENCE_PATTERN = `(?:nostr:|\\b)(?:npub1|note1|nprofile1|nevent1|naddr1)[a-z0-9]+(?=$|[^A-Za-z0-9_]|nostr:)`;
+export const NOSTR_REFERENCE_PATTERN = `(?:nostr:|\\b)(?:npub1|note1|nprofile1|nevent1|naddr1)[a-z0-9]+?(?=$|[^A-Za-z0-9_]|nostr:)`;
 
 interface NostrReference {
   identifier: string;
