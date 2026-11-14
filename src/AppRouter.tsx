@@ -3,8 +3,8 @@
  */
 
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
-import { withSentryReactRouterV6Routing } from '@sentry/react';
+import { BrowserRouter, Navigate, Outlet, Route, useLocation } from "react-router-dom";
+import { SentryRoutes } from '@/components/SentryRoutes';
 import { PagePerformanceProvider } from '@/components/PagePerformanceProvider';
 import { ScrollToTop } from "./components/ScrollToTop";
 import { SignInLoading } from "./components/auth/SignInLoading";
@@ -112,8 +112,6 @@ function InviteLinkRoute({
     />
   );
 }
-
-const SentryRoutes = withSentryReactRouterV6Routing(Routes);
 
 export function AppRouter() {
   const { user, isAuthPending, isRenewingSession } = useCurrentUser();

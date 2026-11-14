@@ -1,6 +1,7 @@
 // ABOUTME: Component for exploring and discovering hashtags using Funnelcake REST API
 // ABOUTME: Shows popular hashtags with thumbnails and search filtering
 
+import { usePageContentReady } from '@/hooks/usePageContentReady';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SmartLink } from '@/components/SmartLink';
@@ -128,6 +129,7 @@ export function HashtagExplorer() {
   const [visibleCount, setVisibleCount] = useState(INITIAL_LOAD);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const { data: hashtagStats, isLoading, error } = useHashtagStats();
+  usePageContentReady(isLoading ? null : error ? 'error' : hashtagStats?.length ? 'ready' : 'empty');
 
   // Filter hashtags based on search
   const filteredTags = useMemo(() => {

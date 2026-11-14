@@ -3,7 +3,7 @@ import { Sentry } from '@/lib/sentry';
 export type ContentOutcome = 'ready' | 'empty' | 'error';
 type Outcome = ContentOutcome | 'timeout' | 'cancelled';
 
-export function startContentLoad(route: string, key: string, initial: boolean) {
+export function startContentLoad(route: string, key: string, initial: boolean, onSettled: () => void) {
   const root = document.documentElement;
   const span = Sentry.startInactiveSpan({ name: route, op: 'ui.content_ready', forceTransaction: true,
     startTime: initial ? performance.timeOrigin / 1000 : undefined,
@@ -12,7 +12,7 @@ export function startContentLoad(route: string, key: string, initial: boolean) {
   let frame: number | undefined;
   const timeout = window.setTimeout(() => finish('timeout'), 30_000);
   const onVisibility = () => { if (document.visibilityState === 'hidden') finish('cancelled'); };
-  function finish(outcome: Outcome) {
+  function finish(outcome: Outcome, notify = true) {
     if (finished) return;
     finished = true;
     window.clearTimeout(timeout);
@@ -22,6 +22,7 @@ export function startContentLoad(route: string, key: string, initial: boolean) {
     span?.setStatus(outcome === 'ready' || outcome === 'empty' ? { code: 1 }
       : { code: 2, message: outcome === 'timeout' ? 'deadline_exceeded' : outcome });
     span?.end();
+    if (notify) onSettled();
     root.dataset.performanceOutcome = outcome;
     if (outcome === 'ready' || outcome === 'empty' || outcome === 'error') root.dataset.performanceReady = 'true';
   }
