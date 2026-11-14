@@ -2,7 +2,7 @@ import { SmartLink } from '@/components/SmartLink';
 import { useAuthor } from '@/hooks/useAuthor';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
 import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
-import { getDivineNip05Info } from '@/lib/nip05Utils';
+import { formatNip05Label } from '@/lib/nip05Utils';
 import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { cn } from '@/lib/utils';
 
@@ -19,8 +19,7 @@ export function NostrMention({ pubkey }: NostrMentionProps) {
   const profilePath = useValidatedProfileLinkPath({ pubkey, nip05 });
   const verifiedNip05 = state === 'valid' ? nip05 : undefined;
   const label = verifiedNip05
-    ? getDivineNip05Info(verifiedNip05)?.displayName
-      ?? (verifiedNip05.startsWith('_@') ? `@${verifiedNip05.slice(2)}` : `@${verifiedNip05}`)
+    ? formatNip05Label(verifiedNip05)
     : `@${resolveDisplayName(metadata, pubkey)}`;
   const hasIdentity = !!(verifiedNip05 || metadata?.display_name?.trim() || metadata?.name?.trim());
 
