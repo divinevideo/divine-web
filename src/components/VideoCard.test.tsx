@@ -635,6 +635,13 @@ describe('VideoCard', () => {
     expect(screen.queryByTestId(/video-player-/)).not.toBeInTheDocument();
   });
 
+  it('keeps the sound controls off an auto-play card that shows the age gate', () => {
+    render(<VideoCard video={makeVideo({ ageRestricted: true })} />);
+
+    expect(screen.getByText('Log in to view')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Unmute' })).not.toBeInTheDocument();
+  });
+
   it('lets a viewer hide age-restricted cards from feeds', () => {
     render(<VideoCard video={makeVideo({ ageRestricted: true })} mode="thumbnail" />);
 
