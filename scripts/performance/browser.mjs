@@ -93,6 +93,15 @@ export function inspectContent(route) {
   return { outcome: 'ready', source: state.readinessSource };
 }
 
+export async function waitForRoutes(page, origin, deadline, required = ['video', 'profile']) {
+  let links = await discoverRoutes(page, origin);
+  while (required.some(key => !links[key]) && Date.now() < deadline) {
+    await page.waitForTimeout(Math.min(100, Math.max(1, deadline - Date.now())));
+    links = await discoverRoutes(page, origin);
+  }
+  return links;
+}
+
 export async function discoverRoutes(page, origin) {
   const hrefs = await page.locator('a[href]').evaluateAll(elements => elements.map(element => element.href));
   const paths = hrefs.flatMap(href => {
@@ -118,16 +127,21 @@ function collectNetwork(page) {
   return failures;
 }
 
-async function measurePlayback(page, row, timeoutMs) {
+async function measurePlayback(page, row, deadline) {
   if (row.firstAdvancingVideoMs !== null) { row.playback = 'autoplay'; return; }
   if (row.route !== '/video/:id' || row.failures.length) { row.playback = 'not-observed'; return; }
   try {
-    const playButton = page.getByRole('button', { name: /^play(?: video)?$/i }).first();
-    if (await playButton.isVisible()) await playButton.click({ timeout: 1000 });
-    else await page.locator('video').first().click({ timeout: 1000 });
-    await page.waitForFunction(() => window.__publicPerformanceAudit.firstAdvancingVideoMs !== null, null, { timeout: Math.min(timeoutMs, 5000) });
+    if (Date.now() >= deadline) throw new Error('Playback budget exhausted');
+    const video = page.locator('video').first();
+    const alreadyPlaying = await video.count() && await video.evaluate(element => !element.paused);
+    if (!alreadyPlaying) {
+      const playButton = page.getByRole('button', { name: /^play(?: video)?$/i }).first();
+      if (await playButton.isVisible()) await playButton.click({ timeout: Math.min(1000, Math.max(1, deadline - Date.now())) });
+      else await video.click({ timeout: Math.min(1000, Math.max(1, deadline - Date.now())) });
+    }
+    await page.waitForFunction(() => window.__publicPerformanceAudit.firstAdvancingVideoMs !== null, null, { timeout: Math.max(1, deadline - Date.now()) });
     row.firstAdvancingVideoMs = await page.evaluate(() => window.__publicPerformanceAudit.firstAdvancingVideoMs);
-    row.playback = 'after-play-interaction';
+    row.playback = alreadyPlaying ? 'autoplay' : 'after-play-interaction';
   } catch {
     row.playback = 'not-advancing';
     row.failures.push('video-not-advancing');
@@ -171,8 +185,8 @@ export async function auditPage(browser, options, device, path, sample) {
     });
     Object.assign(row, metrics);
     if (row.lcpMs === null) row.failures.push('lcp-not-observed');
-    if (row.route === '/discovery' && row.outcome === 'ready') links = await discoverRoutes(page, options.origin);
-    await measurePlayback(page, row, options.timeoutMs);
+    if (row.route === '/discovery' && row.outcome === 'ready') links = await waitForRoutes(page, options.origin, deadline);
+    await measurePlayback(page, row, deadline);
     row.networkFailures = [...network.values()];
   } catch (error) {
     row.failures.push(error.name === 'TimeoutError' ? 'navigation-timeout' : 'navigation-failed');
@@ -201,12 +215,14 @@ export async function auditNavigation(browser, options, device) {
     await session.send('Network.enable');
     await configureNetwork(session, options, device);
     await page.addInitScript(installObservers);
+    const sourceDeadline = Date.now() + options.timeoutMs;
     await page.goto(`${options.origin}/discovery`, { waitUntil: 'domcontentloaded', timeout: options.timeoutMs });
-    const source = await page.waitForFunction(inspectContent, '/discovery', { timeout: options.timeoutMs });
+    const source = await page.waitForFunction(inspectContent, '/discovery', { timeout: Math.max(1, sourceDeadline - Date.now()) });
     if ((await source.jsonValue()).outcome !== 'ready') { row.failures.push('source-content-missing'); return row; }
-    const { video } = await discoverRoutes(page, options.origin);
+    const { video } = await waitForRoutes(page, options.origin, sourceDeadline, ['video']);
     if (!video) { row.failures.push('discovery-link-missing'); return row; }
     const index = await page.locator('a[href]').evaluateAll((elements, path) => elements.findIndex(element => new URL(element.href).pathname === path), video);
+    const deadline = Date.now() + options.timeoutMs;
     const timeOrigin = await page.evaluate(path => {
       const state = window.__publicPerformanceAudit;
       state.stop();
@@ -216,13 +232,13 @@ export async function auditNavigation(browser, options, device) {
       state.contentReadyMs = null;
       return performance.timeOrigin;
     }, video);
-    await page.locator('a[href]').nth(index).click({ timeout: options.timeoutMs });
-    await page.waitForFunction(path => location.pathname === path, video, { timeout: options.timeoutMs });
+    await page.locator('a[href]').nth(index).click({ timeout: Math.max(1, deadline - Date.now()) });
+    await page.waitForFunction(path => location.pathname === path, video, { timeout: Math.max(1, deadline - Date.now()) });
     if (await page.evaluate(() => performance.timeOrigin) !== timeOrigin) {
       row.failures.push('internal-link-hard-reloaded');
       return row;
     }
-    const ready = await page.waitForFunction(inspectContent, video, { timeout: options.timeoutMs });
+    const ready = await page.waitForFunction(inspectContent, video, { timeout: Math.max(1, deadline - Date.now()) });
     const result = await ready.jsonValue();
     row.outcome = result.outcome;
     row.readinessSource = result.source;
@@ -231,7 +247,7 @@ export async function auditNavigation(browser, options, device) {
     await page.waitForTimeout(options.observeMs);
     Object.assign(row, await page.evaluate(() => ({ contentReadyMs: window.__publicPerformanceAudit.contentReadyMs,
       firstAdvancingVideoMs: window.__publicPerformanceAudit.firstAdvancingVideoMs })));
-    await measurePlayback(page, row, options.timeoutMs);
+    await measurePlayback(page, row, deadline);
     row.networkFailures = [...network.values()];
   } catch (error) { row.failures.push(error.name === 'TimeoutError' ? 'navigation-timeout' : 'navigation-failed'); }
   finally { await context.close(); }

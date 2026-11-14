@@ -106,3 +106,17 @@ it('waits for a presented video frame and cancels its callback on unmount', () =
   expect(spans[1].setAttribute).toHaveBeenCalledWith('playback.outcome', 'cancelled');
   video.remove();
 });
+
+it('preserves document origin through an initial canonical replace redirect', () => {
+  function Canonical() {
+    const navigate = useNavigate();
+    usePageContentReady(null);
+    return <button onClick={() => navigate('/discovery/classics', { replace: true })}>Canonical</button>;
+  }
+  render(<MemoryRouter initialEntries={['/discovery']}><PagePerformanceProvider><Canonical /></PagePerformanceProvider></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button', { name: 'Canonical' }));
+  expect(startSpan).toHaveBeenLastCalledWith(expect.objectContaining({
+    op: 'ui.content_ready', startTime: performance.timeOrigin / 1000,
+    attributes: expect.objectContaining({ 'navigation.type': 'pageload' }),
+  }));
+});

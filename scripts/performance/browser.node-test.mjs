@@ -22,6 +22,8 @@ before(async () => {
     response.end(request.url === '/loading' ? '<h1>Loading</h1><div data-testid="video-skeleton">Loading content</div>'
       : request.url === '/empty' ? '<html data-performance-ready="true" data-performance-outcome="empty"><h1>Empty</h1></html>'
       : request.url === '/overlay' ? '<html data-performance-ready="true" data-performance-outcome="ready"><div role="dialog"><a href="/video/synthetic-item">Sign in</a></div></html>'
+      : request.url === '/video/slow-synthetic' ? '<h1>Synthetic delayed video</h1><video autoplay muted width=320 height=180 onclick="this.pause()"></video><canvas hidden width=320 height=180></canvas><script>const canvas=document.querySelector("canvas");document.querySelector("video").play().catch(()=>{});setInterval(()=>canvas.getContext("2d").fillRect(0,0,320,180),30);setTimeout(()=>{document.querySelector("video").srcObject=canvas.captureStream(30)},6000)</script>'
+      : request.url === '/delayed-discovery' ? '<h1>Synthetic discovery</h1><a href="/video/synthetic-item">Video</a><script>setTimeout(()=>{const anchor=document.createElement("a");anchor.href="/u/synthetic-creator";anchor.textContent="Creator";document.body.append(anchor)},800)</script>'
       : request.url === '/buffering-feed' ? '<h1>Synthetic feed</h1><div data-testid="video-feed-popular"><div class="brand-card"><a href="/u/synthetic-creator">Synthetic author</a><video width=320 height=180></video></div></div>'
       : request.url === '/thumbnail' ? `<h1>Synthetic thumbnails</h1><div data-testid="thumbnail-container" style="position:relative;width:320px;height:180px"><img width="320" height="180" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='180'%3E%3Crect width='320' height='180' fill='green'/%3E%3C/svg%3E"><a data-testid="thumbnail-link" href="/video/synthetic-item" aria-label="Open synthetic video" style="position:absolute;inset:0"></a></div>`
       : request.url === '/feed-video' ? `<h1>Synthetic feed</h1><video autoplay muted width=320 height=180></video><canvas hidden width=320 height=180></canvas><script>const canvas=document.querySelector('canvas'); setInterval(()=>canvas.getContext('2d').fillRect(0,0,320,180),30); document.querySelector('video').srcObject=canvas.captureStream(30);</script>`
@@ -108,4 +110,23 @@ test('populated feed author metadata can settle before a media frame loads', asy
   assert.deepEqual(row.failures, []);
   assert.ok(row.contentReadyMs > 0);
   assert.equal(row.firstAdvancingVideoMs, null);
+});
+
+
+test('discovery waits for a delayed profile link within the navigation budget', async () => {
+  const page = await browser.newPage();
+  try {
+    await page.goto(`${origin}/delayed-discovery`);
+    const { waitForRoutes } = await import('./browser.mjs');
+    const links = await waitForRoutes(page, origin, Date.now() + 2000);
+    assert.equal(links.profile, '/u/synthetic-creator');
+  } finally { await page.close(); }
+});
+
+
+test('video playback uses the remaining configured budget beyond five seconds', async () => {
+  const { row } = await auditPage(browser, { ...options(), timeoutMs: 8500 }, device, '/video/slow-synthetic', 1);
+  assert.deepEqual(row.failures, []);
+  assert.ok(row.firstAdvancingVideoMs >= 6000);
+  assert.equal(row.playback, 'autoplay');
 });
