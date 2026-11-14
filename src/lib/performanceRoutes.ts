@@ -8,13 +8,13 @@ const routes = [
   '/list/:pubkey/:listId', '/people-lists/:pubkey/:listId',
   '/event/a/:kind/:pubkey/:identifier', '/event/:eventId',
   '/home', '/notifications', '/messages/:conversationId', '/messages', '/analytics', '/lists',
-  '/collabs', '/collabs/:tab', '/settings/moderation', '/settings/linked-accounts', '/settings/relays',
+  '/collabs', '/collabs/:tab', '/settings/moderation', '/settings/linked-accounts', '/settings/relays', '/debug-video',
   '/chat/:communityId/:channelId/thread/:threadId', '/chat/:communityId/:channelId',
   '/chat/invite', '/chat/:communityId', '/chat', '/invite/:code',
   '/authenticity', '/privacy', '/terms', '/open-source', '/proofmode', '/human-created',
   '/dmca', '/safety', '/family', '/family/:page', '/age-review', '/kids', '/download',
   '/exit/start', '/exit', '/account-portability', '/delete-account', '/support', '/faq',
-  '/get-embed', '/app/callback', '/auth/callback', '/:nip19',
+  '/get-embed', '/app/callback', '/auth/callback', '/__brand-preview', '/:nip19',
 ];
 
 export function getPerformanceRoute(value: string): string {
