@@ -58,6 +58,10 @@ import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 
+// Shared by the controls laid over a playing video. The ghost button's base
+// classes already round, center and animate them, and size their icons.
+const PLAYER_CONTROL_CLASS = 'bg-black/75 hover:bg-black/90 text-white hover:text-white backdrop-blur-sm h-11';
+
 interface VideoCardProps {
   video: ParsedVideoData;
   shareUrl?: string;
@@ -735,28 +739,27 @@ export function VideoCard({
                     "pointer-events-none absolute bottom-3 right-3 z-30 flex flex-wrap items-center justify-end gap-2",
                     onEnterFullscreen ? "max-w-[calc(100%-5rem)]" : "max-w-[calc(100%-1.5rem)]"
                   )}
+                  // Taps on these buttons still bubble through it; stop them here, once.
+                  onTouchStart={(e) => { e.stopPropagation(); }}
+                  onTouchEnd={(e) => { e.stopPropagation(); }}
                 >
                   {hasSubtitles && (
                     <Button
                       variant="ghost"
                       size="sm"
                       className={cn(
-                        "pointer-events-auto bg-black/75 hover:bg-black/90 hover:text-white",
-                        showSubtitles ? "text-white" : "text-white/50",
-                        "backdrop-blur-sm rounded-full",
-                        "w-11 h-11 shrink-0 p-0 flex items-center justify-center",
-                        "transition-all duration-200"
+                        "pointer-events-auto w-11 shrink-0 p-0",
+                        PLAYER_CONTROL_CLASS,
+                        !showSubtitles && "text-white/50"
                       )}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setSubtitlesVisible(prev => !prev);
                       }}
-                      onTouchStart={(e) => { e.stopPropagation(); }}
-                      onTouchEnd={(e) => { e.stopPropagation(); }}
                       aria-label={showSubtitles ? t('videoCard.ariaHideSubtitles') : t('videoCard.ariaShowSubtitles')}
                     >
-                      <Captions className="h-5 w-5" />
+                      <Captions />
                     </Button>
                   )}
 
@@ -764,32 +767,24 @@ export function VideoCard({
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "pointer-events-auto bg-black/75 hover:bg-black/90 text-white hover:text-white",
-                      "backdrop-blur-sm rounded-full",
-                      "h-11 min-w-11 flex items-center justify-center",
-                      globalMuted ? "shrink-0 gap-2 px-3" : "w-11 p-0",
-                      "transition-all duration-200"
+                      "pointer-events-auto min-w-11",
+                      PLAYER_CONTROL_CLASS,
+                      globalMuted ? "shrink-0 px-3" : "w-11 p-0"
                     )}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       setGlobalMuted(!globalMuted);
                     }}
-                    onTouchStart={(e) => {
-                      e.stopPropagation();
-                    }}
-                    onTouchEnd={(e) => {
-                      e.stopPropagation();
-                    }}
                     aria-label={globalMuted ? unmuteLabel : t('videoCard.ariaMute')}
                   >
                     {globalMuted ? (
                       <>
-                        <VolumeX className="h-5 w-5" />
+                        <VolumeX />
                         <span ref={unmuteLabelRef}>{unmuteLabel}</span>
                       </>
                     ) : (
-                      <Volume2 className="h-5 w-5" />
+                      <Volume2 />
                     )}
                   </Button>
                 </div>
@@ -800,13 +795,7 @@ export function VideoCard({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn(
-                    "absolute bottom-3 left-3 z-30",
-                    "bg-black/75 hover:bg-black/90 text-white hover:text-white",
-                    "backdrop-blur-sm rounded-full",
-                    "w-11 h-11 p-0 flex items-center justify-center",
-                    "transition-all duration-200"
-                  )}
+                  className={cn("absolute bottom-3 left-3 z-30 w-11 p-0", PLAYER_CONTROL_CLASS)}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -820,7 +809,7 @@ export function VideoCard({
                   }}
                   aria-label={t('videoCard.ariaEnterFullscreen')}
                 >
-                  <Maximize2 className="h-5 w-5" />
+                  <Maximize2 />
                 </Button>
               )}
             </div>
