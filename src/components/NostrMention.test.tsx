@@ -83,11 +83,11 @@ describe.each(['title', 'description'])('%s profile mentions', (renderer) => {
     expect(screen.getByRole('link', { name: '@Alice' })).toHaveAttribute('href', `/${NPUB}`);
   });
 
-  it('validates the nip05 as published, the same value profile links validate', () => {
-    mocks.metadata.nip05 = ' _@alice.divine.video';
+  it.each([' _@alice.divine.video', '_@Alice.Divine.Video'])('validates %j as published, the same value profile links validate', (nip05) => {
+    mocks.metadata.nip05 = nip05;
     mocks.validationState = 'invalid';
     render(<Content renderer={renderer} text={NPUB} />);
-    expect(mocks.validationCalls).toContainEqual([' _@alice.divine.video', PUBKEY]);
+    expect(mocks.validationCalls).toContainEqual([nip05, PUBKEY]);
     expect(mocks.validationCalls).not.toContainEqual(['_@alice.divine.video', PUBKEY]);
     expect(screen.getByRole('link', { name: '@Alice' })).toHaveAttribute('href', `/${NPUB}`);
   });
