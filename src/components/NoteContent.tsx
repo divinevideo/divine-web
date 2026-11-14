@@ -1,10 +1,8 @@
 import { useMemo } from 'react';
 import { type NostrEvent } from '@nostrify/nostrify';
 import { SmartLink } from '@/components/SmartLink';
-import { nip19 } from 'nostr-tools';
-import { useAuthor } from '@/hooks/useAuthor';
-import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
-import { resolveDisplayName } from '@/lib/resolveDisplayName';
+import { NostrMention } from '@/components/NostrMention';
+import { NOSTR_REFERENCE_PATTERN, parseNostrReference } from '@/lib/nostrReferences';
 import { cn } from '@/lib/utils';
 
 interface NoteContentProps {
@@ -23,7 +21,6 @@ export function NoteContent({
   const content = useMemo(() => {
     const text = event.content;
     
-    const nip19Chars = '023456789acdefghjklmnpqrstuvwxyz';
     // Bounded by DNS limits (63-character labels, 127 labels).
     const domainLabel = '[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?';
     // A bare domain starts only at the beginning of the text or after a character
@@ -34,7 +31,7 @@ export function NoteContent({
     const bareDomain = linkifyBareDomains
       ? `(^|[^\\w@./:#-])(${domainLabel}(?:\\.${domainLabel}){0,126}\\.[A-Za-z]{2,63}(?![\\w@-])(?:[/?#][^\\s]*)?)`
       : '(?!)()()';
-    const regex = new RegExp(`(https?:\\/\\/[^\\s]+)|${bareDomain}|(?:nostr:)?\\b((?:npub1|note1)[${nip19Chars}]{58}|(?:nprofile1|nevent1|naddr1)[${nip19Chars}]+)(?=$|[^A-Za-z0-9_]|nostr:)|(#\\w+)`, 'g');
+    const regex = new RegExp(`(https?:\\/\\/[^\\s]+)|${bareDomain}|(${NOSTR_REFERENCE_PATTERN})|(#\\w+)`, 'gi');
 
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
@@ -70,31 +67,25 @@ export function NoteContent({
           parts.push(fullMatch.slice(linkText.length));
         }
       } else if (nostrId) {
-        // Handle Nostr references
-        try {
-          const decoded = nip19.decode(nostrId);
-
-          if (decoded.type === 'npub') {
-            const pubkey = decoded.data;
-            parts.push(
-              <NostrMention key={`mention-${keyCounter++}`} pubkey={pubkey} />
-            );
-          } else {
-            // For other types, just show as a link
-            parts.push(
-              <SmartLink
-                key={`nostr-${keyCounter++}`}
-                to={`/${nostrId}`}
-                className="text-blue-500 hover:underline"
-              >
-                {fullMatch}
-              </SmartLink>
-            );
-          }
-        } catch {
-          // If decoding fails, just render as text
-          parts.push(fullMatch);
+        const reference = parseNostrReference(nostrId);
+        if (reference) {
+          const referenceText = fullMatch.slice(0, reference.consumedLength);
+          parts.push(reference.pubkey ? (
+            <NostrMention key={`mention-${keyCounter++}`} pubkey={reference.pubkey} />
+          ) : (
+            <SmartLink
+              key={`nostr-${keyCounter++}`}
+              to={`/${reference.identifier}`}
+              className="text-blue-500 hover:underline"
+            >
+              {referenceText}
+            </SmartLink>
+          ));
+          lastIndex = index + reference.consumedLength;
+          regex.lastIndex = lastIndex;
+          continue;
         }
+        parts.push(fullMatch);
       } else if (hashtag) {
         // Handle hashtags
         const tag = hashtag.slice(1); // Remove the #
@@ -130,34 +121,5 @@ export function NoteContent({
     <div className={cn("whitespace-pre-wrap break-words", className)}>
       {content.length > 0 ? content : event.content}
     </div>
-  );
-}
-
-// Helper component to display user mentions
-function NostrMention({ pubkey }: { pubkey: string }) {
-  const author = useAuthor(pubkey);
-  // Trim to match resolveDisplayName: a whitespace-only field falls through to the
-  // generated name, so it must not be styled as a real one.
-  const hasRealName = !!(author.data?.metadata?.display_name?.trim() || author.data?.metadata?.name?.trim());
-  const displayName = resolveDisplayName(author.data?.metadata, pubkey);
-  const nip05 = author.data?.metadata?.nip05;
-  const profilePath = useValidatedProfileLinkPath({
-    pubkey,
-    nip05,
-  });
-
-  return (
-    <SmartLink
-      to={profilePath}
-      ownerPubkey={pubkey}
-      className={cn(
-        "font-medium hover:underline",
-        hasRealName
-          ? "text-blue-500"
-          : "text-gray-500 hover:text-gray-700"
-      )}
-    >
-      @{displayName}
-    </SmartLink>
   );
 }
