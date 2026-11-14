@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 import { NostrMention } from '@/components/NostrMention';
 import { SmartLink } from '@/components/SmartLink';
-import { NOSTR_REFERENCE_PATTERN, parseNostrReference } from '@/lib/nostrReferences';
+import { NOSTR_REFERENCE_PATTERN, parseNostrReferences } from '@/lib/nostrReferences';
 
 interface InlineNostrTextProps {
   text: string;
@@ -20,14 +20,20 @@ export function InlineNostrText({ text, textLinkTo, textLinkOwnerPubkey, textLin
 
     while ((match = regex.exec(text)) !== null) {
       if (!match[1]) continue;
-      const reference = parseNostrReference(match[1]);
-      if (!reference?.pubkey) continue;
-      if (match.index > lastIndex) {
-        result.push({ text: text.slice(lastIndex, match.index) });
+      const references = parseNostrReferences(match[1]);
+      for (const reference of references) {
+        // Titles link profiles only; any other reference stays in the surrounding text.
+        if (!reference.pubkey) continue;
+        const start = match.index + reference.start;
+        if (start > lastIndex) {
+          result.push({ text: text.slice(lastIndex, start) });
+        }
+        result.push({ text: '', pubkey: reference.pubkey });
+        lastIndex = match.index + reference.end;
       }
-      result.push({ text: '', pubkey: reference.pubkey });
-      lastIndex = match.index + reference.consumedLength;
-      regex.lastIndex = lastIndex;
+      if (references.length > 0) {
+        regex.lastIndex = match.index + references[references.length - 1].end;
+      }
     }
     if (lastIndex < text.length || result.length === 0) {
       result.push({ text: text.slice(lastIndex) });
