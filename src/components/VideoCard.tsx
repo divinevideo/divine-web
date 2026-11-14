@@ -282,29 +282,6 @@ export function VideoCard({
   const soundControlsRef = useRef<HTMLDivElement>(null);
   const unmuteLabelRef = useRef<HTMLSpanElement>(null);
 
-  // The Unmute label shows only while it fits on one row beside captions. A
-  // wrapped row climbs over the subtitles, and a squeezed pill spills its label,
-  // so a narrow player or a long translation falls back to the bare icon.
-  // Toggling `hidden` directly measures both states in one pass, with no render loop.
-  useLayoutEffect(() => {
-    const group = soundControlsRef.current;
-    const label = unmuteLabelRef.current;
-    const pill = label?.parentElement;
-    if (!group || !label || !pill) return;
-    const fitLabel = () => {
-      label.hidden = false;
-      const wrapped = Array.from(group.children).some(
-        (control) => (control as HTMLElement).offsetTop !== pill.offsetTop
-      );
-      label.hidden = wrapped || pill.offsetWidth > group.clientWidth;
-    };
-    fitLabel();
-    void document.fonts?.ready.then(fitLabel);
-    const observer = new ResizeObserver(fitLabel);
-    observer.observe(group.parentElement ?? group);
-    return () => observer.disconnect();
-  }, [globalMuted, hasSubtitles, unmuteLabel, isPlaying, videoError]);
-
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const isOwnVideo = useIsOwnVideo(video);
   const { share, prepare } = useShortLinkShare();
@@ -357,6 +334,29 @@ export function VideoCard({
 
   const date = new Date(timestamp * 1000);
   const isAgeGated = video.ageRestricted === true && (!currentUser || !isAdultVerified);
+
+  // The Unmute label shows only while it fits on one row beside captions. A
+  // wrapped row climbs over the subtitles, and a squeezed pill spills its label,
+  // so a narrow player or a long translation falls back to the bare icon.
+  // Toggling `hidden` directly measures both states in one pass, with no render loop.
+  useLayoutEffect(() => {
+    const group = soundControlsRef.current;
+    const label = unmuteLabelRef.current;
+    const pill = label?.parentElement;
+    if (!group || !label || !pill) return;
+    const fitLabel = () => {
+      label.hidden = false;
+      const wrapped = Array.from(group.children).some(
+        (control) => (control as HTMLElement).offsetTop !== pill.offsetTop
+      );
+      label.hidden = wrapped || pill.offsetWidth > group.clientWidth;
+    };
+    fitLabel();
+    void document.fonts?.ready.then(fitLabel);
+    const observer = new ResizeObserver(fitLabel);
+    observer.observe(group.parentElement ?? group);
+    return () => observer.disconnect();
+  }, [globalMuted, hasSubtitles, unmuteLabel, isPlaying, videoError, isAgeGated]);
 
   // Calculate timeAgo only for pre-2025 videos
   const isFrom2025 = date.getFullYear() >= 2025;
@@ -733,7 +733,7 @@ export function VideoCard({
                 </div>
               )}
 
-              {isPlaying && !videoError && (
+              {isPlaying && !videoError && !isAgeGated && (
                 <div
                   ref={soundControlsRef}
                   className={cn(
