@@ -21,13 +21,14 @@ function getProfilePubkey(pathname: string): string | undefined {
   }
 }
 
-// The router resolves /u/:userId and /profile/:userId through NIP-05 identity
-// candidates, so a self link spelled in any of those forms — the bare or dotted
-// friendly segment, or the raw identifier the NIP-05 badge links with — is the
-// current profile's own link too. divine.video's apex and subdomain spellings of
-// one name are one identity (getDivineNip05Info maps both to the same host), so
-// those spellings match each other as well. Only spellings of the verified
-// identity ever match, so another profile's URL is never rewritten.
+// A self link spelled as one of the verified identity's own forms — the bare or
+// dotted friendly segment, or the raw identifier the NIP-05 badge links with —
+// is the current profile's own link too. /u/:userId resolves such segments
+// through NIP-05 identity candidates (UniversalUserPage), and /profile/:npub
+// accepts the identifier spellings themselves (ProfilePage). divine.video's apex
+// and subdomain spellings of one name are one identity (getDivineNip05Info maps
+// both to the same host), so those match each other as well. Only spellings of
+// the verified identity ever match, so another profile's URL is never rewritten.
 function matchesVerifiedNip05(pathname: string, verifiedNip05: string): boolean {
   const match = pathname.replace(/\/$/, '').match(/^\/(?:u|profile)\/([^/]+)$/);
   if (!match) return false;
