@@ -408,6 +408,23 @@ describe('ProfileHeader', () => {
       expect(screen.queryByRole('link', { name: website })).not.toBeInTheDocument();
     });
 
+    it.each([
+      `https://divine.video/u/alice.divine.video`,
+      `https://divine.video/u/${encodeURIComponent('_@alice.divine.video')}`,
+      `https://divine.video/profile/alice@divine.video`,
+    ])('replaces an own-profile link spelled as a NIP-05 identity form', (website) => {
+      renderWebsite(website);
+      expect(screen.getByRole('link', { name: 'alice.divine.video' }))
+        .toHaveAttribute('href', 'https://alice.divine.video');
+      expect(screen.queryByRole('link', { name: website })).not.toBeInTheDocument();
+    });
+
+    it('replaces a raw NIP-05 self link with the friendly profile path for a third-party identity', () => {
+      renderWebsite('https://divine.video/u/alice@example.com', 'alice@example.com');
+      expect(screen.getByRole('link', { name: 'divine.video/u/alice.example.com' }))
+        .toHaveAttribute('href', 'https://divine.video/u/alice.example.com');
+    });
+
     it('preserves query and fragment when using the friendly destination', () => {
       renderWebsite(`https://divine.video/profile/${pubkey}?tab=videos#pinned`);
       expect(screen.getByRole('link', { name: 'alice.divine.video' }))
@@ -432,6 +449,7 @@ describe('ProfileHeader', () => {
       `https://divine.video/profile/${'b'.repeat(64)}`,
       `https://divine.video.evil.example/profile/${pubkey}`,
       'https://divine.video/about',
+      'https://divine.video/u/mallory.divine.video',
     ])('keeps external websites and other destinations unchanged', (website) => {
       renderWebsite(website);
       expect(screen.getByRole('link', { name: website })).toHaveAttribute('href', website);
