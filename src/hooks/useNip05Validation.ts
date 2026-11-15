@@ -2,7 +2,7 @@
 // ABOUTME: Only shows NIP-05 badge after verification succeeds
 
 import { useQuery } from '@tanstack/react-query';
-import { debugLog } from '@/lib/debug';
+import { nip05QueryOptions } from '@/lib/nip05Query';
 
 type ValidationState = 'loading' | 'valid' | 'invalid' | 'idle';
 
@@ -26,63 +26,13 @@ export function useNip05Validation(
   pubkey: string
 ): Nip05ValidationResult {
   const query = useQuery({
-    queryKey: ['nip05-validation', nip05, pubkey],
-    queryFn: async ({ signal }) => {
-      if (!nip05 || !pubkey) return false;
-
-      // Parse NIP-05: name@domain
-      const atIndex = nip05.lastIndexOf('@');
-      if (atIndex === -1) {
-        debugLog(`[useNip05Validation] Invalid NIP-05 format: ${nip05}`);
-        return false;
-      }
-
-      const name = nip05.slice(0, atIndex) || '_';
-      const domain = nip05.slice(atIndex + 1);
-
-      if (!domain) {
-        debugLog(`[useNip05Validation] Missing domain in NIP-05: ${nip05}`);
-        return false;
-      }
-
-      try {
-        const url = `https://${domain}/.well-known/nostr.json?name=${encodeURIComponent(name)}`;
-        debugLog(`[useNip05Validation] Fetching: ${url}`);
-
-        const response = await fetch(url, {
-          signal,
-          headers: { 'Accept': 'application/json' },
-        });
-
-        if (!response.ok) {
-          debugLog(`[useNip05Validation] HTTP error: ${response.status}`);
-          return false;
-        }
-
-        const data = await response.json();
-        const verifiedPubkey = data?.names?.[name];
-
-        if (verifiedPubkey === pubkey) {
-          debugLog(`[useNip05Validation] Valid NIP-05: ${nip05}`);
-          return true;
-        }
-
-        debugLog(`[useNip05Validation] Pubkey mismatch for ${nip05}: expected ${pubkey}, got ${verifiedPubkey}`);
-        return false;
-      } catch (err) {
-        debugLog(`[useNip05Validation] Error validating ${nip05}:`, err);
-        return false;
-      }
-    },
+    ...nip05QueryOptions(nip05),
     enabled: !!nip05 && !!pubkey,
-    staleTime: 300000, // 5 minutes - NIP-05 doesn't change often
-    gcTime: 900000,    // 15 minutes
-    retry: false,      // Don't retry - if it fails, don't show it
   });
 
   // Determine validation state
-  const isValid = query.data === true;
-  const isInvalid = query.isFetched && query.data === false;
+  const isValid = !!pubkey && query.data === pubkey.toLowerCase();
+  const isInvalid = query.isFetched && !isValid;
   const isLoading = query.isLoading;
 
   let state: ValidationState = 'idle';

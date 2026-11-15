@@ -59,7 +59,8 @@ export function InviteCollaboratorsDialog({ video, open, onOpenChange }: Props) 
         } catch { /* fall through */ }
       }
       if (!pubkey) {
-        const resolved = await resolveNip05(trimmed);
+        // A server or network failure gets the same answer as an unknown handle.
+        const resolved = await resolveNip05(trimmed).catch(() => null);
         if (resolved) pubkey = resolved.pubkey;
       }
       if (!pubkey) {

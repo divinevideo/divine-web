@@ -4,7 +4,9 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useNostr } from '@nostrify/react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { NSchema } from '@nostrify/nostrify';
+import { nip05QueryOptions, NIP05_STALE_TIME_MS } from '@/lib/nip05Query';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { Card, CardContent } from '@/components/ui/card';
@@ -201,7 +203,7 @@ const NIP05_ENVELOPE_PATTERN = new RegExp(
 );
 
 function stripNip05Envelope(segment: string): string | null {
-  const decoded = decodeURIComponent(segment).trim();
+  const decoded = decodeIdentifier(segment).trim();
   const match = decoded.match(NIP05_ENVELOPE_PATTERN);
   if (!match) return null;
   const captured = match[2] ?? match[3];
@@ -209,16 +211,36 @@ function stripNip05Envelope(segment: string): string | null {
   return captured.toLowerCase();
 }
 
-// Independent budgets for the two resolution paths. They are deliberately NOT
-// shared: a slow relay query must not consume the budget the DNS fallback needs.
-// They run sequentially, so an all-timeouts unhappy lookup is bounded at roughly
-// RELAY + DNS per attempt (then retried per the useQuery config below); the
-// common path resolves in well under a second.
 const RELAY_QUERY_TIMEOUT_MS = 8000;
 const NIP05_DNS_TIMEOUT_MS = 6000;
 
+async function resolveCandidates(candidates: string[], callerSignal: AbortSignal, queryClient: QueryClient): Promise<ProfileLookupResult | null> {
+  const signal = AbortSignal.any([callerSignal, AbortSignal.timeout(NIP05_DNS_TIMEOUT_MS)]);
+  let lastError: unknown = null;
+  for (const candidate of candidates) {
+    if (!candidate.includes('@')) continue;
+    signal.throwIfAborted();
+    try {
+      const state = queryClient.getQueryState<string | null>(nip05QueryOptions(candidate).queryKey);
+      const fresh = state?.status === 'success' && Date.now() - state.dataUpdatedAt < NIP05_STALE_TIME_MS;
+      const pubkey = fresh ? state.data : await resolveNip05ToPubkey(candidate, { signal });
+      if (pubkey) {
+        callerSignal.throwIfAborted();
+        if (!fresh) queryClient.setQueryData(nip05QueryOptions(candidate).queryKey, pubkey);
+        return { pubkey, metadata: {}, type: 'nip05' };
+      }
+    } catch (error) {
+      if (signal.aborted) throw error;
+      lastError = error;
+    }
+  }
+  if (lastError) throw lastError;
+  return null;
+}
+
 function useUniversalUserLookup(identifier: string | undefined) {
   const { nostr } = useNostr();
+  const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ['universal-user', identifier],
@@ -228,16 +250,19 @@ function useUniversalUserLookup(identifier: string | undefined) {
       }
 
       const decodedIdentifier = decodeIdentifier(identifier).trim();
+      const nip05Candidates = nip05CandidatesFromUrlSegment(decodedIdentifier);
+      const lookupRegisteredName = !isVineUserId(decodedIdentifier);
+      let dnsError: unknown = null;
+      if (lookupRegisteredName) {
+        try {
+          const resolved = await resolveCandidates(nip05Candidates, context.signal, queryClient);
+          if (resolved) return resolved;
+        } catch (error) {
+          if (context.signal.aborted) throw error;
+          dnsError = error;
+        }
+      }
 
-      // The relay kind-0 sample query and the NIP-05 DNS fallback get INDEPENDENT
-      // abort budgets. They used to share a single 10s AbortSignal, with DNS
-      // running only after the relay query settled — so a slow or failing relay
-      // query consumed the whole budget and the deterministic DNS lookup was
-      // called with an already-aborted signal (it never fired), leaving valid
-      // divine.video handles 404ing on the first try and only resolving on retry.
-      // Note: this does NOT address the unfiltered `limit: 500` sample itself,
-      // which is a separate reliability gap for legacy Vine-username links (no
-      // DNS path to recover with). Out of scope for this race fix.
       const relaySignal = AbortSignal.any([
         context.signal,
         AbortSignal.timeout(RELAY_QUERY_TIMEOUT_MS),
@@ -254,9 +279,9 @@ function useUniversalUserLookup(identifier: string | undefined) {
         // Caller navigated away — abort the whole lookup, don't mask it.
         if (context.signal.aborted) throw err;
         // Relay was slow/unavailable. Remember it so a transient failure stays
-        // retryable, but continue: the NIP-05 DNS fallback may still resolve.
+        // retryable instead of becoming a definitive not-found.
         relayError = err;
-        debugLog(`[UniversalUserPage] relay kind-0 query failed, continuing to NIP-05 DNS fallback: ${(err as Error).message}`);
+        debugLog(`[UniversalUserPage] relay kind-0 query failed: ${(err as Error).message}`);
       }
 
       if (isVineUserId(decodedIdentifier)) {
@@ -299,9 +324,8 @@ function useUniversalUserLookup(identifier: string | undefined) {
         }
       }
 
-      // NIP-05 path: expand the URL segment into the canonical NIP-05 strings we
-      // expect to find in kind-0 metadata (or resolve via NIP-05 DNS).
-      const nip05Candidates = nip05CandidatesFromUrlSegment(decodedIdentifier);
+      // NIP-05 path: no registered name resolved above, so match the canonical
+      // NIP-05 strings against declared kind-0 metadata.
       debugLog(`[UniversalUserPage] NIP-05 candidates for "${decodedIdentifier}": ${JSON.stringify(nip05Candidates)}`);
 
       const normalizedCandidates = new Set(nip05Candidates.map(c => c.toLowerCase()));
@@ -317,38 +341,7 @@ function useUniversalUserLookup(identifier: string | undefined) {
         }
       }
 
-      // DNS NIP-05 fallback. We only attempt this for candidates that contain an
-      // '@' (third-party segments with no '@' can't be resolved via DNS — they
-      // are tried against kind-0 above and reported as not-found if no match).
-      // One budget for the whole DNS phase, independent of the relay query above
-      // (so a slow relay can't starve it). We deliberately do NOT give each
-      // candidate its own timeout: candidates are in priority order (the canonical
-      // divine.video handle first), so paying N× timeouts for the rarely-useful
-      // fallback candidates isn't worth the added worst-case latency.
-      const dnsSignal = AbortSignal.any([
-        context.signal,
-        AbortSignal.timeout(NIP05_DNS_TIMEOUT_MS),
-      ]);
-      for (const candidate of nip05Candidates) {
-        if (!candidate.includes('@')) continue;
-        try {
-          const pubkey = await resolveNip05ToPubkey(candidate, { signal: dnsSignal });
-          if (pubkey) {
-            debugLog(`[UniversalUserPage] Resolved NIP-05 via DNS: ${candidate} -> ${pubkey}`);
-            return {
-              pubkey,
-              metadata: {},
-              type: 'nip05',
-            } satisfies ProfileLookupResult;
-          }
-        } catch (err) {
-          // A caller-driven abort ends the lookup; a DNS budget timeout is
-          // transient and should retry rather than become a definitive not-found.
-          if (context.signal.aborted) throw err;
-          if (dnsSignal.aborted) throw err;
-          debugLog(`[UniversalUserPage] DNS NIP-05 lookup failed for ${candidate}: ${(err as Error).message}`);
-        }
-      }
+      if (dnsError) throw dnsError;
 
       // Nothing resolved. If the relay query failed, surface that (retryable)
       // instead of a definitive not-found, so a transient relay blip can recover.
@@ -366,7 +359,8 @@ export function UniversalUserPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { data, isLoading, error } = useUniversalUserLookup(userId);
+  const lookupIdentifier = userId ? stripNip05Envelope(userId) ?? decodeIdentifier(userId).trim() : undefined;
+  const { data, isLoading, error } = useUniversalUserLookup(lookupIdentifier);
 
   useEffect(() => {
     if (!userId) return;
@@ -377,7 +371,8 @@ export function UniversalUserPage() {
   }, [userId, navigate]);
 
   if (data?.pubkey) {
-    return <ProfilePage pubkeyOverride={data.pubkey} />;
+    const initial = NSchema.metadata().safeParse(data.metadata);
+    return <ProfilePage pubkeyOverride={data.pubkey} initialMetadata={initial.success ? initial.data : undefined} />;
   }
 
   if (isLoading) {
