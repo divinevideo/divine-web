@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PagePerformanceProvider } from './PagePerformanceProvider';
 import { usePageContentReady } from '@/hooks/usePageContentReady';
@@ -125,6 +126,43 @@ it('preserves document origin through an initial canonical replace redirect', ()
   }
   render(<MemoryRouter initialEntries={['/discovery']}><PagePerformanceProvider><Canonical /></PagePerformanceProvider></MemoryRouter>);
   fireEvent.click(screen.getByRole('button', { name: 'Canonical' }));
+  expect(startSpan).toHaveBeenLastCalledWith(expect.objectContaining({
+    op: 'ui.content_ready', startTime: performance.timeOrigin / 1000,
+    attributes: expect.objectContaining({ 'navigation.type': 'pageload' }),
+  }));
+});
+
+it('does not open a fresh span on a query-only replace of a measured route', () => {
+  function SearchLike() {
+    const navigate = useNavigate();
+    usePageContentReady('ready');
+    return <button onClick={() => navigate('/search?q=updated', { replace: true })}>Refine</button>;
+  }
+  render(<MemoryRouter initialEntries={['/search?q=original']}><PagePerformanceProvider><SearchLike /></PagePerformanceProvider></MemoryRouter>);
+  act(() => vi.advanceTimersByTime(40));
+  const spanCountBefore = spans.length;
+  fireEvent.click(screen.getByRole('button', { name: 'Refine' }));
+  expect(spans).toHaveLength(spanCountBefore);
+});
+
+it('preserves document origin when the initial route is unmeasured and redirects to a measured one', () => {
+  function Nip19Redirect() {
+    const navigate = useNavigate();
+    usePageContentReady(null);
+    useEffect(() => { navigate('/profile/npub1synthetic', { replace: true }); }, [navigate]);
+    return <div>Redirecting</div>;
+  }
+  render(<MemoryRouter initialEntries={['/npub1synthetic']}><PagePerformanceProvider>
+    <Routes>
+      <Route path="/:nip19" element={<Nip19Redirect />} />
+      <Route path="/profile/:npub" element={<Profile />} />
+    </Routes>
+  </PagePerformanceProvider></MemoryRouter>);
+  function Profile() {
+    usePageContentReady('ready');
+    return <h1>Profile</h1>;
+  }
+  act(() => vi.advanceTimersByTime(40));
   expect(startSpan).toHaveBeenLastCalledWith(expect.objectContaining({
     op: 'ui.content_ready', startTime: performance.timeOrigin / 1000,
     attributes: expect.objectContaining({ 'navigation.type': 'pageload' }),
