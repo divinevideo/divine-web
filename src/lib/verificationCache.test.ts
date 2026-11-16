@@ -132,6 +132,48 @@ describe('clearVerificationCache', () => {
   });
 });
 
+describe('clearAccountVerificationCache matching', () => {
+  const OTHER = 'b'.repeat(64);
+
+  function rawEntry(platform: string, identity: string, proof: string) {
+    const key = `divine_verify_${JSON.stringify([platform, identity, proof, PUBKEY])}`;
+    localStorageMock.setItem(key, JSON.stringify({ verified: true, timestamp: Date.now() }));
+    return key;
+  }
+
+  it('keeps entries for a different identity on the same platform', () => {
+    setCachedVerification('bluesky', 'alice.bsky.social', 'oauth', PUBKEY, { verified: true });
+    setCachedVerification('bluesky', 'bob.bsky.social', 'oauth', PUBKEY, { verified: true });
+
+    clearAccountVerificationCache('bluesky', 'alice.bsky.social', PUBKEY);
+
+    expect(getCachedVerification('bluesky', 'alice.bsky.social', 'oauth', PUBKEY)).toBeNull();
+    expect(getCachedVerification('bluesky', 'bob.bsky.social', 'oauth', PUBKEY)).toEqual({ verified: true });
+  });
+
+  it('clears an entry stored under a non-canonical platform name', () => {
+    const padded = rawEntry(' X ', 'alice', 'oauth');
+    const upper = rawEntry('Twitter', 'alice', 'post1');
+    const other = rawEntry('github', 'alice', 'gist1');
+
+    clearAccountVerificationCache('twitter', 'alice', PUBKEY);
+
+    expect(localStorageMock.getItem(padded)).toBeNull();
+    expect(localStorageMock.getItem(upper)).toBeNull();
+    expect(localStorageMock.getItem(other)).not.toBeNull();
+  });
+
+  it('reads a padded, upper-case platform argument as its canonical name', () => {
+    setCachedVerification('twitter', 'alice', 'oauth', PUBKEY, { verified: true });
+    setCachedVerification('twitter', 'alice', 'oauth', OTHER, { verified: true });
+
+    clearAccountVerificationCache(' X ', 'alice', PUBKEY);
+
+    expect(getCachedVerification('twitter', 'alice', 'oauth', PUBKEY)).toBeNull();
+    expect(getCachedVerification('twitter', 'alice', 'oauth', OTHER)).toEqual({ verified: true });
+  });
+});
+
 describe('clearAccountVerificationCache', () => {
   it('clears matching platform/identity entries case-insensitively (including x as twitter) for that pubkey only', () => {
     const otherPubkey = 'b'.repeat(64);

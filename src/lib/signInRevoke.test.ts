@@ -109,6 +109,24 @@ describe('revokeSignInLink', () => {
     expect(await revokeSignInLink(REQUEST)).toEqual({ revoked: false });
   });
 
+  it('does not treat a non-2xx answer that says revoked: true as revoked', async () => {
+    mockAnswer({
+      ok: false,
+      status: 500,
+      json: async () => ({ revoked: true }),
+    });
+    expect(await revokeSignInLink(REQUEST)).toEqual({ revoked: false });
+  });
+
+  it.each([
+    ['a missing revoked field', {}],
+    ['a revoked string', { revoked: 'true' }],
+    ['a revoked number', { revoked: 1 }],
+  ])('does not treat a 200 answer with %s as revoked', async (_label, body) => {
+    mockAnswer({ ok: true, status: 200, json: async () => body });
+    expect(await revokeSignInLink(REQUEST)).toEqual({ revoked: false });
+  });
+
   it('returns revoked: false without fetching when verificationService.baseUrl is empty', async () => {
     apiState.baseUrl = '';
     global.fetch = vi.fn();
