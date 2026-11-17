@@ -133,7 +133,7 @@
     "jsdom": "^26.1.0",
     "playwright": "^1.55.0",
     "postcss": "^8.5.20",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "tailwindcss": "^3.4.11",
     "tsx": "^4.20.6",
     "typescript": "^5.5.3",
