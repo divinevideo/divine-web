@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { buildListPath, buildPeopleListPath } from '@/lib/eventRouting';
+import { matchesVideoRoute, parseVideoRouteId } from '@/lib/videoRoute';
 import { debugLog } from '@/lib/debug';
 import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
@@ -84,10 +85,18 @@ export function VideoPage() {
   const [playedVideoId, setPlayedVideoId] = useState<string | null>(null);
   const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
+  // An author-named route (`kind:pubkey:d`, from an naddr1) resolves only that
+  // author's video; a bare event id or d tag resolves as before.
+  const { lookupId, address: routeAddress } = useMemo(() => parseVideoRouteId(id || ''), [id]);
+  const routeAuthor = routeAddress?.pubkey;
+  const isRouteVideo = useCallback(
+    (video: ParsedVideoData) => matchesVideoRoute(video, lookupId, routeAuthor),
+    [lookupId, routeAuthor],
+  );
   const [searchParams] = useSearchParams();
   const navigate = useSubdomainNavigate();
   const { shouldHideVideo } = useAgeRestrictedPreference();
-  const isVideoVisible = useCallback((video: ParsedVideoData) => video.id === id || video.vineId === id || !shouldHideVideo(video), [id, shouldHideVideo]);
+  const isVideoVisible = useCallback((video: ParsedVideoData) => isRouteVideo(video) || !shouldHideVideo(video), [isRouteVideo, shouldHideVideo]);
 
   // Parse navigation context from URL params
   const context: VideoNavigationContext | null = useMemo(() => {
@@ -109,7 +118,8 @@ export function VideoPage() {
     isLoading: funnelcakeLoading,
     error: funnelcakeError,
   } = useVideoByIdFunnelcake({
-    videoId: id || '',
+    videoId: lookupId,
+    author: routeAuthor,
     pubkey: profileContextPubkey,
     hashtag: context?.source === 'hashtag' ? context.hashtag : undefined,
     query: context?.source === 'search' ? context.query : undefined,
@@ -141,9 +151,10 @@ export function VideoPage() {
     goToNext: _wsGoToNext,
     goToPrevious: _wsGoToPrevious,
     isLoading: wsLoading,
-  } = useVideoNavigation(id || '', {
+  } = useVideoNavigation(lookupId, {
     enabled: shouldEnableWebsocketNavigation,
     context: effectiveNavigationContext,
+    address: routeAddress,
   });
 
   // ALWAYS prefer Funnelcake REST API first - it's much faster
@@ -156,8 +167,8 @@ export function VideoPage() {
   // Calculate navigation state from available videos
   const currentIndex = useMemo(() => {
     if (!videos || !id) return -1;
-    return videos.findIndex(v => v.id === id || v.vineId === id);
-  }, [videos, id]);
+    return videos.findIndex(isRouteVideo);
+  }, [videos, id, isRouteVideo]);
   const navigationIndexBase = videos === funnelcakeVideos ? funnelcakeWindowOffset : 0;
 
   const isUsingFunnelcakeVideos = videos === funnelcakeVideos;

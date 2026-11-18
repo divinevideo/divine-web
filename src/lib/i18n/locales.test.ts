@@ -200,6 +200,7 @@ const MUST_BE_TRANSLATED_PREFIXES = [
   'linkedAccountsSettings.proofInstructions.',
   'linkedAccountsSettings.discordUsernameLabel',
   'linkedAccountsSettings.toastInvalidDiscordLink',
+  'linkedAccountsSettings.toastSignInNotCleared',
 ];
 
 describe('i18n locale resources', () => {

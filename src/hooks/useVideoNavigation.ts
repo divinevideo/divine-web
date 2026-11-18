@@ -8,6 +8,8 @@ import { usePeopleList } from '@/hooks/usePeopleLists';
 import { usePeopleListVideos } from '@/hooks/usePeopleListVideos';
 import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
 import { filterBlockedVideos } from '@/lib/blocklistFilter';
+import { matchesVideoRoute } from '@/lib/videoRoute';
+import type { AddressableCoordinate } from '@/lib/nostrCoordinates';
 import type { ParsedVideoData } from '@/types/video';
 import type { SortMode } from '@/types/nostr';
 
@@ -39,12 +41,18 @@ interface VideoNavigationHook {
 interface UseVideoNavigationOptions {
   enabled?: boolean;
   context?: VideoNavigationContext | null;
+  /**
+   * The author and `d` tag an author-named route names. Without a feed
+   * context, the video is then looked up by author and `d` tag instead of by
+   * event id, and only that author's video counts as the current one.
+   */
+  address?: AddressableCoordinate | null;
 }
 
 export function useVideoNavigation(videoId: string, options: UseVideoNavigationOptions = {}): VideoNavigationHook {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { enabled = true, context: contextOverride } = options;
+  const { enabled = true, context: contextOverride, address } = options;
 
   // Parse navigation context from URL params
   const parsedContext: VideoNavigationContext | null = useMemo(() => {
@@ -97,7 +105,9 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
       limit: 50, // Get enough videos for navigation
       enabled,
     } : {
-      filter: { ids: [videoId] },
+      filter: address
+        ? { kinds: [address.kind], authors: [address.pubkey], '#d': [address.dTag] }
+        : { ids: [videoId] },
       limit: 1,
       feedType: 'discovery',
       enabled: enabled && !isPeopleListContext,
@@ -116,12 +126,14 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
   const { currentVideo, currentIndex } = useMemo(() => {
     if (!videos) return { currentVideo: null, currentIndex: -1 };
 
-    const index = videos.findIndex(video => video.id === videoId);
+    const index = videos.findIndex(video => address
+      ? matchesVideoRoute(video, address.dTag, address.pubkey)
+      : video.id === videoId);
     return {
       currentVideo: index >= 0 ? videos[index] : null,
       currentIndex: index,
     };
-  }, [videos, videoId]);
+  }, [videos, videoId, address]);
 
   // Navigation helpers
   const hasNext = currentIndex >= 0 && currentIndex < (videos?.length || 0) - 1;

@@ -15,12 +15,19 @@ import { FEED_PAGE_SIZE } from '@/config/feed';
 import { filterBlockedVideoPages } from '@/lib/blocklistFilter';
 import { debugLog } from '@/lib/debug';
 import { videoAddress } from '@/lib/videoAddress';
+import { matchesVideoRoute } from '@/lib/videoRoute';
 import type { ParsedVideoData } from '@/types/video';
 import type { SortMode } from '@/types/nostr';
 import type { ResolvedFeaturedTab } from '@/types/featuredTabs';
 
 interface UseVideoByIdOptions {
   videoId: string;
+  /**
+   * Author the link names (an `naddr1` or a `kind:pubkey:d` route). When set,
+   * `videoId` is a `d` tag and only that author's video with it is accepted;
+   * `/api/videos/{id}` matches a `d` tag across every account.
+   */
+  author?: string;
   pubkey?: string;   // Optional pubkey for profile context
   hashtag?: string;  // Optional hashtag for hashtag feed context
   query?: string;    // Optional search query for bounded search navigation
@@ -43,6 +50,37 @@ interface UseVideoByIdResult {
   fetchNextPage: () => Promise<ParsedVideoData[] | null>;
   isLoading: boolean;
   error: Error | null;
+}
+
+/** How many of an author's newest videos to scan, as fetchVideoById's own author-list step does. */
+const AUTHOR_VIDEO_SCAN_LIMIT = 50;
+
+/**
+ * Find `author`'s video with d tag `dTag` among their newest videos. A failed
+ * request returns null, so the page falls back to the relay, which queries by
+ * author and d tag; an abort still propagates.
+ */
+async function fetchAuthorVideoByDTag(
+  apiUrl: string,
+  author: string,
+  dTag: string,
+  signal: AbortSignal,
+): Promise<ParsedVideoData | null> {
+  try {
+    const { videos } = await fetchUserVideos(apiUrl, author, { limit: AUTHOR_VIDEO_SCAN_LIMIT, signal });
+    // The list can hold another account's entry with the same d tag (a
+    // repost, say), so match the author and d tag together.
+    for (const raw of videos) {
+      if (raw.d_tag !== dTag) continue;
+      const video = transformFunnelcakeVideo(raw);
+      if (video && matchesVideoRoute(video, dTag, author)) return video;
+    }
+    return null;
+  } catch (err) {
+    if (signal.aborted) throw err;
+    debugLog(`[useVideoByIdFunnelcake] Could not read the video list of ${author}; leaving ${dTag} to the relay`, err);
+    return null;
+  }
 }
 
 const NAVIGATION_WINDOW_SIZE = 16;
@@ -177,7 +215,8 @@ async function fetchVisiblePagePastBlocked(
  * The single video lookup is faster than WebSocket queries.
  */
 export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoByIdResult {
-  const { videoId, pubkey, hashtag, query, featuredTabId, sortMode = 'relevance', currentIndex, enabled = true, isVideoVisible } = options;
+  const { videoId, author, pubkey, hashtag, query, featuredTabId, sortMode = 'relevance', currentIndex, enabled = true, isVideoVisible } = options;
+  const isTarget = (video: ParsedVideoData) => matchesVideoRoute(video, videoId, author);
   const { config } = useAppContext();
   const blockedPubkeys = useFeedBlocklist();
   const windowOffset = getNavigationWindowOffset(currentIndex);
@@ -318,7 +357,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
     () => flattenUniqueVideos(filteredFeaturedVideosData?.pages),
     [filteredFeaturedVideosData]
   );
-  const featuredContextVideo = featuredVideos?.find(v => v.id === videoId || v.vineId === videoId) || null;
+  const featuredContextVideo = featuredVideos?.find(isTarget) || null;
   const hasEnoughFeaturedNeighbors = currentIndex === undefined || currentIndex < 0
     ? Boolean(featuredContextVideo)
     : Boolean(featuredVideos && featuredVideos.length > currentIndex + 1);
@@ -347,7 +386,7 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
   ]);
 
   const contextVideos = userVideos ?? hashtagVideos ?? searchVideosForContext ?? featuredVideos ?? null;
-  const contextVideo = contextVideos?.find(v => v.id === videoId || v.vineId === videoId) || null;
+  const contextVideo = contextVideos?.find(isTarget) || null;
   let contextLoading = false;
   if (pubkey) {
     contextLoading = userVideosQuery.isLoading;
@@ -376,13 +415,23 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
   // Direct video links are addressable Nostr events. Feed/profile navigation is
   // filtered, but the detail fallback intentionally stays unfiltered.
   const singleVideoQuery = useQuery({
-    queryKey: ['funnelcake-video', videoId, funnelcakeUrl],
+    // The author is part of the key so an author-held lookup never reuses a
+    // bare lookup's cached answer, which can be another account's video.
+    queryKey: author
+      ? ['funnelcake-video', videoId, funnelcakeUrl, author]
+      : ['funnelcake-video', videoId, funnelcakeUrl],
     queryFn: async ({ signal }) => {
-      debugLog(`[useVideoByIdFunnelcake] Fetching single video ${videoId}`);
-      const video = await fetchVideoById(funnelcakeUrl, videoId, pubkey, signal);
+      debugLog(`[useVideoByIdFunnelcake] Fetching single video ${videoId}${author ? ` by ${author}` : ''}`);
+      // With an author named, no pubkey goes to fetchVideoById: its own
+      // author-list step matches a d tag from any account, and
+      // fetchAuthorVideoByDTag below scans that list holding the author.
+      const raw = await fetchVideoById(funnelcakeUrl, videoId, author ? undefined : pubkey, signal);
 
-      if (!video) return null;
-      return transformFunnelcakeVideo(video);
+      const video = raw ? transformFunnelcakeVideo(raw) : null;
+      if (!author || (video && isTarget(video))) return video;
+      // `/api/videos/{d}` found nothing, or answered with another account's
+      // video for a shared d tag.
+      return fetchAuthorVideoByDTag(funnelcakeUrl, author, videoId, signal);
     },
     // Fall back to a direct lookup when the narrowed context window misses the target.
     enabled: shouldLookupSingleVideo,

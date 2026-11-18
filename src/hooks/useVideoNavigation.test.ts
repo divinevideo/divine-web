@@ -97,4 +97,55 @@ describe('useVideoNavigation', () => {
     expect(result.current.videos?.map((video) => video.id)).toEqual(['video-1', 'video-2']);
     expect(result.current.hasNext).toBe(true);
   });
+
+  describe('with an author-named video address', () => {
+    const author = 'a'.repeat(64);
+    const sharedDTag = 'c'.repeat(64);
+    const address = { kind: 34236, pubkey: author, dTag: sharedDTag };
+
+    it('looks the video up by its author and d tag instead of by event id', () => {
+      renderHook(
+        () => useVideoNavigation(sharedDTag, { address }),
+        { wrapper: createWrapper(`/video/34236:${author}:${sharedDTag}`) }
+      );
+
+      expect(mockUseVideoEvents).toHaveBeenCalledWith({
+        filter: { kinds: [34236], authors: [author], '#d': [sharedDTag] },
+        limit: 1,
+        feedType: 'discovery',
+        enabled: true,
+      });
+    });
+
+    it("picks the named author's video and never another author's with the same d tag", () => {
+      mockUseVideoEvents.mockReturnValue({
+        data: [
+          { id: 'other-event', pubkey: 'b'.repeat(64), vineId: sharedDTag },
+          { id: 'author-event', pubkey: author, vineId: sharedDTag },
+        ],
+        isLoading: false,
+      });
+
+      const { result } = renderHook(
+        () => useVideoNavigation(sharedDTag, { address }),
+        { wrapper: createWrapper(`/video/34236:${author}:${sharedDTag}`) }
+      );
+
+      expect(result.current.currentVideo?.id).toBe('author-event');
+    });
+
+    it("finds nothing when only another author's video carries the d tag", () => {
+      mockUseVideoEvents.mockReturnValue({
+        data: [{ id: 'other-event', pubkey: 'b'.repeat(64), vineId: sharedDTag }],
+        isLoading: false,
+      });
+
+      const { result } = renderHook(
+        () => useVideoNavigation(sharedDTag, { address }),
+        { wrapper: createWrapper(`/video/34236:${author}:${sharedDTag}`) }
+      );
+
+      expect(result.current.currentVideo).toBeNull();
+    });
+  });
 });

@@ -12,7 +12,7 @@ export function PrivacyPage() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <ZendeskWidget />
         <h1 className="text-4xl font-extrabold mb-4">{t('privacyPage.title')}</h1>
-        <p className="text-muted-foreground mb-8">{t('privacyPage.lastUpdated', { date: 'August 17, 2026' })}</p>
+        <p className="text-muted-foreground mb-8">{t('privacyPage.lastUpdated', { date: 'November 5, 2026' })}</p>
 
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           {/* 1. Overview */}
@@ -124,6 +124,17 @@ export function PrivacyPage() {
               This information is used to deliver updates, diagnose update failures, and produce aggregated update
               and active-install analytics. The installation identifier is not an advertising identifier and is
               not used for advertising or cross-app tracking.
+            </p>
+            <p className="mb-3">
+              When you're signed in, the app tells Divine when you open and close it, and checks in once a
+              minute while it's open. We use this only to time notifications. Whether the app is open right
+              now is kept for three minutes. Each app session's latest check-in, including when it happened,
+              its last reported open or closed state, and visit and sequence numbers, is kept for seven days.
+              Visit-related notification state for your account is kept until 90 days after its last accepted
+              check-in. It isn't shown to anyone.
+            </p>
+            <p className="mb-3">
+              The notification activity disclosure in Section 4 is effective November 5, 2026.
             </p>
             <p className="mb-3">
               We may also collect and generate information for safety and moderation purposes, including reports,

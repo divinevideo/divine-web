@@ -7,8 +7,9 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import LinkedAccountsSettingsPage from './LinkedAccountsSettingsPage';
 
-const { mockAdd, mockToast, existing } = vi.hoisted(() => ({
+const { mockAdd, mockRemove, mockToast, existing } = vi.hoisted(() => ({
   mockAdd: vi.fn().mockResolvedValue(undefined),
+  mockRemove: vi.fn(),
   mockToast: vi.fn(),
   existing: { identities: [] as Array<Record<string, string>> },
 }));
@@ -27,7 +28,7 @@ vi.mock('@/hooks/useToast', () => ({
 
 vi.mock('@/hooks/usePublishIdentity', () => ({
   useAddIdentity: () => ({ mutateAsync: mockAdd, isPending: false }),
-  useRemoveIdentity: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useRemoveIdentity: () => ({ mutateAsync: mockRemove, isPending: false }),
 }));
 
 vi.mock('@/hooks/useExternalIdentities', async (importOriginal) => {
@@ -38,11 +39,6 @@ vi.mock('@/hooks/useExternalIdentities', async (importOriginal) => {
     useExternalIdentities: () => ({ data: existing.identities, isLoading: false }),
     verifyIdentityClaim: vi.fn().mockResolvedValue({ verified: true }),
   };
-});
-
-// Every test starts with no linked accounts unless it sets some.
-beforeEach(() => {
-  existing.identities = [];
 });
 
 const MESSAGE_LINK =
@@ -60,11 +56,15 @@ async function selectDiscord(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByText('Discord'));
 }
 
-describe('LinkedAccountsSettingsPage Discord flow', () => {
-  beforeEach(() => {
-    mockAdd.mockClear();
-  });
+// Every test starts with no linked accounts unless it sets some.
+beforeEach(() => {
+  existing.identities = [];
+  mockAdd.mockClear();
+  mockRemove.mockReset();
+  mockToast.mockClear();
+});
 
+describe('LinkedAccountsSettingsPage Discord flow', () => {
   it('publishes the typed username, not the pasted link, as the identity', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -141,11 +141,6 @@ function linkButton() {
 }
 
 describe('LinkedAccountsSettingsPage YouTube flow', () => {
-  beforeEach(() => {
-    mockAdd.mockClear();
-    mockToast.mockClear();
-  });
-
   function existingYouTube(identity: string, proof: string) {
     existing.identities = [{
       platform: 'youtube',
@@ -266,5 +261,48 @@ describe('LinkedAccountsSettingsPage YouTube flow', () => {
     await user.type(screen.getByPlaceholderText(VIDEO_LINK), `https://www.youtube.com/channel/${CHANNEL_ID}`);
 
     expect(channelField()).toHaveValue(CHANNEL_ID);
+  });
+});
+
+const BLUESKY_ROW = {
+  platform: 'bluesky',
+  identity: 'alice.bsky.social',
+  proof: 'oauth',
+  profileUrl: '',
+  proofUrl: '',
+};
+
+describe('LinkedAccountsSettingsPage unlinking', () => {
+  it('warns when the sign-in record could not be cleared, and keeps the removal', async () => {
+    const user = userEvent.setup();
+    existing.identities = [BLUESKY_ROW];
+    mockRemove.mockResolvedValueOnce({ event: {}, signIn: { revoked: false, code: 'unlink_claim_listed' } });
+    renderPage();
+
+    await user.click(screen.getByTitle('linkedAccountsSettings.removeTooltip'));
+
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith({
+      title: 'linkedAccountsSettings.toastRemovedTitle',
+      description: 'linkedAccountsSettings.toastSignInNotCleared',
+    }));
+    expect(mockToast).not.toHaveBeenCalledWith(expect.objectContaining({ variant: 'destructive' }));
+    expect(mockRemove).toHaveBeenCalledWith({ platform: 'bluesky', identity: 'alice.bsky.social' });
+  });
+
+  it.each([
+    ['the record was cleared', { revoked: true }],
+    ['the platform has no sign-in', null],
+  ])('confirms a plain unlink when %s', async (_label, signIn) => {
+    const user = userEvent.setup();
+    existing.identities = [BLUESKY_ROW];
+    mockRemove.mockResolvedValueOnce({ event: {}, signIn });
+    renderPage();
+
+    await user.click(screen.getByTitle('linkedAccountsSettings.removeTooltip'));
+
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith({
+      title: 'linkedAccountsSettings.toastRemovedTitle',
+      description: 'linkedAccountsSettings.toastAccountUnlinked',
+    }));
   });
 });

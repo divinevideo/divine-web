@@ -32,6 +32,19 @@ export function parseAddressableCoordinate(value: string): AddressableCoordinate
   return { kind, pubkey, dTag };
 }
 
+const COORDINATE_PREFIX = /^(\d+):([0-9a-f]{64}):/i;
+
+/**
+ * Parse a `kind:pubkey:d` coordinate whose `d` tag may be empty, as an naddr1
+ * with an empty identifier encodes. Use it to decide whether a value names an
+ * author at all; `parseAddressableCoordinate` rejects the empty `d` tag.
+ */
+export function parseCoordinateWithOptionalDTag(value: string): AddressableCoordinate | null {
+  const match = COORDINATE_PREFIX.exec(value);
+  if (!match) return null;
+  return { kind: Number(match[1]), pubkey: match[2], dTag: value.slice(match[0].length) };
+}
+
 export function isHex64(value: string): boolean {
   return HEX64.test(value);
 }

@@ -183,6 +183,30 @@ describe('functions/[[path]]', () => {
     expect(await response.text()).toBe('Video not found');
   });
 
+  it.each([
+    ['a d tag', `34236:${'a'.repeat(64)}:${'c'.repeat(64)}`],
+    ['an empty d tag', `34236:${'a'.repeat(64)}:`],
+    ['percent-encoded separators', `34236%3A${'a'.repeat(64)}%3A${'c'.repeat(64)}`],
+  ])('serves the generic shell for an author-named video route with %s, without a d-tag lookup', async (_label, route) => {
+    // `/api/videos/{id}` would read the whole coordinate as one d tag, which
+    // can name a different video than the coordinate's author and d tag.
+    const fetchMock = vi.mocked(fetch);
+
+    const response = await onRequest({
+      request: new Request(`https://divine.video/video/${route}`),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain(`<title>${SHELL_TITLE}</title>`);
+    expect(html).not.toContain('application/json+oembed');
+    const requested = fetchMock.mock.calls.map(([input]) => String(input instanceof Request ? input.url : input));
+    expect(requested.some(url => url.includes('/api/videos/'))).toBe(false);
+  });
+
   it('falls back to the generic shell when video metadata is unavailable', async () => {
     const response = await onRequest({
       request: new Request('https://divine.video/video/missing'),
