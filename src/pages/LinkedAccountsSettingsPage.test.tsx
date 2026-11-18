@@ -7,11 +7,11 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import LinkedAccountsSettingsPage from './LinkedAccountsSettingsPage';
 
-const { mockAdd, mockRemove, mockToast, existing } = vi.hoisted(() => ({
+const { mockAdd, mockRemove, mockToast, state } = vi.hoisted(() => ({
   mockAdd: vi.fn().mockResolvedValue(undefined),
   mockRemove: vi.fn(),
   mockToast: vi.fn(),
-  existing: { identities: [] as Array<Record<string, string>> },
+  state: { identities: [] as unknown[] },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -36,7 +36,7 @@ vi.mock('@/hooks/useExternalIdentities', async (importOriginal) => {
     await importOriginal<typeof import('@/hooks/useExternalIdentities')>();
   return {
     ...actual,
-    useExternalIdentities: () => ({ data: existing.identities, isLoading: false }),
+    useExternalIdentities: () => ({ data: state.identities, isLoading: false }),
     verifyIdentityClaim: vi.fn().mockResolvedValue({ verified: true }),
   };
 });
@@ -58,7 +58,7 @@ async function selectDiscord(user: ReturnType<typeof userEvent.setup>) {
 
 // Every test starts with no linked accounts unless it sets some.
 beforeEach(() => {
-  existing.identities = [];
+  state.identities = [];
   mockAdd.mockClear();
   mockRemove.mockReset();
   mockToast.mockClear();
@@ -142,7 +142,7 @@ function linkButton() {
 
 describe('LinkedAccountsSettingsPage YouTube flow', () => {
   function existingYouTube(identity: string, proof: string) {
-    existing.identities = [{
+    state.identities = [{
       platform: 'youtube',
       identity,
       proof,
@@ -275,7 +275,7 @@ const BLUESKY_ROW = {
 describe('LinkedAccountsSettingsPage unlinking', () => {
   it('warns when the sign-in record could not be cleared, and keeps the removal', async () => {
     const user = userEvent.setup();
-    existing.identities = [BLUESKY_ROW];
+    state.identities = [BLUESKY_ROW];
     mockRemove.mockResolvedValueOnce({ event: {}, signIn: { revoked: false, code: 'unlink_claim_listed' } });
     renderPage();
 
@@ -294,7 +294,7 @@ describe('LinkedAccountsSettingsPage unlinking', () => {
     ['the platform has no sign-in', null],
   ])('confirms a plain unlink when %s', async (_label, signIn) => {
     const user = userEvent.setup();
-    existing.identities = [BLUESKY_ROW];
+    state.identities = [BLUESKY_ROW];
     mockRemove.mockResolvedValueOnce({ event: {}, signIn });
     renderPage();
 
