@@ -45,6 +45,15 @@ export function useNip05Validation(
         return false;
       }
 
+      // NIP-05: the local part MUST only use a-z0-9-_. (case is ignored here so
+      // existing mixed-case names keep validating). Anything else, such as a
+      // second '@', lets the claimed domain vouch for a name that reads like
+      // someone else's handle once it is shown as @<nip05>.
+      if (!/^[a-z0-9._-]+$/i.test(name)) {
+        debugLog(`[useNip05Validation] Invalid NIP-05 local part: ${nip05}`);
+        return false;
+      }
+
       try {
         const url = `https://${domain}/.well-known/nostr.json?name=${encodeURIComponent(name)}`;
         debugLog(`[useNip05Validation] Fetching: ${url}`);

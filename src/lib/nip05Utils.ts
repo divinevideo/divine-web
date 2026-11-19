@@ -55,3 +55,16 @@ export function getDivineNip05Info(nip05: string): { displayName: string; href: 
 
   return null;
 }
+
+/**
+ * Format any NIP-05 as an @-handle label.
+ *
+ * _@alice.divine.video → '@alice.divine.video'
+ * alice@example.com    → '@alice@example.com'
+ * _@example.com        → '@example.com'
+ */
+export function formatNip05Label(nip05: string): string {
+  const divineInfo = getDivineNip05Info(nip05);
+  if (divineInfo) return divineInfo.displayName;
+  return nip05.startsWith('_@') ? `@${nip05.slice(2)}` : `@${nip05}`;
+}
