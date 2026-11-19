@@ -32,8 +32,9 @@ afterEach(() => {
 });
 
 describe('useNip05Validation', () => {
+  // Every character NIP-05 allows validates, including the `_` of `_@alice.divine.video`.
   // Mixed-case local parts predate the NIP-05 charset check and keep validating.
-  it.each(['alice', 'Alice'])('validates %s, which the domain maps to this pubkey', async (name) => {
+  it.each(['alice', 'Alice', '_', 'a.b-c_d'])('validates %s, which the domain maps to this pubkey', async (name) => {
     serve({ [name]: PUBKEY });
     const { result } = renderHook(() => useNip05Validation(`${name}@example.com`, PUBKEY), { wrapper });
     await waitFor(() => expect(result.current.state).toBe('valid'));
