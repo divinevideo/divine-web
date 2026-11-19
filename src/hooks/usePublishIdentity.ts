@@ -91,11 +91,19 @@ export function useAddIdentity() {
   const { data: existingIdentities = [] } = useExternalIdentities(user?.pubkey);
 
   return useMutation({
-    mutationFn: async ({ platform, identity, proof }: { platform: string; identity: string; proof: string }) => {
+    mutationFn: async ({ platform, identity, proof, replaces }: {
+      platform: string;
+      identity: string;
+      proof: string;
+      /** The row being edited; dropped in the same publish so a changed identity does not leave the old row behind. */
+      replaces?: { platform: string; identity: string };
+    }) => {
       const targetPlatform = canonicalPlatform(platform);
-      // Build tags: keep existing, add new
+      const replacedPlatform = replaces && canonicalPlatform(replaces.platform);
+      // Build tags: keep existing except the edited row, add new
       const tags = existingIdentities
         .filter((id) => !(id.platform === targetPlatform && id.identity === identity))
+        .filter((id) => !(replaces && id.platform === replacedPlatform && id.identity === replaces.identity))
         .map((id) => ['i', `${id.platform}:${id.identity}`, id.proof]);
 
       tags.push(['i', `${targetPlatform}:${identity}`, proof]);

@@ -175,6 +175,24 @@ describe('LinkedAccountsSettingsPage YouTube flow', () => {
     expect(channelField()).toHaveValue(CHANNEL_ID);
   });
 
+  it('replaces the edited entry when an update changes its channel', async () => {
+    existingYouTube('dQw4w9WgXcQ', 'dQw4w9WgXcQ');
+    const user = userEvent.setup();
+    renderPage();
+    await editFirst(user);
+
+    await user.type(channelField(), 'alice');
+    await user.click(screen.getByRole('button', { name: /linkedAccountsSettings.updateAccountButton/i }));
+
+    await waitFor(() => expect(mockAdd).toHaveBeenCalledTimes(1));
+    expect(mockAdd).toHaveBeenCalledWith({
+      platform: 'youtube',
+      identity: '@alice',
+      proof: 'dQw4w9WgXcQ',
+      replaces: { platform: 'youtube', identity: 'dQw4w9WgXcQ' },
+    });
+  });
+
   it('publishes what the channel field shows, even after a channel link was pasted', async () => {
     const user = userEvent.setup();
     renderPage();

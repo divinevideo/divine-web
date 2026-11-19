@@ -187,6 +187,69 @@ describe('useAddIdentity', () => {
     expect(mockSignEvent.mock.calls[0][0].tags).toEqual([['i', 'twitter:alice', 'new-proof']]);
   });
 
+  async function setupExisting(tags: string[][]) {
+    mockNostrQuery.mockResolvedValue([{
+      kind: 10011,
+      pubkey: TEST_PUBKEY,
+      created_at: 1700000000,
+      tags,
+      content: '',
+      id: 'event1',
+      sig: 'sig1',
+    }]);
+    const hook = renderHook(() => useAddIdentity(), { wrapper: createWrapper() });
+    await waitFor(() => expect(mockNostrQuery).toHaveBeenCalled());
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    return hook;
+  }
+
+  it('drops the edited row when an edit changes its identity, keeping other rows', async () => {
+    const { result } = await setupExisting([
+      ['i', 'github:alice', 'proof1'],
+      ['i', 'youtube:dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
+      ['i', 'youtube:@carol', 'xyz987'],
+    ]);
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        platform: 'youtube',
+        identity: '@alice',
+        proof: 'dQw4w9WgXcQ',
+        replaces: { platform: 'youtube', identity: 'dQw4w9WgXcQ' },
+      });
+    });
+
+    expect(mockSignEvent).toHaveBeenCalledTimes(1);
+    expect(mockSignEvent.mock.calls[0][0].tags).toEqual([
+      ['i', 'github:alice', 'proof1'],
+      ['i', 'youtube:@carol', 'xyz987'],
+      ['i', 'youtube:@alice', 'dQw4w9WgXcQ'],
+    ]);
+  });
+
+  it('keeps every other row when adding without replacing one', async () => {
+    const { result } = await setupExisting([
+      ['i', 'github:alice', 'proof1'],
+      ['i', 'youtube:dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
+    ]);
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        platform: 'youtube',
+        identity: '@alice',
+        proof: 'dQw4w9WgXcQ',
+      });
+    });
+
+    expect(mockSignEvent.mock.calls[0][0].tags).toEqual([
+      ['i', 'github:alice', 'proof1'],
+      ['i', 'youtube:dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
+      ['i', 'youtube:@alice', 'dQw4w9WgXcQ'],
+    ]);
+  });
+
   it('clears stale cached verification for an added or updated account', async () => {
     setCachedVerification('twitter', 'alice', 'new-proof', TEST_PUBKEY, {
       verified: false,

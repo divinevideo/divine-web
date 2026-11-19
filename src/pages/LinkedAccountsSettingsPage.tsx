@@ -443,7 +443,16 @@ export default function LinkedAccountsSettingsPage() {
         toast({ title: t('linkedAccountsSettings.toastErrorTitle'), description, variant: 'destructive' });
         return;
       }
-      await addIdentity.mutateAsync({ platform, identity: cleanIdentity, proof: cleanProof });
+      // An update can change the identity (an older YouTube entry is saved
+      // under its channel now), so name the edited row for the hook to drop.
+      await addIdentity.mutateAsync({
+        platform,
+        identity: cleanIdentity,
+        proof: cleanProof,
+        replaces: editingIdentity
+          ? { platform: editingIdentity.platform, identity: editingIdentity.identity }
+          : undefined,
+      });
       const isEditing = !!editingIdentity;
       const platformLabel = selectedConfig?.label ?? platform;
 
