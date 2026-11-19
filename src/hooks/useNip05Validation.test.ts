@@ -32,12 +32,13 @@ afterEach(() => {
 });
 
 describe('useNip05Validation', () => {
-  it('validates a name the domain maps to this pubkey', async () => {
-    serve({ alice: PUBKEY });
-    const { result } = renderHook(() => useNip05Validation('alice@example.com', PUBKEY), { wrapper });
+  // Mixed-case local parts predate the NIP-05 charset check and keep validating.
+  it.each(['alice', 'Alice'])('validates %s, which the domain maps to this pubkey', async (name) => {
+    serve({ [name]: PUBKEY });
+    const { result } = renderHook(() => useNip05Validation(`${name}@example.com`, PUBKEY), { wrapper });
     await waitFor(() => expect(result.current.state).toBe('valid'));
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://example.com/.well-known/nostr.json?name=alice',
+      `https://example.com/.well-known/nostr.json?name=${name}`,
       expect.anything(),
     );
   });
