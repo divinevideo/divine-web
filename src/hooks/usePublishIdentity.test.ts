@@ -44,32 +44,37 @@ vi.mock('@/lib/signInRevoke', async (importOriginal) => ({
 import { useAddIdentity, useRemoveIdentity } from './usePublishIdentity';
 import { getCachedVerification, setCachedVerification } from '@/lib/verificationCache';
 
-function createWrapper() {
-  const queryClient = new QueryClient({
+function newClient() {
+  return new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   });
+}
+
+function createWrapper(queryClient: QueryClient = newClient()) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return React.createElement(QueryClientProvider, { client: queryClient }, children);
   };
 }
 
+// No existing identities; the signer signs as the user and the relay accepts.
+function resetAddMocks() {
+  vi.resetAllMocks();
+  window.localStorage.clear();
+  mockNostrQuery.mockResolvedValue([]);
+  mockSignEvent.mockImplementation(async (event: Record<string, unknown>) => ({
+    ...event,
+    id: 'signed-event-id',
+    pubkey: TEST_PUBKEY,
+    sig: 'test-sig',
+  }));
+  mockNostrEvent.mockResolvedValue(undefined);
+}
+
 describe('useAddIdentity', () => {
-  beforeEach(() => {
-    vi.resetAllMocks();
-    window.localStorage.clear();
-    // Default: no existing identities
-    mockNostrQuery.mockResolvedValue([]);
-    mockSignEvent.mockImplementation(async (event: Record<string, unknown>) => ({
-      ...event,
-      id: 'signed-event-id',
-      pubkey: TEST_PUBKEY,
-      sig: 'test-sig',
-    }));
-    mockNostrEvent.mockResolvedValue(undefined);
-  });
+  beforeEach(resetAddMocks);
 
   it('publishes kind 10011 event with identity tag', async () => {
     const { result } = renderHook(
@@ -210,6 +215,65 @@ describe('useAddIdentity', () => {
   });
 });
 
+describe('useAddIdentity list timestamp', () => {
+  const CREATED_AT_KEY = ['external-identities-created-at', TEST_PUBKEY];
+  let client: QueryClient;
+
+  beforeEach(() => {
+    resetAddMocks();
+    client = newClient();
+  });
+
+  async function addAt(nowMs: number, previous?: number) {
+    if (previous !== undefined) client.setQueryData(CREATED_AT_KEY, previous);
+    const dateNow = vi.spyOn(Date, 'now').mockReturnValue(nowMs);
+    try {
+      const { result } = renderHook(() => useAddIdentity(), { wrapper: createWrapper(client) });
+      let event!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
+      await act(async () => {
+        event = await result.current.mutateAsync({ platform: 'github', identity: 'alice', proof: 'p' });
+      });
+      return event;
+    } finally {
+      dateNow.mockRestore();
+    }
+  }
+
+  it('records the published list timestamp for the next publish to build on', async () => {
+    const nowMs = 1_800_000_000_000;
+    const event = await addAt(nowMs);
+
+    expect(event.created_at).toBe(nowMs / 1000);
+    expect(client.getQueryData(CREATED_AT_KEY)).toBe(event.created_at);
+  });
+
+  it('leaves the recorded timestamp alone when the publish fails', async () => {
+    const nowMs = 1_800_000_000_000;
+    const previous = nowMs / 1000 - 60;
+    mockNostrEvent.mockRejectedValue(new Error('relay'));
+
+    await expect(addAt(nowMs, previous)).rejects.toThrow('relay');
+
+    expect(client.getQueryData(CREATED_AT_KEY)).toBe(previous);
+  });
+
+  it('dates a predecessor 599 seconds ahead one second later', async () => {
+    const nowMs = 1_800_000_000_000;
+    const now = nowMs / 1000;
+    const event = await addAt(nowMs, now + 599);
+
+    expect(event.created_at).toBe(now + 600);
+  });
+
+  it('does not build on a predecessor exactly 600 seconds ahead (the verifier window edge)', async () => {
+    const nowMs = 1_800_000_000_000;
+    const now = nowMs / 1000;
+    const event = await addAt(nowMs, now + 600);
+
+    expect(event.created_at).toBe(now);
+  });
+});
+
 describe('useRemoveIdentity', () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -259,6 +323,32 @@ describe('useRemoveIdentity', () => {
     // Should publish with only the twitter identity remaining
     const signedArgs = mockSignEvent.mock.calls[0][0];
     expect(signedArgs.tags).toEqual([['i', 'twitter:alice', 'proof2']]);
+  });
+
+  it('removes a row whose platform is space-padded in the published list', async () => {
+    mockNostrQuery.mockResolvedValue([{
+      kind: 10011,
+      pubkey: TEST_PUBKEY,
+      created_at: 1700000000,
+      tags: [
+        ['i', ' github :alice', 'proof1'],
+        ['i', 'twitter:alice', 'proof2'],
+      ],
+      content: '',
+      id: 'event1',
+      sig: 'sig1',
+    }]);
+    const { result } = renderHook(() => useRemoveIdentity(), { wrapper: createWrapper() });
+    await waitFor(() => expect(mockNostrQuery).toHaveBeenCalled());
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ platform: 'github', identity: 'alice' });
+    });
+
+    expect(mockSignEvent.mock.calls[0][0].tags).toEqual([['i', 'twitter:alice', 'proof2']]);
   });
 
   it('publishes empty tags when removing the only identity', async () => {
