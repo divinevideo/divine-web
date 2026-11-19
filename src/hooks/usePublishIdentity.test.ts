@@ -44,32 +44,37 @@ vi.mock('@/lib/signInRevoke', async (importOriginal) => ({
 import { useAddIdentity, useRemoveIdentity } from './usePublishIdentity';
 import { getCachedVerification, setCachedVerification } from '@/lib/verificationCache';
 
-function createWrapper(client?: QueryClient) {
-  const queryClient = client ?? new QueryClient({
+function newClient() {
+  return new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   });
+}
+
+function createWrapper(queryClient: QueryClient = newClient()) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return React.createElement(QueryClientProvider, { client: queryClient }, children);
   };
 }
 
+// No existing identities; the signer signs as the user and the relay accepts.
+function resetAddMocks() {
+  vi.resetAllMocks();
+  window.localStorage.clear();
+  mockNostrQuery.mockResolvedValue([]);
+  mockSignEvent.mockImplementation(async (event: Record<string, unknown>) => ({
+    ...event,
+    id: 'signed-event-id',
+    pubkey: TEST_PUBKEY,
+    sig: 'test-sig',
+  }));
+  mockNostrEvent.mockResolvedValue(undefined);
+}
+
 describe('useAddIdentity', () => {
-  beforeEach(() => {
-    vi.resetAllMocks();
-    window.localStorage.clear();
-    // Default: no existing identities
-    mockNostrQuery.mockResolvedValue([]);
-    mockSignEvent.mockImplementation(async (event: Record<string, unknown>) => ({
-      ...event,
-      id: 'signed-event-id',
-      pubkey: TEST_PUBKEY,
-      sig: 'test-sig',
-    }));
-    mockNostrEvent.mockResolvedValue(undefined);
-  });
+  beforeEach(resetAddMocks);
 
   it('publishes kind 10011 event with identity tag', async () => {
     const { result } = renderHook(
@@ -212,24 +217,14 @@ describe('useAddIdentity', () => {
 
 describe('useAddIdentity list timestamp', () => {
   const CREATED_AT_KEY = ['external-identities-created-at', TEST_PUBKEY];
+  let client: QueryClient;
 
   beforeEach(() => {
-    vi.resetAllMocks();
-    window.localStorage.clear();
-    mockNostrQuery.mockResolvedValue([]);
-    mockSignEvent.mockImplementation(async (event: Record<string, unknown>) => ({
-      ...event,
-      id: 'signed-event-id',
-      pubkey: TEST_PUBKEY,
-      sig: 'test-sig',
-    }));
-    mockNostrEvent.mockResolvedValue(undefined);
+    resetAddMocks();
+    client = newClient();
   });
 
   async function addAt(nowMs: number, previous?: number) {
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-    });
     if (previous !== undefined) client.setQueryData(CREATED_AT_KEY, previous);
     const dateNow = vi.spyOn(Date, 'now').mockReturnValue(nowMs);
     try {
@@ -238,7 +233,7 @@ describe('useAddIdentity list timestamp', () => {
       await act(async () => {
         event = await result.current.mutateAsync({ platform: 'github', identity: 'alice', proof: 'p' });
       });
-      return { client, event };
+      return event;
     } finally {
       dateNow.mockRestore();
     }
@@ -246,7 +241,7 @@ describe('useAddIdentity list timestamp', () => {
 
   it('records the published list timestamp for the next publish to build on', async () => {
     const nowMs = 1_800_000_000_000;
-    const { client, event } = await addAt(nowMs);
+    const event = await addAt(nowMs);
 
     expect(event.created_at).toBe(nowMs / 1000);
     expect(client.getQueryData(CREATED_AT_KEY)).toBe(event.created_at);
@@ -255,22 +250,9 @@ describe('useAddIdentity list timestamp', () => {
   it('leaves the recorded timestamp alone when the publish fails', async () => {
     const nowMs = 1_800_000_000_000;
     const previous = nowMs / 1000 - 60;
-    const client = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-    });
-    client.setQueryData(CREATED_AT_KEY, previous);
     mockNostrEvent.mockRejectedValue(new Error('relay'));
-    const dateNow = vi.spyOn(Date, 'now').mockReturnValue(nowMs);
-    try {
-      const { result } = renderHook(() => useAddIdentity(), { wrapper: createWrapper(client) });
-      await act(async () => {
-        await expect(
-          result.current.mutateAsync({ platform: 'github', identity: 'alice', proof: 'p' }),
-        ).rejects.toThrow('relay');
-      });
-    } finally {
-      dateNow.mockRestore();
-    }
+
+    await expect(addAt(nowMs, previous)).rejects.toThrow('relay');
 
     expect(client.getQueryData(CREATED_AT_KEY)).toBe(previous);
   });
@@ -278,7 +260,7 @@ describe('useAddIdentity list timestamp', () => {
   it('dates a predecessor 599 seconds ahead one second later', async () => {
     const nowMs = 1_800_000_000_000;
     const now = nowMs / 1000;
-    const { event } = await addAt(nowMs, now + 599);
+    const event = await addAt(nowMs, now + 599);
 
     expect(event.created_at).toBe(now + 600);
   });
@@ -286,7 +268,7 @@ describe('useAddIdentity list timestamp', () => {
   it('does not build on a predecessor exactly 600 seconds ahead (the verifier window edge)', async () => {
     const nowMs = 1_800_000_000_000;
     const now = nowMs / 1000;
-    const { event } = await addAt(nowMs, now + 600);
+    const event = await addAt(nowMs, now + 600);
 
     expect(event.created_at).toBe(now);
   });
