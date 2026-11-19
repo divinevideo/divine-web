@@ -2,6 +2,10 @@
 // ABOUTME: Provides crash reporting with stack traces, issue grouping, and performance metrics
 
 import * as Sentry from '@sentry/react';
+import { useEffect } from 'react';
+import { createRoutesFromChildren, matchRoutes, useLocation, useNavigationType } from 'react-router-dom';
+
+import { getPerformanceRoute } from '@/lib/performanceRoutes';
 import {
   shouldDropHandledKeyExportHttpClientEvent,
   shouldDropKeyExportBreadcrumb,
@@ -193,7 +197,7 @@ export function initializeSentry() {
     dsn: import.meta.env.VITE_SENTRY_DSN,
 
     // Environment tagging
-    environment: import.meta.env.MODE,
+    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
 
     // Release tracking - uses build time as version
     release: `divine-web@${__BUILD_DATE__}`,
@@ -207,7 +211,12 @@ export function initializeSentry() {
 
     // Integrations
     integrations: [
-      Sentry.browserTracingIntegration(),
+      Sentry.reactRouterV6BrowserTracingIntegration({
+        useEffect, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes,
+        beforeStartSpan(options) {
+          return { ...options, name: getPerformanceRoute(options.name ?? window.location.pathname) };
+        },
+      }),
       Sentry.replayIntegration({
         maskAllText: false,
         blockAllMedia: false,

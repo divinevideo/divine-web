@@ -1,0 +1,85 @@
+name: Public site performance
+
+on:
+  schedule:
+    - cron: '30 5 * * *'
+  workflow_dispatch:
+    inputs:
+      strict:
+        description: 'Fail when p75 exceeds LCP, CLS or TTFB budgets (small-sample lab results)'
+        type: boolean
+        default: false
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-performance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: ${{ github.event_name == 'pull_request' && 'PR production bundle' || 'Public production' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      PERFORMANCE_SAMPLES: '1'
+      PERFORMANCE_TIMEOUT_MS: '30000'
+      PERFORMANCE_THROTTLE: 'true'
+      PERFORMANCE_OUTPUT: performance-results
+      PERFORMANCE_STRICT: ${{ github.event_name == 'workflow_dispatch' && inputs.strict && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --workspaces=false
+      - run: npx playwright install --with-deps chromium
+      - name: Test audit calculations and browser failure handling
+        run: node --test scripts/performance/*.node-test.mjs
+      - name: Build PR production bundle
+        if: github.event_name == 'pull_request'
+        run: npm run build
+        env:
+          VITE_SENTRY_DSN: ''
+          VITE_SHORT_LINKS_ENABLED: 'false'
+          VITE_SUPPORTERS_SERVICE_URL: https://supporters-preview.invalid
+      - name: Audit PR production bundle
+        if: github.event_name == 'pull_request'
+        env:
+          PERFORMANCE_ORIGIN: http://127.0.0.1:4173
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 --strictPort > /tmp/performance-preview.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:4173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --silent --fail http://127.0.0.1:4173/ > /dev/null
+          npm run performance:audit
+      - name: Audit public production
+        if: github.event_name != 'pull_request'
+        env:
+          PERFORMANCE_ORIGIN: https://divine.video
+        run: npm run performance:audit
+      - name: Publish report in run summary
+        if: always()
+        run: |
+          if [ -f performance-results/report.md ]; then
+            cat performance-results/report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Retain anonymous measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-performance-${{ github.event_name }}
+          path: |
+            performance-results/report.json
+            performance-results/report.md
+          if-no-files-found: warn
+          retention-days: 30
