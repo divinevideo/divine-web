@@ -13,6 +13,7 @@ import { VideoCard } from './VideoCard';
 
 const playbackMocks = vi.hoisted(() => ({
   activeVideoId: null as string | null,
+  globalMuted: true,
   setActiveVideo: vi.fn(),
   setGlobalMuted: vi.fn(),
   navigate: vi.fn(),
@@ -251,7 +252,7 @@ vi.mock('@/hooks/useVideoPlayback', () => ({
     registerVideo: vi.fn(),
     unregisterVideo: vi.fn(),
     updateVideoVisibility: vi.fn(),
-    globalMuted: true,
+    globalMuted: playbackMocks.globalMuted,
     setGlobalMuted: playbackMocks.setGlobalMuted,
   }),
 }));
@@ -409,6 +410,7 @@ describe('VideoCard', () => {
     });
     await initializeI18n({ force: true, languages: ['en-US'] });
     playbackMocks.activeVideoId = null;
+    playbackMocks.globalMuted = true;
     playbackMocks.setActiveVideo.mockClear();
     playbackMocks.setGlobalMuted.mockClear();
     playbackMocks.navigate.mockClear();
@@ -445,6 +447,54 @@ describe('VideoCard', () => {
     const link = screen.getByTestId('thumbnail-link');
     expect(link).toHaveAttribute('href', `/video/${baseVideo.id}`);
     expect(playbackMocks.navigate).not.toHaveBeenCalled();
+  });
+
+  it('labels the sound button Unmute in text while a video is muted', () => {
+    render(<VideoCard video={baseVideo} />);
+
+    expect(screen.getByRole('button', { name: 'Unmute' })).toHaveTextContent('Unmute');
+  });
+
+  it("toggles sound in both directions without its clicks or taps reaching the card's ancestors", () => {
+    // Nothing inside the card listens above the sound button, so only an
+    // ancestor can tell whether a click or tap escaped it.
+    const ancestorClick = vi.fn();
+    const ancestorTouch = vi.fn();
+    const inAncestor = () => (
+      <div onClick={ancestorClick} onTouchStart={ancestorTouch} onTouchEnd={ancestorTouch}>
+        <VideoCard video={baseVideo} onEnterFullscreen={vi.fn()} />
+      </div>
+    );
+    const press = (button: HTMLElement) => {
+      fireEvent.touchStart(button);
+      fireEvent.touchEnd(button);
+      fireEvent.click(button);
+    };
+    const { rerender } = render(inAncestor());
+
+    press(screen.getByRole('button', { name: 'Unmute' }));
+    expect(playbackMocks.setGlobalMuted).toHaveBeenLastCalledWith(false);
+
+    playbackMocks.globalMuted = false;
+    rerender(inAncestor());
+    const mute = screen.getByRole('button', { name: 'Mute' });
+    expect(mute.textContent).toBe('');
+    expect(screen.queryByText('Unmute')).not.toBeInTheDocument();
+    press(mute);
+    expect(playbackMocks.setGlobalMuted).toHaveBeenLastCalledWith(true);
+    expect(ancestorClick).not.toHaveBeenCalled();
+    expect(ancestorTouch).not.toHaveBeenCalled();
+
+    playbackMocks.globalMuted = true;
+    rerender(inAncestor());
+    expect(screen.getByRole('button', { name: 'Unmute' })).toHaveTextContent('Unmute');
+  });
+
+  it('hides the sound control when playback fails', () => {
+    render(<VideoCard video={baseVideo} />);
+
+    fireEvent.click(screen.getByRole('button', { name: `fail-video-${baseVideo.id}` }));
+    expect(screen.queryByRole('button', { name: 'Unmute' })).not.toBeInTheDocument();
   });
 
   it('links the author through a friendly profile path when NIP-05 is valid', () => {
@@ -583,6 +633,40 @@ describe('VideoCard', () => {
     expect(screen.getByText('Log in to view')).toBeInTheDocument();
     expect(screen.queryByTestId('thumbnail-player')).not.toBeInTheDocument();
     expect(screen.queryByTestId(/video-player-/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the sound controls off an auto-play card that shows the age gate', () => {
+    render(<VideoCard video={makeVideo({ ageRestricted: true })} />);
+
+    expect(screen.getByText('Log in to view')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Unmute' })).not.toBeInTheDocument();
+  });
+
+  it('starts fitting the Unmute label to its player once the age gate lifts', () => {
+    const video = makeVideo({ ageRestricted: true });
+    const observers = vi.mocked(ResizeObserver);
+    const { rerender } = render(<VideoCard video={video} />);
+    const before = observers.mock.results.length;
+
+    authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: 'a'.repeat(64) } });
+    authMocks.useAdultVerification.mockReturnValue({
+      isVerified: true,
+      confirmAdult: authMocks.confirmAdult,
+      revokeVerification: vi.fn(),
+      getAuthHeader: vi.fn(),
+      isLoading: false,
+      hasSigner: true,
+    });
+    rerender(<VideoCard video={video} />);
+
+    // The sound group mounts only now, so the fit check has to run again and
+    // watch the player it sits in.
+    const player = screen.getByRole('button', { name: 'Unmute' }).parentElement?.parentElement;
+    const watched = observers.mock.results.slice(before).flatMap(
+      ({ value }) => (value as { observe: ReturnType<typeof vi.fn> }).observe.mock.calls.map(([target]) => target)
+    );
+    expect(player).toBeTruthy();
+    expect(watched).toContain(player);
   });
 
   it('lets a viewer hide age-restricted cards from feeds', () => {

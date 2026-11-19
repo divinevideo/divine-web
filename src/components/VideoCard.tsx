@@ -1,7 +1,7 @@
 // ABOUTME: Video card component for displaying individual videos in feeds
 // ABOUTME: Shows video player, metadata, author info, and social interactions
 
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Heart, Repeat as Repeat2, ChatCircle as MessageCircle, Share, Eye, DotsThreeVertical as MoreVertical, Flag, UserMinus as UserX, Trash as Trash2, SpeakerHigh as Volume2, SpeakerX as VolumeX, Code, Users, ListPlus, DownloadSimple as Download, ArrowsOutSimple as Maximize2, ClosedCaptioning as Captions, PushPin as Pin, PushPinSlash as PinOff, ArrowClockwise } from '@phosphor-icons/react';
 import { Card, CardContent, type CardAccent } from '@/components/ui/card';
@@ -56,6 +56,12 @@ import { debugLog } from '@/lib/debug';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
+
+// Shared by the controls laid over a playing video. The ghost button's base
+// classes already round and center them and size their icons. Only colors and the
+// press scale animate: an animated padding would let the Unmute fit check measure
+// a pill that has not reached its final width.
+const PLAYER_CONTROL_CLASS = 'bg-black/75 hover:bg-black/90 text-white hover:text-white backdrop-blur-sm h-11 transition-[color,background-color,transform]';
 
 interface VideoCardProps {
   video: ParsedVideoData;
@@ -261,6 +267,9 @@ export function VideoCard({
   // Subtitles default to ON when available, independent of mute state
   const [subtitlesVisible, setSubtitlesVisible] = useState(true);
   const showSubtitles = subtitlesVisible && hasSubtitles;
+  const unmuteLabel = t('videoCard.ariaUnmute');
+  const soundControlsRef = useRef<HTMLDivElement>(null);
+  const unmuteLabelRef = useRef<HTMLSpanElement>(null);
 
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const isOwnVideo = useIsOwnVideo(video);
@@ -315,6 +324,29 @@ export function VideoCard({
 
   const date = new Date(timestamp * 1000);
   const isAgeGated = video.ageRestricted === true && (!currentUser || !isAdultVerified);
+
+  // The Unmute label shows only while it fits on one row beside captions. A
+  // wrapped row climbs over the subtitles, and a squeezed pill spills its label,
+  // so a narrow player or a long translation falls back to the bare icon.
+  // Toggling `hidden` directly measures both states in one pass, with no render loop.
+  useLayoutEffect(() => {
+    const group = soundControlsRef.current;
+    const label = unmuteLabelRef.current;
+    const pill = label?.parentElement;
+    if (!group || !label || !pill) return;
+    const fitLabel = () => {
+      label.hidden = false;
+      const wrapped = Array.from(group.children).some(
+        (control) => (control as HTMLElement).offsetTop !== pill.offsetTop
+      );
+      label.hidden = wrapped || pill.offsetWidth > group.clientWidth;
+    };
+    fitLabel();
+    void document.fonts?.ready.then(fitLabel);
+    const observer = new ResizeObserver(fitLabel);
+    observer.observe(group.parentElement ?? group);
+    return () => observer.disconnect();
+  }, [globalMuted, hasSubtitles, unmuteLabel, isPlaying, videoError, isAgeGated]);
 
   // Calculate timeAgo only for pre-2025 videos
   const isFrom2025 = date.getFullYear() >= 2025;
@@ -690,63 +722,65 @@ export function VideoCard({
                 </div>
               )}
 
-              {/* CC button overlay - bottom right, next to mute */}
-              {isPlaying && !videoError && hasSubtitles && (
-                <Button
-                  variant="ghost"
-                  size="sm"
+              {isPlaying && !videoError && !isAgeGated && (
+                <div
+                  ref={soundControlsRef}
                   className={cn(
-                    "absolute bottom-3 right-14 z-30",
-                    "bg-black/50 hover:bg-black/70",
-                    showSubtitles ? "text-white" : "text-white/50",
-                    "backdrop-blur-sm rounded-full",
-                    "w-10 h-10 p-0 flex items-center justify-center",
-                    "transition-all duration-200"
+                    // Only the buttons take taps; the gaps between them belong to the video.
+                    // The group is pinned to the physical right edge, so its order is too:
+                    // sound keeps the corner in right-to-left locales as well.
+                    "pointer-events-none absolute bottom-3 right-3 z-30 flex flex-wrap items-center justify-end gap-2 rtl:flex-row-reverse",
+                    onEnterFullscreen ? "max-w-[calc(100%-5rem)]" : "max-w-[calc(100%-1.5rem)]"
                   )}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setSubtitlesVisible(prev => !prev);
-                  }}
+                  // Taps on these buttons still bubble through it; stop them here, once.
                   onTouchStart={(e) => { e.stopPropagation(); }}
                   onTouchEnd={(e) => { e.stopPropagation(); }}
-                  aria-label={showSubtitles ? t('videoCard.ariaHideSubtitles') : t('videoCard.ariaShowSubtitles')}
                 >
-                  <Captions className="h-5 w-5" />
-                </Button>
-              )}
+                  {hasSubtitles && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        "pointer-events-auto w-11 shrink-0 p-0",
+                        PLAYER_CONTROL_CLASS,
+                        !showSubtitles && "text-white/50"
+                      )}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSubtitlesVisible(prev => !prev);
+                      }}
+                      aria-label={showSubtitles ? t('videoCard.ariaHideSubtitles') : t('videoCard.ariaShowSubtitles')}
+                    >
+                      <Captions />
+                    </Button>
+                  )}
 
-              {/* Mute/Unmute button overlay - bottom right corner */}
-              {isPlaying && !videoError && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "absolute bottom-3 right-3 z-30",
-                    "bg-black/50 hover:bg-black/70 text-white",
-                    "backdrop-blur-sm rounded-full",
-                    "w-10 h-10 p-0 flex items-center justify-center",
-                    "transition-all duration-200"
-                  )}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setGlobalMuted(!globalMuted);
-                  }}
-                  onTouchStart={(e) => {
-                    e.stopPropagation();
-                  }}
-                  onTouchEnd={(e) => {
-                    e.stopPropagation();
-                  }}
-                  aria-label={globalMuted ? t('videoCard.ariaUnmute') : t('videoCard.ariaMute')}
-                >
-                  {globalMuted ? (
-                    <VolumeX className="h-5 w-5" />
-                  ) : (
-                    <Volume2 className="h-5 w-5" />
-                  )}
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "pointer-events-auto min-w-11",
+                      PLAYER_CONTROL_CLASS,
+                      globalMuted ? "shrink-0 px-3" : "w-11 p-0"
+                    )}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setGlobalMuted(!globalMuted);
+                    }}
+                    aria-label={globalMuted ? unmuteLabel : t('videoCard.ariaMute')}
+                  >
+                    {globalMuted ? (
+                      <>
+                        <VolumeX />
+                        <span ref={unmuteLabelRef}>{unmuteLabel}</span>
+                      </>
+                    ) : (
+                      <Volume2 />
+                    )}
+                  </Button>
+                </div>
               )}
 
               {/* Fullscreen button overlay - bottom left corner */}
@@ -754,13 +788,7 @@ export function VideoCard({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn(
-                    "absolute bottom-3 left-3 z-30",
-                    "bg-black/50 hover:bg-black/70 text-white",
-                    "backdrop-blur-sm rounded-full",
-                    "w-10 h-10 p-0 flex items-center justify-center",
-                    "transition-all duration-200"
-                  )}
+                  className={cn("absolute bottom-3 left-3 z-30 w-11 p-0", PLAYER_CONTROL_CLASS)}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -774,7 +802,7 @@ export function VideoCard({
                   }}
                   aria-label={t('videoCard.ariaEnterFullscreen')}
                 >
-                  <Maximize2 className="h-5 w-5" />
+                  <Maximize2 />
                 </Button>
               )}
             </div>
