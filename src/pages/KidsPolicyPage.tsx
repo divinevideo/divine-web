@@ -198,8 +198,17 @@ export function KidsPolicyPage() {
             eyebrow="Under-13 accounts"
             icon={<UsersThree weight="fill" className="h-7 w-7" />}
             title="Under-13 accounts close and the data is deleted"
-            lead="Divine isn't built for people under 13. When Divine learns an account is held by someone under 13, the team closes the account and promptly deletes everything tied to it from Divine's infrastructure, except information Divine is required or permitted to keep for legal, safety, security, fraud-prevention, dispute-resolution, or compliance purposes—even when a parent or guardian is okay with the account staying open. The account doesn't come back."
+            lead="Divine isn't built for people under 13. If we learn that an account belongs to someone under 13, we close it and delete what we hold. That stays true even if a parent or guardian is happy for the account to continue, and the account doesn't come back."
           />
+
+          <details className="mt-4 text-sm">
+            <summary className="cursor-pointer underline underline-offset-2">
+              The exact policy details
+            </summary>
+            <p className="mt-2">
+              Divine isn't built for people under 13. When Divine learns an account is held by someone under 13, the team closes the account and promptly deletes everything tied to it from Divine's infrastructure, except information Divine is required or permitted to keep for legal, safety, security, fraud-prevention, dispute-resolution, or compliance purposes—even when a parent or guardian is okay with the account staying open. The account doesn't come back.
+            </p>
+          </details>
 
           {/* Parent-discovery action card */}
           <Card variant="brand" accent="green">
@@ -332,8 +341,19 @@ export function KidsPolicyPage() {
                 </li>
               </ul>
               <p className="text-sm text-muted-foreground pt-1">
-                Phone-camera quality is fine. There's no script—natural is better. Keep it short. Please don't include more information than Divine asks for here; the review is meant to confirm age, permission, and parent or guardian awareness, not to collect extra documents or background details. The video is handled by Divine's Support and Trust & Safety teams, used only for account review, safety, legal, and compliance purposes, kept only as long as reasonably necessary for those purposes unless a longer retention period is required or permitted by law, and isn't published or shared with other users.
+                Phone-camera quality is fine. There's no script, and natural is
+                better. Keep it short, and please don't send more than we ask for.
+                We are only checking age, permission, and that a parent or guardian
+                knows about the account.
               </p>
+              <details className="mt-2 text-sm">
+                <summary className="cursor-pointer underline underline-offset-2">
+                  The exact policy details
+                </summary>
+                <p className="mt-2">
+                  The video is handled by Divine's Support and Trust &amp; Safety teams, used only for account review, safety, legal, and compliance purposes, kept only as long as reasonably necessary for those purposes unless a longer retention period is required or permitted by law, and isn't published or shared with other users.
+                </p>
+              </details>
             </CardContent>
           </Card>
 
