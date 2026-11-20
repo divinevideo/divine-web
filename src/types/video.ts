@@ -123,3 +123,7 @@ export interface UserInteractions {
   likeEventId: string | null;
   repostEventId: string | null;
 }
+
+export function supportsDivineVideoInteractions(video: Pick<ParsedVideoData, 'kind' | 'originalEvent'>): boolean {
+  return (video.originalEvent?.kind ?? video.kind) === SHORT_VIDEO_KIND;
+}

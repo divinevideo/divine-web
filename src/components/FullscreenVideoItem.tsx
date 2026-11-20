@@ -33,12 +33,13 @@ import { InlineBadges } from '@/components/InlineBadges';
 import { cn } from '@/lib/utils';
 import { MuteType } from '@/types/moderation';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
+import { getPrimaryHlsUrl } from '@/lib/videoParser';
 import { useBandwidthTier } from '@/hooks/useBandwidthTier';
 import { SmartLink } from '@/components/SmartLink';
 import type { ViewTrafficSource } from '@/hooks/useViewEventPublisher';
 import { useSubtitles } from '@/hooks/useSubtitles';
 import { VideoVerificationBadgeRow } from '@/components/VideoVerificationBadgeRow';
-import type { ParsedVideoData } from '@/types/video';
+import { supportsDivineVideoInteractions, type ParsedVideoData } from '@/types/video';
 import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath';
 
 interface FullscreenVideoItemProps {
@@ -97,7 +98,8 @@ export function FullscreenVideoItem({
   // that are unnecessary for small ~6-second videos (~2-4MB). Direct MP4 loads in a single request.
   // Classic Vines also skip HLS because the transcoder distorts square 480x480 aspect ratio.
   const isShortForm = !video.duration || video.duration <= 60;
-  const effectiveHlsUrl = (isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined));
+  const effectiveHlsUrl = getPrimaryHlsUrl(video)
+    || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined)));
 
   const [showComments, setShowComments] = useState(false);
   const [videoError, setVideoError] = useState(false);
@@ -120,8 +122,12 @@ export function FullscreenVideoItem({
   const muteUser = useMuteItem();
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const isOwnVideo = useIsOwnVideo(video);
-  const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
-  const { data: lists } = useVideosInLists(video.vineId ?? undefined, video.id);
+  const supportsDivineInteractions = supportsDivineVideoInteractions(video);
+  const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId, { enabled: supportsDivineInteractions });
+  const { data: lists } = useVideosInLists(
+    supportsDivineInteractions ? video.vineId ?? undefined : undefined,
+    supportsDivineInteractions ? video.id : undefined,
+  );
   const playbackCountLabel = video.isVineMigrated
     ? formatClassicVineViewBreakdown(viewCount, video.loopCount ?? 0)
     : formatLoopCount(viewCount);
@@ -200,11 +206,12 @@ export function FullscreenVideoItem({
 
   // Handle double-tap to like
   const handleDoubleTap = useCallback(() => {
+    if (!supportsDivineInteractions) return;
     onLike();
     // Show heart animation
     setShowHeartAnimation(true);
     setTimeout(() => setShowHeartAnimation(false), 800);
-  }, [onLike]);
+  }, [onLike, supportsDivineInteractions]);
 
   // Handle swipe right to exit
   const handleSwipeRight = useCallback(() => {
@@ -418,58 +425,62 @@ export function FullscreenVideoItem({
 
             {/* Right side - Action buttons */}
             <div className="flex flex-col items-center gap-4 pointer-events-auto">
-              {/* Like button with clickable count */}
-              <div className="flex flex-col items-center">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onLike(); }}
-                  className="flex flex-col items-center"
-                >
-                  <div className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
-                    isLiked && "bg-red-500/80"
-                  )}>
-                    <Heart className="h-6 w-6 text-white" weight={isLiked ? 'fill' : 'bold'} />
+              {supportsDivineInteractions && (
+                <>
+                  {/* Like button with clickable count */}
+                  <div className="flex flex-col items-center">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onLike(); }}
+                      className="flex flex-col items-center"
+                    >
+                      <div className={cn(
+                        "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
+                        isLiked && "bg-red-500/80"
+                      )}>
+                        <Heart className="h-6 w-6 text-white" weight={isLiked ? 'fill' : 'bold'} />
+                      </div>
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setShowReactionsModal('likes'); }}
+                      className="text-white text-xs mt-1 drop-shadow-lg hover:underline"
+                    >
+                      {formatCount(likeCount)}
+                    </button>
                   </div>
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowReactionsModal('likes'); }}
-                  className="text-white text-xs mt-1 drop-shadow-lg hover:underline"
-                >
-                  {formatCount(likeCount)}
-                </button>
-              </div>
 
-              {/* Comment button */}
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowComments(true); }}
-                className="flex flex-col items-center"
-              >
-                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                  <MessageCircle className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-white text-xs mt-1 drop-shadow-lg">{formatCount(commentCount)}</span>
-              </button>
+                  {/* Comment button */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowComments(true); }}
+                    className="flex flex-col items-center"
+                  >
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                      <MessageCircle className="h-6 w-6 text-white" />
+                    </div>
+                    <span className="text-white text-xs mt-1 drop-shadow-lg">{formatCount(commentCount)}</span>
+                  </button>
 
-              {/* Repost button with clickable count */}
-              <div className="flex flex-col items-center">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onRepost(); }}
-                  className="flex flex-col items-center"
-                >
-                  <div className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
-                    isReposted && "bg-green-500/80"
-                  )}>
-                    <Repeat2 className="h-6 w-6 text-white" weight={isReposted ? 'fill' : 'bold'} />
+                  {/* Repost button with clickable count */}
+                  <div className="flex flex-col items-center">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onRepost(); }}
+                      className="flex flex-col items-center"
+                    >
+                      <div className={cn(
+                        "w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-sm",
+                        isReposted && "bg-green-500/80"
+                      )}>
+                        <Repeat2 className="h-6 w-6 text-white" weight={isReposted ? 'fill' : 'bold'} />
+                      </div>
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setShowReactionsModal('reposts'); }}
+                      className="text-white text-xs mt-1 drop-shadow-lg hover:underline"
+                    >
+                      {formatCount(repostCount)}
+                    </button>
                   </div>
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowReactionsModal('reposts'); }}
-                  className="text-white text-xs mt-1 drop-shadow-lg hover:underline"
-                >
-                  {formatCount(repostCount)}
-                </button>
-              </div>
+                </>
+              )}
 
               {/* Share button */}
               <button
@@ -494,7 +505,7 @@ export function FullscreenVideoItem({
               </button>
 
               {/* Lists button */}
-              {video.vineId && (
+              {supportsDivineInteractions && video.vineId && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowAddToListDialog(true); }}
                   className="flex flex-col items-center"
@@ -515,7 +526,7 @@ export function FullscreenVideoItem({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-black/90 border-white/20 text-white">
-                  {isOwnVideo && (
+                  {supportsDivineInteractions && isOwnVideo && (
                     <>
                       <DropdownMenuItem
                         onClick={() => setShowDeleteDialog(true)}
@@ -569,22 +580,22 @@ export function FullscreenVideoItem({
       </div>
 
       {/* Comments modal */}
-      <VideoCommentsModal
+      {supportsDivineInteractions && <VideoCommentsModal
         video={video}
         open={showComments}
         onOpenChange={setShowComments}
-      />
+      />}
 
       {/* Reactions modal - shows who liked/reposted */}
-      <VideoReactionsModal
+      {supportsDivineInteractions && <VideoReactionsModal
         open={showReactionsModal !== null}
         onOpenChange={(open) => !open && setShowReactionsModal(null)}
         reactions={reactions}
         type={showReactionsModal || 'likes'}
-      />
+      />}
 
       {/* Add to List Dialog */}
-      {video.vineId && showAddToListDialog && (
+      {supportsDivineInteractions && video.vineId && showAddToListDialog && (
         <AddToListDialog
           videoId={video.vineId}
           videoEventId={video.id}
@@ -616,7 +627,7 @@ export function FullscreenVideoItem({
       )}
 
       {/* Delete video dialog */}
-      {showDeleteDialog && (
+      {supportsDivineInteractions && showDeleteDialog && (
         <DeleteVideoDialog
           open={showDeleteDialog}
           onClose={() => setShowDeleteDialog(false)}

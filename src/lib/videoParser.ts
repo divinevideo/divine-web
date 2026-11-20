@@ -30,8 +30,12 @@ function isValidVideoUrl(url: string): boolean {
   }
 }
 
-export function isHlsVideoUrl(url: string): boolean {
+function isHlsVideoUrl(url: string): boolean {
   return /^[^?#]*\.m3u8(?:[?#]|$)/i.test(url);
+}
+
+export function getPrimaryHlsUrl({ videoUrl, hlsUrl }: Pick<ParsedVideoData, 'videoUrl' | 'hlsUrl'>): string | undefined {
+  return hlsUrl === videoUrl || isHlsVideoUrl(videoUrl) ? videoUrl : undefined;
 }
 
 /**
