@@ -108,58 +108,63 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
     return 'discovery';
   })();
   const blockedPubkeys = useFeedBlocklist();
-  const { data: feedVideos, isLoading: feedVideosLoading } = useVideoEvents(
-    context && !isPeopleListContext && !isVideoListContext ? {
-      feedType: feedTypeForWebSocket,
-      hashtag: context.hashtag,
-      pubkey: context.pubkey,
-      limit: 50, // Get enough videos for navigation
-      enabled,
-    } : {
-      ...(routeTarget && { acceptedKinds: VIDEO_REFERENCE_KINDS }),
-      ...(relayUrls && { relayUrls }),
-      filter: address
-        ? { kinds: [address.kind], authors: [address.pubkey], '#d': [address.dTag] }
-        : { ids: [videoId] },
-      limit: 1,
-      feedType: 'discovery',
-      enabled: enabled && !isPeopleListContext,
-    }
+  const hasFeedContext = Boolean(context && !isPeopleListContext && !isVideoListContext);
+  const { data: feedVideos, isLoading: feedVideosLoading } = useVideoEvents({
+    feedType: feedTypeForWebSocket,
+    hashtag: context?.hashtag,
+    pubkey: context?.pubkey,
+    limit: 50,
+    enabled: enabled && hasFeedContext,
+  });
+  const navigationVideos = isPeopleListContext ? peopleListVideos : hasFeedContext ? feedVideos : undefined;
+  const filteredNavigationVideos = useMemo(
+    () => navigationVideos && filterBlockedVideos(navigationVideos, blockedPubkeys),
+    [navigationVideos, blockedPubkeys],
   );
+
+  const targetAddress = routeTarget?.address ?? address;
   const legacyAuthor = routeTarget?.legacyAuthor;
+  const isTarget = (video: ParsedVideoData) => {
+    if (routeTarget) return matchesVideoTarget(video, routeTarget);
+    if (targetAddress) return matchesVideoRoute(video, targetAddress.dTag, targetAddress.pubkey);
+    return video.id === videoId;
+  };
+  const navigationVideo = filteredNavigationVideos?.find(isTarget);
+  const hasNavigationContext = hasFeedContext || isPeopleListContext;
+  const hasExplicitTarget = Boolean(targetAddress || routeTarget?.eventId || legacyAuthor);
+  const lookupDirect = enabled && (!hasNavigationContext || (hasExplicitTarget && !navigationVideo));
+  const { data: directVideos, isLoading: directLoading } = useVideoEvents({
+    ...(routeTarget && { acceptedKinds: VIDEO_REFERENCE_KINDS }),
+    ...(relayUrls && { relayUrls }),
+    filter: targetAddress
+      ? { kinds: [targetAddress.kind], authors: [targetAddress.pubkey], '#d': [targetAddress.dTag] }
+      : { ids: [videoId], ...(legacyAuthor && { authors: [legacyAuthor] }) },
+    limit: 1,
+    feedType: 'discovery',
+    enabled: lookupDirect,
+  });
   const { data: legacyAddressVideos, isLoading: legacyAddressLoading } = useVideoEvents({
     filter: { authors: legacyAuthor ? [legacyAuthor] : [], '#d': [videoId] },
     acceptedKinds: VIDEO_REFERENCE_KINDS,
     limit: 1,
-    enabled: enabled && Boolean(legacyAuthor) && !isPeopleListContext,
+    enabled: lookupDirect && Boolean(legacyAuthor),
   });
-  const filteredFeedVideos = useMemo(
-    () => feedVideos ? filterBlockedVideos(feedVideos, blockedPubkeys) : feedVideos,
-    [feedVideos, blockedPubkeys]
-  );
+  const directVideo = lookupDirect ? filterBlockedVideos([
+    ...(directVideos ?? []),
+    ...(legacyAuthor ? legacyAddressVideos ?? [] : []),
+  ], blockedPubkeys).find(isTarget) : undefined;
+  const currentVideo = navigationVideo ?? directVideo ?? null;
   const videos = useMemo(() => {
-    if (isPeopleListContext) return peopleListVideos;
-    if (!legacyAuthor) return filteredFeedVideos;
-    return filterBlockedVideos([...(filteredFeedVideos ?? []), ...(legacyAddressVideos ?? [])], blockedPubkeys);
-  }, [isPeopleListContext, peopleListVideos, legacyAuthor, filteredFeedVideos, legacyAddressVideos, blockedPubkeys]);
-  const isLoading = isPeopleListContext
+    if (!directVideo || navigationVideo) return filteredNavigationVideos;
+    return [...(filteredNavigationVideos ?? []), directVideo];
+  }, [directVideo, filteredNavigationVideos, navigationVideo]);
+  const navigationLoading = isPeopleListContext
     ? peopleListQuery.isLoading || peopleListVideosQuery.isLoading
-    : feedVideosLoading || (Boolean(legacyAuthor) && legacyAddressLoading);
-
-  // Find current video and its index
-  const { currentVideo, currentIndex } = useMemo(() => {
-    if (!videos) return { currentVideo: null, currentIndex: -1 };
-
-    const index = videos.findIndex(video => routeTarget
-      ? matchesVideoTarget(video, routeTarget)
-      : address
-      ? matchesVideoRoute(video, address.dTag, address.pubkey)
-      : video.id === videoId);
-    return {
-      currentVideo: index >= 0 ? videos[index] : null,
-      currentIndex: index,
-    };
-  }, [videos, videoId, address, routeTarget]);
+    : feedVideosLoading;
+  const isLoading = navigationLoading || (!currentVideo && lookupDirect && (
+    directLoading || (Boolean(legacyAuthor) && legacyAddressLoading)
+  ));
+  const currentIndex = currentVideo ? videos?.indexOf(currentVideo) ?? -1 : -1;
 
   // Navigation helpers
   const hasNext = currentIndex >= 0 && currentIndex < (videos?.length || 0) - 1;

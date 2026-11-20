@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { buildVideoNavigationUrl, parseVideoNavigationContext, useVideoNavigation } from './useVideoNavigation';
+import { parseVideoRouteId } from '@/lib/videoRoute';
 
 const { mockUseVideoEvents, mockBlocklist } = vi.hoisted(() => ({
   mockUseVideoEvents: vi.fn(),
@@ -100,6 +101,22 @@ describe('useVideoNavigation', () => {
 
     expect(result.current.videos?.map((video) => video.id)).toEqual(['video-1', 'video-2']);
     expect(result.current.hasNext).toBe(true);
+  });
+
+  it('adds one navigation entry when both legacy lookups return the same video', () => {
+    const videoId = 'c'.repeat(64);
+    const author = 'a'.repeat(64);
+    mockUseVideoEvents.mockReturnValue({
+      data: [{ id: videoId, pubkey: author, vineId: videoId }],
+      isLoading: false,
+    });
+    const { result } = renderHook(
+      () => useVideoNavigation(videoId, { routeTarget: parseVideoRouteId(videoId, author) }),
+      { wrapper: createWrapper(`/video/${videoId}?author=${author}`) },
+    );
+
+    expect(result.current.videos?.map(video => video.id)).toEqual([videoId]);
+    expect(result.current.hasNext).toBe(false);
   });
 
   describe('with an author-named video address', () => {
