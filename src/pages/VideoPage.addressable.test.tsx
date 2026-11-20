@@ -149,6 +149,22 @@ describe('VideoPage author-named video links', () => {
     expect(screen.queryByTestId('video-card')).not.toBeInTheDocument();
   });
 
+  it.each(['naddr', 'nevent'])('uses the relay hint in a /video %s reference', async (type) => {
+    const event = videoEvent(AUTHOR, 'd'.repeat(64));
+    const relay = 'wss://video-relay.example';
+    const relays = [relay, 'ws://ignored.example'];
+    const reference = type === 'naddr'
+      ? nip19.naddrEncode({ kind: event.kind, pubkey: AUTHOR, identifier: SHARED_D_TAG, relays })
+      : nip19.neventEncode({ id: event.id, relays });
+    mockQuery.mockImplementation(async (filters: NostrFilter[], options?: { relays?: string[] }) =>
+      options?.relays?.includes(relay) && filters.some(filter => matchesFilter(event, filter)) ? [event] : []);
+
+    client = renderAt(`/video/${reference}`);
+
+    expect(await screen.findByText(event.id)).toBeInTheDocument();
+    expect(mockQuery.mock.calls[0]?.[1].relays).not.toContain('ws://ignored.example');
+  });
+
   it("shows not found for an naddr1 with an empty identifier, never a video whose d tag is the literal segment", async () => {
     relayEvents.push(videoEvent(SQUATTER, 'squatter-event'));
 

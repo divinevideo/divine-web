@@ -193,7 +193,8 @@ the sha256 of the uploaded file, so accounts that upload the same file share
 one, and any account can publish under any `d` tag.
 [`parseVideoRouteId`](./src/lib/videoRoute.ts) turns that route into a lookup
 held to the author, even with an empty `d` tag. Standard `naddr` references
-also require the original event kind; REST transformations retain the original kind. An `nevent` requires the exact event ID. Historical raw-coordinate
+also require the original event kind. An `nevent` requires the exact event ID.
+Both can carry optional relay hints for fallback lookups. Historical raw-coordinate
 aliases retain their existing compatibility behavior. Videos of other event kinds
 can be played and shared, but do not expose Divine-only interactions that
 assume kind 34236. `VideoPage` rejects a REST

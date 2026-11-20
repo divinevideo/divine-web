@@ -7,6 +7,8 @@ import { useVideoEvents } from './useVideoEvents';
 import { usePeopleList } from '@/hooks/usePeopleLists';
 import { usePeopleListVideos } from '@/hooks/usePeopleListVideos';
 import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
+import { useAppContext } from '@/hooks/useAppContext';
+import { getEventLookupRelayUrls } from '@/config/relays';
 import { filterBlockedVideos } from '@/lib/blocklistFilter';
 import { matchesVideoRoute, matchesVideoTarget, type VideoRouteTarget } from '@/lib/videoRoute';
 import type { AddressableCoordinate } from '@/lib/nostrCoordinates';
@@ -53,7 +55,15 @@ interface UseVideoNavigationOptions {
 export function useVideoNavigation(videoId: string, options: UseVideoNavigationOptions = {}): VideoNavigationHook {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { config } = useAppContext();
   const { enabled = true, context: contextOverride, address, routeTarget } = options;
+  const relayUrls = useMemo(() => routeTarget?.relayHints?.length
+    ? getEventLookupRelayUrls({
+      configuredRelayUrls: [...(config.relayUrls ?? [config.relayUrl]), ...(config.customRelayUrls ?? [])],
+      relayHints: routeTarget.relayHints,
+      disabledRelayUrls: config.disabledPresetUrls,
+    })
+    : undefined, [config, routeTarget]);
 
   // Parse navigation context from URL params
   const parsedContext: VideoNavigationContext | null = useMemo(() => {
@@ -106,7 +116,8 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
       limit: 50, // Get enough videos for navigation
       enabled,
     } : {
-      acceptedKinds: routeTarget ? VIDEO_REFERENCE_KINDS : undefined,
+      ...(routeTarget && { acceptedKinds: VIDEO_REFERENCE_KINDS }),
+      ...(relayUrls && { relayUrls }),
       filter: address
         ? { kinds: [address.kind], authors: [address.pubkey], '#d': [address.dTag] }
         : { ids: [videoId] },

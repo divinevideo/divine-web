@@ -25,6 +25,10 @@ vi.mock('@/hooks/useFeedBlocklist', () => ({
   useFeedBlocklist: () => mockBlocklist,
 }));
 
+vi.mock('@/hooks/useAppContext', () => ({
+  useAppContext: () => ({ config: { relayUrl: 'wss://relay.divine.video' } }),
+}));
+
 function createWrapper(path: string) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return React.createElement(MemoryRouter, { initialEntries: [path] }, children);
