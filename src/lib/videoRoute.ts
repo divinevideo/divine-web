@@ -10,6 +10,7 @@ export interface VideoRouteTarget {
   /** The event id or `d` tag to look the video up by. REST `/api/videos/{id}` accepts either. */
   lookupId: string;
   eventId?: string;
+  relayHints?: string[];
   strictKind?: true;
   legacyAuthor?: string;
   /**
@@ -37,10 +38,18 @@ export function parseVideoRouteId(routeId: string, legacyAuthor?: string | null)
     try {
       const reference = decode(routeId);
       if (reference.type === 'naddr' && [34235, 34236].includes(reference.data.kind)) {
-        const { identifier, pubkey, kind } = reference.data;
-        return { lookupId: identifier, strictKind: true, address: { kind, pubkey: pubkey.toLowerCase(), dTag: identifier } };
+        const { identifier, pubkey, kind, relays } = reference.data;
+        return {
+          lookupId: identifier,
+          strictKind: true,
+          address: { kind, pubkey: pubkey.toLowerCase(), dTag: identifier },
+          ...(relays?.length && { relayHints: relays }),
+        };
       }
-      if (reference.type === 'nevent') return { lookupId: reference.data.id, eventId: reference.data.id, address: null };
+      if (reference.type === 'nevent') {
+        const { id, relays } = reference.data;
+        return { lookupId: id, eventId: id, address: null, ...(relays?.length && { relayHints: relays }) };
+      }
       if (reference.type === 'note') return { lookupId: reference.data, eventId: reference.data, address: null };
       return { lookupId: routeId, address: null };
     } catch {

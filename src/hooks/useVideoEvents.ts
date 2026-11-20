@@ -16,6 +16,7 @@ import type { SortMode } from '@/types/nostr';
 
 interface UseVideoEventsOptions {
   acceptedKinds?: readonly number[];
+  relayUrls?: string[];
   filter?: Partial<NostrFilter>;
   feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'category';
   hashtag?: string;
@@ -317,13 +318,13 @@ async function parseVideoEvents(
 export function useVideoEvents(options: UseVideoEventsOptions = {}) {
   const { nostr } = useNostr();
   const { user } = useCurrentUser();
-  const { filter, acceptedKinds, feedType = 'discovery', hashtag, pubkey, limit = 50, until, sortMode, enabled = true } = options;
+  const { filter, acceptedKinds, relayUrls, feedType = 'discovery', hashtag, pubkey, limit = 50, until, sortMode, enabled = true } = options;
 
   // Get follow list for home feed - this is cached and auto-refetches
   const { data: followList } = useFollowList();
 
   const queryResult = useQuery({
-    queryKey: ['video-events', feedType, hashtag, pubkey, limit, until, sortMode, user?.pubkey, followList, filter, acceptedKinds],
+    queryKey: ['video-events', feedType, hashtag, pubkey, limit, until, sortMode, user?.pubkey, followList, filter, acceptedKinds, relayUrls],
     queryFn: async (context) => {
       const startTime = performance.now();
       verboseLog(`[useVideoEvents] ========== Starting query for ${feedType} feed ==========`);
@@ -411,7 +412,7 @@ export function useVideoEvents(options: UseVideoEventsOptions = {}) {
         const queryStartTime = performance.now();
         console.log('[useVideoEvents] Sending query with filter:', JSON.stringify(baseFilter, null, 2));
         verboseLog('[useVideoEvents] Calling nostr.query...');
-        events = await nostr.query([baseFilter], { signal });
+        events = await nostr.query([baseFilter], relayUrls ? { signal, relays: relayUrls } : { signal });
         console.log(`[useVideoEvents] Video query took ${(performance.now() - queryStartTime).toFixed(0)}ms, got ${events.length} events`);
         if (events.length > 0) {
           console.log('[useVideoEvents] First event:', events[0]);
