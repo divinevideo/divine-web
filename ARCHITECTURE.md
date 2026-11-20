@@ -194,7 +194,9 @@ one, and any account can publish under any `d` tag.
 [`parseVideoRouteId`](./src/lib/videoRoute.ts) turns that route into a lookup
 held to the author, even with an empty `d` tag. Standard `naddr` references
 also require the original event kind; REST transformations retain the original kind. An `nevent` requires the exact event ID. Historical raw-coordinate
-aliases retain their existing compatibility behavior. `VideoPage` rejects a REST
+aliases retain their existing compatibility behavior. Videos of other event kinds
+can be played and shared, but do not expose Divine-only interactions that
+assume kind 34236. `VideoPage` rejects a REST
 answer by another account, checks the author's own newest videos, then falls
 back to a relay query with `authors` and `#d`, and shows "not found" if the
 author has no such video. A bare `/video/<id>` names no author and still

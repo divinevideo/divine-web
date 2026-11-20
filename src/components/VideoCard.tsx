@@ -153,9 +153,10 @@ export function VideoCard({
   const isHorizontal = effectiveLayout === 'horizontal';
   // Only query list membership over WebSocket when signed in or in detail layout
   // (avoids opening a WebSocket subscription on anonymous feed loads).
+  const supportsDivineInteractions = (video.originalEvent?.kind ?? video.kind) === SHORT_VIDEO_KIND;
   const { data: lists } = useVideosInLists(
-    (currentUser || isHorizontal) ? (video.vineId ?? undefined) : undefined,
-    video.id,
+    supportsDivineInteractions && (currentUser || isHorizontal) ? (video.vineId ?? undefined) : undefined,
+    supportsDivineInteractions ? video.id : undefined,
   );
 
   // NEW: Get reposter data from reposts array
@@ -271,7 +272,7 @@ export function VideoCard({
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const isOwnVideo = useIsOwnVideo(video);
   const { share, prepare } = useShortLinkShare();
-  const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
+  const coordinate = supportsDivineInteractions && video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
   const isPinned = useIsVideoPinned(coordinate);
   const { mutateAsync: pinVideo } = usePinVideo();
   const { mutateAsync: unpinVideo } = useUnpinVideo();
@@ -282,7 +283,7 @@ export function VideoCard({
   const { openLoginDialog } = useLoginDialog();
 
   // Get reactions data for the modal
-  const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
+  const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId, { enabled: supportsDivineInteractions });
 
   // Enhance author data with generated profiles
   const author = enhanceAuthorData(authorData.data, video.pubkey);
@@ -532,14 +533,14 @@ export function VideoCard({
   return (
     <>
       {/* Comments Modal */}
-      <VideoCommentsModal
+      {supportsDivineInteractions && <VideoCommentsModal
         video={video}
         open={showComments}
         onOpenChange={handleCloseCommentsModal}
-      />
+      />}
 
       {/* Add to List Dialog */}
-      {video.vineId && showAddToListDialog && (
+      {supportsDivineInteractions && video.vineId && showAddToListDialog && (
         <AddToListDialog
           videoId={video.vineId}
           videoEventId={video.id}
@@ -894,6 +895,7 @@ export function VideoCard({
             "flex flex-wrap items-center",
             isHorizontal ? "pt-2 gap-1" : "px-4 pb-4 gap-0.5"
           )}>
+          {supportsDivineInteractions && <>
           {/* Like button - icon toggles, count shows modal */}
           <div className="flex items-center">
             <Button
@@ -969,6 +971,7 @@ export function VideoCard({
             <MessageCircle className="h-4 w-4" />
             {commentCount > 0 && <span className="text-xs">{formatCount(commentCount)}</span>}
           </Button>
+          </>}
 
           <Button
             variant="ghost"
@@ -999,7 +1002,7 @@ export function VideoCard({
           </Button>
 
           {/* Lists button */}
-          {video.vineId && (
+          {supportsDivineInteractions && video.vineId && (
             <Button
               variant="ghost"
               size="sm"
@@ -1041,7 +1044,7 @@ export function VideoCard({
                   <DropdownMenuSeparator />
                 </>
               )}
-              {isOwnVideo && (
+              {supportsDivineInteractions && isOwnVideo && (
                 <>
                   <DropdownMenuItem
                     onClick={() => setShowDeleteDialog(true)}
@@ -1102,7 +1105,7 @@ export function VideoCard({
       />
     )}
 
-    {showDeleteDialog && (
+    {supportsDivineInteractions && showDeleteDialog && (
       <DeleteVideoDialog
         open={showDeleteDialog}
         onClose={() => setShowDeleteDialog(false)}
