@@ -13,6 +13,7 @@ import type { NIP50Filter } from '@/types/nostr';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getLoopCount, getOriginalVineTimestamp, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated, getLatestRepostTime, validateVideoEvent, getTextTrackRef } from '@/lib/videoParser';
 import { debugLog, debugError, verboseLog } from '@/lib/debug';
 import { getVideoStickerFields } from '@/lib/videoStickers';
+import { videoAddress } from '@/lib/videoAddress';
 import type { SortMode } from '@/types/nostr';
 
 interface UseVideoEventsOptions {
@@ -111,8 +112,7 @@ async function parseVideoEvents(
 
     validVideos++;
 
-    // Use pubkey:kind:d-tag as the unique key for addressable event deduplication
-    const uniqueKey = vineId ? `${event.pubkey}:${event.kind}:${vineId}` : event.id;
+    const uniqueKey = videoAddress({ ...event, vineId });
 
     // If we already have this video, skip (keep the first one)
     if (videoMap.has(uniqueKey)) {
@@ -125,7 +125,7 @@ async function parseVideoEvents(
     videoMap.set(uniqueKey, {
       id: event.id,
       pubkey: event.pubkey,
-      kind: event.kind as typeof SHORT_VIDEO_KIND,
+      kind: event.kind,
       createdAt: event.created_at,
       originalVineTimestamp: getOriginalVineTimestamp(event),
       content: event.content,

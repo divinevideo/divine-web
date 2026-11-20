@@ -359,7 +359,6 @@ export function parseVideoEvent(event: NostrEvent): VideoEvent | null {
   // Create VideoEvent
   const videoEvent: VideoEvent = {
     ...event,
-    kind: event.kind as typeof SHORT_VIDEO_KIND, // Kind 34236 Addressable Short Videos
     videoMetadata,
     title,
     hashtags
@@ -676,7 +675,7 @@ export function addRepost(video: ParsedVideoData, repost: RepostMetadata): Parse
 export function validateVideoEvent(event: NostrEvent, acceptedKinds: readonly number[] = VIDEO_KINDS): boolean {
   if (!acceptedKinds.includes(event.kind)) return false;
 
-  // Kind 34236 (addressable/replaceable event) MUST have d tag per NIP-33
+  // Addressable video events require a d tag.
   if (event.kind === SHORT_VIDEO_KIND || event.kind === 34235) {
     const vineId = getVineId(event);
     if (!vineId) {
@@ -720,7 +719,7 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
     parsedVideos.push({
       id: event.id,
       pubkey: event.pubkey,
-      kind: event.kind as typeof SHORT_VIDEO_KIND,
+      kind: event.kind,
       createdAt: event.created_at,
       originalVineTimestamp: getOriginalVineTimestamp(event),
       content: event.content,
