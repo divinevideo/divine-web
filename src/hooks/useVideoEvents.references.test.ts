@@ -26,9 +26,9 @@ function event(kind: number, id: string, dTag?: string): NostrEvent {
 describe('explicit video reference lookups', () => {
   beforeEach(() => query.mockReset());
 
-  it('loads separate regular events without d tags by their exact IDs', async () => {
+  it.each([undefined, 'shared'])('keeps separate regular events by ID with d tag %s', async (dTag) => {
     const ids = ['b'.repeat(64), 'c'.repeat(64)];
-    query.mockResolvedValue([event(22, ids[0]), event(22, ids[1])]);
+    query.mockResolvedValue([event(22, ids[0], dTag), event(22, ids[1], dTag)]);
     const { result } = renderHook(() => useVideoEvents({ filter: { ids }, acceptedKinds: VIDEO_REFERENCE_KINDS }), { wrapper: Wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.map(video => video.id)).toEqual(ids);

@@ -673,7 +673,7 @@ describe('VideoCard', () => {
   });
 
   it('allows sharing but hides Divine-only interactions on a referenced external video kind', () => {
-    const video = makeVideo({ originalEvent: { kind: 34235 } as ParsedVideoData['originalEvent'] });
+    const video = makeVideo({ kind: 34235 });
     render(<VideoCard video={video} />);
 
     expect(screen.getByRole('button', { name: 'Share' })).toBeInTheDocument();

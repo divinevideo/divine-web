@@ -1,12 +1,12 @@
 // ABOUTME: Core video event types and interfaces for Divine Web
-// ABOUTME: Defines the structure of video events (kind 34236) and related metadata
+// ABOUTME: Defines the structure of NIP-71 video events and related metadata
 
 import type { NostrEvent } from '@nostrify/nostrify';
 
 // Video Event Kinds
 export const SHORT_VIDEO_KIND = 34236; // Kind 34236 - Addressable short-form videos
 
-// Array of all supported video kinds
+// Video kinds shown in ordinary feeds
 export const VIDEO_KINDS = [SHORT_VIDEO_KIND];
 export const VIDEO_REFERENCE_KINDS = [21, 22, 34235, 34236];
 
@@ -26,7 +26,6 @@ export interface VideoMetadata {
 }
 
 export interface VideoEvent extends NostrEvent {
-  kind: typeof SHORT_VIDEO_KIND;
   videoMetadata?: VideoMetadata;
   title?: string;
   hashtags?: string[];
@@ -75,7 +74,7 @@ export interface ParsedVideoData {
   pubkey: string;            // Original author pubkey
   authorName?: string;       // Cached author name from Funnelcake API
   authorAvatar?: string;     // Cached author avatar from Funnelcake API
-  kind: typeof SHORT_VIDEO_KIND;   // // NIP-71 video kind (34236).
+  kind: number;              // Original Nostr event kind
   createdAt: number;
   originalVineTimestamp?: number; // Custom published_at timestamp (NIP-31 - can be set by any video)
   content: string;

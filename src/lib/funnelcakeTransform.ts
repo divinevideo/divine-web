@@ -2,7 +2,7 @@
 // ABOUTME: Bridges the gap between REST API data and existing video display components
 
 import { parseByteArrayId } from './funnelcakeClient';
-import { SHORT_VIDEO_KIND, type ParsedVideoData, type ProofModeData, type ProofModeLevel } from '@/types/video';
+import type { ParsedVideoData, ProofModeData, ProofModeLevel } from '@/types/video';
 import type { FunnelcakeVideoRaw, FunnelcakeResponse } from '@/types/funnelcake';
 import { debugLog } from './debug';
 import { getProofModeData, getVineId } from './videoParser';
@@ -152,13 +152,8 @@ function proofSummaryToProofMode(raw: FunnelcakeVideoRaw): ProofModeData | undef
 /**
  * Transform a single Funnelcake video to ParsedVideoData format.
  *
- * Returns null when the row carries no `d` tag. Every row here becomes a kind
- * 34236 event, and an addressable event with no `d` has no coordinate to be
- * addressed by, so anything keyed on that coordinate — likes, reposts, view
- * events — silently narrows to the event id, which is superseded the first time
- * the author edits. `videoParser` already refuses these on the relay path
- * (`if (!vineId && event.kind === SHORT_VIDEO_KIND) continue`); this keeps the
- * REST path from admitting what the relay path rejects.
+ * An addressable video needs a `d` tag so interactions can survive edits.
+ * Explicit detail lookups can also accept regular videos identified by event ID.
  */
 export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw, options: { allowRegularVideos?: boolean } = {}): ParsedVideoData | null {
   // Handle byte array conversion for id and pubkey
@@ -201,7 +196,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw, options: { all
     pubkey,
     authorName: raw.author_name, // Cached author name from Funnelcake
     authorAvatar: raw.author_avatar, // Cached author avatar from Funnelcake
-    kind: sourceKind as typeof SHORT_VIDEO_KIND,
+    kind: sourceKind,
     createdAt: raw.created_at,
     content: raw.content || '',
     videoUrl: raw.video_url,
