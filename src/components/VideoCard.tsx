@@ -60,6 +60,7 @@ import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath
 
 interface VideoCardProps {
   video: ParsedVideoData;
+  shareUrl?: string;
   className?: string;
   mode?: 'thumbnail' | 'auto-play';
   isPriority?: boolean; // First video in feed - skip observer wait for faster load
@@ -94,6 +95,7 @@ interface VideoCardProps {
 
 export function VideoCard({
   video,
+  shareUrl,
   className,
   mode = 'auto-play',
   isPriority,
@@ -478,7 +480,8 @@ export function VideoCard({
     );
   };
 
-  const handleShare = () => share(getVideoShareData(video));
+  const getShareData = () => shareUrl ? { url: shareUrl } : getVideoShareData(video);
+  const handleShare = () => share(getShareData());
 
   const handlePinToggle = async () => {
     if (!coordinate) return;
@@ -985,8 +988,8 @@ export function VideoCard({
               "gap-2",
               !isHorizontal && "px-2"
             )}
-            onPointerDown={(event) => { if (event.button === 0) void prepare(getVideoShareData(video).url); }}
-            onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') void prepare(getVideoShareData(video).url); }}
+            onPointerDown={(event) => { if (event.button === 0) void prepare(getShareData().url); }}
+            onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') void prepare(getShareData().url); }}
             onClick={handleShare}
             aria-label={t('videoCard.ariaShare')}
           >
