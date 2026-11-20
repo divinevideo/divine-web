@@ -30,6 +30,9 @@ export interface VideoRouteTarget {
  * to the author and so resolves to nothing: no valid video has one.
  */
 export function parseVideoRouteId(routeId: string, legacyAuthor?: string | null): VideoRouteTarget {
+  const legacyTarget: VideoRouteTarget = /^[0-9a-f]{64}$/i.test(legacyAuthor ?? '')
+    ? { lookupId: routeId, address: null, legacyAuthor: legacyAuthor!.toLowerCase() }
+    : { lookupId: routeId, address: null };
   if (/^(naddr|nevent|note)1/i.test(routeId)) {
     try {
       const reference = decode(routeId);
@@ -39,16 +42,14 @@ export function parseVideoRouteId(routeId: string, legacyAuthor?: string | null)
       }
       if (reference.type === 'nevent') return { lookupId: reference.data.id, eventId: reference.data.id, address: null };
       if (reference.type === 'note') return { lookupId: reference.data, eventId: reference.data, address: null };
-    } catch {
       return { lookupId: routeId, address: null };
+    } catch {
+      return legacyTarget;
     }
-    return { lookupId: routeId, address: null };
   }
   const coordinate = parseCoordinateWithOptionalDTag(routeId);
   if (!coordinate || !VIDEO_KINDS.includes(coordinate.kind as typeof VIDEO_KINDS[number])) {
-    return /^[0-9a-f]{64}$/i.test(legacyAuthor ?? '')
-      ? { lookupId: routeId, address: null, legacyAuthor: legacyAuthor!.toLowerCase() }
-      : { lookupId: routeId, address: null };
+    return legacyTarget;
   }
 
   const address = { ...coordinate, pubkey: coordinate.pubkey.toLowerCase() };

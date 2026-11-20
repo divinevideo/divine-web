@@ -187,7 +187,8 @@ A video named by its author (an `naddr1` or a raw `kind:pubkey:d` coordinate)
 can route to `/video/<naddr>` or `/video/<kind>:<pubkey>:<d>`. New video
 shares encode the complete address as `naddr` before requesting a short link;
 regular events use `nevent`. Existing bare IDs, d tags, coordinates and
-`?author=<hex>` video links remain readable. Divine's `d` tag is
+`?author=<hex>` video links remain readable, including legacy d tags that
+start like a NIP-19 reference but do not decode. Divine's `d` tag is
 the sha256 of the uploaded file, so accounts that upload the same file share
 one, and any account can publish under any `d` tag.
 [`parseVideoRouteId`](./src/lib/videoRoute.ts) turns that route into a lookup

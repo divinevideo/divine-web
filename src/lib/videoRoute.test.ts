@@ -42,10 +42,15 @@ describe('parseVideoRouteId', () => {
     expect(parseVideoRouteId(SHARED_D_TAG, 'invalid')).toEqual({ lookupId: SHARED_D_TAG, address: null });
   });
 
-  it('does not discard an embedded author when a reference is invalid or not a video', () => {
-    for (const reference of ['naddr1broken', naddrEncode({ kind: 30023, pubkey: AUTHOR, identifier: SHARED_D_TAG })]) {
-      expect(parseVideoRouteId(reference, OTHER_AUTHOR)).toEqual({ lookupId: reference, address: null });
-    }
+  it('preserves the legacy author for a d tag that only looks like a standard reference', () => {
+    const target = parseVideoRouteId('naddr1broken', AUTHOR);
+    expect(matchesVideoTarget(video({ vineId: 'naddr1broken' }), target)).toBe(true);
+    expect(matchesVideoTarget(video({ pubkey: OTHER_AUTHOR, vineId: 'naddr1broken' }), target)).toBe(false);
+  });
+
+  it('does not use the embedded author of a standard address for a non-video kind', () => {
+    const reference = naddrEncode({ kind: 30023, pubkey: AUTHOR, identifier: SHARED_D_TAG });
+    expect(parseVideoRouteId(reference, OTHER_AUTHOR)).toEqual({ lookupId: reference, address: null });
   });
 
   it('reads the author and d tag out of an addressable video route', () => {
