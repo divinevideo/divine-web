@@ -160,7 +160,7 @@ function proofSummaryToProofMode(raw: FunnelcakeVideoRaw): ProofModeData | undef
  * (`if (!vineId && event.kind === SHORT_VIDEO_KIND) continue`); this keeps the
  * REST path from admitting what the relay path rejects.
  */
-export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoData | null {
+export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw, options: { allowRegularVideos?: boolean } = {}): ParsedVideoData | null {
   // Handle byte array conversion for id and pubkey
   const id = Array.isArray(raw.id) ? parseByteArrayId(raw.id) : String(raw.id);
   const pubkey = Array.isArray(raw.pubkey) ? parseByteArrayId(raw.pubkey) : String(raw.pubkey);
@@ -190,7 +190,8 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
   // Thin list payloads can omit the top-level d_tag while still carrying the
   // event's tags, so read those before giving up on the coordinate.
   const vineId = raw.d_tag || (fullEvent ? getVineId(fullEvent) : null);
-  if (!vineId) {
+  const sourceKind = fullEvent?.kind ?? raw.kind;
+  if (!vineId && !(options.allowRegularVideos && [21, 22].includes(sourceKind))) {
     debugLog('[FunnelcakeTransform] Dropping video with no d tag:', id);
     return null;
   }
@@ -200,7 +201,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     pubkey,
     authorName: raw.author_name, // Cached author name from Funnelcake
     authorAvatar: raw.author_avatar, // Cached author avatar from Funnelcake
-    kind: SHORT_VIDEO_KIND,
+    kind: sourceKind as typeof SHORT_VIDEO_KIND,
     createdAt: raw.created_at,
     content: raw.content || '',
     videoUrl: raw.video_url,

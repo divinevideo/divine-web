@@ -672,11 +672,11 @@ export function addRepost(video: ParsedVideoData, repost: RepostMetadata): Parse
  * Validates that a NIP-71 video event has required fields
  * Centralized validation function used by all video hooks
  */
-export function validateVideoEvent(event: NostrEvent): boolean {
-  if (!VIDEO_KINDS.includes(event.kind)) return false;
+export function validateVideoEvent(event: NostrEvent, acceptedKinds: readonly number[] = VIDEO_KINDS): boolean {
+  if (!acceptedKinds.includes(event.kind)) return false;
 
   // Kind 34236 (addressable/replaceable event) MUST have d tag per NIP-33
-  if (event.kind === SHORT_VIDEO_KIND) {
+  if (event.kind === SHORT_VIDEO_KIND || event.kind === 34235) {
     const vineId = getVineId(event);
     if (!vineId) {
       // Validation failure - missing required d tag

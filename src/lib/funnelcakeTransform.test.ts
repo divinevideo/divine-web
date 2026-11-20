@@ -643,3 +643,27 @@ describe('mergeVideoStats', () => {
     expect(merged.loopCount).toBe(11);
   });
 });
+
+describe('source event kind', () => {
+  it('preserves the actual kind for standard sharing and address resolution', () => {
+    const video = transformFunnelcakeVideo({
+      id: 'e'.repeat(64), pubkey: 'a'.repeat(64), kind: 34235,
+      created_at: 1, content: '', d_tag: 'clip', video_url: 'https://example.com/clip.mp4',
+    } as Parameters<typeof transformFunnelcakeVideo>[0]);
+    expect(video?.kind).toBe(34235);
+  });
+});
+
+describe('regular video detail references', () => {
+  it('admits regular videos without a d tag only for an explicit detail lookup', () => {
+    const raw = {
+      id: 'e'.repeat(64), pubkey: 'a'.repeat(64), kind: 22,
+      created_at: 1, content: '', video_url: 'https://example.com/clip.mp4',
+    } as Parameters<typeof transformFunnelcakeVideo>[0];
+    expect(transformFunnelcakeVideo(raw)).toBeNull();
+    const video = transformFunnelcakeVideo(raw, { allowRegularVideos: true });
+    expect(video?.id).toBe(raw.id);
+    expect(video?.kind).toBe(22);
+    expect(video?.vineId).toBeNull();
+  });
+});

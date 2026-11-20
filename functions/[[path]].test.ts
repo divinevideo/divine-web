@@ -184,6 +184,7 @@ describe('functions/[[path]]', () => {
   });
 
   it.each([
+    ['a standard naddr', 'naddr1qq9kjup3v3jrjazpd3khwq3qsxktkuz8tw9hzhpc6pevaymknj3827parpueqyt7crqpa2zfh72sxpqqqzzmcqtynsu'],
     ['a d tag', `34236:${'a'.repeat(64)}:${'c'.repeat(64)}`],
     ['an empty d tag', `34236:${'a'.repeat(64)}:`],
     ['percent-encoded separators', `34236%3A${'a'.repeat(64)}%3A${'c'.repeat(64)}`],

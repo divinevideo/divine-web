@@ -31,7 +31,8 @@ const FUNNELCAKE_API_URL = 'https://relay.divine.video';
  * tag, so these routes keep the generic shell and the app resolves the video.
  */
 function isAddressableVideoRoute(identifier: string): boolean {
-  return parseCoordinateWithOptionalDTag(identifier) !== null;
+  return parseCoordinateWithOptionalDTag(identifier) !== null
+    || /^(?:naddr|nevent|note)1/i.test(identifier);
 }
 
 function escapeHtml(value: string): string {

@@ -8,9 +8,9 @@ import { usePeopleList } from '@/hooks/usePeopleLists';
 import { usePeopleListVideos } from '@/hooks/usePeopleListVideos';
 import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
 import { filterBlockedVideos } from '@/lib/blocklistFilter';
-import { matchesVideoRoute } from '@/lib/videoRoute';
+import { matchesVideoRoute, matchesVideoTarget, type VideoRouteTarget } from '@/lib/videoRoute';
 import type { AddressableCoordinate } from '@/lib/nostrCoordinates';
-import type { ParsedVideoData } from '@/types/video';
+import { VIDEO_REFERENCE_KINDS, type ParsedVideoData } from '@/types/video';
 import type { SortMode } from '@/types/nostr';
 
 type WebSocketFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'category';
@@ -39,6 +39,7 @@ interface VideoNavigationHook {
 }
 
 interface UseVideoNavigationOptions {
+  routeTarget?: VideoRouteTarget;
   enabled?: boolean;
   context?: VideoNavigationContext | null;
   /**
@@ -52,7 +53,7 @@ interface UseVideoNavigationOptions {
 export function useVideoNavigation(videoId: string, options: UseVideoNavigationOptions = {}): VideoNavigationHook {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { enabled = true, context: contextOverride, address } = options;
+  const { enabled = true, context: contextOverride, address, routeTarget } = options;
 
   // Parse navigation context from URL params
   const parsedContext: VideoNavigationContext | null = useMemo(() => {
@@ -105,6 +106,7 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
       limit: 50, // Get enough videos for navigation
       enabled,
     } : {
+      acceptedKinds: routeTarget ? VIDEO_REFERENCE_KINDS : undefined,
       filter: address
         ? { kinds: [address.kind], authors: [address.pubkey], '#d': [address.dTag] }
         : { ids: [videoId] },
@@ -113,27 +115,40 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
       enabled: enabled && !isPeopleListContext,
     }
   );
+  const legacyAuthor = routeTarget?.legacyAuthor;
+  const { data: legacyAddressVideos, isLoading: legacyAddressLoading } = useVideoEvents({
+    filter: { authors: legacyAuthor ? [legacyAuthor] : [], '#d': [videoId] },
+    acceptedKinds: VIDEO_REFERENCE_KINDS,
+    limit: 1,
+    enabled: enabled && Boolean(legacyAuthor) && !isPeopleListContext,
+  });
   const filteredFeedVideos = useMemo(
     () => feedVideos ? filterBlockedVideos(feedVideos, blockedPubkeys) : feedVideos,
     [feedVideos, blockedPubkeys]
   );
-  const videos = isPeopleListContext ? peopleListVideos : filteredFeedVideos;
+  const videos = useMemo(() => {
+    if (isPeopleListContext) return peopleListVideos;
+    if (!legacyAuthor) return filteredFeedVideos;
+    return filterBlockedVideos([...(filteredFeedVideos ?? []), ...(legacyAddressVideos ?? [])], blockedPubkeys);
+  }, [isPeopleListContext, peopleListVideos, legacyAuthor, filteredFeedVideos, legacyAddressVideos, blockedPubkeys]);
   const isLoading = isPeopleListContext
     ? peopleListQuery.isLoading || peopleListVideosQuery.isLoading
-    : feedVideosLoading;
+    : feedVideosLoading || (Boolean(legacyAuthor) && legacyAddressLoading);
 
   // Find current video and its index
   const { currentVideo, currentIndex } = useMemo(() => {
     if (!videos) return { currentVideo: null, currentIndex: -1 };
 
-    const index = videos.findIndex(video => address
+    const index = videos.findIndex(video => routeTarget
+      ? matchesVideoTarget(video, routeTarget)
+      : address
       ? matchesVideoRoute(video, address.dTag, address.pubkey)
       : video.id === videoId);
     return {
       currentVideo: index >= 0 ? videos[index] : null,
       currentIndex: index,
     };
-  }, [videos, videoId, address]);
+  }, [videos, videoId, address, routeTarget]);
 
   // Navigation helpers
   const hasNext = currentIndex >= 0 && currentIndex < (videos?.length || 0) - 1;

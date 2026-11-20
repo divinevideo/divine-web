@@ -2,6 +2,8 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { parseVideoRouteId } from '@/lib/videoRoute';
+import { naddrEncode, neventEncode } from 'nostr-tools/nip19';
 
 const mockFetchUserVideos = vi.fn();
 const mockSearchVideos = vi.fn();
@@ -819,6 +821,26 @@ describe('useVideoByIdFunnelcake', () => {
     await act(async () => { pagedIds = (await result.current.fetchNextPage())?.map(video => video.id); });
     expect(pagedIds).toContain('visible-next');
     expect(mockSearchVideos).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not accept a REST d-tag alias for an exact nevent', async () => {
+    const id = 'a'.repeat(64);
+    mockFetchVideoById.mockResolvedValueOnce({ id: 'different-event', pubkey: 'b'.repeat(64), d_tag: id });
+    const routeTarget = parseVideoRouteId(neventEncode({ id }));
+    const { result } = renderHook(() => useVideoByIdFunnelcake({ videoId: id, routeTarget }), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.video).toBeNull();
+  });
+
+  it('does not accept the wrong kind from REST or the author scan for an naddr', async () => {
+    const author = 'a'.repeat(64);
+    const dTag = 'same-clip';
+    mockFetchVideoById.mockResolvedValueOnce({ id: 'wrong-kind', pubkey: author, d_tag: dTag });
+    mockFetchUserVideos.mockResolvedValueOnce({ videos: [{ id: 'also-wrong', pubkey: author, d_tag: dTag }] });
+    const routeTarget = parseVideoRouteId(naddrEncode({ kind: 34235, pubkey: author, identifier: dTag }));
+    const { result } = renderHook(() => useVideoByIdFunnelcake({ videoId: dTag, author, routeTarget }), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.video).toBeNull();
   });
 
   describe('with an author named by the link', () => {

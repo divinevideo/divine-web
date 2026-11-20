@@ -8,6 +8,7 @@ export const SHORT_VIDEO_KIND = 34236; // Kind 34236 - Addressable short-form vi
 
 // Array of all supported video kinds
 export const VIDEO_KINDS = [SHORT_VIDEO_KIND];
+export const VIDEO_REFERENCE_KINDS = [21, 22, 34235, 34236];
 
 export const REPOST_KIND = 6;
 
