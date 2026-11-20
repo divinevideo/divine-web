@@ -475,6 +475,7 @@ describe('funnelcakeClient', () => {
       await expect(fetchVideoById(API_URL, id)).resolves.toMatchObject({
         id,
         video_url: 'https://media.example/clip.m3u8',
+        hls_url: 'https://media.example/clip.m3u8',
       });
     });
 

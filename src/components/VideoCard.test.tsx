@@ -682,6 +682,13 @@ describe('VideoCard', () => {
     }
   });
 
+  it('passes a primary HLS stream to the player even when the video has no duration', () => {
+    const video = makeVideo({ kind: 21, videoUrl: 'https://media.example/clip.m3u8?token=fixture', duration: undefined });
+    render(<VideoCard video={video} />);
+
+    expect(screen.getByTestId(`video-player-${video.id}`)).toHaveAttribute('data-hls-url', video.videoUrl);
+  });
+
   it('renders the native playback total instead of raw loop count', () => {
     render(
       <VideoCard

@@ -47,6 +47,7 @@ import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/us
 import { useToast } from '@/hooks/useToast';
 import { useShortLinkShare } from '@/hooks/useShortLinkShare';
 import { getVideoShareData } from '@/lib/shareUtils';
+import { isHlsVideoUrl } from '@/lib/videoParser';
 import { SmartLink } from '@/components/SmartLink';
 import { MuteType } from '@/types/moderation';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
@@ -135,7 +136,7 @@ export function VideoCard({
   // before that date are almost certainly classic Vines even without origin/platform tags
   const isClassicVine = video.isVineMigrated ||
     (video.originalVineTimestamp !== undefined && video.originalVineTimestamp < 1484611200);
-  // SKIP HLS for short-form videos — HLS adds 2 extra round-trips (manifest + segment)
+  // Skip optional HLS for short-form videos — HLS adds 2 extra round-trips (manifest + segment)
   // that are unnecessary for small ~6-second videos (~2-4MB). Direct MP4 loads in a single request.
   // Classic Vines also skip HLS because the transcoder distorts square 480x480 aspect ratio.
   // Only use HLS for longer content (>60s) if divine ever supports it.
@@ -146,7 +147,11 @@ export function VideoCard({
   const hlsFallbackUrl = mp4Failed && video.videoUrl?.includes('media.divine.video')
     ? video.hlsUrl || optimalHlsUrl
     : undefined;
-  const effectiveHlsUrl = hlsFallbackUrl || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined)));
+  const primaryHlsUrl = video.hlsUrl === video.videoUrl || isHlsVideoUrl(video.videoUrl)
+    ? video.videoUrl
+    : undefined;
+  const effectiveHlsUrl = primaryHlsUrl || hlsFallbackUrl
+    || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined)));
   const supportsDivineInteractions = (video.originalEvent?.kind ?? video.kind) === SHORT_VIDEO_KIND;
   const { data: lists } = useVideosInLists(
     supportsDivineInteractions ? video.vineId ?? undefined : undefined,

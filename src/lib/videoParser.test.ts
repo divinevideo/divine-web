@@ -29,6 +29,13 @@ describe('extractVideoMetadata', () => {
     expect(metadata?.hash).toBeUndefined();
   });
 
+  it('identifies a primary HLS stream by MIME type when there is no file extension', () => {
+    const streamUrl = 'https://media.example/stream';
+    const event = makeEvent([['imeta', `url ${streamUrl}`, 'm application/x-mpegURL']]);
+
+    expect(extractVideoMetadata(event)?.hlsUrl).toBe(streamUrl);
+  });
+
   describe('HLS fallback URL handling', () => {
     it('should preserve hlsUrl when present in imeta alongside MP4', () => {
       const event = makeEvent([
