@@ -176,6 +176,19 @@ describe('VideoPage author-named video links', () => {
     expect(await screen.findByText(event.id)).toBeInTheDocument();
   });
 
+  it('shows not found for a non-video address even when its encoding is another video’s d tag', async () => {
+    const reference = nip19.naddrEncode({ kind: 30023, pubkey: AUTHOR, identifier: 'article' });
+    mockFetchVideoById.mockResolvedValue({
+      id: 'different-video', pubkey: SQUATTER, kind: 34236, created_at: 1_700_000_000,
+      d_tag: reference, video_url: 'https://media.example/different.mp4',
+    });
+
+    client = renderAt(`/video/${reference}`);
+
+    expect(await screen.findByText('Video not found')).toBeInTheDocument();
+    expect(mockFetchVideoById).not.toHaveBeenCalled();
+  });
+
   it("shows not found for an naddr1 with an empty identifier, never a video whose d tag is the literal segment", async () => {
     relayEvents.push(videoEvent(SQUATTER, 'squatter-event'));
 

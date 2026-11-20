@@ -86,8 +86,6 @@ export function VideoPage() {
   const [playedVideoId, setPlayedVideoId] = useState<string | null>(null);
   const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
-  // An author-named route (`kind:pubkey:d`, from an naddr1) resolves only that
-  // author's video; a bare event id or d tag resolves as before.
   const [searchParams] = useSearchParams();
   const legacyAuthor = searchParams.get('author');
   const routeTarget = useMemo(() => parseVideoRouteId(id || '', legacyAuthor), [id, legacyAuthor]);
@@ -130,7 +128,7 @@ export function VideoPage() {
     featuredTabId: context?.source === 'featured' ? context.featuredTabId : undefined,
     sortMode: context?.sortMode,
     currentIndex: context?.currentIndex,
-    enabled: !!id,
+    enabled: Boolean(lookupId),
     isVideoVisible,
   });
 
@@ -140,7 +138,7 @@ export function VideoPage() {
     () => isFeaturedTabUnavailable ? { source: 'trending' } : context,
     [context, isFeaturedTabUnavailable]
   );
-  const shouldEnableWebsocketNavigation = !!id && !funnelcakeLoading && (
+  const shouldEnableWebsocketNavigation = !!lookupId && !funnelcakeLoading && (
     !funnelcakeVideo ||
     (isFeaturedTabUnavailable && !funnelcakeVideos)
   );

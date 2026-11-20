@@ -37,8 +37,9 @@ export function parseVideoRouteId(routeId: string, legacyAuthor?: string | null)
   if (/^(naddr|nevent|note)1/i.test(routeId)) {
     try {
       const reference = decode(routeId);
-      if (reference.type === 'naddr' && [34235, 34236].includes(reference.data.kind)) {
+      if (reference.type === 'naddr') {
         const { identifier, pubkey, kind, relays } = reference.data;
+        if (![34235, 34236].includes(kind)) return { lookupId: '', address: null };
         return {
           lookupId: identifier,
           strictKind: true,
@@ -86,6 +87,7 @@ export function matchesVideoTarget(
   video: Pick<ParsedVideoData, 'id' | 'vineId' | 'pubkey'> & { kind?: number; originalEvent?: { kind: number } },
   target: VideoRouteTarget,
 ): boolean {
+  if (!target.lookupId) return false;
   if (target.eventId) return video.id === target.eventId;
   if (target.legacyAuthor) {
     return video.pubkey.toLowerCase() === target.legacyAuthor

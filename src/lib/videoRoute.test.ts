@@ -48,9 +48,9 @@ describe('parseVideoRouteId', () => {
     expect(matchesVideoTarget(video({ pubkey: OTHER_AUTHOR, vineId: 'naddr1broken' }), target)).toBe(false);
   });
 
-  it('does not use the embedded author of a standard address for a non-video kind', () => {
+  it('rejects a standard address for a non-video kind instead of looking it up as a bare d tag', () => {
     const reference = naddrEncode({ kind: 30023, pubkey: AUTHOR, identifier: SHARED_D_TAG });
-    expect(parseVideoRouteId(reference, OTHER_AUTHOR)).toEqual({ lookupId: reference, address: null });
+    expect(parseVideoRouteId(reference, OTHER_AUTHOR)).toEqual({ lookupId: '', address: null });
   });
 
   it('reads the author and d tag out of an addressable video route', () => {
