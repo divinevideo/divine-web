@@ -6,7 +6,7 @@ import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAppContext } from '@/hooks/useAppContext';
 import { debugLog } from '@/lib/debug';
-import { SHORT_VIDEO_KIND, type ParsedVideoData } from '@/types/video';
+import { SHORT_VIDEO_KIND, supportsDivineVideoInteractions, type ParsedVideoData } from '@/types/video';
 
 /** Kind 22236 - Ephemeral video view event (NIP-71 extension) */
 export const VIEW_EVENT_KIND = 22236;
@@ -67,7 +67,7 @@ export function useViewEventPublisher(): UseViewEventPublisherResult {
       return false;
     }
 
-    if ((video.originalEvent?.kind ?? video.kind) !== SHORT_VIDEO_KIND) return false;
+    if (!supportsDivineVideoInteractions(video)) return false;
 
     // Need vineId for addressable reference
     if (!video.vineId) {

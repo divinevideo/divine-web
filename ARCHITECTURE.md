@@ -196,8 +196,8 @@ held to the author, even with an empty `d` tag. Standard `naddr` references
 also require the original event kind. An `nevent` requires the exact event ID.
 Both can carry optional relay hints for fallback lookups. Historical raw-coordinate
 aliases retain their existing compatibility behavior. Videos of other event kinds
-can be played and shared, but do not expose Divine-only interactions that
-assume kind 34236. `VideoPage` rejects a REST
+can be played and shared. Inline and fullscreen cards hide interactions and
+skip social metrics that assume kind 34236. `VideoPage` rejects a REST
 answer by another account, checks the author's own newest videos, then falls
 back to a relay query with `authors` and `#d`, and shows "not found" if the
 author has no such video. A bare `/video/<id>` names no author and still

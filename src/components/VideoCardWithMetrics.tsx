@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/useToast';
 import { useLoginDialog } from '@/contexts/LoginDialogContext';
 import { debugLog } from '@/lib/debug';
 import { getVisiblePlaybackCount } from '@/lib/playbackCount';
-import type { ParsedVideoData } from '@/types/video';
+import { supportsDivineVideoInteractions, type ParsedVideoData } from '@/types/video';
 import type { VideoNavigationContext } from '@/hooks/useVideoNavigation';
 import React from 'react';
 
@@ -61,6 +61,7 @@ function VideoCardWithMetricsInner({
   // First 3 videos load immediately, rest have a staggered delay for progressive enhancement
   const delay = index < 3 ? 0 : Math.min(index * 50, 500);
   const { socialMetrics, userInteractions } = useDeferredVideoMetrics({
+    enabled: supportsDivineVideoInteractions(video),
     videoId: video.id,
     videoPubkey: video.pubkey,
     vineId: video.vineId,

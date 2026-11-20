@@ -96,6 +96,7 @@ vi.mock('@/components/ui/button', () => ({
 
 const video = {
   id: 'video-1',
+  kind: 34236,
   pubkey: 'f'.repeat(64),
   videoUrl: 'https://example.com/v.mp4',
   hlsUrl: undefined,
@@ -115,12 +116,12 @@ const video = {
   authorAvatar: undefined,
 } as unknown as ParsedVideoData;
 
-function renderItem(prefix?: ReactNode) {
+function renderItem(prefix?: ReactNode, overrides?: Partial<ParsedVideoData>) {
   return render(
     <>
       {prefix}
       <FullscreenVideoItem
-        video={video}
+        video={{ ...video, ...overrides }}
         isActive
         playbackId="fs:video-1"
         onBack={vi.fn()}
@@ -130,7 +131,7 @@ function renderItem(prefix?: ReactNode) {
         onDownload={vi.fn()}
         isLiked={false}
         isReposted={false}
-        likeCount={0}
+        likeCount={17}
         repostCount={0}
         commentCount={0}
       />
@@ -147,6 +148,14 @@ beforeEach(() => {
 });
 
 describe('FullscreenVideoItem self-moderation affordances', () => {
+  it('hides counts and delete for an owned video of another kind', () => {
+    authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: video.pubkey } });
+    renderItem(undefined, { kind: 34235, vineId: 'clip' });
+
+    expect(screen.queryByText('17')).not.toBeInTheDocument();
+    expect(screen.queryByText('fullscreenVideoItem.deleteVideo')).not.toBeInTheDocument();
+  });
+
   it('hides report and mute actions on the viewer\'s own video', () => {
     authMocks.useCurrentUser.mockReturnValue({ user: { pubkey: 'f'.repeat(64) } });
     renderItem();

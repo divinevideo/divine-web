@@ -37,7 +37,7 @@ import { genUserName } from '@/lib/genUserName';
 import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { formatDistanceToNow } from 'date-fns';
 import type { ParsedVideoData } from '@/types/video';
-import { SHORT_VIDEO_KIND } from '@/types/video';
+import { SHORT_VIDEO_KIND, supportsDivineVideoInteractions } from '@/types/video';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { cn } from '@/lib/utils';
 import { formatClassicVineViewBreakdown, formatLoopCount, formatCount } from '@/lib/formatUtils';
@@ -47,7 +47,7 @@ import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/us
 import { useToast } from '@/hooks/useToast';
 import { useShortLinkShare } from '@/hooks/useShortLinkShare';
 import { getVideoShareData } from '@/lib/shareUtils';
-import { isHlsVideoUrl } from '@/lib/videoParser';
+import { getPrimaryHlsUrl } from '@/lib/videoParser';
 import { SmartLink } from '@/components/SmartLink';
 import { MuteType } from '@/types/moderation';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
@@ -149,10 +149,7 @@ export function VideoCard({
   const hlsFallbackUrl = mp4Failed && video.videoUrl?.includes('media.divine.video')
     ? video.hlsUrl || optimalHlsUrl
     : undefined;
-  const primaryHlsUrl = video.hlsUrl === video.videoUrl || isHlsVideoUrl(video.videoUrl)
-    ? video.videoUrl
-    : undefined;
-  const effectiveHlsUrl = primaryHlsUrl || hlsFallbackUrl
+  const effectiveHlsUrl = getPrimaryHlsUrl(video) || hlsFallbackUrl
     || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined)));
   const { user: currentUser } = useCurrentUser();
   // Determine layout: use prop if provided, otherwise always vertical (text below video)
@@ -160,7 +157,7 @@ export function VideoCard({
   const isHorizontal = effectiveLayout === 'horizontal';
   // Only query list membership over WebSocket when signed in or in detail layout
   // (avoids opening a WebSocket subscription on anonymous feed loads).
-  const supportsDivineInteractions = (video.originalEvent?.kind ?? video.kind) === SHORT_VIDEO_KIND;
+  const supportsDivineInteractions = supportsDivineVideoInteractions(video);
   const { data: lists } = useVideosInLists(
     supportsDivineInteractions && (currentUser || isHorizontal) ? (video.vineId ?? undefined) : undefined,
     supportsDivineInteractions ? video.id : undefined,
