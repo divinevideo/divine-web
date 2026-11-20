@@ -459,6 +459,25 @@ describe('funnelcakeClient', () => {
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
+    it('uses the video stream when a regular event lists an audio track first', async () => {
+      const id = 'c'.repeat(64);
+      vi.mocked(global.fetch).mockResolvedValueOnce(Response.json({
+        event: {
+          id, pubkey: TEST_PUBKEY, kind: 21, created_at: 1, content: '',
+          tags: [
+            ['imeta', 'url https://media.example/clip.mp3', 'm audio/mpeg'],
+            ['imeta', 'url https://media.example/clip.m3u8', 'm application/x-mpegURL'],
+          ],
+        },
+        stats: {},
+      }));
+
+      await expect(fetchVideoById(API_URL, id)).resolves.toMatchObject({
+        id,
+        video_url: 'https://media.example/clip.m3u8',
+      });
+    });
+
     it('allows the route lookup to use the mobile-parity timeout', async () => {
       const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
       const videoId = 'ab0b34b53e29564eda8943385844de3dd164cd883d469675c14689a8e8772188';

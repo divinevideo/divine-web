@@ -21,6 +21,7 @@ import type { NotificationsResponse } from '@/types/notification';
 import type { NostrSigner } from '@nostrify/nostrify';
 import { createNip98AuthHeader } from '@/lib/nip98Auth';
 import { looksLikeSecretKey } from '@/lib/searchUtils';
+import { extractVideoMetadata } from '@/lib/videoParser';
 
 /**
  * Convert a byte array to hex string
@@ -795,19 +796,7 @@ export async function fetchVideoById(
         const platform = getTag('platform');
         const isClassicVine = (platform?.toLowerCase() === 'vine')
           || event.tags.some(t => t[0] === 'l' && t[1] === 'vine-archive');
-        const getImeta = () => {
-          const imetaTag = event.tags.find(t => t[0] === 'imeta');
-          if (!imetaTag) return {};
-          const imeta: Record<string, string> = {};
-          for (let i = 1; i < imetaTag.length; i++) {
-            const parts = imetaTag[i].split(' ');
-            if (parts.length >= 2) {
-              imeta[parts[0]] = parts.slice(1).join(' ');
-            }
-          }
-          return imeta;
-        };
-        const imeta = getImeta();
+        const metadata = extractVideoMetadata(event);
 
         return {
           id: event.id,
@@ -817,8 +806,8 @@ export async function fetchVideoById(
           d_tag: getTag('d') || '',
           title: getTag('title'),
           content: event.content,
-          thumbnail: imeta.image,
-          video_url: imeta.url || '',
+          thumbnail: metadata?.thumbnailUrl,
+          video_url: metadata?.url ?? '',
           author_name: stats.author_name,
           author_avatar: stats.author_avatar,
           reactions: stats.reactions,
