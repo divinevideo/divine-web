@@ -15,10 +15,10 @@ function video(overrides: { id?: string; pubkey?: string; vineId?: string | null
 
 describe('parseVideoRouteId', () => {
   it('reads a standard naddr produced by an independent client', () => {
-    const reference = 'naddr1qq9kjup3v3jrjazpd3khwq3qsxktkuz8tw9hzhpc6pevaymknj3827parpueqyt7crqpa2zfh72sxpqqqzzmcqtynsu';
+    const reference = 'naddr1qqvxxmrfwqkkvun0d5kkzmn0w35x2u3dvdkxjetwwspzp242424242424242424242424242424242424242424242424242qvzqqqy9hsc93kfd';
     expect(parseVideoRouteId(reference)).toEqual({
-      lookupId: 'ip1dd9tAlmw', strictKind: true,
-      address: { kind: 34236, pubkey: '81acbb70475b8b715c38d072ce93769ca275783d187990117ec0c01ea849bf95', dTag: 'ip1dd9tAlmw' },
+      lookupId: 'clip-from-another-client', strictKind: true,
+      address: { kind: 34236, pubkey: AUTHOR, dTag: 'clip-from-another-client' },
     });
   });
 
