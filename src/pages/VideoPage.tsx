@@ -30,7 +30,7 @@ import { debugLog } from '@/lib/debug';
 import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import { buildVideoLikeTags } from '@/lib/buildVideoLikeTags';
-import type { ParsedVideoData, UserInteractions } from '@/types/video';
+import { SHORT_VIDEO_KIND, type ParsedVideoData, type UserInteractions } from '@/types/video';
 
 function getNavigationIndex(video: ParsedVideoData, fallbackIndex: number): number {
   const navigationIndex = (video as ParsedVideoData & { navigationIndex?: unknown }).navigationIndex;
@@ -54,7 +54,8 @@ function VideoCardWithMetrics({ video, userInteractions, actions, showComments, 
   navigationContext: VideoNavigationContext | null;
   onPlaybackStarted?: () => void;
 }) {
-  const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, { enabled: true });
+  const supportsDivineInteractions = (video.originalEvent?.kind ?? video.kind) === SHORT_VIDEO_KIND;
+  const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, { enabled: supportsDivineInteractions });
   const loopCount = video.isVineMigrated ? (video.loopCount ?? 0) : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
   const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
   const displayCount = getVisiblePlaybackCount({ isVineMigrated: video.isVineMigrated, loopCount, viewStartCount });
@@ -358,7 +359,7 @@ export function VideoPage() {
 
   // Batch fetch user interactions only for VISIBLE videos (not all)
   const videosForInteractions = useMemo(() => {
-    return (videos?.slice(0, maxRendered) ?? []).map(v => ({
+    return (videos?.slice(0, maxRendered) ?? []).filter(v => (v.originalEvent?.kind ?? v.kind) === SHORT_VIDEO_KIND).map(v => ({
       id: v.id,
       pubkey: v.pubkey,
       vineId: v.vineId,
