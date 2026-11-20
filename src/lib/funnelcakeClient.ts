@@ -774,13 +774,15 @@ export async function fetchVideoById(
   try {
     // First try the direct /api/videos/{id} endpoint
     try {
-      const response = await funnelcakeRequest<VideoByIdResponse>(
-        apiUrl,
-        `${API_CONFIG.funnelcake.endpoints.videos}/${identifier}`,
-        {},
-        signal,
-        15000
-      );
+      const response = identifier === '.' || identifier === '..'
+        ? null
+        : await funnelcakeRequest<VideoByIdResponse>(
+          apiUrl,
+          `${API_CONFIG.funnelcake.endpoints.videos}/${encodeURIComponent(identifier)}`,
+          {},
+          signal,
+          15000,
+        );
 
       if (response && response.event) {
         debugLog(`[FunnelcakeClient] Found video via direct lookup`);

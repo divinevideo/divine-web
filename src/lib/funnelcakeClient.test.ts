@@ -442,6 +442,23 @@ describe('funnelcakeClient', () => {
   });
 
   describe('fetchVideoById', () => {
+    it('keeps punctuation in a video identifier inside one API path segment', async () => {
+      const identifier = 'folder/clip:1?part#end';
+      vi.mocked(global.fetch).mockResolvedValueOnce(Response.json({}));
+
+      await fetchVideoById(API_URL, identifier);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        `${API_URL}/api/videos/${encodeURIComponent(identifier)}`,
+        expect.anything(),
+      );
+    });
+
+    it.each(['.', '..'])('skips the direct API path for the identifier %s', async (identifier) => {
+      await expect(fetchVideoById(API_URL, identifier)).resolves.toBeNull();
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
     it('allows the route lookup to use the mobile-parity timeout', async () => {
       const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
       const videoId = 'ab0b34b53e29564eda8943385844de3dd164cd883d469675c14689a8e8772188';
