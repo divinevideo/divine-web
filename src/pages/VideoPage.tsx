@@ -25,12 +25,13 @@ import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { buildListPath, buildPeopleListPath } from '@/lib/eventRouting';
-import { matchesVideoRoute, parseVideoRouteId } from '@/lib/videoRoute';
+import { matchesVideoTarget, parseVideoRouteId } from '@/lib/videoRoute';
+import { getVideoShareUrl } from '@/lib/shareUtils';
 import { debugLog } from '@/lib/debug';
 import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
 import { buildVideoLikeTags } from '@/lib/buildVideoLikeTags';
-import type { ParsedVideoData, UserInteractions } from '@/types/video';
+import { supportsDivineVideoInteractions, type ParsedVideoData, type UserInteractions } from '@/types/video';
 
 function getNavigationIndex(video: ParsedVideoData, fallbackIndex: number): number {
   const navigationIndex = (video as ParsedVideoData & { navigationIndex?: unknown }).navigationIndex;
@@ -46,15 +47,17 @@ interface VideoPageCardActions {
   handleCloseComments: () => void;
 }
 
-function VideoCardWithMetrics({ video, userInteractions, actions, showComments, navigationContext, onPlaybackStarted }: {
+function VideoCardWithMetrics({ video, shareUrl, userInteractions, actions, showComments, navigationContext, onPlaybackStarted }: {
   video: ParsedVideoData;
+  shareUrl?: string;
   userInteractions?: UserInteractions;
   actions: VideoPageCardActions;
   showComments: boolean;
   navigationContext: VideoNavigationContext | null;
   onPlaybackStarted?: () => void;
 }) {
-  const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, { enabled: true });
+  const supportsDivineInteractions = supportsDivineVideoInteractions(video);
+  const socialMetrics = useVideoSocialMetrics(video.id, video.pubkey, video.vineId, { enabled: supportsDivineInteractions });
   const loopCount = video.isVineMigrated ? (video.loopCount ?? 0) : Math.max(video.loopCount ?? 0, socialMetrics.data?.loopCount ?? 0);
   const viewStartCount = Math.max(video.divineViewCount ?? 0, socialMetrics.data?.viewCount ?? 0);
   const displayCount = getVisiblePlaybackCount({ isVineMigrated: video.isVineMigrated, loopCount, viewStartCount });
@@ -70,7 +73,7 @@ function VideoCardWithMetrics({ video, userInteractions, actions, showComments, 
     } else await actions.handleRepost(video);
   };
   return (
-    <VideoCard video={videoForCard} className="max-w-xl mx-auto" layout="vertical"
+    <VideoCard video={videoForCard} shareUrl={shareUrl} className="max-w-xl mx-auto" layout="vertical"
       onLike={handleVideoLike} onRepost={handleVideoRepost}
       onOpenComments={() => actions.handleOpenComments(video)} onCloseComments={actions.handleCloseComments}
       isLiked={userInteractions?.hasLiked || false} isReposted={userInteractions?.hasReposted || false}
@@ -85,15 +88,15 @@ export function VideoPage() {
   const [playedVideoId, setPlayedVideoId] = useState<string | null>(null);
   const { toast } = useToast();
   const { id } = useParams<{ id: string }>();
-  // An author-named route (`kind:pubkey:d`, from an naddr1) resolves only that
-  // author's video; a bare event id or d tag resolves as before.
-  const { lookupId, address: routeAddress } = useMemo(() => parseVideoRouteId(id || ''), [id]);
-  const routeAuthor = routeAddress?.pubkey;
-  const isRouteVideo = useCallback(
-    (video: ParsedVideoData) => matchesVideoRoute(video, lookupId, routeAuthor),
-    [lookupId, routeAuthor],
-  );
   const [searchParams] = useSearchParams();
+  const legacyAuthor = searchParams.get('author');
+  const routeTarget = useMemo(() => parseVideoRouteId(id || '', legacyAuthor), [id, legacyAuthor]);
+  const { lookupId, address: routeAddress } = routeTarget;
+  const routeAuthor = routeAddress?.pubkey ?? routeTarget.legacyAuthor;
+  const isRouteVideo = useCallback(
+    (video: ParsedVideoData) => matchesVideoTarget(video, routeTarget),
+    [routeTarget],
+  );
   const navigate = useSubdomainNavigate();
   const { shouldHideVideo } = useAgeRestrictedPreference();
   const isVideoVisible = useCallback((video: ParsedVideoData) => isRouteVideo(video) || !shouldHideVideo(video), [isRouteVideo, shouldHideVideo]);
@@ -120,13 +123,14 @@ export function VideoPage() {
   } = useVideoByIdFunnelcake({
     videoId: lookupId,
     author: routeAuthor,
+    routeTarget,
     pubkey: profileContextPubkey,
     hashtag: context?.source === 'hashtag' ? context.hashtag : undefined,
     query: context?.source === 'search' ? context.query : undefined,
     featuredTabId: context?.source === 'featured' ? context.featuredTabId : undefined,
     sortMode: context?.sortMode,
     currentIndex: context?.currentIndex,
-    enabled: !!id,
+    enabled: Boolean(lookupId),
     isVideoVisible,
   });
 
@@ -136,7 +140,7 @@ export function VideoPage() {
     () => isFeaturedTabUnavailable ? { source: 'trending' } : context,
     [context, isFeaturedTabUnavailable]
   );
-  const shouldEnableWebsocketNavigation = !!id && !funnelcakeLoading && (
+  const shouldEnableWebsocketNavigation = !!lookupId && !funnelcakeLoading && (
     !funnelcakeVideo ||
     (isFeaturedTabUnavailable && !funnelcakeVideos)
   );
@@ -155,12 +159,16 @@ export function VideoPage() {
     enabled: shouldEnableWebsocketNavigation,
     context: effectiveNavigationContext,
     address: routeAddress,
+    routeTarget,
   });
 
   // ALWAYS prefer Funnelcake REST API first - it's much faster
   // Loop counts are parsed from content field by funnelcakeTransform
   // WebSocket is only used as fallback when Funnelcake fails
   const currentVideo = funnelcakeVideo || wsVideo;
+  const routeShareUrl = currentVideo && (routeTarget.eventId || routeTarget.relayHints?.length)
+    ? getVideoShareUrl(currentVideo, routeTarget)
+    : undefined;
   const videos = funnelcakeVideos || wsVideos;
   const isLoading = funnelcakeLoading || (!funnelcakeVideo && wsLoading);
 
@@ -354,7 +362,7 @@ export function VideoPage() {
 
   // Batch fetch user interactions only for VISIBLE videos (not all)
   const videosForInteractions = useMemo(() => {
-    return (videos?.slice(0, maxRendered) ?? []).map(v => ({
+    return (videos?.slice(0, maxRendered) ?? []).filter(supportsDivineVideoInteractions).map(v => ({
       id: v.id,
       pubkey: v.pubkey,
       vineId: v.vineId,
@@ -850,6 +858,7 @@ export function VideoPage() {
                 {shouldRender ? (
                   <VideoCardWithMetrics
                     video={video}
+                    shareUrl={isCurrentVideo ? routeShareUrl : undefined}
                     onPlaybackStarted={() => handleScrollPlaybackStarted(video.id)}
                     actions={videoCardActions}
                     showComments={showCommentsForVideo === video.id}
@@ -1017,6 +1026,7 @@ export function VideoPage() {
         {currentVideo && (
           <VideoCardWithMetrics
             video={currentVideo}
+            shareUrl={routeShareUrl}
             onPlaybackStarted={() => setPlayedVideoId(currentVideo.id)}
             actions={videoCardActions}
             showComments={showCommentsForVideo === currentVideo.id}

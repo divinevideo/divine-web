@@ -16,7 +16,7 @@ import { useShortLinkShare } from '@/hooks/useShortLinkShare';
 import { getVideoShareData } from '@/lib/shareUtils';
 import { debugLog } from '@/lib/debug';
 import { getVisiblePlaybackCount } from '@/lib/playbackCount';
-import type { ParsedVideoData } from '@/types/video';
+import { supportsDivineVideoInteractions, type ParsedVideoData } from '@/types/video';
 
 interface FullscreenFeedProps {
   videos: ParsedVideoData[];
@@ -54,6 +54,7 @@ function FullscreenVideoWithMetrics({
 
   // Load metrics for this video
   const { socialMetrics, userInteractions } = useDeferredVideoMetrics({
+    enabled: supportsDivineVideoInteractions(video),
     videoId: video.id,
     videoPubkey: video.pubkey,
     vineId: video.vineId,

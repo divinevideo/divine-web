@@ -677,6 +677,7 @@ describe('VideoPage', () => {
     renderPage('/video/video-2?source=featured&featuredTabId=ft_unavailable&index=1');
 
     expect(mockUseVideoNavigation).toHaveBeenCalledWith('video-2', {
+      routeTarget: { lookupId: 'video-2', address: null },
       enabled: true,
       context: { source: 'trending' },
       address: null,
@@ -736,6 +737,7 @@ describe('VideoPage', () => {
     renderPage('/video/video-2?source=featured&featuredTabId=ft_out_of_range');
 
     expect(mockUseVideoNavigation).toHaveBeenCalledWith('video-2', {
+      routeTarget: { lookupId: 'video-2', address: null },
       enabled: false,
       context: expect.objectContaining({
         source: 'featured',

@@ -12,9 +12,12 @@ import { SHORT_VIDEO_KIND, VIDEO_KINDS, REPOST_KIND, type ParsedVideoData } from
 import type { NIP50Filter } from '@/types/nostr';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getLoopCount, getOriginalVineTimestamp, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated, getLatestRepostTime, validateVideoEvent, getTextTrackRef } from '@/lib/videoParser';
 import { debugLog, debugError, verboseLog } from '@/lib/debug';
+import { videoAddress } from '@/lib/videoAddress';
 import type { SortMode } from '@/types/nostr';
 
 interface UseVideoEventsOptions {
+  acceptedKinds?: readonly number[];
+  relayUrls?: string[];
   filter?: Partial<NostrFilter>;
   feedType?: 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'category';
   hashtag?: string;
@@ -68,13 +71,14 @@ async function getReactionCounts(
 async function parseVideoEvents(
   events: NostrEvent[],
   nostr: { query: (filters: NostrFilter[], options: { signal: AbortSignal }) => Promise<NostrEvent[]> },
-  sortChronologically = false
+  sortChronologically = false,
+  acceptedKinds: readonly number[] = VIDEO_KINDS,
 ): Promise<ParsedVideoData[]> {
   // Map to store videos by their unique ID (vineId or event ID)
   const videoMap = new Map<string, ParsedVideoData>();
 
   // Separate videos and reposts
-  const videoEvents = events.filter(e => VIDEO_KINDS.includes(e.kind));
+  const videoEvents = events.filter(e => acceptedKinds.includes(e.kind));
   const repostEvents = events.filter(e => e.kind === REPOST_KIND);
 
   debugLog(`[useVideoEvents] Processing ${videoEvents.length} videos and ${repostEvents.length} reposts`);
@@ -84,7 +88,7 @@ async function parseVideoEvents(
 
   // Process direct video events - add to map by vineId
   for (const event of videoEvents) {
-    if (!validateVideoEvent(event)) {
+    if (!validateVideoEvent(event, acceptedKinds)) {
       invalidVideos++;
       continue;
     }
@@ -96,7 +100,7 @@ async function parseVideoEvents(
     }
 
     // Get vineId from d tag (required for kind 34236)
-    const vineId = getVineId(event)!;
+    const vineId = getVineId(event);
 
     const videoUrl = videoEvent.videoMetadata?.url;
     if (!videoUrl) {
@@ -107,8 +111,7 @@ async function parseVideoEvents(
 
     validVideos++;
 
-    // Use pubkey:kind:d-tag as the unique key for addressable event deduplication
-    const uniqueKey = `${event.pubkey}:${event.kind}:${vineId}`;
+    const uniqueKey = videoAddress({ ...event, vineId });
 
     // If we already have this video, skip (keep the first one)
     if (videoMap.has(uniqueKey)) {
@@ -121,7 +124,7 @@ async function parseVideoEvents(
     videoMap.set(uniqueKey, {
       id: event.id,
       pubkey: event.pubkey,
-      kind: event.kind as typeof SHORT_VIDEO_KIND,
+      kind: event.kind,
       createdAt: event.created_at,
       originalVineTimestamp: getOriginalVineTimestamp(event),
       content: event.content,
@@ -315,13 +318,13 @@ async function parseVideoEvents(
 export function useVideoEvents(options: UseVideoEventsOptions = {}) {
   const { nostr } = useNostr();
   const { user } = useCurrentUser();
-  const { filter, feedType = 'discovery', hashtag, pubkey, limit = 50, until, sortMode, enabled = true } = options;
+  const { filter, acceptedKinds, relayUrls, feedType = 'discovery', hashtag, pubkey, limit = 50, until, sortMode, enabled = true } = options;
 
   // Get follow list for home feed - this is cached and auto-refetches
   const { data: followList } = useFollowList();
 
   const queryResult = useQuery({
-    queryKey: ['video-events', feedType, hashtag, pubkey, limit, until, sortMode, user?.pubkey, followList, filter],
+    queryKey: ['video-events', feedType, hashtag, pubkey, limit, until, sortMode, user?.pubkey, followList, filter, acceptedKinds, relayUrls],
     queryFn: async (context) => {
       const startTime = performance.now();
       verboseLog(`[useVideoEvents] ========== Starting query for ${feedType} feed ==========`);
@@ -339,7 +342,7 @@ export function useVideoEvents(options: UseVideoEventsOptions = {}) {
       // Profile feeds: no limit (get all videos for accurate stats)
       // Other feeds: cap at 50 per query (they use pagination/infinite scroll)
       const baseFilter: NIP50Filter = {
-        kinds: VIDEO_KINDS,
+        kinds: acceptedKinds ? [...acceptedKinds] : VIDEO_KINDS,
         ...(feedType === 'profile' 
           ? {} // No limit for profiles
           : { limit: Math.min(limit, 50) } // Cap at 50 for other feeds
@@ -409,7 +412,7 @@ export function useVideoEvents(options: UseVideoEventsOptions = {}) {
         const queryStartTime = performance.now();
         console.log('[useVideoEvents] Sending query with filter:', JSON.stringify(baseFilter, null, 2));
         verboseLog('[useVideoEvents] Calling nostr.query...');
-        events = await nostr.query([baseFilter], { signal });
+        events = await nostr.query([baseFilter], relayUrls ? { signal, relays: relayUrls } : { signal });
         console.log(`[useVideoEvents] Video query took ${(performance.now() - queryStartTime).toFixed(0)}ms, got ${events.length} events`);
         if (events.length > 0) {
           console.log('[useVideoEvents] First event:', events[0]);
@@ -447,7 +450,7 @@ export function useVideoEvents(options: UseVideoEventsOptions = {}) {
       const parseStartTime = performance.now();
       // Use chronological sorting for 'recent' feedType
       const sortChronologically = feedType === 'recent';
-      let parsed = await parseVideoEvents(events, nostr, sortChronologically);
+      let parsed = await parseVideoEvents(events, nostr, sortChronologically, acceptedKinds);
       const parseTime = performance.now() - parseStartTime;
       debugLog(`[useVideoEvents] Parse took ${parseTime.toFixed(0)}ms`);
 

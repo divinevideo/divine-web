@@ -37,7 +37,7 @@ import { genUserName } from '@/lib/genUserName';
 import { resolveDisplayName } from '@/lib/resolveDisplayName';
 import { formatDistanceToNow } from 'date-fns';
 import type { ParsedVideoData } from '@/types/video';
-import { SHORT_VIDEO_KIND } from '@/types/video';
+import { SHORT_VIDEO_KIND, supportsDivineVideoInteractions } from '@/types/video';
 import type { NostrMetadata } from '@nostrify/nostrify';
 import { cn } from '@/lib/utils';
 import { formatClassicVineViewBreakdown, formatLoopCount, formatCount } from '@/lib/formatUtils';
@@ -47,6 +47,7 @@ import { buildVideoNavigationUrl, type VideoNavigationContext } from '@/hooks/us
 import { useToast } from '@/hooks/useToast';
 import { useShortLinkShare } from '@/hooks/useShortLinkShare';
 import { getVideoShareData } from '@/lib/shareUtils';
+import { getPrimaryHlsUrl } from '@/lib/videoParser';
 import { SmartLink } from '@/components/SmartLink';
 import { MuteType } from '@/types/moderation';
 import { getOptimalVideoUrl } from '@/lib/bandwidthTracker';
@@ -59,6 +60,7 @@ import { useValidatedProfileLinkPath } from '@/hooks/useValidatedProfileLinkPath
 
 interface VideoCardProps {
   video: ParsedVideoData;
+  shareUrl?: string;
   className?: string;
   mode?: 'thumbnail' | 'auto-play';
   isPriority?: boolean; // First video in feed - skip observer wait for faster load
@@ -93,6 +95,7 @@ interface VideoCardProps {
 
 export function VideoCard({
   video,
+  shareUrl,
   className,
   mode = 'auto-play',
   isPriority,
@@ -135,7 +138,7 @@ export function VideoCard({
   // before that date are almost certainly classic Vines even without origin/platform tags
   const isClassicVine = video.isVineMigrated ||
     (video.originalVineTimestamp !== undefined && video.originalVineTimestamp < 1484611200);
-  // SKIP HLS for short-form videos — HLS adds 2 extra round-trips (manifest + segment)
+  // Skip optional HLS for short-form videos — HLS adds 2 extra round-trips (manifest + segment)
   // that are unnecessary for small ~6-second videos (~2-4MB). Direct MP4 loads in a single request.
   // Classic Vines also skip HLS because the transcoder distorts square 480x480 aspect ratio.
   // Only use HLS for longer content (>60s) if divine ever supports it.
@@ -146,8 +149,13 @@ export function VideoCard({
   const hlsFallbackUrl = mp4Failed && video.videoUrl?.includes('media.divine.video')
     ? video.hlsUrl || optimalHlsUrl
     : undefined;
-  const effectiveHlsUrl = hlsFallbackUrl || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined)));
-  const { data: lists } = useVideosInLists(video.vineId ?? undefined, video.id);
+  const effectiveHlsUrl = getPrimaryHlsUrl(video) || hlsFallbackUrl
+    || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined)));
+  const supportsDivineInteractions = supportsDivineVideoInteractions(video);
+  const { data: lists } = useVideosInLists(
+    supportsDivineInteractions ? video.vineId ?? undefined : undefined,
+    supportsDivineInteractions ? video.id : undefined,
+  );
 
   // NEW: Get reposter data from reposts array
   const hasReposts = video.reposts && video.reposts.length > 0;
@@ -266,7 +274,7 @@ export function VideoCard({
   const isOwnVideo = useIsOwnVideo(video);
   const { user: currentUser } = useCurrentUser();
   const { share, prepare } = useShortLinkShare();
-  const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
+  const coordinate = supportsDivineInteractions && video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
   const isPinned = useIsVideoPinned(coordinate);
   const { mutateAsync: pinVideo } = usePinVideo();
   const { mutateAsync: unpinVideo } = useUnpinVideo();
@@ -277,7 +285,7 @@ export function VideoCard({
   const { openLoginDialog } = useLoginDialog();
 
   // Get reactions data for the modal
-  const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId);
+  const { data: reactions } = useVideoReactions(video.id, video.pubkey, video.vineId, { enabled: supportsDivineInteractions });
 
   // Enhance author data with generated profiles
   const author = enhanceAuthorData(authorData.data, video.pubkey);
@@ -467,7 +475,8 @@ export function VideoCard({
     );
   };
 
-  const handleShare = () => share(getVideoShareData(video));
+  const getShareData = () => shareUrl ? { url: shareUrl } : getVideoShareData(video);
+  const handleShare = () => share(getShareData());
 
   const handlePinToggle = async () => {
     if (!coordinate) return;
@@ -527,14 +536,14 @@ export function VideoCard({
   return (
     <>
       {/* Comments Modal */}
-      <VideoCommentsModal
+      {supportsDivineInteractions && <VideoCommentsModal
         video={video}
         open={showComments}
         onOpenChange={handleCloseCommentsModal}
-      />
+      />}
 
       {/* Add to List Dialog */}
-      {video.vineId && showAddToListDialog && (
+      {supportsDivineInteractions && video.vineId && showAddToListDialog && (
         <AddToListDialog
           videoId={video.vineId}
           videoEventId={video.id}
@@ -889,6 +898,7 @@ export function VideoCard({
             "flex flex-wrap items-center",
             isHorizontal ? "pt-2 gap-1" : "px-4 pb-4 gap-0.5"
           )}>
+          {supportsDivineInteractions && <>
           {/* Like button - icon toggles, count shows modal */}
           <div className="flex items-center">
             <Button
@@ -964,6 +974,7 @@ export function VideoCard({
             <MessageCircle className="h-4 w-4" />
             {commentCount > 0 && <span className="text-xs">{formatCount(commentCount)}</span>}
           </Button>
+          </>}
 
           <Button
             variant="ghost"
@@ -972,8 +983,8 @@ export function VideoCard({
               "gap-2",
               !isHorizontal && "px-2"
             )}
-            onPointerDown={(event) => { if (event.button === 0) void prepare(getVideoShareData(video).url); }}
-            onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') void prepare(getVideoShareData(video).url); }}
+            onPointerDown={(event) => { if (event.button === 0) void prepare(getShareData().url); }}
+            onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') void prepare(getShareData().url); }}
             onClick={handleShare}
             aria-label={t('videoCard.ariaShare')}
           >
@@ -994,7 +1005,7 @@ export function VideoCard({
           </Button>
 
           {/* Lists button */}
-          {video.vineId && (
+          {supportsDivineInteractions && video.vineId && (
             <Button
               variant="ghost"
               size="sm"
@@ -1036,7 +1047,7 @@ export function VideoCard({
                   <DropdownMenuSeparator />
                 </>
               )}
-              {isOwnVideo && (
+              {supportsDivineInteractions && isOwnVideo && (
                 <>
                   <DropdownMenuItem
                     onClick={() => setShowDeleteDialog(true)}
@@ -1097,7 +1108,7 @@ export function VideoCard({
       />
     )}
 
-    {showDeleteDialog && (
+    {supportsDivineInteractions && showDeleteDialog && (
       <DeleteVideoDialog
         open={showDeleteDialog}
         onClose={() => setShowDeleteDialog(false)}

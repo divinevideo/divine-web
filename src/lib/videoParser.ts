@@ -30,6 +30,14 @@ function isValidVideoUrl(url: string): boolean {
   }
 }
 
+function isHlsVideoUrl(url: string): boolean {
+  return /^[^?#]*\.m3u8(?:[?#]|$)/i.test(url);
+}
+
+export function getPrimaryHlsUrl({ videoUrl, hlsUrl }: Pick<ParsedVideoData, 'videoUrl' | 'hlsUrl'>): string | undefined {
+  return hlsUrl === videoUrl || isHlsVideoUrl(videoUrl) ? videoUrl : undefined;
+}
+
 /**
  * Parse imeta tag to extract video metadata
  * Supports two formats:
@@ -132,7 +140,11 @@ function parseImetaTag(tag: string[]): VideoMetadata | null {
     }
   }
 
-  return metadata.url ? metadata : null;
+  if (!metadata.url || metadata.mimeType?.toLowerCase().startsWith('audio/')) return null;
+  if (isHlsVideoUrl(metadata.url) || /^application\/(?:vnd\.apple\.|x-)?mpegurl$/i.test(metadata.mimeType ?? '')) {
+    metadata.hlsUrl = metadata.url;
+  }
+  return metadata;
 }
 
 /**
@@ -259,7 +271,7 @@ export function extractVideoMetadata(event: NostrEvent): VideoMetadata | null {
           score = 100;
         } else if (imetaData.url.includes('.webm') || imetaData.url.includes('.mov')) {
           score = 90;
-        } else if (imetaData.url.includes('.m3u8')) {
+        } else if (imetaData.hlsUrl === imetaData.url) {
           score = 50; // HLS as primary is less preferred
         } else {
           score = 70; // Unknown format, medium priority
@@ -358,7 +370,6 @@ export function parseVideoEvent(event: NostrEvent): VideoEvent | null {
   // Create VideoEvent
   const videoEvent: VideoEvent = {
     ...event,
-    kind: event.kind as typeof SHORT_VIDEO_KIND, // Kind 34236 Addressable Short Videos
     videoMetadata,
     title,
     hashtags
@@ -672,11 +683,11 @@ export function addRepost(video: ParsedVideoData, repost: RepostMetadata): Parse
  * Validates that a NIP-71 video event has required fields
  * Centralized validation function used by all video hooks
  */
-export function validateVideoEvent(event: NostrEvent): boolean {
-  if (!VIDEO_KINDS.includes(event.kind)) return false;
+export function validateVideoEvent(event: NostrEvent, acceptedKinds: readonly number[] = VIDEO_KINDS): boolean {
+  if (!acceptedKinds.includes(event.kind)) return false;
 
-  // Kind 34236 (addressable/replaceable event) MUST have d tag per NIP-33
-  if (event.kind === SHORT_VIDEO_KIND) {
+  // Addressable video events require a d tag.
+  if (event.kind === SHORT_VIDEO_KIND || event.kind === 34235) {
     const vineId = getVineId(event);
     if (!vineId) {
       // Validation failure - missing required d tag
@@ -719,7 +730,7 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
     parsedVideos.push({
       id: event.id,
       pubkey: event.pubkey,
-      kind: event.kind as typeof SHORT_VIDEO_KIND,
+      kind: event.kind,
       createdAt: event.created_at,
       originalVineTimestamp: getOriginalVineTimestamp(event),
       content: event.content,

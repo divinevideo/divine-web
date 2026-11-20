@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { naddrEncode, neventEncode } from 'nostr-tools/nip19';
 import { SHORT_VIDEO_KIND } from '@/types/video';
 import { buildAddressableVideoPath } from '@/lib/eventRouting';
-import { matchesVideoRoute, parseVideoRouteId } from './videoRoute';
+import { matchesVideoRoute, matchesVideoTarget, parseVideoRouteId } from './videoRoute';
 
 const AUTHOR = 'a'.repeat(64);
 const OTHER_AUTHOR = 'b'.repeat(64);
@@ -13,6 +14,45 @@ function video(overrides: { id?: string; pubkey?: string; vineId?: string | null
 }
 
 describe('parseVideoRouteId', () => {
+  it('reads a standard naddr produced by an independent client', () => {
+    const reference = 'naddr1qqvxxmrfwqkkvun0d5kkzmn0w35x2u3dvdkxjetwwspzp242424242424242424242424242424242424242424242424242qvzqqqy9hsc93kfd';
+    expect(parseVideoRouteId(reference)).toEqual({
+      lookupId: 'clip-from-another-client', strictKind: true,
+      address: { kind: 34236, pubkey: AUTHOR, dTag: 'clip-from-another-client' },
+    });
+  });
+
+  it('keeps the kind, author and arbitrary identifier in a standard address', () => {
+    const reference = naddrEncode({ kind: 34235, pubkey: AUTHOR, identifier: 'folder/clip:1' });
+    expect(parseVideoRouteId(reference, OTHER_AUTHOR)).toEqual({
+      lookupId: 'folder/clip:1', strictKind: true,
+      address: { kind: 34235, pubkey: AUTHOR, dTag: 'folder/clip:1' },
+    });
+  });
+
+  it('reads nevent links as event IDs', () => {
+    expect(parseVideoRouteId(neventEncode({ id: EVENT_ID }))).toEqual({ lookupId: EVENT_ID, eventId: EVENT_ID, address: null });
+  });
+
+  it('retains legacy author-qualified links', () => {
+    expect(parseVideoRouteId(SHARED_D_TAG, AUTHOR.toUpperCase())).toEqual({
+      lookupId: SHARED_D_TAG,
+      address: null, legacyAuthor: AUTHOR,
+    });
+    expect(parseVideoRouteId(SHARED_D_TAG, 'invalid')).toEqual({ lookupId: SHARED_D_TAG, address: null });
+  });
+
+  it('preserves the legacy author for a d tag that only looks like a standard reference', () => {
+    const target = parseVideoRouteId('naddr1broken', AUTHOR);
+    expect(matchesVideoTarget(video({ vineId: 'naddr1broken' }), target)).toBe(true);
+    expect(matchesVideoTarget(video({ pubkey: OTHER_AUTHOR, vineId: 'naddr1broken' }), target)).toBe(false);
+  });
+
+  it('rejects a standard address for a non-video kind instead of looking it up as a bare d tag', () => {
+    const reference = naddrEncode({ kind: 30023, pubkey: AUTHOR, identifier: SHARED_D_TAG });
+    expect(parseVideoRouteId(reference, OTHER_AUTHOR)).toEqual({ lookupId: '', address: null });
+  });
+
   it('reads the author and d tag out of an addressable video route', () => {
     expect(parseVideoRouteId(`${SHORT_VIDEO_KIND}:${AUTHOR}:${SHARED_D_TAG}`)).toEqual({
       lookupId: SHARED_D_TAG,
@@ -78,5 +118,23 @@ describe('matchesVideoRoute', () => {
 
   it('compares authors case-insensitively', () => {
     expect(matchesVideoRoute(video({ pubkey: AUTHOR.toUpperCase() }), SHARED_D_TAG, AUTHOR)).toBe(true);
+  });
+});
+
+describe('matchesVideoTarget', () => {
+  it('requires the kind as well as the author and d tag of an naddr', () => {
+    const target = parseVideoRouteId(naddrEncode({ kind: 34235, pubkey: AUTHOR, identifier: SHARED_D_TAG }));
+    expect(matchesVideoTarget({ ...video({}), kind: 34236 }, target)).toBe(false);
+    expect(matchesVideoTarget({ ...video({}), kind: 34235 }, target)).toBe(true);
+  });
+  it('requires the exact event ID of an nevent, never a matching d tag', () => {
+    const target = parseVideoRouteId(neventEncode({ id: EVENT_ID }));
+    expect(matchesVideoTarget(video({ id: 'd'.repeat(64), vineId: EVENT_ID }), target)).toBe(false);
+    expect(matchesVideoTarget(video({}), target)).toBe(true);
+  });
+  it('keeps author-qualified legacy event IDs and d tags working', () => {
+    expect(matchesVideoTarget(video({ vineId: null }), parseVideoRouteId(EVENT_ID, AUTHOR))).toBe(true);
+    expect(matchesVideoTarget(video({}), parseVideoRouteId(SHARED_D_TAG, AUTHOR))).toBe(true);
+    expect(matchesVideoTarget(video({ pubkey: OTHER_AUTHOR }), parseVideoRouteId(SHARED_D_TAG, AUTHOR))).toBe(false);
   });
 });

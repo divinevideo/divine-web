@@ -7,10 +7,12 @@ import { useVideoEvents } from './useVideoEvents';
 import { usePeopleList } from '@/hooks/usePeopleLists';
 import { usePeopleListVideos } from '@/hooks/usePeopleListVideos';
 import { useFeedBlocklist } from '@/hooks/useFeedBlocklist';
+import { useAppContext } from '@/hooks/useAppContext';
+import { getEventLookupRelayUrls } from '@/config/relays';
 import { filterBlockedVideos } from '@/lib/blocklistFilter';
-import { matchesVideoRoute } from '@/lib/videoRoute';
+import { matchesVideoRoute, matchesVideoTarget, type VideoRouteTarget } from '@/lib/videoRoute';
 import type { AddressableCoordinate } from '@/lib/nostrCoordinates';
-import type { ParsedVideoData } from '@/types/video';
+import { VIDEO_REFERENCE_KINDS, type ParsedVideoData } from '@/types/video';
 import type { SortMode } from '@/types/nostr';
 
 type WebSocketFeedType = 'discovery' | 'home' | 'trending' | 'hashtag' | 'profile' | 'recent' | 'classics' | 'category';
@@ -39,6 +41,7 @@ interface VideoNavigationHook {
 }
 
 interface UseVideoNavigationOptions {
+  routeTarget?: VideoRouteTarget;
   enabled?: boolean;
   context?: VideoNavigationContext | null;
   /**
@@ -52,7 +55,15 @@ interface UseVideoNavigationOptions {
 export function useVideoNavigation(videoId: string, options: UseVideoNavigationOptions = {}): VideoNavigationHook {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { enabled = true, context: contextOverride, address } = options;
+  const { config } = useAppContext();
+  const { enabled = true, context: contextOverride, address, routeTarget } = options;
+  const relayUrls = useMemo(() => routeTarget?.relayHints?.length
+    ? getEventLookupRelayUrls({
+      configuredRelayUrls: [...(config.relayUrls ?? [config.relayUrl]), ...(config.customRelayUrls ?? [])],
+      relayHints: routeTarget.relayHints,
+      disabledRelayUrls: config.disabledPresetUrls,
+    })
+    : undefined, [config, routeTarget]);
 
   // Parse navigation context from URL params
   const parsedContext: VideoNavigationContext | null = useMemo(() => {
@@ -97,43 +108,63 @@ export function useVideoNavigation(videoId: string, options: UseVideoNavigationO
     return 'discovery';
   })();
   const blockedPubkeys = useFeedBlocklist();
-  const { data: feedVideos, isLoading: feedVideosLoading } = useVideoEvents(
-    context && !isPeopleListContext && !isVideoListContext ? {
-      feedType: feedTypeForWebSocket,
-      hashtag: context.hashtag,
-      pubkey: context.pubkey,
-      limit: 50, // Get enough videos for navigation
-      enabled,
-    } : {
-      filter: address
-        ? { kinds: [address.kind], authors: [address.pubkey], '#d': [address.dTag] }
-        : { ids: [videoId] },
-      limit: 1,
-      feedType: 'discovery',
-      enabled: enabled && !isPeopleListContext,
-    }
+  const hasFeedContext = Boolean(context && !isPeopleListContext && !isVideoListContext);
+  const { data: feedVideos, isLoading: feedVideosLoading } = useVideoEvents({
+    feedType: feedTypeForWebSocket,
+    hashtag: context?.hashtag,
+    pubkey: context?.pubkey,
+    limit: 50,
+    enabled: enabled && hasFeedContext,
+  });
+  const navigationVideos = isPeopleListContext ? peopleListVideos : hasFeedContext ? feedVideos : undefined;
+  const filteredNavigationVideos = useMemo(
+    () => navigationVideos && filterBlockedVideos(navigationVideos, blockedPubkeys),
+    [navigationVideos, blockedPubkeys],
   );
-  const filteredFeedVideos = useMemo(
-    () => feedVideos ? filterBlockedVideos(feedVideos, blockedPubkeys) : feedVideos,
-    [feedVideos, blockedPubkeys]
-  );
-  const videos = isPeopleListContext ? peopleListVideos : filteredFeedVideos;
-  const isLoading = isPeopleListContext
+
+  const targetAddress = routeTarget?.address ?? address;
+  const legacyAuthor = routeTarget?.legacyAuthor;
+  const isTarget = (video: ParsedVideoData) => {
+    if (routeTarget) return matchesVideoTarget(video, routeTarget);
+    if (targetAddress) return matchesVideoRoute(video, targetAddress.dTag, targetAddress.pubkey);
+    return video.id === videoId;
+  };
+  const navigationVideo = filteredNavigationVideos?.find(isTarget);
+  const hasNavigationContext = hasFeedContext || isPeopleListContext;
+  const hasExplicitTarget = Boolean(targetAddress || routeTarget?.eventId || legacyAuthor);
+  const lookupDirect = enabled && (!hasNavigationContext || (hasExplicitTarget && !navigationVideo));
+  const { data: directVideos, isLoading: directLoading } = useVideoEvents({
+    ...(routeTarget && { acceptedKinds: VIDEO_REFERENCE_KINDS }),
+    ...(relayUrls && { relayUrls }),
+    filter: targetAddress
+      ? { kinds: [targetAddress.kind], authors: [targetAddress.pubkey], '#d': [targetAddress.dTag] }
+      : { ids: [videoId], ...(legacyAuthor && { authors: [legacyAuthor] }) },
+    limit: 1,
+    feedType: 'discovery',
+    enabled: lookupDirect,
+  });
+  const { data: legacyAddressVideos, isLoading: legacyAddressLoading } = useVideoEvents({
+    filter: { authors: legacyAuthor ? [legacyAuthor] : [], '#d': [videoId] },
+    acceptedKinds: VIDEO_REFERENCE_KINDS,
+    limit: 1,
+    enabled: lookupDirect && Boolean(legacyAuthor),
+  });
+  const directVideo = lookupDirect ? filterBlockedVideos([
+    ...(directVideos ?? []),
+    ...(legacyAuthor ? legacyAddressVideos ?? [] : []),
+  ], blockedPubkeys).find(isTarget) : undefined;
+  const currentVideo = navigationVideo ?? directVideo ?? null;
+  const videos = useMemo(() => {
+    if (!directVideo || navigationVideo) return filteredNavigationVideos;
+    return [...(filteredNavigationVideos ?? []), directVideo];
+  }, [directVideo, filteredNavigationVideos, navigationVideo]);
+  const navigationLoading = isPeopleListContext
     ? peopleListQuery.isLoading || peopleListVideosQuery.isLoading
     : feedVideosLoading;
-
-  // Find current video and its index
-  const { currentVideo, currentIndex } = useMemo(() => {
-    if (!videos) return { currentVideo: null, currentIndex: -1 };
-
-    const index = videos.findIndex(video => address
-      ? matchesVideoRoute(video, address.dTag, address.pubkey)
-      : video.id === videoId);
-    return {
-      currentVideo: index >= 0 ? videos[index] : null,
-      currentIndex: index,
-    };
-  }, [videos, videoId, address]);
+  const isLoading = navigationLoading || (!currentVideo && lookupDirect && (
+    directLoading || (Boolean(legacyAuthor) && legacyAddressLoading)
+  ));
+  const currentIndex = currentVideo ? videos?.indexOf(currentVideo) ?? -1 : -1;
 
   // Navigation helpers
   const hasNext = currentIndex >= 0 && currentIndex < (videos?.length || 0) - 1;

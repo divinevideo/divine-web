@@ -78,8 +78,8 @@ vi.mock('@/hooks/useVideoSocialMetrics', () => ({ useVideoSocialMetrics: () => (
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: vi.fn() }) }));
 vi.mock('@/contexts/LoginDialogContext', () => ({ useLoginDialog: () => ({ openLoginDialog: vi.fn() }) }));
 vi.mock('@/components/VideoCard', () => ({
-  VideoCard: ({ video }: { video: { id: string; pubkey: string } }) => (
-    <div data-testid="video-card" data-pubkey={video.pubkey}>{video.id}</div>
+  VideoCard: ({ video, shareUrl }: { video: { id: string; pubkey: string }; shareUrl?: string }) => (
+    <div data-testid="video-card" data-pubkey={video.pubkey} data-share-url={shareUrl}>{video.id}</div>
   ),
 }));
 
@@ -147,6 +147,55 @@ describe('VideoPage author-named video links', () => {
 
     expect(await screen.findByText('Video not found')).toBeInTheDocument();
     expect(screen.queryByTestId('video-card')).not.toBeInTheDocument();
+  });
+
+  it.each(['naddr', 'nevent'])('opens and re-shares a /video %s reference using its admitted relay', async (type) => {
+    const event = videoEvent(AUTHOR, 'd'.repeat(64));
+    const relay = 'wss://video-relay.example';
+    const relays = [relay, 'ws://ignored.example'];
+    const reference = type === 'naddr'
+      ? nip19.naddrEncode({ kind: event.kind, pubkey: AUTHOR, identifier: SHARED_D_TAG, relays })
+      : nip19.neventEncode({ id: event.id, relays });
+    mockQuery.mockImplementation(async (filters: NostrFilter[], options?: { relays?: string[] }) =>
+      options?.relays?.includes(relay) && filters.some(filter => matchesFilter(event, filter)) ? [event] : []);
+
+    client = renderAt(`/video/${reference}`);
+
+    const card = await screen.findByText(event.id);
+    expect(mockQuery.mock.calls[0]?.[1].relays).not.toContain('ws://ignored.example');
+    expect(card).toHaveAttribute('data-share-url');
+    const url = new URL(card.getAttribute('data-share-url')!);
+    expect(nip19.decode(url.pathname.slice('/video/'.length))).toMatchObject({
+      type,
+      data: {
+        relays: [relay],
+        ...(type === 'nevent' ? { id: event.id } : { kind: event.kind, pubkey: AUTHOR, identifier: SHARED_D_TAG }),
+      },
+    });
+  });
+
+  it('opens the exact event even when it is missing from the navigation feed', async () => {
+    const event = { ...videoEvent(AUTHOR, 'e'.repeat(64)), kind: 22 };
+    const reference = nip19.neventEncode({ id: event.id });
+    mockQuery.mockImplementation(async (filters: NostrFilter[]) =>
+      filters.some(filter => filter.ids?.includes(event.id) && matchesFilter(event, filter)) ? [event] : []);
+
+    client = renderAt(`/video/${reference}?source=trending`);
+
+    expect(await screen.findByText(event.id)).toBeInTheDocument();
+  });
+
+  it('shows not found for a non-video address even when its encoding is another video’s d tag', async () => {
+    const reference = nip19.naddrEncode({ kind: 30023, pubkey: AUTHOR, identifier: 'article' });
+    mockFetchVideoById.mockResolvedValue({
+      id: 'different-video', pubkey: SQUATTER, kind: 34236, created_at: 1_700_000_000,
+      d_tag: reference, video_url: 'https://media.example/different.mp4',
+    });
+
+    client = renderAt(`/video/${reference}`);
+
+    expect(await screen.findByText('Video not found')).toBeInTheDocument();
+    expect(mockFetchVideoById).not.toHaveBeenCalled();
   });
 
   it("shows not found for an naddr1 with an empty identifier, never a video whose d tag is the literal segment", async () => {
