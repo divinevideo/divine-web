@@ -73,6 +73,15 @@ describe('parseIdentityTag', () => {
     });
   });
 
+  it('reads a space-padded platform as its canonical name', () => {
+    expect(parseIdentityTag(['i', ' github :semisol', 'abc'])).toMatchObject({
+      platform: 'github',
+      identity: 'semisol',
+      profileUrl: 'https://github.com/semisol',
+    });
+    expect(parseIdentityTag(['i', ' X :alice', '1'])?.platform).toBe('twitter');
+  });
+
   it('parses a Twitter identity tag', () => {
     const tag = ['i', 'twitter:semisol_public', '1619277047516401664'];
     const result = parseIdentityTag(tag);

@@ -9,6 +9,7 @@ import { getCachedVerification, setCachedVerification } from '@/lib/verification
 import { API_CONFIG, getFeatureFlag } from '@/config/api';
 import { isDiscordMessageLink } from '@/lib/discordProof';
 import { isYouTubeChannelId } from '@/lib/youtubeIdentity';
+import { canonicalPlatform } from '@/lib/identityPlatform';
 
 export interface ExternalIdentity {
   platform: string;
@@ -172,8 +173,7 @@ export function parseIdentityTag(tag: string[]): ExternalIdentity | null {
   const colonIndex = tag[1].indexOf(':');
   if (colonIndex === -1) return null;
 
-  const rawPlatform = tag[1].slice(0, colonIndex).toLowerCase();
-  const platform = rawPlatform === 'x' ? 'twitter' : rawPlatform;
+  const platform = canonicalPlatform(tag[1].slice(0, colonIndex));
   const identity = tag[1].slice(colonIndex + 1);
   const proof = tag[2] || '';
 
