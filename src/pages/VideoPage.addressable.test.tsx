@@ -78,8 +78,8 @@ vi.mock('@/hooks/useVideoSocialMetrics', () => ({ useVideoSocialMetrics: () => (
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: vi.fn() }) }));
 vi.mock('@/contexts/LoginDialogContext', () => ({ useLoginDialog: () => ({ openLoginDialog: vi.fn() }) }));
 vi.mock('@/components/VideoCard', () => ({
-  VideoCard: ({ video }: { video: { id: string; pubkey: string } }) => (
-    <div data-testid="video-card" data-pubkey={video.pubkey}>{video.id}</div>
+  VideoCard: ({ video, shareUrl }: { video: { id: string; pubkey: string }; shareUrl?: string }) => (
+    <div data-testid="video-card" data-pubkey={video.pubkey} data-share-url={shareUrl}>{video.id}</div>
   ),
 }));
 
@@ -149,7 +149,7 @@ describe('VideoPage author-named video links', () => {
     expect(screen.queryByTestId('video-card')).not.toBeInTheDocument();
   });
 
-  it.each(['naddr', 'nevent'])('uses the relay hint in a /video %s reference', async (type) => {
+  it.each(['naddr', 'nevent'])('opens and re-shares a /video %s reference using its admitted relay', async (type) => {
     const event = videoEvent(AUTHOR, 'd'.repeat(64));
     const relay = 'wss://video-relay.example';
     const relays = [relay, 'ws://ignored.example'];
@@ -161,8 +161,17 @@ describe('VideoPage author-named video links', () => {
 
     client = renderAt(`/video/${reference}`);
 
-    expect(await screen.findByText(event.id)).toBeInTheDocument();
+    const card = await screen.findByText(event.id);
     expect(mockQuery.mock.calls[0]?.[1].relays).not.toContain('ws://ignored.example');
+    expect(card).toHaveAttribute('data-share-url');
+    const url = new URL(card.getAttribute('data-share-url')!);
+    expect(nip19.decode(url.pathname.slice('/video/'.length))).toMatchObject({
+      type,
+      data: {
+        relays: [relay],
+        ...(type === 'nevent' ? { id: event.id } : { kind: event.kind, pubkey: AUTHOR, identifier: SHARED_D_TAG }),
+      },
+    });
   });
 
   it('opens the exact event even when it is missing from the navigation feed', async () => {

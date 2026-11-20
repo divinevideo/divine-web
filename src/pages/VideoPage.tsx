@@ -26,6 +26,7 @@ import { genUserName } from '@/lib/genUserName';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { buildListPath, buildPeopleListPath } from '@/lib/eventRouting';
 import { matchesVideoTarget, parseVideoRouteId } from '@/lib/videoRoute';
+import { getVideoShareUrl } from '@/lib/shareUtils';
 import { debugLog } from '@/lib/debug';
 import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
@@ -46,8 +47,9 @@ interface VideoPageCardActions {
   handleCloseComments: () => void;
 }
 
-function VideoCardWithMetrics({ video, userInteractions, actions, showComments, navigationContext, onPlaybackStarted }: {
+function VideoCardWithMetrics({ video, shareUrl, userInteractions, actions, showComments, navigationContext, onPlaybackStarted }: {
   video: ParsedVideoData;
+  shareUrl?: string;
   userInteractions?: UserInteractions;
   actions: VideoPageCardActions;
   showComments: boolean;
@@ -71,7 +73,7 @@ function VideoCardWithMetrics({ video, userInteractions, actions, showComments, 
     } else await actions.handleRepost(video);
   };
   return (
-    <VideoCard video={videoForCard} className="max-w-xl mx-auto" layout="vertical"
+    <VideoCard video={videoForCard} shareUrl={shareUrl} className="max-w-xl mx-auto" layout="vertical"
       onLike={handleVideoLike} onRepost={handleVideoRepost}
       onOpenComments={() => actions.handleOpenComments(video)} onCloseComments={actions.handleCloseComments}
       isLiked={userInteractions?.hasLiked || false} isReposted={userInteractions?.hasReposted || false}
@@ -164,6 +166,9 @@ export function VideoPage() {
   // Loop counts are parsed from content field by funnelcakeTransform
   // WebSocket is only used as fallback when Funnelcake fails
   const currentVideo = funnelcakeVideo || wsVideo;
+  const routeShareUrl = currentVideo && (routeTarget.eventId || routeTarget.relayHints?.length)
+    ? getVideoShareUrl(currentVideo, routeTarget)
+    : undefined;
   const videos = funnelcakeVideos || wsVideos;
   const isLoading = funnelcakeLoading || (!funnelcakeVideo && wsLoading);
 
@@ -853,6 +858,7 @@ export function VideoPage() {
                 {shouldRender ? (
                   <VideoCardWithMetrics
                     video={video}
+                    shareUrl={isCurrentVideo ? routeShareUrl : undefined}
                     onPlaybackStarted={() => handleScrollPlaybackStarted(video.id)}
                     actions={videoCardActions}
                     showComments={showCommentsForVideo === video.id}
@@ -1020,6 +1026,7 @@ export function VideoPage() {
         {currentVideo && (
           <VideoCardWithMetrics
             video={currentVideo}
+            shareUrl={routeShareUrl}
             onPlaybackStarted={() => setPlayedVideoId(currentVideo.id)}
             actions={videoCardActions}
             showComments={showCommentsForVideo === currentVideo.id}

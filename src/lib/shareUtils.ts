@@ -4,21 +4,25 @@
 import { naddrEncode, neventEncode } from 'nostr-tools/nip19';
 
 import { getApexShareUrl } from '@/lib/subdomainLinks';
-import { buildListPath, buildPeopleListPath } from '@/lib/eventRouting';
+import { buildListPath, buildPeopleListPath, getEventDTag } from '@/lib/eventRouting';
+import { admitRemoteSuppliedRelays, REMOTE_RELAY_HINT_CAP } from '@/lib/relayUrlPolicy';
+import type { VideoRouteTarget } from '@/lib/videoRoute';
 import type { ParsedVideoData } from '@/types/video';
 
-export function getVideoShareUrl(video: ParsedVideoData): string {
+export function getVideoShareUrl(video: ParsedVideoData, target?: Pick<VideoRouteTarget, 'eventId' | 'relayHints'>): string {
   const kind = video.originalEvent?.kind ?? video.kind;
-  const dTag = video.originalEvent
-    ? video.originalEvent.tags.find(tag => tag[0] === 'd')?.[1]
-    : video.vineId;
-  if ([34235, 34236].includes(kind) && dTag && new TextEncoder().encode(dTag).length <= 255 && /^[0-9a-f]{64}$/i.test(video.pubkey)) {
+  const dTag = video.originalEvent ? getEventDTag(video.originalEvent) : video.vineId;
+  const encoder = new TextEncoder();
+  const relays = admitRemoteSuppliedRelays(target?.relayHints ?? [], { cap: REMOTE_RELAY_HINT_CAP })
+    .filter(relay => encoder.encode(relay).length <= 255);
+  const isExactEvent = target?.eventId === video.id;
+  if (!isExactEvent && [34235, 34236].includes(kind) && dTag && encoder.encode(dTag).length <= 255 && /^[0-9a-f]{64}$/i.test(video.pubkey)) {
     return getApexShareUrl(`/video/${naddrEncode({
-      kind, pubkey: video.pubkey.toLowerCase(), identifier: dTag,
+      kind, pubkey: video.pubkey.toLowerCase(), identifier: dTag, relays,
     })}`);
   }
   if (/^[0-9a-f]{64}$/i.test(video.id)) {
-    return getApexShareUrl(`/video/${neventEncode({ id: video.id.toLowerCase() })}`);
+    return getApexShareUrl(`/video/${neventEncode({ id: video.id.toLowerCase(), relays })}`);
   }
   return getApexShareUrl(`/video/${encodeURIComponent(video.vineId || video.id)}`);
 }
