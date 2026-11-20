@@ -8,6 +8,9 @@ import {
 } from './videoMetadata.js';
 
 describe('isAddressableVideoRouteId', () => {
+  it('does not submit encoded Nostr references as bare d tags to the API', () => {
+    expect(isAddressableVideoRouteId('naddr1qq9kjup3v3jrjazpd3khwq3qsxktkuz8tw9hzhpc6pevaymknj3827parpueqyt7crqpa2zfh72sxpqqqzzmcqtynsu')).toBe(true);
+  });
   const pubkey = 'a'.repeat(64);
   const dTag = 'c'.repeat(64);
 

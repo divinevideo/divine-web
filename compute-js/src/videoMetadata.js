@@ -33,7 +33,7 @@ export function isAddressableVideoRouteId(rawId) {
   } catch {
     // A malformed escape is not a coordinate the app wrote.
   }
-  return ADDRESSABLE_ROUTE_ID.test(id);
+  return ADDRESSABLE_ROUTE_ID.test(id) || /^(?:naddr|nevent|note)1/i.test(id);
 }
 
 export function parseImetaTag(tag) {

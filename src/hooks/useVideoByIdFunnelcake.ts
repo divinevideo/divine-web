@@ -15,13 +15,14 @@ import { FEED_PAGE_SIZE } from '@/config/feed';
 import { filterBlockedVideoPages } from '@/lib/blocklistFilter';
 import { debugLog } from '@/lib/debug';
 import { videoAddress } from '@/lib/videoAddress';
-import { matchesVideoRoute } from '@/lib/videoRoute';
+import { matchesVideoRoute, matchesVideoTarget, type VideoRouteTarget } from '@/lib/videoRoute';
 import type { ParsedVideoData } from '@/types/video';
 import type { SortMode } from '@/types/nostr';
 import type { ResolvedFeaturedTab } from '@/types/featuredTabs';
 
 interface UseVideoByIdOptions {
   videoId: string;
+  routeTarget?: VideoRouteTarget;
   /**
    * Author the link names (an `naddr1` or a `kind:pubkey:d` route). When set,
    * `videoId` is a `d` tag and only that author's video with it is accepted;
@@ -65,6 +66,7 @@ async function fetchAuthorVideoByDTag(
   author: string,
   dTag: string,
   signal: AbortSignal,
+  matches?: (video: ParsedVideoData) => boolean,
 ): Promise<ParsedVideoData | null> {
   try {
     const { videos } = await fetchUserVideos(apiUrl, author, { limit: AUTHOR_VIDEO_SCAN_LIMIT, signal });
@@ -73,7 +75,7 @@ async function fetchAuthorVideoByDTag(
     for (const raw of videos) {
       if (raw.d_tag !== dTag) continue;
       const video = transformFunnelcakeVideo(raw);
-      if (video && matchesVideoRoute(video, dTag, author)) return video;
+      if (video && (matches ? matches(video) : matchesVideoRoute(video, dTag, author))) return video;
     }
     return null;
   } catch (err) {
@@ -215,8 +217,10 @@ async function fetchVisiblePagePastBlocked(
  * The single video lookup is faster than WebSocket queries.
  */
 export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoByIdResult {
-  const { videoId, author, pubkey, hashtag, query, featuredTabId, sortMode = 'relevance', currentIndex, enabled = true, isVideoVisible } = options;
-  const isTarget = (video: ParsedVideoData) => matchesVideoRoute(video, videoId, author);
+  const { videoId, author, routeTarget, pubkey, hashtag, query, featuredTabId, sortMode = 'relevance', currentIndex, enabled = true, isVideoVisible } = options;
+  const isTarget = (video: ParsedVideoData) => routeTarget
+    ? matchesVideoTarget(video, routeTarget)
+    : matchesVideoRoute(video, videoId, author);
   const { config } = useAppContext();
   const blockedPubkeys = useFeedBlocklist();
   const windowOffset = getNavigationWindowOffset(currentIndex);
@@ -417,7 +421,9 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
   const singleVideoQuery = useQuery({
     // The author is part of the key so an author-held lookup never reuses a
     // bare lookup's cached answer, which can be another account's video.
-    queryKey: author
+    queryKey: routeTarget
+      ? ['funnelcake-video', videoId, funnelcakeUrl, routeTarget]
+      : author
       ? ['funnelcake-video', videoId, funnelcakeUrl, author]
       : ['funnelcake-video', videoId, funnelcakeUrl],
     queryFn: async ({ signal }) => {
@@ -427,11 +433,12 @@ export function useVideoByIdFunnelcake(options: UseVideoByIdOptions): UseVideoBy
       // fetchAuthorVideoByDTag below scans that list holding the author.
       const raw = await fetchVideoById(funnelcakeUrl, videoId, author ? undefined : pubkey, signal);
 
-      const video = raw ? transformFunnelcakeVideo(raw) : null;
-      if (!author || (video && isTarget(video))) return video;
+      const video = raw ? transformFunnelcakeVideo(raw, { allowRegularVideos: Boolean(routeTarget) }) : null;
+      if (!author) return !routeTarget || (video && isTarget(video)) ? video : null;
+      if (video && isTarget(video)) return video;
       // `/api/videos/{d}` found nothing, or answered with another account's
       // video for a shared d tag.
-      return fetchAuthorVideoByDTag(funnelcakeUrl, author, videoId, signal);
+      return fetchAuthorVideoByDTag(funnelcakeUrl, author, videoId, signal, isTarget);
     },
     // Fall back to a direct lookup when the narrowed context window misses the target.
     enabled: shouldLookupSingleVideo,

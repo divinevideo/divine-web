@@ -184,17 +184,22 @@ People-list detail routes preserve `?relays=` hints from NIP-19 addresses and
 generic event redirects so lists published only to non-default relays can still
 be resolved.
 A video named by its author (an `naddr1` or a raw `kind:pubkey:d` coordinate)
-routes to `/video/<kind>:<pubkey>:<d>`, not `/video/<d>`. Divine's `d` tag is
+can route to `/video/<naddr>` or `/video/<kind>:<pubkey>:<d>`. New video
+shares encode the complete address as `naddr` before requesting a short link;
+regular events use `nevent`. Existing bare IDs, d tags, coordinates and
+`?author=<hex>` video links remain readable. Divine's `d` tag is
 the sha256 of the uploaded file, so accounts that upload the same file share
 one, and any account can publish under any `d` tag.
 [`parseVideoRouteId`](./src/lib/videoRoute.ts) turns that route into a lookup
-held to the author, even with an empty `d` tag. `VideoPage` rejects a REST
+held to the author, even with an empty `d` tag. Standard `naddr` references
+also require the original event kind; REST transformations retain the original kind. An `nevent` requires the exact event ID. Historical raw-coordinate
+aliases retain their existing compatibility behavior. `VideoPage` rejects a REST
 answer by another account, checks the author's own newest videos, then falls
 back to a relay query with `authors` and `#d`, and shows "not found" if the
 author has no such video. A bare `/video/<id>` names no author and still
 resolves by event id or `d` tag. The mobile app accepts the same coordinate as
 a `/video/:id` route id. Both edges (Fastly `compute-js` and the Cloudflare
-function) skip their per-video metadata lookup for these routes, because
+function) skip their per-video metadata lookup for coordinate and NIP-19 routes, because
 `/api/videos/{id}` would read the whole coordinate as one `d` tag, and the
 Cloudflare function also omits its oEmbed link. They fall back to generic
 metadata: the shell's, or for crawlers on Fastly its "Video on Divine" card.

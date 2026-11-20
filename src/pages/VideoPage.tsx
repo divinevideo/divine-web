@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/useToast';
 import { genUserName } from '@/lib/genUserName';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import { buildListPath, buildPeopleListPath } from '@/lib/eventRouting';
-import { matchesVideoRoute, parseVideoRouteId } from '@/lib/videoRoute';
+import { matchesVideoTarget, parseVideoRouteId } from '@/lib/videoRoute';
 import { debugLog } from '@/lib/debug';
 import { getVisiblePlaybackCount } from '@/lib/playbackCount';
 import { reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
@@ -87,13 +87,15 @@ export function VideoPage() {
   const { id } = useParams<{ id: string }>();
   // An author-named route (`kind:pubkey:d`, from an naddr1) resolves only that
   // author's video; a bare event id or d tag resolves as before.
-  const { lookupId, address: routeAddress } = useMemo(() => parseVideoRouteId(id || ''), [id]);
-  const routeAuthor = routeAddress?.pubkey;
-  const isRouteVideo = useCallback(
-    (video: ParsedVideoData) => matchesVideoRoute(video, lookupId, routeAuthor),
-    [lookupId, routeAuthor],
-  );
   const [searchParams] = useSearchParams();
+  const legacyAuthor = searchParams.get('author');
+  const routeTarget = useMemo(() => parseVideoRouteId(id || '', legacyAuthor), [id, legacyAuthor]);
+  const { lookupId, address: routeAddress } = routeTarget;
+  const routeAuthor = routeAddress?.pubkey ?? routeTarget.legacyAuthor;
+  const isRouteVideo = useCallback(
+    (video: ParsedVideoData) => matchesVideoTarget(video, routeTarget),
+    [routeTarget],
+  );
   const navigate = useSubdomainNavigate();
   const { shouldHideVideo } = useAgeRestrictedPreference();
   const isVideoVisible = useCallback((video: ParsedVideoData) => isRouteVideo(video) || !shouldHideVideo(video), [isRouteVideo, shouldHideVideo]);
@@ -120,6 +122,7 @@ export function VideoPage() {
   } = useVideoByIdFunnelcake({
     videoId: lookupId,
     author: routeAuthor,
+    routeTarget,
     pubkey: profileContextPubkey,
     hashtag: context?.source === 'hashtag' ? context.hashtag : undefined,
     query: context?.source === 'search' ? context.query : undefined,
@@ -155,6 +158,7 @@ export function VideoPage() {
     enabled: shouldEnableWebsocketNavigation,
     context: effectiveNavigationContext,
     address: routeAddress,
+    routeTarget,
   });
 
   // ALWAYS prefer Funnelcake REST API first - it's much faster
