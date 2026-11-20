@@ -132,7 +132,7 @@ function parseImetaTag(tag: string[]): VideoMetadata | null {
     }
   }
 
-  return metadata.url ? metadata : null;
+  return metadata.url && !metadata.mimeType?.toLowerCase().startsWith('audio/') ? metadata : null;
 }
 
 /**
