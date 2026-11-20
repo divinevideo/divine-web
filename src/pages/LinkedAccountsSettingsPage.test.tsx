@@ -58,6 +58,8 @@ async function selectDiscord(user: ReturnType<typeof userEvent.setup>) {
 
 // Every test starts with no linked accounts unless it sets some.
 beforeEach(() => {
+  // jsdom has no scrollIntoView; Edit scrolls the form into view 100ms later.
+  Element.prototype.scrollIntoView = vi.fn();
   state.identities = [];
   mockAdd.mockClear();
   mockRemove.mockReset();
