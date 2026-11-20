@@ -8,7 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 import LinkedAccountsSettingsPage from './LinkedAccountsSettingsPage';
 
 const { mockAdd, mockRemove, mockToast, state } = vi.hoisted(() => ({
-  mockAdd: vi.fn().mockResolvedValue(undefined),
+  mockAdd: vi.fn().mockResolvedValue({ event: {}, signIn: null }),
   mockRemove: vi.fn(),
   mockToast: vi.fn(),
   state: { identities: [] as unknown[] },
@@ -191,6 +191,38 @@ describe('LinkedAccountsSettingsPage YouTube flow', () => {
       proof: 'dQw4w9WgXcQ',
       replaces: { platform: 'youtube', identity: 'dQw4w9WgXcQ' },
     });
+  });
+
+  it('warns when the replaced account\'s sign-in record could not be cleared, and keeps the update', async () => {
+    existingYouTube('dQw4w9WgXcQ', 'dQw4w9WgXcQ');
+    mockAdd.mockResolvedValueOnce({ event: {}, signIn: { revoked: false, code: 'unlink_claim_listed' } });
+    const user = userEvent.setup();
+    renderPage();
+    await editFirst(user);
+
+    await user.type(channelField(), 'alice');
+    await user.click(screen.getByRole('button', { name: /linkedAccountsSettings.updateAccountButton/i }));
+
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith({
+      title: 'linkedAccountsSettings.toastUpdatedTitle',
+      description: 'linkedAccountsSettings.toastSignInNotCleared',
+    }));
+    expect(mockToast).toHaveBeenCalledTimes(1);
+  });
+
+  it('confirms the update as usual when the replaced account\'s sign-in record was cleared', async () => {
+    existingYouTube('dQw4w9WgXcQ', 'dQw4w9WgXcQ');
+    mockAdd.mockResolvedValueOnce({ event: {}, signIn: { revoked: true } });
+    const user = userEvent.setup();
+    renderPage();
+    await editFirst(user);
+
+    await user.type(channelField(), 'alice');
+    await user.click(screen.getByRole('button', { name: /linkedAccountsSettings.updateAccountButton/i }));
+
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'linkedAccountsSettings.toastVerifiedTitle',
+    })));
   });
 
   it('publishes what the channel field shows, even after a channel link was pasted', async () => {

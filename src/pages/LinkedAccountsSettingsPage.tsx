@@ -445,7 +445,7 @@ export default function LinkedAccountsSettingsPage() {
       }
       // An update can change the identity (an older YouTube entry is saved
       // under its channel now), so name the edited row for the hook to drop.
-      await addIdentity.mutateAsync({
+      const { signIn } = await addIdentity.mutateAsync({
         platform,
         identity: cleanIdentity,
         proof: cleanProof,
@@ -465,7 +465,15 @@ export default function LinkedAccountsSettingsPage() {
         proofUrl: selectedConfig?.proofUrl(cleanIdentity, cleanProof) ?? '',
       };
       const verifyResult = await verifyIdentityClaim(newIdentity, user!.pubkey);
-      if (verifyResult.verified) {
+      if (signIn && !signIn.revoked) {
+        // The update replaced another account and the verifier kept its
+        // sign-in record. Only one toast shows at a time, so this one wins:
+        // the new account's check still shows on its row.
+        toast({
+          title: t('linkedAccountsSettings.toastUpdatedTitle'),
+          description: t('linkedAccountsSettings.toastSignInNotCleared'),
+        });
+      } else if (verifyResult.verified) {
         toast({
           title: t('linkedAccountsSettings.toastVerifiedTitle'),
           description: isEditing

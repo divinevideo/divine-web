@@ -1,5 +1,5 @@
 // ABOUTME: Hook to publish/update NIP-39 external identity claims (kind 10011)
-// ABOUTME: Provides add/remove operations; removing a sign-in row also clears the verifier's sign-in record
+// ABOUTME: Provides add/remove operations; removing or replacing a sign-in row also clears the verifier's sign-in record
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
@@ -109,10 +109,24 @@ export function useAddIdentity() {
       tags.push(['i', `${targetPlatform}:${identity}`, proof]);
 
       const event = await publishEvent(tags);
+
+      // An update that swaps in a different account has removed the old one,
+      // so clear its sign-in record as Remove would. Its row is gone from the
+      // list, so the page no longer offers Remove for it.
+      const replaced = replaces && replacedPlatform
+        && !(replacedPlatform === targetPlatform && replaces.identity === identity)
+        ? { platform: replacedPlatform, identity: replaces.identity }
+        : null;
+      const signInName = replaced && signInPlatform(replaced.platform);
+      const signIn = signInName && user
+        ? await revokeSignInLink({ platform: signInName, identity: replaced.identity, pubkey: user.pubkey, list: event })
+        : null;
+
       if (user) {
         clearAccountVerificationCache(targetPlatform, identity, user.pubkey);
+        if (replaced) clearAccountVerificationCache(replaced.platform, replaced.identity, user.pubkey);
       }
-      return event;
+      return { event, signIn };
     },
     onSuccess: () => invalidate(),
   });

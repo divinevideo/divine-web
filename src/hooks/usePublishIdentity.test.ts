@@ -255,6 +255,94 @@ describe('useAddIdentity', () => {
     ]);
   });
 
+  it('clears the replaced sign-in account with the list it just published', async () => {
+    mockRevoke.mockResolvedValue({ revoked: true });
+    setCachedVerification('bluesky', 'alice.bsky.social', 'oauth', TEST_PUBKEY, { verified: true });
+    const { result } = await setupExisting([
+      ['i', 'bluesky:alice.bsky.social', 'oauth'],
+      ['i', 'github:alice', 'proof1'],
+    ]);
+
+    let added!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
+    await act(async () => {
+      added = await result.current.mutateAsync({
+        platform: 'bluesky',
+        identity: 'bob.bsky.social',
+        proof: 'https://bsky.app/profile/bob.bsky.social/post/3kabc',
+        replaces: { platform: 'bluesky', identity: 'alice.bsky.social' },
+      });
+    });
+
+    expect(added.event.tags).toEqual([
+      ['i', 'github:alice', 'proof1'],
+      ['i', 'bluesky:bob.bsky.social', 'https://bsky.app/profile/bob.bsky.social/post/3kabc'],
+    ]);
+    expect(mockRevoke).toHaveBeenCalledTimes(1);
+    expect(mockRevoke).toHaveBeenCalledWith({
+      platform: 'bluesky',
+      identity: 'alice.bsky.social',
+      pubkey: TEST_PUBKEY,
+      list: added.event,
+    });
+    expect(mockNostrEvent.mock.invocationCallOrder[0]).toBeLessThan(mockRevoke.mock.invocationCallOrder[0]);
+    expect(added.signIn).toEqual({ revoked: true });
+    expect(getCachedVerification('bluesky', 'alice.bsky.social', 'oauth', TEST_PUBKEY)).toBeNull();
+  });
+
+  it('keeps the update and reports it when the verifier refuses to clear the replaced account', async () => {
+    mockRevoke.mockResolvedValue({ revoked: false, code: 'unlink_claim_listed' });
+    const { result } = await setupExisting([['i', 'twitter:alice', 'oauth']]);
+
+    let added!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
+    await act(async () => {
+      added = await result.current.mutateAsync({
+        platform: 'x',
+        identity: 'bob',
+        proof: '123',
+        replaces: { platform: 'x', identity: 'alice' },
+      });
+    });
+
+    expect(mockRevoke).toHaveBeenCalledWith(expect.objectContaining({ platform: 'twitter', identity: 'alice' }));
+    expect(added.signIn).toEqual({ revoked: false, code: 'unlink_claim_listed' });
+  });
+
+  it.each([
+    ['the identity is unchanged', { platform: 'bluesky', identity: 'alice.bsky.social' }, 'bluesky:alice.bsky.social'],
+    ['the replaced platform has no sign-in', { platform: 'github', identity: 'alice' }, 'github:alice'],
+  ])('asks the verifier nothing when %s', async (_label, replaces, existingTag) => {
+    const { result } = await setupExisting([['i', existingTag, 'oauth']]);
+
+    let added!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
+    await act(async () => {
+      added = await result.current.mutateAsync({
+        platform: 'bluesky',
+        identity: 'alice.bsky.social',
+        proof: 'oauth',
+        replaces,
+      });
+    });
+
+    expect(mockRevoke).not.toHaveBeenCalled();
+    expect(added.signIn).toBeNull();
+  });
+
+  it('asks the verifier nothing when publishing the update fails', async () => {
+    const { result } = await setupExisting([['i', 'bluesky:alice.bsky.social', 'oauth']]);
+    mockNostrEvent.mockRejectedValueOnce(new Error('relay down'));
+
+    await act(async () => {
+      await expect(result.current.mutateAsync({
+        platform: 'bluesky',
+        identity: 'bob.bsky.social',
+        proof: 'oauth',
+        replaces: { platform: 'bluesky', identity: 'alice.bsky.social' },
+      })).rejects.toThrow('relay down');
+    });
+
+    expect(mockRevoke).not.toHaveBeenCalled();
+  });
+
   it('clears stale cached verification for an added or updated account', async () => {
     setCachedVerification('twitter', 'alice', 'new-proof', TEST_PUBKEY, {
       verified: false,
@@ -292,11 +380,11 @@ describe('useAddIdentity list timestamp', () => {
     const dateNow = vi.spyOn(Date, 'now').mockReturnValue(nowMs);
     try {
       const { result } = renderHook(() => useAddIdentity(), { wrapper: createWrapper(client) });
-      let event!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
+      let added!: Awaited<ReturnType<typeof result.current.mutateAsync>>;
       await act(async () => {
-        event = await result.current.mutateAsync({ platform: 'github', identity: 'alice', proof: 'p' });
+        added = await result.current.mutateAsync({ platform: 'github', identity: 'alice', proof: 'p' });
       });
-      return event;
+      return added.event;
     } finally {
       dateNow.mockRestore();
     }
