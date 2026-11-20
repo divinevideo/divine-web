@@ -1,5 +1,5 @@
 // ABOUTME: Hook to publish/update NIP-39 external identity claims (kind 10011)
-// ABOUTME: Provides add/remove operations; removing a sign-in row also clears the verifier's sign-in record
+// ABOUTME: Provides add/remove operations; removing or replacing a sign-in row also clears the verifier's sign-in record
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNostr } from '@nostrify/react';
@@ -91,20 +91,42 @@ export function useAddIdentity() {
   const { data: existingIdentities = [] } = useExternalIdentities(user?.pubkey);
 
   return useMutation({
-    mutationFn: async ({ platform, identity, proof }: { platform: string; identity: string; proof: string }) => {
+    mutationFn: async ({ platform, identity, proof, replaces }: {
+      platform: string;
+      identity: string;
+      proof: string;
+      /** The row being edited; dropped in the same publish so a changed identity does not leave the old row behind. */
+      replaces?: { platform: string; identity: string };
+    }) => {
       const targetPlatform = canonicalPlatform(platform);
-      // Build tags: keep existing, add new
+      const replacedPlatform = replaces && canonicalPlatform(replaces.platform);
+      // Build tags: keep existing except the edited row, add new
       const tags = existingIdentities
         .filter((id) => !(id.platform === targetPlatform && id.identity === identity))
+        .filter((id) => !(replaces && id.platform === replacedPlatform && id.identity === replaces.identity))
         .map((id) => ['i', `${id.platform}:${id.identity}`, id.proof]);
 
       tags.push(['i', `${targetPlatform}:${identity}`, proof]);
 
       const event = await publishEvent(tags);
+
+      // An update that swaps in a different account has removed the old one,
+      // so clear its sign-in record as Remove would. Its row is gone from the
+      // list, so the page no longer offers Remove for it.
+      const replaced = replaces && replacedPlatform
+        && !(replacedPlatform === targetPlatform && replaces.identity === identity)
+        ? { platform: replacedPlatform, identity: replaces.identity }
+        : null;
+      const signInName = replaced && signInPlatform(replaced.platform);
+      const signIn = signInName && user
+        ? await revokeSignInLink({ platform: signInName, identity: replaced.identity, pubkey: user.pubkey, list: event })
+        : null;
+
       if (user) {
         clearAccountVerificationCache(targetPlatform, identity, user.pubkey);
+        if (replaced) clearAccountVerificationCache(replaced.platform, replaced.identity, user.pubkey);
       }
-      return event;
+      return { event, signIn };
     },
     onSuccess: () => invalidate(),
   });

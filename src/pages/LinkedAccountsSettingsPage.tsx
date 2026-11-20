@@ -19,6 +19,7 @@ import { LinkSimple as Link2, Plus, Trash as Trash2, PencilSimple as Pencil, Che
 import { useToast } from '@/hooks/useToast';
 import { nip19 } from 'nostr-tools';
 import { isDiscordMessageLink } from '@/lib/discordProof';
+import { tidyYouTubeIdentity } from '@/lib/youtubeIdentity';
 
 // X/Twitter icon (simple)
 function XIcon({ className }: { className?: string }) {
@@ -142,11 +143,11 @@ function extractFromUrl(platform: string, input: string): { identity?: string; p
         if ((parts[0] === 'shorts' || parts[0] === 'live') && parts[1]) {
           return { proof: parts[1] };
         }
-        if (parts[0]?.startsWith('@')) {
-          return { identity: parts[0].slice(1), proof: trimmed };
-        }
-        if ((parts[0] === 'channel' || parts[0] === 'c' || parts[0] === 'user') && parts[1]) {
-          return { identity: `${parts[0]}/${parts[1]}`, proof: trimmed };
+        // A channel link names the channel, in the form the verifier accepts
+        // (@handle or channel id). /c/ and /user/ links name nothing it accepts.
+        const channel = tidyYouTubeIdentity(trimmed);
+        if (channel) {
+          return { identity: channel, proof: trimmed };
         }
         return { proof: parts.pop() || trimmed };
       }
@@ -174,7 +175,7 @@ const PROOF_INSTRUCTIONS: Record<string, string> = {
   telegram: 'Send a message in a public channel/group containing the text below, then paste the message path (e.g. channelname/123).',
   bluesky: 'Post on Bluesky containing the text below, then paste the record key (rkey) from the post URL.',
   discord: 'Post a message containing the text below, then right-click it and pick Copy Message Link. A server invite cannot prove who owns an account. Enter your Discord username — the one on your profile, not your display name.',
-  youtube: 'Create a public YouTube proof post (video/community/description containing the text below), then paste the proof URL.',
+  youtube: "Create a public YouTube proof post (video/community/description containing the text below), then paste the proof URL. Enter your channel's @handle or channel ID.",
   tiktok: 'Create a TikTok post containing the text below, then paste the post URL.',
 };
 
@@ -383,7 +384,13 @@ export default function LinkedAccountsSettingsPage() {
   const handleEdit = (id: ExternalIdentity) => {
     setEditingIdentity(id);
     setPlatform(id.platform);
-    setIdentity(id.identity);
+    // For YouTube, show the channel in the spelling it will be saved in. An
+    // entry whose channel equals its proof was saved by an older version of
+    // this page that put the video id in both slots, so ask for the channel
+    // again rather than offering the video id as a handle.
+    setIdentity(id.platform === 'youtube'
+      ? (id.identity !== id.proof && tidyYouTubeIdentity(id.identity)) || ''
+      : id.identity);
     setProof(id.proof);
     // Scroll to form
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -422,14 +429,30 @@ export default function LinkedAccountsSettingsPage() {
       // itself for platforms whose proof doubles as the handle. Never fall back
       // where the handle has to be typed: the whole message URL would land in
       // the identity slot and the verifier could never match it.
-      const cleanIdentity = extracted.identity
-        || identity.trim()
-        || (platform === 'discord' ? '' : cleanProof);
+      // A YouTube video link doesn't say which channel posted it either, so
+      // the channel field is the only source (a pasted channel link already
+      // filled it, and the person may have changed it since). It is tidied to
+      // the one spelling the verifier accepts: an @handle or a channel id.
+      const cleanIdentity = platform === 'youtube'
+        ? tidyYouTubeIdentity(identity) ?? ''
+        : extracted.identity || identity.trim() || (platform === 'discord' ? '' : cleanProof);
       if (!cleanIdentity) {
-        toast({ title: t('linkedAccountsSettings.toastErrorTitle'), description: t('linkedAccountsSettings.toastCannotDetermineUsername'), variant: 'destructive' });
+        const description = platform === 'youtube'
+          ? t('linkedAccountsSettings.toastInvalidYouTubeChannel')
+          : t('linkedAccountsSettings.toastCannotDetermineUsername');
+        toast({ title: t('linkedAccountsSettings.toastErrorTitle'), description, variant: 'destructive' });
         return;
       }
-      await addIdentity.mutateAsync({ platform, identity: cleanIdentity, proof: cleanProof });
+      // An update can change the identity (an older YouTube entry is saved
+      // under its channel now), so name the edited row for the hook to drop.
+      const { signIn } = await addIdentity.mutateAsync({
+        platform,
+        identity: cleanIdentity,
+        proof: cleanProof,
+        replaces: editingIdentity
+          ? { platform: editingIdentity.platform, identity: editingIdentity.identity }
+          : undefined,
+      });
       const isEditing = !!editingIdentity;
       const platformLabel = selectedConfig?.label ?? platform;
 
@@ -442,7 +465,15 @@ export default function LinkedAccountsSettingsPage() {
         proofUrl: selectedConfig?.proofUrl(cleanIdentity, cleanProof) ?? '',
       };
       const verifyResult = await verifyIdentityClaim(newIdentity, user!.pubkey);
-      if (verifyResult.verified) {
+      if (signIn && !signIn.revoked) {
+        // The update replaced another account and the verifier kept its
+        // sign-in record. Only one toast shows at a time, so this one wins:
+        // the new account's check still shows on its row.
+        toast({
+          title: t('linkedAccountsSettings.toastUpdatedTitle'),
+          description: t('linkedAccountsSettings.toastSignInNotCleared'),
+        });
+      } else if (verifyResult.verified) {
         toast({
           title: t('linkedAccountsSettings.toastVerifiedTitle'),
           description: isEditing
@@ -638,6 +669,18 @@ export default function LinkedAccountsSettingsPage() {
           </Card>
 
           {/* The handle, where the proof link cannot carry it */}
+          {platform === 'youtube' && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                {t('linkedAccountsSettings.youtubeChannelLabel')}
+              </Label>
+              <Input
+                placeholder={t('linkedAccountsSettings.youtubeChannelPlaceholder')}
+                value={identity}
+                onChange={(e) => setIdentity(e.target.value)}
+              />
+            </div>
+          )}
           {platform === 'discord' && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">
@@ -667,7 +710,7 @@ export default function LinkedAccountsSettingsPage() {
                 }
               }}
             />
-            {identity && platform !== 'discord' && (
+            {identity && platform !== 'discord' && platform !== 'youtube' && (
               <p className="text-xs text-green-600">
                 {t('linkedAccountsSettings.detectedLabel')} <span className="font-medium">{identity}</span>
               </p>
@@ -685,7 +728,7 @@ export default function LinkedAccountsSettingsPage() {
               onClick={handleAdd}
               disabled={
                 !proof.trim()
-                || (platform === 'discord' && !identity.trim())
+                || ((platform === 'discord' || platform === 'youtube') && !identity.trim())
                 || addIdentity.isPending
               }
               className="w-full"
