@@ -165,6 +165,17 @@ describe('VideoPage author-named video links', () => {
     expect(mockQuery.mock.calls[0]?.[1].relays).not.toContain('ws://ignored.example');
   });
 
+  it('opens the exact event even when it is missing from the navigation feed', async () => {
+    const event = { ...videoEvent(AUTHOR, 'e'.repeat(64)), kind: 22 };
+    const reference = nip19.neventEncode({ id: event.id });
+    mockQuery.mockImplementation(async (filters: NostrFilter[]) =>
+      filters.some(filter => filter.ids?.includes(event.id) && matchesFilter(event, filter)) ? [event] : []);
+
+    client = renderAt(`/video/${reference}?source=trending`);
+
+    expect(await screen.findByText(event.id)).toBeInTheDocument();
+  });
+
   it("shows not found for an naddr1 with an empty identifier, never a video whose d tag is the literal segment", async () => {
     relayEvents.push(videoEvent(SQUATTER, 'squatter-event'));
 
