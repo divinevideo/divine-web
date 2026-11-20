@@ -1,5 +1,5 @@
 // ABOUTME: Hook to fetch and parse subtitles for a video
-// ABOUTME: Four-tier: embedded content > relay Kind 39307 > CDN VTT > null
+// ABOUTME: Tiers: embedded content (or the newer caption file the video names) > relay Kind 39307 > CDN VTT > null
 
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
@@ -52,6 +52,61 @@ function extractCdnHash(videoUrl: string): string | null {
   return null;
 }
 
+const CONTENT_HASH = /^[0-9a-f]{64}$/i;
+
+/**
+ * The SHA-256 an http(s) caption ref names its file by: the last path
+ * segment minus any extension, e.g. https://media.divine.video/{sha256}.
+ * Null for a ref that names no hash, such as a 39307 coordinate.
+ */
+function captionRefHash(ref: string): string | null {
+  try {
+    const url = new URL(ref);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+    const name = url.pathname.split('/').pop()?.split('.')[0] ?? '';
+    return CONTENT_HASH.test(name) ? name.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * The caption file the video's ref names, when the embedded captions are not
+ * that file; otherwise null.
+ *
+ * A subtitle save republishes the video with its new caption file before the
+ * Kind 39307 event Funnelcake embeds from, so embedded captions that hash to
+ * something else predate the video's own track. A ref that names no hash
+ * cannot be checked and counts as matching.
+ */
+async function newerCaptionFileUrl(embedded: string, ref: string | undefined): Promise<string | null> {
+  if (!ref) return null;
+  const refHash = captionRefHash(ref);
+  if (!refHash) return null;
+  try {
+    return (await sha256Hex(embedded)) === refHash ? null : ref;
+  } catch {
+    // No Web Crypto (insecure context): keep the embedded captions.
+    return null;
+  }
+}
+
+async function fetchVttFile(url: string, signal: AbortSignal): Promise<VttCue[]> {
+  try {
+    const response = await fetch(url, { signal });
+    if (!response.ok) return [];
+    const text = await response.text();
+    return text.trim().startsWith('WEBVTT') ? parseVtt(text) : [];
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Fetch and parse subtitles for a video.
  *
@@ -77,9 +132,19 @@ export function useSubtitles(
     queryFn: async ({ signal }) => {
       if (!video) return [];
 
-      // Tier 1: Embedded VTT content from API (zero cost)
+      // Tier 1: Embedded VTT content from API (zero cost), unless the video
+      // names a newer caption file; then that file, falling back to embedded.
       if (video.textTrackContent) {
-        return parseVtt(video.textTrackContent);
+        const newerFileUrl = await newerCaptionFileUrl(video.textTrackContent, video.textTrackRef);
+        if (!newerFileUrl) {
+          return parseVtt(video.textTrackContent);
+        }
+
+        const fromFile = await fetchVttFile(newerFileUrl, signal);
+        if (fromFile.length > 0) return fromFile;
+
+        const embedded = parseVtt(video.textTrackContent);
+        if (embedded.length > 0) return embedded;
       }
 
       // Tier 2: Fetch from relay via text-track ref
