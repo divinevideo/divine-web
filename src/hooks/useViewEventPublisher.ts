@@ -6,7 +6,7 @@ import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAppContext } from '@/hooks/useAppContext';
 import { debugLog } from '@/lib/debug';
-import type { ParsedVideoData } from '@/types/video';
+import { SHORT_VIDEO_KIND, type ParsedVideoData } from '@/types/video';
 
 /** Kind 22236 - Ephemeral video view event (NIP-71 extension) */
 export const VIEW_EVENT_KIND = 22236;
@@ -67,6 +67,8 @@ export function useViewEventPublisher(): UseViewEventPublisherResult {
       return false;
     }
 
+    if ((video.originalEvent?.kind ?? video.kind) !== SHORT_VIDEO_KIND) return false;
+
     // Need vineId for addressable reference
     if (!video.vineId) {
       debugLog('[ViewEventPublisher] Skipping: video has no vineId');
@@ -76,7 +78,7 @@ export function useViewEventPublisher(): UseViewEventPublisherResult {
     try {
       // Build the addressable coordinate (a tag)
       // Format: "34236:author_pubkey:d_tag"
-      const aTag = `34236:${video.pubkey}:${video.vineId}`;
+      const aTag = `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}`;
 
       // Get relay hint from config
       const relayHint = config.relayUrl || 'wss://relay.divine.video';

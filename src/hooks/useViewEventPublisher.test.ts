@@ -135,6 +135,20 @@ describe('useViewEventPublisher', () => {
     expect(mockPublishEvent).not.toHaveBeenCalled();
   });
 
+  it('does not publish a Divine view event for an addressable video of another kind', async () => {
+    const { result } = renderHook(() => useViewEventPublisher());
+
+    await act(async () => {
+      await expect(result.current.publishViewEvent({
+        video: makeVideo({ kind: 34235 }),
+        startSeconds: 0,
+        endSeconds: 5,
+      })).resolves.toBe(false);
+    });
+
+    expect(mockPublishEvent).not.toHaveBeenCalled();
+  });
+
   it('defaults source to unknown when not specified', async () => {
     const { result } = renderHook(() => useViewEventPublisher());
 
