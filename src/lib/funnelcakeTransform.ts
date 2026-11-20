@@ -215,6 +215,7 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw, options: { all
     createdAt: raw.created_at,
     content: raw.content || '',
     videoUrl: raw.video_url,
+    hlsUrl: raw.hls_url,
     thumbnailUrl: raw.thumbnail,
     blurhash: raw.blurhash,
     title: raw.title,

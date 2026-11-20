@@ -808,6 +808,7 @@ export async function fetchVideoById(
           content: event.content,
           thumbnail: metadata?.thumbnailUrl,
           video_url: metadata?.url ?? '',
+          hls_url: metadata?.hlsUrl,
           author_name: stats.author_name,
           author_avatar: stats.author_avatar,
           reactions: stats.reactions,

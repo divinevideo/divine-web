@@ -31,6 +31,10 @@ function isValidVideoUrl(url: string): boolean {
   }
 }
 
+export function isHlsVideoUrl(url: string): boolean {
+  return /^[^?#]*\.m3u8(?:[?#]|$)/i.test(url);
+}
+
 /**
  * Parse imeta tag to extract video metadata
  * Supports two formats:
@@ -133,7 +137,11 @@ function parseImetaTag(tag: string[]): VideoMetadata | null {
     }
   }
 
-  return metadata.url && !metadata.mimeType?.toLowerCase().startsWith('audio/') ? metadata : null;
+  if (!metadata.url || metadata.mimeType?.toLowerCase().startsWith('audio/')) return null;
+  if (isHlsVideoUrl(metadata.url) || /^application\/(?:vnd\.apple\.|x-)?mpegurl$/i.test(metadata.mimeType ?? '')) {
+    metadata.hlsUrl = metadata.url;
+  }
+  return metadata;
 }
 
 /**
@@ -260,7 +268,7 @@ export function extractVideoMetadata(event: NostrEvent): VideoMetadata | null {
           score = 100;
         } else if (imetaData.url.includes('.webm') || imetaData.url.includes('.mov')) {
           score = 90;
-        } else if (imetaData.url.includes('.m3u8')) {
+        } else if (imetaData.hlsUrl === imetaData.url) {
           score = 50; // HLS as primary is less preferred
         } else {
           score = 70; // Unknown format, medium priority
