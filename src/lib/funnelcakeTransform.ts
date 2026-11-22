@@ -186,6 +186,20 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
 
   const fullEvent = parseFullEvent(raw, id, pubkey);
   const fullEventProofMode = fullEvent ? getProofModeData(fullEvent) : undefined;
+  const summaryProofMode = proofSummaryToProofMode(raw);
+  // When edge hydration trims bulky `proofmode` / `device_attestation` tags
+  // while keeping compact tags and `raw.proof`, merge presence markers from
+  // `summaryProofMode` so the verification checklist stays intact.
+  const mergedProofMode = fullEventProofMode && summaryProofMode
+    ? {
+        ...summaryProofMode,
+        ...fullEventProofMode,
+        manifest: fullEventProofMode.manifest ?? summaryProofMode.manifest,
+        deviceAttestation: fullEventProofMode.deviceAttestation ?? summaryProofMode.deviceAttestation,
+        pgpFingerprint: fullEventProofMode.pgpFingerprint ?? summaryProofMode.pgpFingerprint,
+        c2paManifestId: fullEventProofMode.c2paManifestId ?? summaryProofMode.c2paManifestId,
+      }
+    : (fullEventProofMode ?? summaryProofMode);
 
   // Thin list payloads can omit the top-level d_tag while still carrying the
   // event's tags, so read those before giving up on the coordinate.
@@ -248,8 +262,8 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     textTrackRef: raw.text_track_ref,
     textTrackContent: raw.text_track_content,
 
-    // ProofMode data - extract from tags when available (single video endpoint)
-    proofMode: fullEventProofMode ?? proofSummaryToProofMode(raw),
+    // ProofMode data - merge parsed event tags with compact proof summary fallbacks
+    proofMode: mergedProofMode,
 
     // Empty reposts array (Funnelcake doesn't return individual reposts)
     reposts: [],

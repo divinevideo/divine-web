@@ -195,6 +195,19 @@ export async function detectRelayCapabilities(relayUrl: string): Promise<RelayCa
 
   const optimistic = getOptimisticRelayCapabilities(relayUrl);
 
+  // Skip the live NIP-11 HTTP fetch for our canonical first-party relay — its
+  // NIP-50 and video-sort capabilities are guaranteed and probing it adds a
+  // ~650ms startup request on every page load. Record its probe capabilities so
+  // relayHealth preserves its funnelcake routing bonus.
+  if (getRelayHostname(relayUrl) === 'relay.divine.video') {
+    recordProbe(relayUrl, {
+      nip50: optimistic.supportsNIP50,
+      funnelcake: optimistic.supportsVideoSorts,
+    });
+    capabilitiesCache.set(relayUrl, optimistic);
+    return optimistic;
+  }
+
   try {
     const relayInformation = await fetchRelayInformation(relayUrl);
     let supportsNIP50 = relayInformation?.supported_nips?.includes(50) ?? optimistic.supportsNIP50;

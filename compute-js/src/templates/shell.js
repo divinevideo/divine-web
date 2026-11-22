@@ -136,13 +136,15 @@ export function renderShell({
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
 
   <!-- Performance preconnects -->
-  <link rel="dns-prefetch" href="//relay.divine.video" />
-  <link rel="preconnect" href="https://relay.divine.video" crossorigin />
+  <link rel="dns-prefetch" href="//api.divine.video" />
+  <link rel="preconnect" href="https://api.divine.video" crossorigin />
   <link rel="dns-prefetch" href="//media.divine.video" />
   <link rel="preconnect" href="https://media.divine.video" crossorigin />
+  <link rel="dns-prefetch" href="//relay.divine.video" />
+  <link rel="preconnect" href="https://relay.divine.video" crossorigin />
 
   ${preloadLinks}
 

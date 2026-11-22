@@ -24,6 +24,7 @@ import {
   handleApexOgTags,
 } from './crawlerHandlers.js';
 import { isAddressableVideoRouteId, transformVideoApiResponse } from './videoMetadata.js';
+import { resolveCachedVideoPage } from './videoPageCache.js';
 import { compactVideoForHydration, normalizeFeedResponse } from './feedHydration.js';
 import { renderEmbedPage } from './embedPage.js';
 import {
@@ -156,8 +157,11 @@ async function handleRequest(event) {
   const atUsernameMatch = url.pathname.match(/^\/@([a-zA-Z0-9_-]+)$/);
   if (atUsernameMatch) {
     const username = atUsernameMatch[1].toLowerCase();
+    const isSearchEngine = isSearchCrawler(request.headers.get('User-Agent') || '');
     console.log('Handling @username profile for:', username);
-    if (isSocialMediaCrawler(request)) {
+    // Social unfurlers get compact OG cards; search engines get the full
+    // edge-rendered profile HTML with video links for crawling.
+    if (isSocialMediaCrawler(request) && !isSearchEngine) {
       try {
         const ogResponse = await handleAtUsernameOg(username, url);
         if (ogResponse) return ogResponse;
@@ -225,13 +229,17 @@ async function handleRequest(event) {
     }
   }
 
-  // 5. Handle video pages — serve full edge-templated HTML for all visitors
-  if (!isSocialMediaCrawler(request) && url.pathname.startsWith('/video/')) {
+  // 5. Handle video pages — serve full edge-templated HTML (with VideoObject JSON-LD)
+  // for browsers and search engines; keep compact OG player cards for social unfurlers.
+  const isSearchEngineForVideo = isSearchCrawler(request.headers.get('User-Agent') || '');
+  let attemptedEdgeVideoPage = false;
+  if ((!isSocialMediaCrawler(request) || isSearchEngineForVideo) && url.pathname.startsWith('/video/')) {
     const videoId = url.pathname.split('/video/')[1]?.split('?')[0];
     if (videoId) {
+      attemptedEdgeVideoPage = true;
       console.log('Handling video page, id:', videoId);
       try {
-        const videoPageResponse = await handleVideoPage(request, videoId, url, funnelcakeTarget);
+        const videoPageResponse = await handleVideoPage(event, request, videoId, url, funnelcakeTarget);
         if (videoPageResponse) {
           return videoPageResponse;
         }
@@ -244,7 +252,7 @@ async function handleRequest(event) {
 
   // 6. Handle dynamic OG meta tags for crawler requests
   if (isSocialMediaCrawler(request) && !serveSearchFeed) {
-    if (url.pathname.startsWith('/video/')) {
+    if (url.pathname.startsWith('/video/') && !attemptedEdgeVideoPage) {
       console.log('Handling video OG tags for crawler, path:', url.pathname);
       const videoId = url.pathname.split('/video/')[1]?.split('?')[0];
       console.log('Video ID:', videoId);
@@ -386,7 +394,7 @@ async function handleRequest(event) {
   if (shouldRenderFeedPage) {
     try {
       const feedType = discoveryFeedType || 'trending';
-      const feedPageResponse = await handleFeedPage(feedType, funnelcakeTarget, url.pathname);
+      const feedPageResponse = await handleFeedPage(event, feedType, funnelcakeTarget, url.pathname);
       if (feedPageResponse) {
         return feedPageResponse;
       }
@@ -546,11 +554,18 @@ function fetchFromFunnelcake(target, path, options = {}) {
  * Returns cached data if fresh (<60s), otherwise fetches from Funnelcake API
  * and updates the cache for the next request.
  */
-async function fetchFeedData(feedType = 'trending', funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
+async function fetchFeedData(
+  feedType = 'trending',
+  funnelcakeTarget = getFunnelcakeOriginForApiHost(),
+  event = null,
+  { forceRefresh = false } = {}
+) {
   const CACHE_KEY = `cache:feed:${feedType}`;
   const CACHE_TTL_SECONDS = 60;
+  const STALE_MAX_AGE_SECONDS = 3600;
 
   const contentStore = new KVStore('divine-web-content');
+  let staleData = null;
 
   // 1. Check KV cache
   try {
@@ -562,37 +577,49 @@ async function fetchFeedData(feedType = 'trending', funnelcakeTarget = getFunnel
         console.log(`Feed ${feedType} cache hit, age:`, ageSeconds, 's');
         return parsed.data;
       }
+      if (ageSeconds < STALE_MAX_AGE_SECONDS && parsed.data) {
+        staleData = parsed.data;
+      }
       console.log(`Feed ${feedType} cache stale, age:`, ageSeconds, 's');
     }
   } catch (e) {
     console.error('KV cache read error:', e.message);
   }
 
-  // 2. Fetch from Funnelcake backend
-  let feedData = null;
-  try {
-    const apiPath = getFeedApiUrl(feedType);
-    const resp = await fetchFromFunnelcake(funnelcakeTarget, apiPath);
-    if (resp.ok) {
-      feedData = normalizeFeedResponse(await resp.json());
-      // 3. Update KV cache (fire and forget)
-      try {
-        await contentStore.put(CACHE_KEY, JSON.stringify({
-          data: feedData,
-          timestamp: Math.floor(Date.now() / 1000),
-        }));
-        console.log(`Feed ${feedType} cached in KV`);
-      } catch (e) {
-        console.error('KV cache write error:', e.message);
+  const refreshFeed = async () => {
+    try {
+      const apiPath = getFeedApiUrl(feedType);
+      const resp = await fetchFromFunnelcake(funnelcakeTarget, apiPath);
+      if (resp.ok) {
+        const freshData = normalizeFeedResponse(await resp.json());
+        try {
+          await contentStore.put(CACHE_KEY, JSON.stringify({
+            data: freshData,
+            timestamp: Math.floor(Date.now() / 1000),
+          }));
+          console.log(`Feed ${feedType} cached in KV`);
+        } catch (e) {
+          console.error('KV cache write error:', e.message);
+        }
+        return freshData;
       }
-    } else {
       console.error(`Funnelcake ${feedType} fetch failed:`, resp.status);
+    } catch (e) {
+      console.error(`Funnelcake ${feedType} fetch error:`, e.message);
     }
-  } catch (e) {
-    console.error(`Funnelcake ${feedType} fetch error:`, e.message);
+    return null;
+  };
+
+  // True SWR: return stale data immediately and revalidate in background,
+  // unless caller is already a background revalidation that needs fresh data.
+  if (!forceRefresh && staleData && typeof event?.waitUntil === 'function') {
+    event.waitUntil(refreshFeed().catch((e) => {
+      console.error(`Background feed ${feedType} refresh failed:`, e.message);
+    }));
+    return staleData;
   }
 
-  return feedData;
+  return (await refreshFeed()) ?? staleData;
 }
 
 /**
@@ -1014,7 +1041,15 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname,
     const profileUrl = `https://${apexDomain}/profile/${npub}`;
     return Response.redirect(profileUrl, 302);
   }
-  const profileHtml = renderProfilePage({ profile: divineUser, videos: userVideos, staticAssets });
+  const canonicalUrl = isVanitySubdomain
+    ? `https://${subdomain}.${apexDomain}/`
+    : `https://${apexDomain}/@${subdomain}`;
+  const profileHtml = renderProfilePage({
+    profile: divineUser,
+    videos: userVideos,
+    staticAssets,
+    canonicalUrl,
+  });
 
   return new Response(profileHtml, {
     status: 200,
@@ -1061,27 +1096,41 @@ function isSocialMediaCrawler(request) {
 }
 
 /**
- * Fetch video metadata from Funnelcake API using Fastly backend
+ * Fetch video metadata from Funnelcake API with explicit status so callers can
+ * distinguish definite 404/410 removals from transient upstream errors.
  */
-async function fetchVideoMetadata(videoId, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
-  if (isAddressableVideoRouteId(videoId)) return null;
+async function fetchVideoMetadataWithStatus(videoId, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
+  if (isAddressableVideoRouteId(videoId)) return { status: 'not_found' };
   try {
     const response = await fetchFromFunnelcake(funnelcakeTarget, `/api/videos/${videoId}`);
+    if (response.status === 404 || response.status === 410) {
+      console.log('Funnelcake API returned not found:', response.status);
+      return { status: 'not_found' };
+    }
     if (!response.ok) {
       console.log('Funnelcake API returned:', response.status);
-      return null;
+      return { status: 'error' };
     }
 
     const result = await response.json();
     const meta = transformVideoApiResponse(result, { defaultOgImage: DEFAULT_OG_IMAGE });
-    if (meta) {
-      console.log('Fetched video metadata - title:', meta.title, 'videoUrl:', meta.videoUrl);
+    if (!meta) {
+      return { status: 'error' };
     }
-    return meta;
+    console.log('Fetched video metadata - title:', meta.title, 'videoUrl:', meta.videoUrl);
+    return { status: 'ok', meta };
   } catch (err) {
     console.error('Failed to fetch video metadata:', err.message);
-    return null;
+    return { status: 'error' };
   }
+}
+
+/**
+ * Fetch video metadata from Funnelcake API using Fastly backend
+ */
+async function fetchVideoMetadata(videoId, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
+  const result = await fetchVideoMetadataWithStatus(videoId, funnelcakeTarget);
+  return result.status === 'ok' ? result.meta : null;
 }
 
 async function fetchProfileMetadata(pubkey, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
@@ -1186,78 +1235,33 @@ async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
  * Handle video page requests — serve full edge-templated HTML for all visitors.
  * Falls back to SPA shell on error.
  */
-async function handleVideoPage(request, videoId, url, funnelcakeTarget) {
-  const CACHE_KEY = `page:video:${videoId}`;
-  const CACHE_TTL = 300;
-  const contentStore = new KVStore('divine-web-content');
+async function handleVideoPage(event, request, videoId, url, funnelcakeTarget) {
   const staticAssets = await getStaticAssets();
   if (!staticAssets) return null;
 
-  // 1. Check KV page cache
-  try {
-    const cached = await contentStore.get(CACHE_KEY);
-    if (cached) {
-      const parsed = JSON.parse(await cached.text());
-      const age = Math.floor(Date.now() / 1000) - parsed.timestamp;
-      if (age < CACHE_TTL && parsed.assetMainJs === staticAssets.mainJs) {
-        console.log(`Video page cache hit, id: ${videoId}, age: ${age}s`);
-        return new Response(parsed.html, {
-          status: 200,
-          headers: createEdgeTemplateHeaders({
-            cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
-          }),
-        });
-      }
-    }
-  } catch (e) {
-    console.error('Video page cache read error:', e.message);
-  }
-
-  // 2. Fetch video metadata
-  let videoMeta = null;
-  try {
-    videoMeta = await fetchVideoMetadata(videoId, funnelcakeTarget);
-  } catch (e) {
-    console.error('Failed to fetch video metadata:', e.message);
-  }
-
-  if (!videoMeta) {
-    // Video not found — fall through to SPA
-    return null;
-  }
-
-  // 3. Render full HTML page
-  const html = renderVideoPage({ video: videoMeta, videoId, staticAssets });
-  console.log('Rendered video page, id:', videoId, 'length:', html.length);
-
-  // 4. Cache in KV (fire and forget)
-  try {
-    await contentStore.put(CACHE_KEY, JSON.stringify({
-      html,
-      timestamp: Math.floor(Date.now() / 1000),
-      assetMainJs: staticAssets.mainJs,
-    }));
-  } catch (e) {
-    console.error('Video page cache write error:', e.message);
-  }
-
-  return new Response(html, {
-    status: 200,
-    headers: createEdgeTemplateHeaders({
-      cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
-    }),
+  return resolveCachedVideoPage({
+    videoId,
+    staticAssets,
+    contentStore: new KVStore('divine-web-content'),
+    fetchVideoMetadataWithStatus: (id) => fetchVideoMetadataWithStatus(id, funnelcakeTarget),
+    renderVideoPage,
+    createHeaders: createEdgeTemplateHeaders,
+    waitUntil: typeof event?.waitUntil === 'function' ? (p) => event.waitUntil(p) : undefined,
   });
 }
 
 /**
- * Handle feed/discovery pages — render edge-templated HTML with video grid.
+ * Handle feed/discovery pages — render edge-templated HTML with video feed.
  */
-async function handleFeedPage(feedType, funnelcakeTarget, pathname) {
+async function handleFeedPage(event, feedType, funnelcakeTarget, pathname) {
   const CACHE_KEY = `page:feed:${feedPagePath(pathname)}`;
   const CACHE_TTL = 60;
+  const STALE_MAX_AGE = 3600;
   const contentStore = new KVStore('divine-web-content');
   const staticAssets = await getStaticAssets();
   if (!staticAssets) return null;
+
+  let staleHtml = null;
 
   // 1. Check KV page cache
   try {
@@ -1265,46 +1269,72 @@ async function handleFeedPage(feedType, funnelcakeTarget, pathname) {
     if (cached) {
       const parsed = JSON.parse(await cached.text());
       const age = Math.floor(Date.now() / 1000) - parsed.timestamp;
-      if (age < CACHE_TTL && parsed.assetMainJs === staticAssets.mainJs) {
-        console.log(`Feed page cache hit, type: ${feedType}, age: ${age}s`);
-        return new Response(parsed.html, {
-          status: 200,
-          headers: createEdgeTemplateHeaders({
-            cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
-          }),
-        });
+      if (parsed.assetMainJs === staticAssets.mainJs) {
+        if (age < CACHE_TTL) {
+          console.log(`Feed page cache hit, type: ${feedType}, age: ${age}s`);
+          return new Response(parsed.html, {
+            status: 200,
+            headers: createEdgeTemplateHeaders({
+              cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
+            }),
+          });
+        }
+        if (age < STALE_MAX_AGE && parsed.html) {
+          staleHtml = parsed.html;
+        }
       }
     }
   } catch (e) {
     console.error('Feed page cache read error:', e.message);
   }
 
-  // 2. Fetch feed data
-  const feedData = await fetchFeedData(feedType, funnelcakeTarget);
-  if (!feedData) {
-    return null;
-  }
+  const refreshFeedPage = async (isBackground = false) => {
+    // Always fetch fresh feed data when rebuilding the HTML cache entry so a
+    // cold page:feed:* miss cannot stamp up-to-1h-stale cache:feed:* data as fresh.
+    const feedData = await fetchFeedData(feedType, funnelcakeTarget, event, {
+      forceRefresh: true,
+    });
+    if (!feedData) return null;
 
-  // 3. Normalize videos array
-  const videos = feedData.videos || feedData;
+    const videos = feedData.videos || feedData;
+    const compactVideos = (Array.isArray(videos) ? videos : []).map(compactVideoForHydration);
+    const feedJson = JSON.stringify(feedData.videos ? { ...feedData, videos: compactVideos } : compactVideos);
+    const html = renderFeedPage({ videos, feedType, pathname, feedJson, staticAssets });
+    console.log('Rendered feed page, type:', feedType, 'videos:', videos.length, 'length:', html.length);
 
-  // 4. Build compact feed JSON for React (strip bulky Nostr event data,
-  //    but keep platform/classic/tags — transformFunnelcakeVideo needs them
-  //    for isVineMigrated and archivedLoopCount)
-  const compactVideos = (Array.isArray(videos) ? videos : []).map(compactVideoForHydration);
-  const feedJson = JSON.stringify(feedData.videos ? { ...feedData, videos: compactVideos } : compactVideos);
-  const html = renderFeedPage({ videos, feedType, pathname, feedJson, staticAssets });
-  console.log('Rendered feed page, type:', feedType, 'videos:', videos.length, 'length:', html.length);
-
-  // 5. Cache in KV
-  try {
-    await contentStore.put(CACHE_KEY, JSON.stringify({
+    const putPromise = contentStore.put(CACHE_KEY, JSON.stringify({
       html,
       timestamp: Math.floor(Date.now() / 1000),
       assetMainJs: staticAssets.mainJs,
+    })).catch((e) => {
+      console.error('Feed page cache write error:', e.message);
+    });
+
+    if (!isBackground && typeof event?.waitUntil === 'function') {
+      event.waitUntil(putPromise);
+    } else {
+      await putPromise;
+    }
+
+    return html;
+  };
+
+  // True SWR: return stale KV HTML immediately instead of blocking TTFB on Funnelcake
+  if (staleHtml && typeof event?.waitUntil === 'function') {
+    event.waitUntil(refreshFeedPage(true).catch((e) => {
+      console.error(`Background feed page refresh failed for ${pathname}:`, e.message);
     }));
-  } catch (e) {
-    console.error('Feed page cache write error:', e.message);
+    return new Response(staleHtml, {
+      status: 200,
+      headers: createEdgeTemplateHeaders({
+        cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
+      }),
+    });
+  }
+
+  const html = (await refreshFeedPage(false)) ?? staleHtml;
+  if (!html) {
+    return null;
   }
 
   return new Response(html, {

@@ -112,4 +112,107 @@ describe('edge page templates', () => {
     expect(html).toContain('window.__DIVINE_FEED__=');
     expect(html).toContain('window.__DIVINE_FEED_TYPE__="single"');
   });
+
+  it('renders the real sidebar + single-column feed layout without dead tabs or video preload', () => {
+    const html = renderFeedPage({
+      videos: [
+        {
+          id: 'vid-1',
+          title: 'First clip',
+          thumbnail: 'https://media.divine.video/thumb.jpg',
+          video_url: 'https://media.divine.video/vid.mp4',
+        },
+      ],
+      feedType: 'trending',
+      pathname: '/',
+    });
+
+    expect(html).toContain('class="divine-sidebar"');
+    expect(html).toContain('class="divine-feed"');
+    expect(html).toContain('href="/discovery/classics"');
+    expect(html).toContain('href="/discovery/hot"');
+    expect(html).toContain('href="/discovery/hashtags"');
+    expect(html).not.toContain('href="/discovery/new"');
+    expect(html).not.toContain('href="/discovery/top"');
+    expect(html).toContain('rel="preload" href="https://media.divine.video/thumb.jpg" as="image"');
+    expect(html).not.toContain('as="video"');
+    expect(html).toContain('rel="preconnect" href="https://api.divine.video"');
+  });
+
+  it('includes VideoObject JSON-LD structured data on video pages', () => {
+    const html = renderVideoPage({
+      videoId: 'video-1',
+      video: {
+        id: 'video-1',
+        title: 'Test Loop',
+        description: 'A 6-second loop',
+        thumbnail: 'https://media.divine.video/thumb.jpg',
+        video_url: 'https://media.divine.video/video.mp4',
+        author_name: 'Alice',
+        created_at: 1700000000,
+      },
+    });
+
+    expect(html).toContain('<script type="application/ld+json">');
+    expect(html).toContain('"@type":"VideoObject"');
+    expect(html).toContain('"embedUrl":"https://divine.video/embed/video-1"');
+    expect(html).toContain('"contentUrl":"https://media.divine.video/video.mp4"');
+    expect(html).toContain('"uploadDate":"2023-11-14T22:13:20.000Z"');
+  });
+
+  it('omits media URLs, poster preload, and VideoObject JSON-LD for age-restricted video pages', () => {
+    const html = renderVideoPage({
+      videoId: 'restricted-1',
+      video: {
+        id: 'restricted-1',
+        title: 'Age-gated clip',
+        thumbnail: 'https://media.divine.video/secret-thumb.jpg',
+        video_url: 'https://media.divine.video/secret-video.mp4',
+        age_restricted: true,
+      },
+    });
+
+    expect(html).not.toContain('secret-thumb.jpg');
+    expect(html).not.toContain('secret-video.mp4');
+    expect(html).not.toContain('"contentUrl"');
+    expect(html).not.toContain('application/ld+json');
+  });
+
+  it('omits thumbnails for age-restricted video cards on feed and profile pages', () => {
+    const restrictedVideo = {
+      id: 'restricted-card-1',
+      title: 'Gated card',
+      thumbnail: 'https://media.divine.video/restricted-card-thumb.jpg',
+      age_restricted: true,
+    };
+
+    const feedHtml = renderFeedPage({
+      videos: [restrictedVideo],
+      feedType: 'trending',
+      pathname: '/',
+    });
+    const profileHtml = renderProfilePage({
+      profile: { subdomain: 'alice', apexDomain: 'divine.video', displayName: 'Alice' },
+      videos: [restrictedVideo],
+      canonicalUrl: 'https://divine.video/@alice',
+    });
+
+    expect(feedHtml).not.toContain('restricted-card-thumb.jpg');
+    expect(profileHtml).not.toContain('restricted-card-thumb.jpg');
+  });
+
+  it('uses explicit canonicalUrl for apex /@username profile pages without double-escaping', () => {
+    const html = renderProfilePage({
+      profile: {
+        subdomain: 'alice',
+        apexDomain: 'divine.video',
+        displayName: 'Alice',
+      },
+      videos: [],
+      canonicalUrl: 'https://divine.video/@alice',
+    });
+
+    expect(html).toContain('<link rel="canonical" href="https://divine.video/@alice" />');
+    expect(html).toContain('<meta property="og:url" content="https://divine.video/@alice" />');
+  });
 });

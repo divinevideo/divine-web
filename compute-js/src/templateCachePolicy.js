@@ -7,6 +7,7 @@ export function createEdgeTemplateHeaders({
   cacheControl,
   subdomain,
   varyByUserAgent = true,
+  noindex = false,
 }) {
   const headers = new Headers({
     'Content-Type': 'text/html; charset=utf-8',
@@ -17,6 +18,10 @@ export function createEdgeTemplateHeaders({
 
   if (subdomain) {
     headers.set('X-Divine-Subdomain', subdomain);
+  }
+
+  if (noindex) {
+    headers.set('X-Robots-Tag', 'noindex');
   }
 
   return headers;

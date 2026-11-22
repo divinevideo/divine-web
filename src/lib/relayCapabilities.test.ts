@@ -55,6 +55,20 @@ describe('NIP-11 metadata URL', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(expectedUrl, expect.anything());
   });
+
+  it('skips live NIP-11 fetch for canonical relay.divine.video while preserving funnelcake routing bonus', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const caps = await detectRelayCapabilities('wss://relay.divine.video');
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(caps.supportsNIP50).toBe(true);
+    expect(caps.supportsVideoSorts).toBe(true);
+    expect(relayHealth.score('wss://relay.divine.video', 34236)).toBeGreaterThan(
+      relayHealth.score('wss://relay.divine.video'),
+    );
+  });
 });
 
 describe('detectRelayCapabilities failure path', () => {

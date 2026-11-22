@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog } from '@/lib/debug';
 
-const PREFETCH_COUNT = 5;
+const PREFETCH_COUNT = 2;
 
 interface VideoPrefetchOptions {
   prefetchVideos?: boolean;

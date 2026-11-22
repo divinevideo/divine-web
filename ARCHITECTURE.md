@@ -27,8 +27,11 @@ hydrates login from cross-subdomain cookies, registers the PWA service worker
 (apex domain only), then mounts the React tree inside an `ErrorBoundary`.
 [`src/App.tsx`](./src/App.tsx) assembles multiple provider layers and UI
 primitives (toast, tooltip). Add new providers there. [`src/AppRouter.tsx`](./src/AppRouter.tsx) defines all routes using
-react-router-dom `BrowserRouter`. Pages import directly or via `lazy()`. Add
-new routes there.
+react-router-dom `BrowserRouter`. Primary feed routes (`Index`, `DiscoveryPage`,
+`AppLayout`) import directly; other routes (including `ProfilePage`) load via
+`React.lazy()` with a `<Suspense>` boundary inside `AppLayout` around
+`<Outlet />` (and an outer boundary for standalone routes) so lazy transitions
+keep the app shell mounted. Add new routes there.
 
 ## Source Layout
 
@@ -225,15 +228,20 @@ On Fastly, some routes are not served from
 [`compute-js/`](./compute-js) renders its own HTML document from
 [`compute-js/src/templates/shell.js`](./compute-js/src/templates/shell.js) —
 identifiable by the `x-divine-edge: template` response header — and that shell
-boots the same SPA bundle. `/` and `/discovery/hot` go through it today;
+boots the same SPA bundle. `/`, `/discovery/hot`, `/video/:id`, `/@username`,
+and vanity subdomains go through it today;
 [`compute-js/src/index.js`](./compute-js/src/index.js) can route more.
 Feed HTML is cached by path so the homepage and hot discovery page keep
 their own titles and canonical URLs even though both use the trending feed;
-`/index.html` shares the `/` entry.
-Search crawlers receive that feed HTML at `/` and `/discovery/hot`; social link
-preview bots receive OG responses, with the hot route's own canonical URL. When
-the hot route's feed page can't render, search crawlers get its OG response too,
-rather than the SPA shell's homepage metadata.
+`/index.html` shares the `/` entry. Stale KV entries are served immediately
+while `event.waitUntil()` refreshes them in the background (stale-while-revalidate),
+and edge hydration JSON strips bulky `proofmode` and `device_attestation` tags
+while preserving compact verification fields.
+Search crawlers receive full edge-rendered HTML at `/`, `/discovery/hot`,
+`/video/:id` (with `VideoObject` JSON-LD), and `/@username`; social link
+preview bots continue to receive compact OG responses, with the hot route's own
+canonical URL. When the hot route's feed page can't render, search crawlers get
+its OG response too, rather than the SPA shell's homepage metadata.
 The SPA updates discovery titles and canonical URLs on client navigation through
 `DiscoverySeo`; the homepage keeps its metadata in `Index`. Discovery titles come
 from `src/lib/discoveryMeta.ts`, which Cloudflare's function uses too.
@@ -286,7 +294,9 @@ client-side routing. `@radix-ui/*` provides headless UI primitives.
 validation. `i18next` and `react-i18next` power internationalization across 20
 locales. `@fontsource-variable/inter` supplies typography.
 `@phosphor-icons/react` is the icon library (migrated from lucide-react).
-`hls.js` handles HLS video playback. `@sentry/react` tracks errors.
+`hls.js` handles HLS video playback and is dynamically imported on demand when
+an HLS stream is played. `@sentry/react` tracks errors when `VITE_SENTRY_DSN`
+is configured at build time.
 `@unhead/react` manages the document head. `sonner` and `vaul` provide toast
 and drawer UI. `vite-plugin-pwa` generates the PWA service worker.
 

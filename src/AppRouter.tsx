@@ -14,68 +14,71 @@ import { classifyInvitePath } from "@/lib/chat/invite";
 import { ChatInviteProvider } from "@/contexts/ChatInviteProvider";
 
 import Index from "./pages/Index";
-import { NIP19Page } from "./pages/NIP19Page";
-import NotFound from "./pages/NotFound";
-import HomePage from "./pages/HomePage";
 import DiscoveryPage from "./pages/DiscoveryPage";
-import TrendingPage from "./pages/TrendingPage";
-import PopularPage from "./pages/PopularPage";
-import HashtagPage from "./pages/HashtagPage";
-import CategoryPage from "./pages/CategoryPage";
-import CategoriesIndexPage from "./pages/CategoriesIndexPage";
-import HashtagDiscoveryPage from "./pages/HashtagDiscoveryPage";
-import ProfilePage from "./pages/ProfilePage";
-import SearchPage from "./pages/SearchPage";
-import VideoPage from "./pages/VideoPage";
-import { LegacyVineVideoPage } from "./pages/LegacyVineVideoPage";
-import { TagPage } from "./pages/TagPage";
-import ListsPage from "./pages/ListsPage";
-import ListDetailPage from "./pages/ListDetailPage";
-import PeopleListDetailPage from "./pages/PeopleListDetailPage";
-import ProfileListsPage from "./pages/ProfileListsPage";
-import ModerationSettingsPage from "./pages/ModerationSettingsPage";
-import LinkedAccountsSettingsPage from "./pages/LinkedAccountsSettingsPage";
-import SupportersPage from "./pages/SupportersPage";
-import RelaysSettingsPage from "./pages/RelaysSettingsPage";
-// import { NIP05ProfilePage } from "./pages/NIP05ProfilePage";
-import { UniversalUserPage } from "./pages/UniversalUserPage";
-import EventPage from "./pages/EventPage";
-
-import PrivacyPage from "./pages/PrivacyPage";
-import OpenSourcePage from "./pages/OpenSourcePage";
-import ProofModePage from "./pages/ProofModePage";
-import AuthenticityPage from "./pages/AuthenticityPage";
-import DMCAPage from "./pages/DMCAPage";
-import HumanCreatedPage from "./pages/HumanCreatedPage";
-import { SafetyPage } from "./pages/SafetyPage";
-import { FamilyHubPage } from "./pages/family/FamilyHubPage";
-import { TalkingToYourTeenPage } from "./pages/family/TalkingToYourTeenPage";
-import { MediaPlanPage } from "./pages/family/MediaPlanPage";
-import { WhenSomethingGoesWrongPage } from "./pages/family/WhenSomethingGoesWrongPage";
-import { SafetyToolsPage } from "./pages/family/SafetyToolsPage";
-import { AgeReviewPage } from "./pages/AgeReviewPage";
-import { KidsPolicyPage } from "./pages/KidsPolicyPage";
-import { PortabilityPage } from "./pages/PortabilityPage";
-import { DownloadPage } from "./pages/DownloadPage";
-import { ExitStartPage } from "./pages/ExitStartPage";
-import { DeleteAccountPage } from "./pages/DeleteAccountPage";
-import { Support } from "./pages/Support";
-import { FAQPage } from "./pages/FAQPage";
-import { ServicesPage } from "./pages/ServicesPage";
-import MerchPage from "./pages/MerchPage";
-import { TermsPage } from "./pages/TermsPage";
-import GetEmbedPage from "./pages/GetEmbedPage";
-import AppCallbackPage from "./pages/AppCallbackPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
-import { LegacyInviteRedirectPage } from "./pages/LegacyInviteRedirectPage";
 import { AppLayout } from "@/components/AppLayout";
-import { DebugVideoPage } from "./pages/DebugVideoPage";
-import LeaderboardPage from "./pages/LeaderboardPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import AnalyticsPage from "./pages/AnalyticsPage";
-import MessagesPage from "./pages/MessagesPage";
-import ConversationPage from "./pages/ConversationPage";
-import CollabsPage from "./pages/CollabsPage";
+
+// Code-split secondary routes so first-time visitors landing on `/` or
+// `/discovery/*` don't download settings, DM crypto, archive export, legal,
+// or moderation bundles before first paint.
+const NIP19Page = lazy(() => import("./pages/NIP19Page").then((m) => ({ default: m.NIP19Page })));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const TrendingPage = lazy(() => import("./pages/TrendingPage"));
+const PopularPage = lazy(() => import("./pages/PopularPage"));
+const HashtagPage = lazy(() => import("./pages/HashtagPage"));
+const CategoryPage = lazy(() => import("./pages/CategoryPage"));
+const CategoriesIndexPage = lazy(() => import("./pages/CategoriesIndexPage"));
+const HashtagDiscoveryPage = lazy(() => import("./pages/HashtagDiscoveryPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const SearchPage = lazy(() => import("./pages/SearchPage"));
+const VideoPage = lazy(() => import("./pages/VideoPage"));
+const LegacyVineVideoPage = lazy(() => import("./pages/LegacyVineVideoPage").then((m) => ({ default: m.LegacyVineVideoPage })));
+const TagPage = lazy(() => import("./pages/TagPage").then((m) => ({ default: m.TagPage })));
+const ListsPage = lazy(() => import("./pages/ListsPage"));
+const ListDetailPage = lazy(() => import("./pages/ListDetailPage"));
+const PeopleListDetailPage = lazy(() => import("./pages/PeopleListDetailPage"));
+const ProfileListsPage = lazy(() => import("./pages/ProfileListsPage"));
+const ModerationSettingsPage = lazy(() => import("./pages/ModerationSettingsPage"));
+const LinkedAccountsSettingsPage = lazy(() => import("./pages/LinkedAccountsSettingsPage"));
+const SupportersPage = lazy(() => import("./pages/SupportersPage"));
+const RelaysSettingsPage = lazy(() => import("./pages/RelaysSettingsPage"));
+const UniversalUserPage = lazy(() => import("./pages/UniversalUserPage").then((m) => ({ default: m.UniversalUserPage })));
+const EventPage = lazy(() => import("./pages/EventPage"));
+
+const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
+const OpenSourcePage = lazy(() => import("./pages/OpenSourcePage"));
+const ProofModePage = lazy(() => import("./pages/ProofModePage"));
+const AuthenticityPage = lazy(() => import("./pages/AuthenticityPage"));
+const DMCAPage = lazy(() => import("./pages/DMCAPage"));
+const HumanCreatedPage = lazy(() => import("./pages/HumanCreatedPage"));
+const SafetyPage = lazy(() => import("./pages/SafetyPage").then((m) => ({ default: m.SafetyPage })));
+const FamilyHubPage = lazy(() => import("./pages/family/FamilyHubPage").then((m) => ({ default: m.FamilyHubPage })));
+const TalkingToYourTeenPage = lazy(() => import("./pages/family/TalkingToYourTeenPage").then((m) => ({ default: m.TalkingToYourTeenPage })));
+const MediaPlanPage = lazy(() => import("./pages/family/MediaPlanPage").then((m) => ({ default: m.MediaPlanPage })));
+const WhenSomethingGoesWrongPage = lazy(() => import("./pages/family/WhenSomethingGoesWrongPage").then((m) => ({ default: m.WhenSomethingGoesWrongPage })));
+const SafetyToolsPage = lazy(() => import("./pages/family/SafetyToolsPage").then((m) => ({ default: m.SafetyToolsPage })));
+const AgeReviewPage = lazy(() => import("./pages/AgeReviewPage").then((m) => ({ default: m.AgeReviewPage })));
+const KidsPolicyPage = lazy(() => import("./pages/KidsPolicyPage").then((m) => ({ default: m.KidsPolicyPage })));
+const PortabilityPage = lazy(() => import("./pages/PortabilityPage").then((m) => ({ default: m.PortabilityPage })));
+const DownloadPage = lazy(() => import("./pages/DownloadPage").then((m) => ({ default: m.DownloadPage })));
+const ExitStartPage = lazy(() => import("./pages/ExitStartPage").then((m) => ({ default: m.ExitStartPage })));
+const DeleteAccountPage = lazy(() => import("./pages/DeleteAccountPage").then((m) => ({ default: m.DeleteAccountPage })));
+const Support = lazy(() => import("./pages/Support").then((m) => ({ default: m.Support })));
+const FAQPage = lazy(() => import("./pages/FAQPage").then((m) => ({ default: m.FAQPage })));
+const ServicesPage = lazy(() => import("./pages/ServicesPage").then((m) => ({ default: m.ServicesPage })));
+const MerchPage = lazy(() => import("./pages/MerchPage"));
+const TermsPage = lazy(() => import("./pages/TermsPage").then((m) => ({ default: m.TermsPage })));
+const GetEmbedPage = lazy(() => import("./pages/GetEmbedPage"));
+const AppCallbackPage = lazy(() => import("./pages/AppCallbackPage"));
+const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
+const LegacyInviteRedirectPage = lazy(() => import("./pages/LegacyInviteRedirectPage").then((m) => ({ default: m.LegacyInviteRedirectPage })));
+const DebugVideoPage = lazy(() => import("./pages/DebugVideoPage").then((m) => ({ default: m.DebugVideoPage })));
+const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage"));
+const MessagesPage = lazy(() => import("./pages/MessagesPage"));
+const ConversationPage = lazy(() => import("./pages/ConversationPage"));
+const CollabsPage = lazy(() => import("./pages/CollabsPage"));
 // import { UploadPage } from "./pages/UploadPage"; // DISABLED: Upload route is commented out
 
 // Dev-only: static preview surface for the brand system. The `lazy()` call
@@ -200,6 +203,7 @@ export function AppRouter() {
           AnalyticsPageTracker's identity-linked events depend on. */}
       <AnalyticsUserTracker />
       <AnalyticsPageTracker />
+      <Suspense fallback={null}>
       <Routes>
         {/* Marketing/informational pages - no app layout */}
         {/* /about redirects to about.divine.video via _redirects (301) */}
@@ -256,6 +260,7 @@ export function AppRouter() {
           {appShellRoutes}
         </Route>
       </Routes>
+      </Suspense>
     </BrowserRouter></ChatInviteProvider>
   );
 }

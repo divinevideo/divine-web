@@ -38,6 +38,7 @@ type Hooks = {
 function startSentry(): Hooks {
   sentryMock.init.mockClear();
   vi.stubEnv('VITE_SENTRY_DEV_ENABLED', 'true');
+  vi.stubEnv('VITE_SENTRY_DSN', 'https://public@example.ingest.sentry.io/1');
   vi.spyOn(console, 'log').mockImplementation(() => undefined);
   initializeSentry();
   return sentryMock.init.mock.calls[0][0] as Hooks;

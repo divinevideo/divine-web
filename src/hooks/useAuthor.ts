@@ -8,6 +8,7 @@ import { fetchUserProfile } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
 import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { getInFlightBatchedAuthor } from '@/lib/batchedAuthorRegistry';
 
 /**
  * Parse profile event content into metadata
@@ -49,6 +50,30 @@ export function useAuthor(pubkey: string | undefined, options?: UseAuthorOptions
     queryFn: async ({ signal }) => {
       if (!pubkey) {
         return {};
+      }
+
+      // If VideoFeed's useBatchedAuthors already has a POST /api/users/bulk
+      // request in flight for this pubkey, await it (respecting cancellation)
+      // instead of firing a duplicate individual GET /api/users/{pubkey}.
+      const inFlightBatch = getInFlightBatchedAuthor(pubkey);
+      if (inFlightBatch) {
+        if (signal.aborted) {
+          throw new DOMException('The operation was aborted.', 'AbortError');
+        }
+        let onAbort: (() => void) | undefined;
+        const abortPromise = new Promise<never>((_, reject) => {
+          onAbort = () => reject(new DOMException('The operation was aborted.', 'AbortError'));
+          signal.addEventListener('abort', onAbort, { once: true });
+        });
+        let batched: Awaited<typeof inFlightBatch>;
+        try {
+          batched = await Promise.race([inFlightBatch, abortPromise]);
+        } finally {
+          if (onAbort) signal.removeEventListener('abort', onAbort);
+        }
+        if (batched?.metadata || batched?.event) {
+          return batched;
+        }
       }
 
       const reportFallback = (reason: string) => {

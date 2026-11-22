@@ -1,19 +1,25 @@
 // ABOUTME: Horizontal scrollable row of classic Vine creators
 // ABOUTME: Uses static preloaded data for instant rendering, no API calls needed
 
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SmartLink } from '@/components/SmartLink';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Star } from '@phosphor-icons/react';
-import { CLASSIC_VINERS, CLASSIC_VINER_AVATARS, type StaticViner } from '@/data/classicViners';
+import { CLASSIC_VINERS, type StaticViner } from '@/data/classicViners';
 import { getSafeProfileImage } from '@/lib/imageUtils';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 
+const EAGER_AVATAR_COUNT = 8;
+
 /**
- * Single viner avatar item
+ * Single viner avatar item.
+ * Uses a native <img> instead of Radix AvatarImage so browser-native
+ * loading="lazy" actually defers off-screen avatars in the horizontal scroller
+ * (Radix AvatarImage eagerly creates new window.Image() in useLayoutEffect).
  */
-function VinerItem({ viner }: { viner: StaticViner }) {
+function VinerItem({ viner, eager }: { viner: StaticViner; eager: boolean }) {
+  const [imgFailed, setImgFailed] = useState(false);
   const displayName = viner.name;
   const picture = getSafeProfileImage(viner.picture) || '/user-avatar.png';
 
@@ -26,29 +32,26 @@ function VinerItem({ viner }: { viner: StaticViner }) {
       className="flex flex-col items-center gap-1.5 min-w-[72px] group"
     >
       <Avatar size="xl" className="ring-2 ring-brand-light-green transition-all group-hover:ring-brand-green dark:ring-brand-dark-green dark:group-hover:ring-brand-green">
-        <AvatarImage src={picture} alt={displayName} loading="eager" />
-        <AvatarFallback className="text-xs">
-          {displayName.slice(0, 2).toUpperCase()}
-        </AvatarFallback>
+        {!imgFailed ? (
+          <img
+            src={picture}
+            alt={displayName}
+            loading={eager ? 'eager' : 'lazy'}
+            decoding="async"
+            className="aspect-square h-full w-full object-cover"
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          <AvatarFallback className="text-xs">
+            {displayName.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        )}
       </Avatar>
       <span className="text-xs text-muted-foreground truncate max-w-[70px] group-hover:text-foreground transition-colors">
         {displayName}
       </span>
     </SmartLink>
   );
-}
-
-/**
- * Preload avatar images for faster rendering
- */
-function usePreloadAvatars() {
-  useEffect(() => {
-    // Preload avatars in the background
-    CLASSIC_VINER_AVATARS.forEach(url => {
-      const img = new Image();
-      img.src = url;
-    });
-  }, []);
 }
 
 /**
@@ -59,8 +62,6 @@ function usePreloadAvatars() {
  */
 export function ClassicVinersRow() {
   const { t } = useTranslation();
-  // Preload avatar images
-  usePreloadAvatars();
 
   return (
     <div className="mb-6">
@@ -74,8 +75,8 @@ export function ClassicVinersRow() {
       <div className="relative group">
         {/* Scrollable container */}
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
-          {CLASSIC_VINERS.map((viner) => (
-            <VinerItem key={viner.pubkey} viner={viner} />
+          {CLASSIC_VINERS.map((viner, index) => (
+            <VinerItem key={viner.pubkey} viner={viner} eager={index < EAGER_AVATAR_COUNT} />
           ))}
         </div>
       </div>

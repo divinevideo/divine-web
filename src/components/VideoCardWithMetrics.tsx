@@ -29,6 +29,7 @@ interface VideoCardWithMetricsProps {
   onPlaybackStarted?: () => void;
   navigationContext?: VideoNavigationContext;
   accent?: CardAccent;
+  skipStatsFetch?: boolean;
 }
 
 // IMPORTANT: This component is defined at module level to prevent React from
@@ -47,6 +48,7 @@ function VideoCardWithMetricsInner({
   onPlaybackStarted,
   navigationContext,
   accent,
+  skipStatsFetch = false,
 }: VideoCardWithMetricsProps) {
   const { t } = useTranslation();
   const { user } = useCurrentUser();
@@ -65,6 +67,7 @@ function VideoCardWithMetricsInner({
     userPubkey: user?.pubkey,
     delay,
     immediate: index < 3, // Load first 3 immediately for perceived speed
+    skipStatsFetch,
   });
 
   const handleVideoLike = async () => {
