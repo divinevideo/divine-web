@@ -147,7 +147,16 @@ export function VideoCard({
     ? video.hlsUrl || optimalHlsUrl
     : undefined;
   const effectiveHlsUrl = hlsFallbackUrl || ((isClassicVine || isShortForm) ? undefined : (video.hlsUrl || (optimalHlsUrl !== video.videoUrl ? optimalHlsUrl : undefined)));
-  const { data: lists } = useVideosInLists(video.vineId ?? undefined, video.id);
+  const { user: currentUser } = useCurrentUser();
+  // Determine layout: use prop if provided, otherwise always vertical (text below video)
+  const effectiveLayout = layout ?? 'vertical';
+  const isHorizontal = effectiveLayout === 'horizontal';
+  // Only query list membership over WebSocket when signed in or in detail layout
+  // (avoids opening a WebSocket subscription on anonymous feed loads).
+  const { data: lists } = useVideosInLists(
+    (currentUser || isHorizontal) ? (video.vineId ?? undefined) : undefined,
+    video.id,
+  );
 
   // NEW: Get reposter data from reposts array
   const hasReposts = video.reposts && video.reposts.length > 0;
@@ -251,9 +260,6 @@ export function VideoCard({
     setVideoAspectRatio(newRatio);
   }, [initialAspectRatio, hasDeclaredDimensions, isClassicVine, video.id, videoAspectRatio]);
   const _isMobile = useIsMobile();
-  // Determine layout: use prop if provided, otherwise always vertical (text below video)
-  const effectiveLayout = layout ?? 'vertical';
-  const isHorizontal = effectiveLayout === 'horizontal';
   const { toast } = useToast();
   const muteUser = useMuteItem();
   const { activeVideoId, setActiveVideo, globalMuted, setGlobalMuted } = useVideoPlayback();
@@ -264,7 +270,6 @@ export function VideoCard({
 
   const { mutate: deleteVideo, isPending: isDeleting } = useDeleteVideo();
   const isOwnVideo = useIsOwnVideo(video);
-  const { user: currentUser } = useCurrentUser();
   const { share, prepare } = useShortLinkShare();
   const coordinate = video.vineId ? `${SHORT_VIDEO_KIND}:${video.pubkey}:${video.vineId}` : undefined;
   const isPinned = useIsVideoPinned(coordinate);

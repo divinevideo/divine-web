@@ -7,7 +7,7 @@ import {
   renderShell,
   serializeJsonForScript,
 } from './shell.js';
-import { navbar, discoveryTabs, videoGrid, videoDetail, profileHeader, footer } from './components.js';
+import { navbar, discoveryTabs, videoFeed, videoGrid, videoDetail, profileHeader, footer } from './components.js';
 import { HOME_DESCRIPTION, HOME_TITLE, HOT_DESCRIPTION } from '../siteCopy.js';
 
 /**
@@ -50,24 +50,31 @@ export function renderFeedPage({ videos, feedType = 'trending', pathname, feedJs
   const isHome = feedPagePath(pathname) === '/';
   const currentPath = isHome ? '/' : '/discovery';
 
+  const accent = activeTab === 'hot' ? 'pink' : activeTab === 'classics' ? 'violet' : 'green';
+
   const body = `<div class="divine-shell">
   ${navbar({ currentPath })}
-  <main class="divine-main">
-    ${discoveryTabs({ activeTab })}
-    ${videoGrid(videos || [])}
-  </main>
-  ${footer()}
+  <div class="divine-content">
+    <main class="divine-main">
+      <div class="divine-feed-column">
+        <header class="divine-page-header">
+          <h1 class="divine-page-title">Discover</h1>
+          <p class="divine-page-subtitle">Explore videos from the network</p>
+        </header>
+        ${discoveryTabs({ activeTab })}
+        ${videoFeed(videos || [], { accent })}
+      </div>
+    </main>
+    ${footer()}
+  </div>
 </div>`;
 
-  // Preload first video thumbnail
+  // Preload only the LCP poster image; avoid preloading the full MP4 before
+  // React selects the active feed/video (prevents wasted video bytes).
   let preloadLinks = '';
   const firstThumb = videos?.[0]?.thumbnail;
   if (firstThumb) {
     preloadLinks = `<link rel="preload" href="${escapeHtml(firstThumb)}" as="image" fetchpriority="high">`;
-  }
-  const firstVideoUrl = videos?.[0]?.video_url;
-  if (firstVideoUrl) {
-    preloadLinks += `\n  <link rel="preload" href="${escapeHtml(firstVideoUrl)}" as="video" type="video/mp4">`;
   }
 
   // Inject a compact version of feed data for React (strip bulky Nostr event tags)
@@ -97,15 +104,18 @@ export function renderFeedPage({ videos, feedType = 'trending', pathname, feedJs
 export function renderVideoPage({ video, videoId, staticAssets = null }) {
   const title = video.title || 'Video on Divine';
   const description = video.description || video.content || 'Watch this short video on Divine';
-  const thumbnail = video.thumbnail || 'https://divine.video/og.avif';
+  const thumbnail = video.thumbnail || 'https://divine.video/og.png';
   const ogUrl = `https://divine.video/video/${escapeHtml(videoId)}`;
+  const videoUrl = video.video_url || video.videoUrl || '';
 
   const body = `<div class="divine-shell">
   ${navbar({ currentPath: '/video' })}
-  <main class="divine-main">
-    ${videoDetail(video)}
-  </main>
-  ${footer()}
+  <div class="divine-content">
+    <main class="divine-main">
+      ${videoDetail(video)}
+    </main>
+    ${footer()}
+  </div>
 </div>`;
 
   // Preload poster image
@@ -113,6 +123,22 @@ export function renderVideoPage({ video, videoId, staticAssets = null }) {
   if (video.thumbnail) {
     preloadLinks = `<link rel="preload" href="${escapeHtml(video.thumbnail)}" as="image" fetchpriority="high">`;
   }
+
+  // VideoObject structured data for search engine video rich results
+  const videoLd = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: title,
+    description,
+    thumbnailUrl: [thumbnail],
+    embedUrl: `https://divine.video/embed/${videoId}`,
+    ...(videoUrl ? { contentUrl: videoUrl } : {}),
+    ...(video.created_at ? { uploadDate: new Date(video.created_at * 1000).toISOString() } : {}),
+    ...(video.authorName || video.author_name ? {
+      author: { '@type': 'Person', name: video.authorName || video.author_name },
+    } : {}),
+  };
+  const headExtra = `<script type="application/ld+json">${serializeJsonForScript(videoLd)}</script>`;
 
   // Inject feed data for hydration (single video). The feed type must be set:
   // useInfiniteVideosFunnelcake treats an undefined __DIVINE_FEED_TYPE__ as a
@@ -130,6 +156,7 @@ export function renderVideoPage({ video, videoId, staticAssets = null }) {
     ogUrl,
     ogType: 'video.other',
     body,
+    headExtra,
     jsonInjection,
     preloadLinks,
     staticAssets,
@@ -153,12 +180,14 @@ export function renderProfilePage({ profile, videos = [], staticAssets = null })
 
   const body = `<div class="divine-shell">
   ${navbar({ currentPath: '/profile', apexDomain: profile.apexDomain || 'divine.video' })}
-  <main class="divine-main">
-    ${profileHeader(profile)}
-    <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:700;padding:24px 16px 8px;">Videos</h2>
-    ${videoGrid(videos)}
-  </main>
-  ${footer()}
+  <div class="divine-content">
+    <main class="divine-main">
+      ${profileHeader(profile)}
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:700;padding:24px 16px 8px;">Videos</h2>
+      ${videoGrid(videos)}
+    </main>
+    ${footer()}
+  </div>
 </div>`;
 
   // Inject profile data for hydration
@@ -189,15 +218,17 @@ export function renderSearchPage({ query = '', results = [], staticAssets = null
 
   const body = `<div class="divine-shell">
   ${navbar({ currentPath: '/search' })}
-  <main class="divine-main">
-    <div style="padding:24px 0 8px;">
-      <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;font-weight:700;">
-        ${query ? `Results for "${safeQuery}"` : 'Search'}
-      </h1>
-    </div>
-    ${videoGrid(results)}
-  </main>
-  ${footer()}
+  <div class="divine-content">
+    <main class="divine-main">
+      <div style="padding:0 0 8px;">
+        <h1 class="divine-page-title">
+          ${query ? `Results for "${safeQuery}"` : 'Search'}
+        </h1>
+      </div>
+      ${videoGrid(results)}
+    </main>
+    ${footer()}
+  </div>
 </div>`;
 
   return renderShell({

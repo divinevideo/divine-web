@@ -70,12 +70,12 @@ export function AppSidebar({ className }: { className?: string }) {
   const { canUseDirectMessages } = useDmCapability();
   const { data: unreadCount } = useUnreadNotificationCount();
   const { data: unreadDmCount } = useUnreadDmCount();
-  const rssFeedAvailable = useRssFeedAvailable();
-  const { data: platformStats } = usePlatformStats();
   const [categoriesOpen, setCategoriesOpen] = useState(true);
   const [rssOpen, setRssOpen] = useState(false);
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+  const rssFeedAvailable = useRssFeedAvailable(rssOpen);
+  const { data: platformStats } = usePlatformStats();
   const { data: categories } = useCategories();
   // Funnelcake answers 200 with vine_videos: 0 when its count query fails, so a
   // zero means the total is unknown. Show nothing rather than "0 Vines recovered".

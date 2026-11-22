@@ -19,13 +19,27 @@ import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
 import { markAgeRestricted } from '@/hooks/useAgeRestrictedPreference';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 import { SubtitleOverlay } from '@/components/SubtitleOverlay';
-import { createAuthLoader } from '@/lib/hlsAuthLoader';
 import { bandwidthTracker } from '@/lib/bandwidthTracker';
 import { isProtectedDivineMediaUrl, useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
-import Hls from 'hls.js';
+import type Hls from 'hls.js';
 
 // Maximum playback duration limit - videos loop back to start after this many seconds
 const MAX_PLAYBACK_DURATION = 6.3;
+
+// Cache the dynamic import of hls.js so short-form MP4 feeds never download it
+// in the entry chunk, and HLS consumers only resolve the module once.
+let cachedHlsModulePromise: Promise<typeof Hls> | null = null;
+function loadHlsModule(): Promise<typeof Hls> {
+  if (!cachedHlsModulePromise) {
+    cachedHlsModulePromise = import('hls.js')
+      .then((mod) => mod.default ?? (mod as unknown as typeof Hls))
+      .catch((err) => {
+        cachedHlsModulePromise = null;
+        throw err;
+      });
+  }
+  return cachedHlsModulePromise;
+}
 
 interface VideoPlayerProps {
   videoId: string;
@@ -848,82 +862,101 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         verboseLog(`[VideoPlayer ${videoId}] loadVideoSource called - isAdultVerified: ${isAdultVerified}, authRetryCount: ${authRetryCount}`);
 
       // Priority: HLS URL > fallback URLs > primary src
-      // Try HLS first for adaptive bitrate streaming on slower connections
-      if (hlsUrl && Hls.isSupported()) {
-        verboseLog(`[VideoPlayer ${videoId}] Using HLS.js for adaptive streaming: ${hlsUrl}`);
+      // Dynamically load hls.js only when an HLS stream is actually needed (short-form
+      // MP4 videos skip HLS, so keeping hls.js out of the entry bundle saves ~500 KB).
+      if (hlsUrl) {
+        setIsLoading(true);
+        setHasError(false);
+        setAuthDeniedAfterVerification(false);
 
-        // Use custom auth loader if adult verified - generates fresh NIP-98 signature for each request
-        const hlsConfig: Partial<Hls['config']> = {
-          enableWorker: true,
-          lowLatencyMode: false,
-          backBufferLength: 90,
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
-          // Start with lower quality for faster initial load
-          startLevel: -1, // Auto-select starting quality
-          capLevelToPlayerSize: true, // Match quality to player size
-        };
+        void (async () => {
+          try {
+            const HlsModule = await loadHlsModule();
+            if (abortController.signal.aborted || videoRef.current !== video) return;
 
-        // Add custom auth loader only when the video is age-restricted.
-        // Public HLS streams must not carry an Authorization header — divine-blossom
-        // rejects any malformed auth header with 401 even when the blob is public.
-        if (isAdultVerified && isKnownAgeRestricted) {
-          verboseLog(`[VideoPlayer ${videoId}] Using NIP-98 auth loader for each HLS request`);
-          hlsConfig.loader = createAuthLoader(getAuthHeaderRef.current);
-        }
+            if (HlsModule.isSupported()) {
+              verboseLog(`[VideoPlayer ${videoId}] Using HLS.js for adaptive streaming: ${hlsUrl}`);
 
-        const hls = new Hls(hlsConfig);
+              // Use custom auth loader if adult verified - generates fresh NIP-98 signature for each request
+              const hlsConfig: Partial<Hls['config']> = {
+                enableWorker: true,
+                lowLatencyMode: false,
+                backBufferLength: 90,
+                maxBufferLength: 30,
+                maxMaxBufferLength: 60,
+                // Start with lower quality for faster initial load
+                startLevel: -1, // Auto-select starting quality
+                capLevelToPlayerSize: true, // Match quality to player size
+              };
 
-        hls.loadSource(hlsUrl);
-        hls.attachMedia(video);
+              // Add custom auth loader only when the video is age-restricted.
+              // Public HLS streams must not carry an Authorization header — divine-blossom
+              // rejects any malformed auth header with 401 even when the blob is public.
+              if (isAdultVerified && isKnownAgeRestricted) {
+                verboseLog(`[VideoPlayer ${videoId}] Using NIP-98 auth loader for each HLS request`);
+                const { createAuthLoader } = await import('@/lib/hlsAuthLoader');
+                if (abortController.signal.aborted || videoRef.current !== video) return;
+                hlsConfig.loader = createAuthLoader(getAuthHeaderRef.current);
+              }
 
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          verboseLog(`[VideoPlayer ${videoId}] HLS manifest parsed, ${hls.levels.length} quality levels available`);
-          setIsLoading(false);
-        });
+              const hls = new HlsModule(hlsConfig);
 
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          debugError(`[VideoPlayer ${videoId}] HLS error:`, data);
+              hls.loadSource(hlsUrl);
+              hls.attachMedia(video);
 
-          // Check for 401/403 auth errors
-          if (data.response && (data.response.code === 401 || data.response.code === 403)) {
-            debugError(`[VideoPlayer ${videoId}] Auth required (${data.response.code})`);
-            if (isAdultVerified) {
-              setAuthDeniedAfterVerification(true);
+              hls.on(HlsModule.Events.MANIFEST_PARSED, () => {
+                verboseLog(`[VideoPlayer ${videoId}] HLS manifest parsed, ${hls.levels.length} quality levels available`);
+                setIsLoading(false);
+              });
+
+              hls.on(HlsModule.Events.ERROR, (event, data) => {
+                debugError(`[VideoPlayer ${videoId}] HLS error:`, data);
+
+                // Check for 401/403 auth errors
+                if (data.response && (data.response.code === 401 || data.response.code === 403)) {
+                  debugError(`[VideoPlayer ${videoId}] Auth required (${data.response.code})`);
+                  if (isAdultVerified) {
+                    setAuthDeniedAfterVerification(true);
+                  } else {
+                    setRequiresAuth(true);
+                  }
+                  setIsLoading(false);
+                  hls.destroy();
+                  return;
+                }
+
+                if (data.fatal) {
+                  debugError(`[VideoPlayer ${videoId}] Fatal HLS error, falling back to direct playback`);
+                  setTriedHls(true);
+                  hls.destroy();
+                  hlsRef.current = null;
+                  // Fall back to direct src playback
+                  const currentUrl = allUrls[currentUrlIndex];
+                  if (currentUrl) {
+                    video.src = currentUrl;
+                  }
+                }
+              });
+
+              hlsRef.current = hls;
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+              // Native HLS support (Safari)
+              verboseLog(`[VideoPlayer ${videoId}] Using native HLS support: ${hlsUrl}`);
+              video.src = hlsUrl;
             } else {
-              setRequiresAuth(true);
+              const currentUrl = allUrls[currentUrlIndex];
+              if (currentUrl) {
+                video.src = currentUrl;
+              }
             }
-            setIsLoading(false);
-            hls.destroy();
-            return;
-          }
-
-          if (data.fatal) {
-            debugError(`[VideoPlayer ${videoId}] Fatal HLS error, falling back to direct playback`);
-            setTriedHls(true);
-            hls.destroy();
-            hlsRef.current = null;
-            // Fall back to direct src playback
+          } catch (error) {
+            debugError(`[VideoPlayer ${videoId}] Failed to initialize HLS.js:`, error);
             const currentUrl = allUrls[currentUrlIndex];
-            if (currentUrl) {
+            if (currentUrl && !abortController.signal.aborted && videoRef.current === video) {
               video.src = currentUrl;
             }
           }
-        });
-
-        hlsRef.current = hls;
-        setIsLoading(true);
-        setHasError(false);
-        setAuthDeniedAfterVerification(false);
-
-      } else if (hlsUrl && video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS support (Safari)
-        verboseLog(`[VideoPlayer ${videoId}] Using native HLS support: ${hlsUrl}`);
-        video.src = hlsUrl;
-        setIsLoading(true);
-        setHasError(false);
-        setAuthDeniedAfterVerification(false);
-
+        })();
       } else {
         // Fall back to regular MP4 playback
         const currentUrl = allUrls[currentUrlIndex];
@@ -1109,9 +1142,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           autoPlay={false} // Never autoplay, we control playback programmatically
           loop={loopPlayback}
           playsInline
-          // Preload based on visibility, but once loaded, keep preload stable to avoid re-fetching
-          // hasLoadedOnce prevents the preload attribute from changing and causing flashes
-          preload={isPriority || hasLoadedOnce ? 'auto' : (inView ? 'auto' : 'metadata')}
+          // Preload only the priority, active/visible, or already-loaded video.
+          // Off-screen feed cards stay preload="none" so the browser doesn't
+          // eagerly download all 12 MP4s on initial page load.
+          preload={isPriority || hasLoadedOnce || inView ? 'auto' : 'none'}
           // @ts-expect-error fetchpriority is a valid HTML attribute but not yet in React types
           fetchpriority={isPriority ? 'high' : undefined}
           crossOrigin="anonymous"

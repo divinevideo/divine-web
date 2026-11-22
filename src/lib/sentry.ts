@@ -189,8 +189,13 @@ export function initializeSentry() {
     return;
   }
 
+  const dsn = import.meta.env.VITE_SENTRY_DSN?.trim();
+  if (!dsn) {
+    return;
+  }
+
   Sentry.init({
-    dsn: import.meta.env.VITE_SENTRY_DSN,
+    dsn,
 
     // Environment tagging
     environment: import.meta.env.MODE,

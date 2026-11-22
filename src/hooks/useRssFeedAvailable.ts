@@ -19,10 +19,11 @@ async function probeFeedEndpoint(): Promise<boolean> {
   }
 }
 
-export function useRssFeedAvailable(): boolean {
+export function useRssFeedAvailable(enabled: boolean = true): boolean {
   const { data } = useQuery({
     queryKey: ['rss-feed-available'],
     queryFn: probeFeedEndpoint,
+    enabled,
     staleTime: 5 * 60 * 1000,  // Re-check every 5 minutes
     gcTime: 30 * 60 * 1000,
     retry: false,

@@ -19,6 +19,12 @@ interface UseDeferredVideoMetricsOptions {
    * @default false
    */
   immediate?: boolean;
+  /**
+   * Skip per-video GET /api/videos/{id}/stats when the feed payload already
+   * includes Funnelcake view and loop counts.
+   * @default false
+   */
+  skipStatsFetch?: boolean;
 }
 
 /**
@@ -34,6 +40,7 @@ export function useDeferredVideoMetrics({
   userPubkey,
   delay = 100,
   immediate = false,
+  skipStatsFetch = false,
 }: UseDeferredVideoMetricsOptions) {
   const [shouldLoad, setShouldLoad] = useState(immediate);
 
@@ -50,7 +57,7 @@ export function useDeferredVideoMetrics({
 
   // Only fetch when enabled
   const socialMetrics = useVideoSocialMetrics(videoId, videoPubkey, vineId, {
-    enabled: shouldLoad,
+    enabled: shouldLoad && !skipStatsFetch,
   });
 
   const userInteractions = useVideoUserInteractions(

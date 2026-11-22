@@ -114,4 +114,29 @@ describe('useAuthor', () => {
     expect(mockRecordFunnelcakeFailure).not.toHaveBeenCalled();
     expect(mockNostrQuery).not.toHaveBeenCalled();
   });
+
+  it('reuses an in-flight batched author lookup instead of firing a duplicate GET', async () => {
+    const { registerInFlightAuthorBatch } = await import('@/lib/batchedAuthorRegistry');
+    registerInFlightAuthorBatch(
+      ['pubkey-batched'],
+      Promise.resolve({
+        'pubkey-batched': {
+          metadata: { name: 'Batched Alice', picture: 'https://example.com/a.jpg' },
+        },
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useAuthor('pubkey-batched'),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data?.metadata?.name).toBe('Batched Alice');
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(mockNostrQuery).not.toHaveBeenCalled();
+  });
 });

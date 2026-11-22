@@ -10,6 +10,7 @@ import { fetchBulkUsers } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
 import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
+import { registerInFlightAuthorBatch } from '@/lib/batchedAuthorRegistry';
 
 interface AuthorData {
   event?: NostrEvent;
@@ -47,64 +48,76 @@ export function useBatchedAuthors(pubkeys: string[]) {
         });
       };
 
-      // Try Funnelcake REST API first (faster than WebSocket)
-      if (isFunnelcakeAvailable(apiUrl)) {
-        try {
-          debugLog(`[useBatchedAuthors] Using Funnelcake REST API for ${uniquePubkeys.length} authors`);
-          const response = await fetchBulkUsers(apiUrl, uniquePubkeys, signal);
+      const batchPromise = (async (): Promise<Record<string, AuthorData>> => {
+        // Try Funnelcake REST API first (faster than WebSocket)
+        if (isFunnelcakeAvailable(apiUrl)) {
+          try {
+            debugLog(`[useBatchedAuthors] Using Funnelcake REST API for ${uniquePubkeys.length} authors`);
+            const response = await fetchBulkUsers(apiUrl, uniquePubkeys, signal);
 
-          const authorsMap: Record<string, AuthorData> = {};
+            const authorsMap: Record<string, AuthorData> = {};
 
-          for (const user of response.users) {
-            // Transform Funnelcake profile to NostrMetadata format
-            const metadata: NostrMetadata = {
-              name: user.profile?.name,
-              display_name: user.profile?.display_name,
-              picture: user.profile?.picture,
-              banner: user.profile?.banner,
-              about: user.profile?.about,
-              nip05: user.profile?.nip05,
-              lud16: user.profile?.lud16,
-              website: user.profile?.website,
-            };
+            for (const user of response.users) {
+              // Transform Funnelcake profile to NostrMetadata format
+              const metadata: NostrMetadata = {
+                name: user.profile?.name,
+                display_name: user.profile?.display_name,
+                picture: user.profile?.picture,
+                banner: user.profile?.banner,
+                about: user.profile?.about,
+                nip05: user.profile?.nip05,
+                lud16: user.profile?.lud16,
+                website: user.profile?.website,
+              };
 
-            authorsMap[user.pubkey] = { metadata };
+              authorsMap[user.pubkey] = { metadata };
+            }
+
+            debugLog(`[useBatchedAuthors] REST API returned ${response.users.length} users, ${response.missing.length} missing`);
+            return authorsMap;
+          } catch (err) {
+            // Cancelled queries are not failures — surface the abort to
+            // React Query without reporting or falling back (#459)
+            if (isAbortError(err)) {
+              throw err;
+            }
+            debugLog(`[useBatchedAuthors] REST API failed, falling back to WebSocket:`, err);
+            reportFallback(err instanceof Error ? err.message : String(err));
+            // Fall through to WebSocket fallback
           }
+        } else {
+          reportFallback('Funnelcake unavailable or circuit breaker open');
+        }
 
-          debugLog(`[useBatchedAuthors] REST API returned ${response.users.length} users, ${response.missing.length} missing`);
-          return authorsMap;
-        } catch (err) {
-          // Cancelled queries are not failures — surface the abort to
-          // React Query without reporting or falling back (#459)
-          if (isAbortError(err)) {
-            throw err;
+        // WebSocket fallback
+        debugLog(`[useBatchedAuthors] Using WebSocket for ${uniquePubkeys.length} authors`);
+
+        const events = await nostr.query(
+          [{ kinds: [0], authors: uniquePubkeys, limit: uniquePubkeys.length }],
+          { signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]) },
+        );
+
+        // Parse metadata and create a map
+        const authorsMap: Record<string, AuthorData> = {};
+
+        for (const event of events) {
+          try {
+            const metadata = n.json().pipe(n.metadata()).parse(event.content);
+            authorsMap[event.pubkey] = { event, metadata };
+          } catch {
+            authorsMap[event.pubkey] = { event };
           }
-          debugLog(`[useBatchedAuthors] REST API failed, falling back to WebSocket:`, err);
-          reportFallback(err instanceof Error ? err.message : String(err));
-          // Fall through to WebSocket fallback
         }
-      } else {
-        reportFallback('Funnelcake unavailable or circuit breaker open');
-      }
 
-      // WebSocket fallback
-      debugLog(`[useBatchedAuthors] Using WebSocket for ${uniquePubkeys.length} authors`);
+        return authorsMap;
+      })();
 
-      const events = await nostr.query(
-        [{ kinds: [0], authors: uniquePubkeys, limit: uniquePubkeys.length }],
-        { signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]) },
-      );
+      registerInFlightAuthorBatch(uniquePubkeys, batchPromise);
+      const authorsMap = await batchPromise;
 
-      // Parse metadata and create a map
-      const authorsMap: Record<string, AuthorData> = {};
-
-      for (const event of events) {
-        try {
-          const metadata = n.json().pipe(n.metadata()).parse(event.content);
-          authorsMap[event.pubkey] = { event, metadata };
-        } catch {
-          authorsMap[event.pubkey] = { event };
-        }
+      // Populate individual author caches immediately so cards don't wait an extra effect tick
+      for (const [pubkey, authorData] of Object.entries(authorsMap)) {
+        queryClient.setQueryData(['author', pubkey], authorData);
       }
 
       return authorsMap;

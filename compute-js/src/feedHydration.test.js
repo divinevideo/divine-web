@@ -92,4 +92,32 @@ describe('compactVideoForHydration', () => {
       author_avatar: 'https://example.com/avatar.jpg',
     });
   });
+
+  it('strips bulky proofmode and device_attestation tags while keeping lightweight verification metadata', () => {
+    const hugeProof = 'x'.repeat(20_000);
+    const compact = compactVideoForHydration({
+      id: 'abc123',
+      pubkey: 'def456',
+      kind: 34236,
+      d_tag: 'vid-1',
+      title: 'Verified clip',
+      embedded_likes: 12,
+      proof: { status: 'verified', level: 'verified_mobile' },
+      tags: [
+        ['d', 'vid-1'],
+        ['verification', 'verified_mobile'],
+        ['c2pa_manifest_id', 'urn:uuid:1234'],
+        ['proofmode', hugeProof],
+        ['device_attestation', hugeProof],
+      ],
+    });
+
+    expect(compact.embedded_likes).toBe(12);
+    expect(compact.proof).toEqual({ status: 'verified', level: 'verified_mobile' });
+    expect(compact.tags).toEqual([
+      ['d', 'vid-1'],
+      ['verification', 'verified_mobile'],
+      ['c2pa_manifest_id', 'urn:uuid:1234'],
+    ]);
+  });
 });

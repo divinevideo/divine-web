@@ -1,5 +1,46 @@
-import { describe, expect, it } from 'vitest';
-import { shouldDropBenignSubtitleVttEvent } from './sentry';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+const sentryInitMock = vi.hoisted(() => vi.fn());
+
+vi.mock('@sentry/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sentry/react')>();
+  return {
+    ...actual,
+    init: sentryInitMock,
+  };
+});
+
+import { initializeSentry, shouldDropBenignSubtitleVttEvent } from './sentry';
+
+describe('initializeSentry', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+    sentryInitMock.mockClear();
+  });
+
+  it('skips Sentry.init when VITE_SENTRY_DSN is empty or whitespace', () => {
+    vi.stubEnv('VITE_SENTRY_DEV_ENABLED', 'true');
+    vi.stubEnv('VITE_SENTRY_DSN', '   ');
+
+    initializeSentry();
+
+    expect(sentryInitMock).not.toHaveBeenCalled();
+  });
+
+  it('initializes Sentry with the trimmed DSN when configured', () => {
+    vi.stubEnv('VITE_SENTRY_DEV_ENABLED', 'true');
+    vi.stubEnv('VITE_SENTRY_DSN', ' https://public@example.ingest.sentry.io/1 ');
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    initializeSentry();
+
+    expect(sentryInitMock).toHaveBeenCalledTimes(1);
+    expect(sentryInitMock.mock.calls[0][0]).toMatchObject({
+      dsn: 'https://public@example.ingest.sentry.io/1',
+    });
+  });
+});
 
 describe('shouldDropBenignSubtitleVttEvent', () => {
   it('drops media subtitle /vtt 422 events', () => {

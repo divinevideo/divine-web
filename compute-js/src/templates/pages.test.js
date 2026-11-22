@@ -112,4 +112,50 @@ describe('edge page templates', () => {
     expect(html).toContain('window.__DIVINE_FEED__=');
     expect(html).toContain('window.__DIVINE_FEED_TYPE__="single"');
   });
+
+  it('renders the real sidebar + single-column feed layout without dead tabs or video preload', () => {
+    const html = renderFeedPage({
+      videos: [
+        {
+          id: 'vid-1',
+          title: 'First clip',
+          thumbnail: 'https://media.divine.video/thumb.jpg',
+          video_url: 'https://media.divine.video/vid.mp4',
+        },
+      ],
+      feedType: 'trending',
+      pathname: '/',
+    });
+
+    expect(html).toContain('class="divine-sidebar"');
+    expect(html).toContain('class="divine-feed"');
+    expect(html).toContain('href="/discovery/classics"');
+    expect(html).toContain('href="/discovery/hot"');
+    expect(html).toContain('href="/discovery/hashtags"');
+    expect(html).not.toContain('href="/discovery/new"');
+    expect(html).not.toContain('href="/discovery/top"');
+    expect(html).toContain('rel="preload" href="https://media.divine.video/thumb.jpg" as="image"');
+    expect(html).not.toContain('as="video"');
+    expect(html).toContain('rel="preconnect" href="https://api.divine.video"');
+  });
+
+  it('includes VideoObject JSON-LD structured data on video pages', () => {
+    const html = renderVideoPage({
+      videoId: 'video-1',
+      video: {
+        id: 'video-1',
+        title: 'Test Loop',
+        description: 'A 6-second loop',
+        thumbnail: 'https://media.divine.video/thumb.jpg',
+        video_url: 'https://media.divine.video/video.mp4',
+        author_name: 'Alice',
+        created_at: 1700000000,
+      },
+    });
+
+    expect(html).toContain('<script type="application/ld+json">');
+    expect(html).toContain('"@type":"VideoObject"');
+    expect(html).toContain('"embedUrl":"https://divine.video/embed/video-1"');
+    expect(html).toContain('"contentUrl":"https://media.divine.video/video.mp4"');
+  });
 });

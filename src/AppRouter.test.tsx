@@ -114,7 +114,7 @@ describe('AppRouter', () => {
   // A reload of a logged-in page has a moment before the saved sign-in
   // finishes loading (divine-web#266). That moment must not show the
   // not-found page, or the page's own signed-out fallback.
-  it('shows a loading state on a logged-in page while sign-in is still loading', () => {
+  it('shows a loading state on a logged-in page while sign-in is still loading', async () => {
     window.history.pushState({}, '', '/analytics');
 
     const view = renderRouter();
@@ -133,14 +133,14 @@ describe('AppRouter', () => {
       </UnheadProvider>,
     );
 
-    expect(screen.getByTestId('analytics-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('analytics-page')).toBeInTheDocument();
     expect(window.location.pathname).toBe('/analytics');
   });
 
   // A hosted session renews its token while the reader is on the page, and
   // has no user until the new token resolves. Unmounting the page then would
   // throw away what it holds, such as a half-written message.
-  it('keeps a logged-in page mounted while a hosted session renews its token', () => {
+  it('keeps a logged-in page mounted while a hosted session renews its token', async () => {
     const signedIn = { user: { pubkey: 'a'.repeat(64) }, isAuthPending: false };
     const rerenderRouter = (view: ReturnType<typeof renderRouter>) =>
       view.rerender(
@@ -153,6 +153,7 @@ describe('AppRouter', () => {
     window.history.pushState({}, '', '/home');
 
     const view = renderRouter();
+    expect(await screen.findByTestId('home-page')).toBeInTheDocument();
     mockUseCurrentUser.mockReturnValue({
       user: undefined,
       isAuthPending: true,
@@ -173,7 +174,7 @@ describe('AppRouter', () => {
   // Signing out into a saved login that is still loading, or switching to
   // one, is a new sign-in rather than a renewal. Keeping the page mounted
   // would show its signed-out fallback until the next account loads.
-  it('shows the loading state again when a later sign-in is still loading', () => {
+  it('shows the loading state again when a later sign-in is still loading', async () => {
     const rerenderRouter = (view: ReturnType<typeof renderRouter>) =>
       view.rerender(
         <UnheadProvider head={createHead()}>
@@ -187,6 +188,7 @@ describe('AppRouter', () => {
     window.history.pushState({}, '', '/home');
 
     const view = renderRouter();
+    expect(await screen.findByTestId('home-page')).toBeInTheDocument();
     mockUseCurrentUser.mockReturnValue({ user: undefined, isAuthPending: true });
     rerenderRouter(view);
 
@@ -199,11 +201,11 @@ describe('AppRouter', () => {
     });
     rerenderRouter(view);
 
-    expect(screen.getByTestId('home-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('home-page')).toBeInTheDocument();
     expect(window.location.pathname).toBe('/home');
   });
 
-  it('keeps logged-in pages unavailable once sign-in has finished without a user', () => {
+  it('keeps logged-in pages unavailable once sign-in has finished without a user', async () => {
     mockUseCurrentUser.mockReturnValue({
       user: undefined,
       isAuthPending: false,
@@ -214,7 +216,7 @@ describe('AppRouter', () => {
 
     expect(screen.queryByTestId('home-page')).not.toBeInTheDocument();
     expect(screen.queryByRole('status', { name: 'Verifying...' })).not.toBeInTheDocument();
-    expect(screen.getByTestId('nip19-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('nip19-page')).toBeInTheDocument();
   });
 
   it('redirects the retired new-video feed to hot', async () => {
@@ -308,7 +310,7 @@ describe('AppRouter', () => {
     expect(sessionStorage.getItem('openSignup')).toBeNull();
   });
 
-  it('keeps collaborator invitations routed separately', () => {
+  it('keeps collaborator invitations routed separately', async () => {
     mockUseCurrentUser.mockReturnValue({
       user: { pubkey: 'a'.repeat(64) },
       isAuthPending: false,
@@ -317,26 +319,26 @@ describe('AppRouter', () => {
 
     renderRouter();
 
-    expect(screen.getByTestId('collabs-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('collabs-page')).toBeInTheDocument();
   });
 
-  it('routes the account portability entry point at /exit', () => {
+  it('routes the account portability entry point at /exit', async () => {
     window.history.pushState({}, '', '/exit');
 
     renderRouter();
 
     expect(
-      screen.getByRole('heading', { name: 'Move your Divine account' }),
+      await screen.findByRole('heading', { name: 'Move your Divine account' }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('nip19-page')).not.toBeInTheDocument();
   });
 
-  it('routes the public download page outside the app shell', () => {
+  it('routes the public download page outside the app shell', async () => {
     window.history.pushState({}, '', '/download');
 
     renderRouter();
 
-    expect(screen.getByRole('heading', { name: 'Get Divine' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Get Divine' })).toBeInTheDocument();
     expect(screen.queryByTestId('nip19-page')).not.toBeInTheDocument();
   });
 
@@ -350,21 +352,21 @@ describe('AppRouter', () => {
     });
   });
 
-  it('routes the account export tool at /exit/start', () => {
+  it('routes the account export tool at /exit/start', async () => {
     window.history.pushState({}, '', '/exit/start');
 
     renderRouter();
 
-    expect(screen.getByTestId('exit-start-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('exit-start-page')).toBeInTheDocument();
   });
 
-  it('routes the delete account guide', () => {
+  it('routes the delete account guide', async () => {
     window.history.pushState({}, '', '/delete-account');
 
     renderRouter();
 
     expect(
-      screen.getByRole('heading', { name: 'Delete your Divine account' }),
+      await screen.findByRole('heading', { name: 'Delete your Divine account' }),
     ).toBeInTheDocument();
   });
 });
