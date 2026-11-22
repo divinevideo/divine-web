@@ -1,4 +1,4 @@
-// ABOUTME: Vitest unit tests for handleAtUsernameOg (new /@username crawler OG handler)
+// ABOUTME: Tests metadata and cache headers for crawler previews
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 // Use a module-level store map that the mock factory closes over.
@@ -22,9 +22,10 @@ vi.mock('fastly:kv-store', () => {
 import { handleAtUsernameOg, handleDownloadOgTags, handleHashtagOgTags, handleSearchOgTags, handleDiscoveryOgTags, handleApexOgTags } from './crawlerHandlers.js';
 
 const HEX64 = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+const STATIC_CARD_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600, stale-while-revalidate=3600';
 
 describe('handleDownloadOgTags', () => {
-  it('builds canonical download-page metadata', async () => {
+  it('builds canonical download-page metadata with static card caching', async () => {
     const result = handleDownloadOgTags(new URL('https://divine.video/download'), 'divine.video');
     const html = await result!.text();
 
@@ -32,6 +33,7 @@ describe('handleDownloadOgTags', () => {
     expect(html).toContain('App Store, Google Play, or Zapstore');
     expect(html).toContain('https://divine.video/download');
     expect(html).toContain('https://divine.video/og.png');
+    expect(result.headers.get('Cache-Control')).toBe(STATIC_CARD_CACHE_CONTROL);
     expect(result!.headers.get('Vary')).toBe('X-Original-Host, User-Agent');
   });
 });
@@ -47,6 +49,7 @@ describe('handleApexOgTags', () => {
       json: async () => ({ videos: [{ thumbnail: 'https://x/hero.jpg' }] }),
     }));
     const result = await handleApexOgTags();
+    expect(result.headers.get('Cache-Control')).toBe('public, max-age=300');
     const html = await result!.text();
     expect(html).toContain('Divine: Watch Classic Vines and New Short Videos');
     expect(html).toContain('Watch classic Vines and new short videos on Divine.');
@@ -103,6 +106,7 @@ describe('handleAtUsernameOg', () => {
     }));
     const result = await handleAtUsernameOg('alice', new URL('https://divine.video/@alice'));
     expect(result).not.toBeNull();
+    expect(result!.headers.get('Cache-Control')).toBe('public, max-age=300');
     const html = await result!.text();
     expect(html).toContain('Alice on Divine');
     expect(html).toContain('Hello');
@@ -155,51 +159,26 @@ describe('handleHashtagOgTags', () => {
   });
 
   it('strips leading # from tag', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
     const result = await handleHashtagOgTags('#cooking');
     const html = await result!.text();
     expect(html).toContain('#cooking');
     expect(html).toContain('https://divine.video/t/cooking');
   });
 
-  it('builds OG with top video thumbnail when available', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ videos: [{ thumbnail: 'https://x/thumb.jpg' }] }),
-    }));
+  it('builds hashtag OG metadata with default brand image without fetching Funnelcake', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
     const result = await handleHashtagOgTags('cooking');
     const html = await result!.text();
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(html).toContain('#cooking videos on Divine');
-    expect(html).toContain('https://x/thumb.jpg');
-    // When using a video thumbnail, dimensions should be omitted (we don't know its dims)
-    expect(html).not.toContain('og:image:width');
-  });
-
-  it('falls back to default image when API fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
-    const result = await handleHashtagOgTags('cooking');
-    const html = await result!.text();
     expect(html).toContain('https://divine.video/og.png');
-    // When using the default 1200x630 brand image, dimensions should be emitted
     expect(html).toContain('og:image:width');
     expect(html).toContain('content="1200"');
-  });
-
-  it('falls back to default image when API throws', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
-    const result = await handleHashtagOgTags('cooking');
-    const html = await result!.text();
-    expect(html).toContain('https://divine.video/og.png');
-  });
-
-  it('falls back to default image when videos array is empty', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ videos: [] }),
-    }));
-    const result = await handleHashtagOgTags('cooking');
-    const html = await result!.text();
-    expect(html).toContain('https://divine.video/og.png');
+    expect(html).toContain('og:image:height');
+    expect(html).toContain('content="630"');
+    expect(result!.headers.get('Cache-Control')).toBe(STATIC_CARD_CACHE_CONTROL);
+    expect(result!.headers.get('Vary')).toBe('User-Agent');
   });
 });
 
@@ -214,6 +193,7 @@ describe('handleDiscoveryOgTags', () => {
       json: async () => ({ videos: [{ thumbnail: 'https://x/top.jpg' }] }),
     }));
     const result = await handleDiscoveryOgTags('trending');
+    expect(result.headers.get('Cache-Control')).toBe('public, max-age=300');
     const html = await result!.text();
     expect(html).toContain('Trending videos on Divine');
     expect(html).toContain('https://x/top.jpg');
@@ -265,13 +245,15 @@ describe('handleDiscoveryOgTags', () => {
 });
 
 describe('handleSearchOgTags', () => {
-  it('echoes the search query in title and url', async () => {
+  it('echoes the search query in the title and URL with static card caching', async () => {
     const result = handleSearchOgTags('skateboarding');
     expect(result).not.toBeNull();
     const html = await result!.text();
     // Double-quotes are HTML-escaped in title/meta attributes
     expect(html).toContain('&quot;skateboarding&quot; on Divine');
     expect(html).toContain('https://divine.video/search?q=skateboarding');
+    expect(result!.headers.get('Cache-Control')).toBe(STATIC_CARD_CACHE_CONTROL);
+    expect(result!.headers.get('Vary')).toBe('User-Agent');
   });
 
   it('escapes HTML in the query', async () => {

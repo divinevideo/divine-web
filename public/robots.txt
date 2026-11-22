@@ -1,4 +1,87 @@
+# Block AI training and aggressive SEO scrapers from crawling the catalog
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: Meta-ExternalAgent
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: Scrapy
+Disallow: /
+
+User-agent: ImagesiftBot
+Disallow: /
+
+User-agent: YouBot
+Disallow: /
+
+# Keep the assistant guide accessible without opening the catalog to these agents.
+User-agent: ChatGPT-User
+User-agent: OAI-SearchBot
+User-agent: Claude-Web
+User-agent: Claude-User
+User-agent: Claude-SearchBot
+User-agent: Meta-ExternalFetcher
+User-agent: PerplexityBot
+Allow: /llms.txt$
+Disallow: /
+
+# Allow social link-preview unfurlers that honor robots.txt to render OG/Twitter cards
+# on shared hashtag and search URLs (served as static brand metadata with zero origin DB queries).
+User-agent: facebookexternalhit
+User-agent: Twitterbot
+User-agent: Slackbot
+User-agent: LinkedInBot
+User-agent: Pinterest
+User-agent: Pinterestbot
+Allow: /
+
+# Allow search engines to index core pages, videos, profiles, and categories,
+# but keep unbounded long-tail hashtag permutations and search queries out of crawls.
 User-agent: *
 Allow: /
+Disallow: /t/
+Disallow: /search
 
 Sitemap: https://divine.video/sitemap.xml

@@ -244,6 +244,11 @@ templates, the shell defaults, and the crawler responses in
 it, and Cloudflare's `functions/[[path]].ts` uses `getDefaultPageMeta` in
 `src/lib/serverSocialMeta.ts` for the homepage and generic fallback; tests keep
 these paths aligned.
+Fastly's static OG cards for hashtag, search, and download use one hour of
+shared-cache freshness and one hour of stale-while-revalidate. Hashtag cards
+use the brand image without a Funnelcake lookup. Dynamic OG cards retain the
+five-minute policy so the longer cache does not extend the lifetime of removed
+profile metadata or video thumbnails.
 Templates with a distinct crawler response vary by both the original host and
 user agent so one response cannot replace the other in the edge cache. Bare
 vanity-subdomain profiles vary only by original host because crawlers and

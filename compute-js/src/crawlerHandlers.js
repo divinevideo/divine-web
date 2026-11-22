@@ -11,6 +11,7 @@ import { HOME_DESCRIPTION, HOME_TITLE, HOT_DESCRIPTION, HOT_TITLE } from './site
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
 const DEFAULT_SITE_DESCRIPTION = 'Watch and share 6-second looping videos on the decentralized Nostr network.';
+const STATIC_OG_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600, stale-while-revalidate=3600';
 
 export function handleDownloadOgTags(url, hostnameToUse) {
   const html = buildCrawlerHtml({
@@ -28,7 +29,7 @@ export function handleDownloadOgTags(url, hostnameToUse) {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=300',
+      'Cache-Control': STATIC_OG_CACHE_CONTROL,
       'Vary': HOST_DEPENDENT_CRAWLER_VARY,
     },
   });
@@ -282,40 +283,26 @@ export async function handleHashtagOgTags(tag) {
     const cleanTag = (tag || '').trim().replace(/^#/, '');
     if (!cleanTag) return null;
 
-    let topThumbnail = null;
-    try {
-      const r = await fetch(`https://relay.divine.video/api/videos?t=${encodeURIComponent(cleanTag)}&limit=1`, {
-        backend: 'funnelcake',
-        method: 'GET',
-        headers: { 'Accept': 'application/json', 'Host': 'relay.divine.video' },
-      });
-      if (r.ok) {
-        const data = await r.json();
-        const top = data.videos?.[0];
-        topThumbnail = top?.thumbnail || null;
-      }
-    } catch (e) {
-      console.error('handleHashtagOgTags funnelcake error:', e.message);
-    }
-
+    // Serve static brand metadata without issuing a live Funnelcake hashtag query
+    // on every crawler hit. Long-tail hashtag crawls across millions of archive
+    // tags otherwise miss cache and drive heavy ClickHouse scans solely to fetch
+    // one preview thumbnail.
     const html = buildCrawlerHtml({
       title: `#${cleanTag} videos on Divine`,
       description: `Watch the latest #${cleanTag} videos on Divine.`,
-      image: topThumbnail || DEFAULT_OG_IMAGE,
+      image: DEFAULT_OG_IMAGE,
       url: `https://divine.video/t/${encodeURIComponent(cleanTag)}`,
       ogType: 'website',
       twitterCard: 'summary_large_image',
-      // Top video thumbnails are typically 720x1280 (vertical) — but we don't know
-      // for sure from this endpoint. Default to 1200x630 ONLY when using DEFAULT_OG_IMAGE.
-      imageWidth: topThumbnail ? null : 1200,
-      imageHeight: topThumbnail ? null : 630,
+      imageWidth: 1200,
+      imageHeight: 630,
     });
 
     return new Response(html, {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=300',
+        'Cache-Control': STATIC_OG_CACHE_CONTROL,
         'Vary': 'User-Agent',
       },
     });
@@ -345,7 +332,7 @@ export function handleSearchOgTags(query) {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=300',
+      'Cache-Control': STATIC_OG_CACHE_CONTROL,
       'Vary': 'User-Agent',
     },
   });

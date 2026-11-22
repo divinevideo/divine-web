@@ -1,5 +1,5 @@
 // ABOUTME: Tests for public/robots.txt and public/sitemap.xml
-// ABOUTME: Guards that the five family routes stay in the sitemap and robots stays permissive
+// ABOUTME: Guards crawler policy and sitemap entries for public pages
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -8,12 +8,31 @@ import { describe, expect, it } from 'vitest';
 
 describe('public robots.txt', () => {
   const robots = readFileSync(join(process.cwd(), 'public/robots.txt'), 'utf8');
+  const groups = robots.split(/\r?\n\s*\r?\n/).map(group => group.split(/\r?\n/));
 
-  it('allows all crawlers', () => {
-    expect(robots).toMatch(/^User-agent: \*$/m);
-    expect(robots).toMatch(/^Allow: \/$/m);
-    expect(robots).not.toMatch(/^Disallow: \/family/m);
+  function rulesFor(agent: string) {
+    return groups
+      .filter(group => group.includes(`User-agent: ${agent}`))
+      .flatMap(group => group.filter(line => /^(Allow|Disallow):/.test(line)));
+  }
+
+  it('allows default crawling outside the restricted paths', () => {
+    expect(rulesFor('*')).toEqual(['Allow: /', 'Disallow: /t/', 'Disallow: /search']);
   });
+
+  it.each(['Claude-Web', 'Claude-User', 'Claude-SearchBot', 'OAI-SearchBot', 'PerplexityBot'])(
+    'asks %s to crawl only the assistant guide',
+    agent => {
+      expect(rulesFor(agent)).toEqual(['Allow: /llms.txt$', 'Disallow: /']);
+    },
+  );
+
+  it.each(['facebookexternalhit', 'Twitterbot', 'Slackbot', 'LinkedInBot', 'Pinterest', 'Pinterestbot'])(
+    'allows %s to fetch shared links',
+    agent => {
+      expect(rulesFor(agent)).toEqual(['Allow: /']);
+    },
+  );
 
   it('points at the sitemap', () => {
     expect(robots).toContain('Sitemap: https://divine.video/sitemap.xml');
