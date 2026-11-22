@@ -60,6 +60,8 @@ Disallow: /
 User-agent: ChatGPT-User
 User-agent: OAI-SearchBot
 User-agent: Claude-Web
+User-agent: Claude-User
+User-agent: Claude-SearchBot
 User-agent: Meta-ExternalFetcher
 User-agent: PerplexityBot
 Allow: /llms.txt$
