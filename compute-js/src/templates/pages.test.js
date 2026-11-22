@@ -160,7 +160,7 @@ describe('edge page templates', () => {
     expect(html).toContain('"uploadDate":"2023-11-14T22:13:20.000Z"');
   });
 
-  it('omits media URLs and poster preload for age-restricted video pages', () => {
+  it('omits media URLs, poster preload, and VideoObject JSON-LD for age-restricted video pages', () => {
     const html = renderVideoPage({
       videoId: 'restricted-1',
       video: {
@@ -175,6 +175,30 @@ describe('edge page templates', () => {
     expect(html).not.toContain('secret-thumb.jpg');
     expect(html).not.toContain('secret-video.mp4');
     expect(html).not.toContain('"contentUrl"');
+    expect(html).not.toContain('application/ld+json');
+  });
+
+  it('omits thumbnails for age-restricted video cards on feed and profile pages', () => {
+    const restrictedVideo = {
+      id: 'restricted-card-1',
+      title: 'Gated card',
+      thumbnail: 'https://media.divine.video/restricted-card-thumb.jpg',
+      age_restricted: true,
+    };
+
+    const feedHtml = renderFeedPage({
+      videos: [restrictedVideo],
+      feedType: 'trending',
+      pathname: '/',
+    });
+    const profileHtml = renderProfilePage({
+      profile: { subdomain: 'alice', apexDomain: 'divine.video', displayName: 'Alice' },
+      videos: [restrictedVideo],
+      canonicalUrl: 'https://divine.video/@alice',
+    });
+
+    expect(feedHtml).not.toContain('restricted-card-thumb.jpg');
+    expect(profileHtml).not.toContain('restricted-card-thumb.jpg');
   });
 
   it('uses explicit canonicalUrl for apex /@username profile pages without double-escaping', () => {

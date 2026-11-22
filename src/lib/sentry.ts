@@ -206,16 +206,18 @@ export function initializeSentry() {
     // Performance monitoring
     tracesSampleRate: isDev ? 1.0 : 0.3, // 30% in production (small app benefits from more data)
 
-    // Session replay for debugging (captures what user did before crash)
+    // Session replay for debugging: keep off in production until private surfaces
+    // (DMs, settings, age review) have explicit unmasking policies, and default to
+    // masking all text and blocking all media whenever replay is enabled.
     replaysSessionSampleRate: 0, // Don't record normal sessions
-    replaysOnErrorSampleRate: isDev ? 1.0 : 1.0, // 100% of error sessions get replay
+    replaysOnErrorSampleRate: isDev ? 1.0 : 0,
 
     // Integrations
     integrations: [
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration({
-        maskAllText: false,
-        blockAllMedia: false,
+        maskAllText: true,
+        blockAllMedia: true,
         beforeAddRecordingEvent(event) {
           if (shouldDropKeyExportReplayEvent(event)) return null;
           return event.type === REPLAY_CUSTOM_EVENT_TYPE ? scrubSignInCode(event) : event;

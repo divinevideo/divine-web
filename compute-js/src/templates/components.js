@@ -60,8 +60,9 @@ export function discoveryTabs({ activeTab = 'hot' } = {}) {
  * @param {boolean} [options.isPriority] - First visible card (eager high-priority poster)
  */
 export function videoCard(video, { accent = 'green', isPriority = false } = {}) {
+  const isAgeRestricted = video.age_restricted === true || video.moderation_status === 'age_restricted';
   const title = escapeHtml(video.title || 'Untitled');
-  const thumbnail = escapeHtml(video.thumbnail || '');
+  const thumbnail = isAgeRestricted ? '' : escapeHtml(video.thumbnail || '');
   const authorName = escapeHtml(video.author_name || video.authorName || '');
   const authorAvatar = escapeHtml(video.author_avatar || video.authorAvatar || '');
   // SPA convention is /video/{event.id}; d_tag resolution on that route is

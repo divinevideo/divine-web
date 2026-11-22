@@ -69,12 +69,14 @@ export function renderFeedPage({ videos, feedType = 'trending', pathname, feedJs
   </div>
 </div>`;
 
-  // Preload only the LCP poster image; avoid preloading the full MP4 before
-  // React selects the active feed/video (prevents wasted video bytes).
+  // Preload only the LCP poster image (skip age-restricted entries); avoid
+  // preloading the full MP4 before React selects the active feed/video.
   let preloadLinks = '';
-  const firstThumb = videos?.[0]?.thumbnail;
-  if (firstThumb) {
-    preloadLinks = `<link rel="preload" href="${escapeHtml(firstThumb)}" as="image" fetchpriority="high">`;
+  const firstPublicVideo = (videos || []).find(
+    (v) => v?.thumbnail && v.age_restricted !== true && v.moderation_status !== 'age_restricted',
+  );
+  if (firstPublicVideo?.thumbnail) {
+    preloadLinks = `<link rel="preload" href="${escapeHtml(firstPublicVideo.thumbnail)}" as="image" fetchpriority="high">`;
   }
 
   // Inject a compact version of feed data for React (strip bulky Nostr event tags)
@@ -126,21 +128,25 @@ export function renderVideoPage({ video, videoId, staticAssets = null }) {
     preloadLinks = `<link rel="preload" href="${escapeHtml(video.thumbnail)}" as="image" fetchpriority="high">`;
   }
 
-  // VideoObject structured data for search engine video rich results
-  const videoLd = {
-    '@context': 'https://schema.org',
-    '@type': 'VideoObject',
-    name: title,
-    description,
-    thumbnailUrl: [thumbnail],
-    embedUrl: `https://divine.video/embed/${videoId}`,
-    ...(videoUrl ? { contentUrl: videoUrl } : {}),
-    ...(video.created_at ? { uploadDate: new Date(video.created_at * 1000).toISOString() } : {}),
-    ...(video.authorName || video.author_name ? {
-      author: { '@type': 'Person', name: video.authorName || video.author_name },
-    } : {}),
-  };
-  const headExtra = `<script type="application/ld+json">${serializeJsonForScript(videoLd)}</script>`;
+  // VideoObject structured data for search engine video rich results (omit for
+  // age-restricted videos so search engines do not index restricted metadata).
+  let headExtra = '';
+  if (!isAgeRestricted) {
+    const videoLd = {
+      '@context': 'https://schema.org',
+      '@type': 'VideoObject',
+      name: title,
+      description,
+      thumbnailUrl: [thumbnail],
+      embedUrl: `https://divine.video/embed/${videoId}`,
+      ...(videoUrl ? { contentUrl: videoUrl } : {}),
+      ...(video.created_at ? { uploadDate: new Date(video.created_at * 1000).toISOString() } : {}),
+      ...(video.authorName || video.author_name ? {
+        author: { '@type': 'Person', name: video.authorName || video.author_name },
+      } : {}),
+    };
+    headExtra = `<script type="application/ld+json">${serializeJsonForScript(videoLd)}</script>`;
+  }
 
   // Inject feed data for hydration (single video). The feed type must be set:
   // useInfiniteVideosFunnelcake treats an undefined __DIVINE_FEED_TYPE__ as a

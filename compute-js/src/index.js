@@ -24,6 +24,7 @@ import {
   handleApexOgTags,
 } from './crawlerHandlers.js';
 import { isAddressableVideoRouteId, transformVideoApiResponse } from './videoMetadata.js';
+import { resolveCachedVideoPage } from './videoPageCache.js';
 import { compactVideoForHydration, normalizeFeedResponse } from './feedHydration.js';
 import { renderEmbedPage } from './embedPage.js';
 import {
@@ -1095,27 +1096,41 @@ function isSocialMediaCrawler(request) {
 }
 
 /**
- * Fetch video metadata from Funnelcake API using Fastly backend
+ * Fetch video metadata from Funnelcake API with explicit status so callers can
+ * distinguish definite 404/410 removals from transient upstream errors.
  */
-async function fetchVideoMetadata(videoId, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
-  if (isAddressableVideoRouteId(videoId)) return null;
+async function fetchVideoMetadataWithStatus(videoId, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
+  if (isAddressableVideoRouteId(videoId)) return { status: 'not_found' };
   try {
     const response = await fetchFromFunnelcake(funnelcakeTarget, `/api/videos/${videoId}`);
+    if (response.status === 404 || response.status === 410) {
+      console.log('Funnelcake API returned not found:', response.status);
+      return { status: 'not_found' };
+    }
     if (!response.ok) {
       console.log('Funnelcake API returned:', response.status);
-      return null;
+      return { status: 'error' };
     }
 
     const result = await response.json();
     const meta = transformVideoApiResponse(result, { defaultOgImage: DEFAULT_OG_IMAGE });
-    if (meta) {
-      console.log('Fetched video metadata - title:', meta.title, 'videoUrl:', meta.videoUrl);
+    if (!meta) {
+      return { status: 'error' };
     }
-    return meta;
+    console.log('Fetched video metadata - title:', meta.title, 'videoUrl:', meta.videoUrl);
+    return { status: 'ok', meta };
   } catch (err) {
     console.error('Failed to fetch video metadata:', err.message);
-    return null;
+    return { status: 'error' };
   }
+}
+
+/**
+ * Fetch video metadata from Funnelcake API using Fastly backend
+ */
+async function fetchVideoMetadata(videoId, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
+  const result = await fetchVideoMetadataWithStatus(videoId, funnelcakeTarget);
+  return result.status === 'ok' ? result.meta : null;
 }
 
 async function fetchProfileMetadata(pubkey, funnelcakeTarget = getFunnelcakeOriginForApiHost()) {
@@ -1221,91 +1236,17 @@ async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
  * Falls back to SPA shell on error.
  */
 async function handleVideoPage(event, request, videoId, url, funnelcakeTarget) {
-  const CACHE_KEY = `page:video:${videoId}`;
-  const CACHE_TTL = 300;
-  const STALE_MAX_AGE = 3600;
-  const contentStore = new KVStore('divine-web-content');
   const staticAssets = await getStaticAssets();
   if (!staticAssets) return null;
 
-  let staleHtml = null;
-
-  // 1. Check KV page cache
-  try {
-    const cached = await contentStore.get(CACHE_KEY);
-    if (cached) {
-      const parsed = JSON.parse(await cached.text());
-      const age = Math.floor(Date.now() / 1000) - parsed.timestamp;
-      if (parsed.assetMainJs === staticAssets.mainJs) {
-        if (age < CACHE_TTL) {
-          console.log(`Video page cache hit, id: ${videoId}, age: ${age}s`);
-          return new Response(parsed.html, {
-            status: 200,
-            headers: createEdgeTemplateHeaders({
-              cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
-            }),
-          });
-        }
-        if (age < STALE_MAX_AGE && parsed.html) {
-          staleHtml = parsed.html;
-        }
-      }
-    }
-  } catch (e) {
-    console.error('Video page cache read error:', e.message);
-  }
-
-  const refreshVideoPage = async (isBackground = false) => {
-    let videoMeta = null;
-    try {
-      videoMeta = await fetchVideoMetadata(videoId, funnelcakeTarget);
-    } catch (e) {
-      console.error('Failed to fetch video metadata:', e.message);
-    }
-    if (!videoMeta) return null;
-
-    const html = renderVideoPage({ video: videoMeta, videoId, staticAssets });
-    console.log('Rendered video page, id:', videoId, 'length:', html.length);
-
-    const putPromise = contentStore.put(CACHE_KEY, JSON.stringify({
-      html,
-      timestamp: Math.floor(Date.now() / 1000),
-      assetMainJs: staticAssets.mainJs,
-    })).catch((e) => {
-      console.error('Video page cache write error:', e.message);
-    });
-
-    if (!isBackground && typeof event?.waitUntil === 'function') {
-      event.waitUntil(putPromise);
-    } else {
-      await putPromise;
-    }
-
-    return html;
-  };
-
-  if (staleHtml && typeof event?.waitUntil === 'function') {
-    event.waitUntil(refreshVideoPage(true).catch((e) => {
-      console.error(`Background video page refresh failed for ${videoId}:`, e.message);
-    }));
-    return new Response(staleHtml, {
-      status: 200,
-      headers: createEdgeTemplateHeaders({
-        cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
-      }),
-    });
-  }
-
-  const html = (await refreshVideoPage(false)) ?? staleHtml;
-  if (!html) {
-    return null;
-  }
-
-  return new Response(html, {
-    status: 200,
-    headers: createEdgeTemplateHeaders({
-      cacheControl: 'public, s-maxage=60, stale-while-revalidate=300',
-    }),
+  return resolveCachedVideoPage({
+    videoId,
+    staticAssets,
+    contentStore: new KVStore('divine-web-content'),
+    fetchVideoMetadataWithStatus: (id) => fetchVideoMetadataWithStatus(id, funnelcakeTarget),
+    renderVideoPage,
+    createHeaders: createEdgeTemplateHeaders,
+    waitUntil: typeof event?.waitUntil === 'function' ? (p) => event.waitUntil(p) : undefined,
   });
 }
 
