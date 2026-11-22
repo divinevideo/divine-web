@@ -27,6 +27,13 @@ describe('public robots.txt', () => {
     },
   );
 
+  it.each(['facebookexternalhit', 'Twitterbot', 'Slackbot', 'LinkedInBot', 'Pinterest', 'Pinterestbot'])(
+    'allows %s to fetch shared links',
+    agent => {
+      expect(rulesFor(agent)).toEqual(['Allow: /']);
+    },
+  );
+
   it('points at the sitemap', () => {
     expect(robots).toContain('Sitemap: https://divine.video/sitemap.xml');
   });

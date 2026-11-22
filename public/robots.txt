@@ -69,15 +69,11 @@ Disallow: /
 
 # Allow social link-preview unfurlers that honor robots.txt to render OG/Twitter cards
 # on shared hashtag and search URLs (served as static brand metadata with zero origin DB queries).
+User-agent: facebookexternalhit
 User-agent: Twitterbot
-Allow: /
-
 User-agent: Slackbot
-Allow: /
-
 User-agent: LinkedInBot
-Allow: /
-
+User-agent: Pinterest
 User-agent: Pinterestbot
 Allow: /
 
