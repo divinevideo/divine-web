@@ -1,4 +1,4 @@
-// ABOUTME: Vitest unit tests for handleAtUsernameOg (new /@username crawler OG handler)
+// ABOUTME: Tests metadata and cache headers for crawler previews
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 // Use a module-level store map that the mock factory closes over.
@@ -22,9 +22,10 @@ vi.mock('fastly:kv-store', () => {
 import { handleAtUsernameOg, handleDownloadOgTags, handleHashtagOgTags, handleSearchOgTags, handleDiscoveryOgTags, handleApexOgTags } from './crawlerHandlers.js';
 
 const HEX64 = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+const STATIC_CARD_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600, stale-while-revalidate=3600';
 
 describe('handleDownloadOgTags', () => {
-  it('builds canonical download-page metadata', async () => {
+  it('builds canonical download-page metadata with static card caching', async () => {
     const result = handleDownloadOgTags(new URL('https://divine.video/download'), 'divine.video');
     const html = await result!.text();
 
@@ -32,6 +33,7 @@ describe('handleDownloadOgTags', () => {
     expect(html).toContain('App Store, Google Play, or Zapstore');
     expect(html).toContain('https://divine.video/download');
     expect(html).toContain('https://divine.video/og.png');
+    expect(result.headers.get('Cache-Control')).toBe(STATIC_CARD_CACHE_CONTROL);
     expect(result!.headers.get('Vary')).toBe('X-Original-Host, User-Agent');
   });
 });
@@ -157,7 +159,6 @@ describe('handleHashtagOgTags', () => {
   });
 
   it('strips leading # from tag', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
     const result = await handleHashtagOgTags('#cooking');
     const html = await result!.text();
     expect(html).toContain('#cooking');
@@ -176,9 +177,7 @@ describe('handleHashtagOgTags', () => {
     expect(html).toContain('content="1200"');
     expect(html).toContain('og:image:height');
     expect(html).toContain('content="630"');
-    expect(result!.headers.get('Cache-Control')).toBe(
-      'public, max-age=300, s-maxage=3600, stale-while-revalidate=3600',
-    );
+    expect(result!.headers.get('Cache-Control')).toBe(STATIC_CARD_CACHE_CONTROL);
     expect(result!.headers.get('Vary')).toBe('User-Agent');
   });
 });
@@ -246,13 +245,15 @@ describe('handleDiscoveryOgTags', () => {
 });
 
 describe('handleSearchOgTags', () => {
-  it('echoes the search query in title and url', async () => {
+  it('echoes the search query in the title and URL with static card caching', async () => {
     const result = handleSearchOgTags('skateboarding');
     expect(result).not.toBeNull();
     const html = await result!.text();
     // Double-quotes are HTML-escaped in title/meta attributes
     expect(html).toContain('&quot;skateboarding&quot; on Divine');
     expect(html).toContain('https://divine.video/search?q=skateboarding');
+    expect(result!.headers.get('Cache-Control')).toBe(STATIC_CARD_CACHE_CONTROL);
+    expect(result!.headers.get('Vary')).toBe('User-Agent');
   });
 
   it('escapes HTML in the query', async () => {
