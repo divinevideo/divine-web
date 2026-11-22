@@ -162,44 +162,19 @@ describe('handleHashtagOgTags', () => {
     expect(html).toContain('https://divine.video/t/cooking');
   });
 
-  it('builds OG with top video thumbnail when available', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ videos: [{ thumbnail: 'https://x/thumb.jpg' }] }),
-    }));
+  it('builds hashtag OG metadata with default brand image without fetching Funnelcake', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
     const result = await handleHashtagOgTags('cooking');
     const html = await result!.text();
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(html).toContain('#cooking videos on Divine');
-    expect(html).toContain('https://x/thumb.jpg');
-    // When using a video thumbnail, dimensions should be omitted (we don't know its dims)
-    expect(html).not.toContain('og:image:width');
-  });
-
-  it('falls back to default image when API fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
-    const result = await handleHashtagOgTags('cooking');
-    const html = await result!.text();
     expect(html).toContain('https://divine.video/og.png');
-    // When using the default 1200x630 brand image, dimensions should be emitted
     expect(html).toContain('og:image:width');
     expect(html).toContain('content="1200"');
-  });
-
-  it('falls back to default image when API throws', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
-    const result = await handleHashtagOgTags('cooking');
-    const html = await result!.text();
-    expect(html).toContain('https://divine.video/og.png');
-  });
-
-  it('falls back to default image when videos array is empty', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ videos: [] }),
-    }));
-    const result = await handleHashtagOgTags('cooking');
-    const html = await result!.text();
-    expect(html).toContain('https://divine.video/og.png');
+    expect(result!.headers.get('Cache-Control')).toBe(
+      'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+    );
   });
 });
 
