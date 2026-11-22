@@ -227,4 +227,19 @@ describe('transformVideoApiResponse', () => {
 
     expect(result?.originExternalId).toBeNull();
   });
+
+  it('preserves event created_at and age_restricted flag for VideoObject and gating', () => {
+    const result = transformVideoApiResponse({
+      event: {
+        ...baseEvent,
+        created_at: 1700000123,
+      },
+      stats: {
+        age_restricted: true,
+      },
+    });
+
+    expect(result?.created_at).toBe(1700000123);
+    expect(result?.age_restricted).toBe(true);
+  });
 });

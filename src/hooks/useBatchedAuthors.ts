@@ -4,13 +4,17 @@
 import { type NostrEvent, type NostrMetadata, NSchema as n } from '@nostrify/nostrify';
 import { useNostr } from '@nostrify/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { API_CONFIG } from '@/config/api';
 import { fetchBulkUsers } from '@/lib/funnelcakeClient';
 import { isFunnelcakeAvailable } from '@/lib/funnelcakeHealth';
 import { debugLog } from '@/lib/debug';
 import { isAbortError, reportFunnelcakeFallback } from '@/lib/funnelcakeFallbackReporting';
-import { registerInFlightAuthorBatch } from '@/lib/batchedAuthorRegistry';
+import {
+  cancelPendingAuthorBatch,
+  prepareInFlightAuthorBatch,
+  registerInFlightAuthorBatch,
+} from '@/lib/batchedAuthorRegistry';
 
 interface AuthorData {
   event?: NostrEvent;
@@ -26,11 +30,36 @@ export function useBatchedAuthors(pubkeys: string[]) {
   const queryClient = useQueryClient();
   const apiUrl = API_CONFIG.funnelcake.baseUrl;
 
-  // Get unique pubkeys
-  const uniquePubkeys = Array.from(new Set(pubkeys.filter(Boolean)));
+  // Get sorted unique pubkeys with stable identity
+  const pubkeysKey = Array.from(new Set(pubkeys.filter(Boolean))).sort().join(',');
+  const uniquePubkeys = useMemo(
+    () => (pubkeysKey ? pubkeysKey.split(',') : []),
+    [pubkeysKey],
+  );
+
+  // Reserve in-flight slots synchronously during parent render (before child
+  // VideoCards subscribe and trigger useAuthor) for any pubkeys not yet cached.
+  // Release unattached slots if the parent unmounts before queryFn starts.
+  const uncachedPubkeys = useMemo(() => {
+    const missing = uniquePubkeys.filter(
+      (pk) => queryClient.getQueryData(['author', pk]) === undefined,
+    );
+    if (missing.length > 0) {
+      prepareInFlightAuthorBatch(missing);
+    }
+    return missing;
+  }, [uniquePubkeys, queryClient]);
+
+  useEffect(() => {
+    return () => {
+      if (uncachedPubkeys.length > 0) {
+        cancelPendingAuthorBatch(uncachedPubkeys);
+      }
+    };
+  }, [uncachedPubkeys]);
 
   const query = useQuery({
-    queryKey: ['batched-authors', uniquePubkeys.sort().join(',')],
+    queryKey: ['batched-authors', pubkeysKey],
     queryFn: async ({ signal }) => {
       if (uniquePubkeys.length === 0) {
         return {};
@@ -126,15 +155,6 @@ export function useBatchedAuthors(pubkeys: string[]) {
     gcTime: 1800000, // Keep in cache for 30 minutes
     enabled: uniquePubkeys.length > 0,
   });
-
-  // Populate individual author cache entries so useAuthor hooks can use them
-  useEffect(() => {
-    if (query.data) {
-      Object.entries(query.data).forEach(([pubkey, authorData]) => {
-        queryClient.setQueryData(['author', pubkey], authorData);
-      });
-    }
-  }, [query.data, queryClient]);
 
   return query;
 }

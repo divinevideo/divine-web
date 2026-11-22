@@ -3,7 +3,7 @@
 
 import { Link, useLocation } from 'react-router-dom';
 import { House as Home, Compass, MagnifyingGlass as Search, Bell, User, Sun, Moon, CaretDown as ChevronDown, Headphones, ChartBar as BarChart3, SquaresFour as LayoutGrid, Rss, ChatCircle as MessageCircle, TrendUp, Handshake, Heart, Trophy, ChatsCircle } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/hooks/useCategories';
 import { nip19 } from 'nostr-tools';
@@ -72,9 +72,23 @@ export function AppSidebar({ className }: { className?: string }) {
   const { data: unreadDmCount } = useUnreadDmCount();
   const [categoriesOpen, setCategoriesOpen] = useState(true);
   const [rssOpen, setRssOpen] = useState(false);
+  const [rssProbeReady, setRssProbeReady] = useState(false);
   const [divineOpen, setDivineOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
-  const rssFeedAvailable = useRssFeedAvailable(rssOpen);
+
+  // Defer the HEAD /feed/latest availability check until the browser is idle so
+  // it stays off the initial render critical path without hiding RSS Feeds.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(() => setRssProbeReady(true), { timeout: 2500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = window.setTimeout(() => setRssProbeReady(true), 2500);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const rssFeedAvailable = useRssFeedAvailable(rssProbeReady);
   const { data: platformStats } = usePlatformStats();
   const { data: categories } = useCategories();
   // Funnelcake answers 200 with vine_videos: 0 when its count query fails, so a

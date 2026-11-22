@@ -229,6 +229,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const [videoDuration, setVideoDuration] = useState(0);
     const playbackSecondRef = useRef(0);
     const playbackStartedRef = useRef(false);
+    // Tracks whether HLS.js is currently being dynamically imported so the active-
+    // playback effect does not call video.play() before any source is attached.
+    const isHlsLoadingRef = useRef(false);
 
     // Track video view metrics and publish Kind 22236 events
     useVideoMetricsTracker({
@@ -308,6 +311,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       // Actually control the video element
       if (videoRef.current) {
         if (isActive && !isUserPaused && !hasError) {
+          if (isHlsLoadingRef.current) {
+            verboseLog(`[VideoPlayer ${videoId}] Deferring play() while HLS.js chunk loads`);
+            return;
+          }
           verboseLog(`[VideoPlayer ${videoId}] Starting playback`);
           // Ensure video is not already playing before calling play()
           if (videoRef.current.paused) {
@@ -869,10 +876,38 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         setHasError(false);
         setAuthDeniedAfterVerification(false);
 
+        const tryStartIfActive = () => {
+          if (shouldBePlayingRef.current && videoRef.current === video && video.paused) {
+            video.play().catch((error) => {
+              debugError(`[VideoPlayer ${videoId}] Failed to start HLS playback:`, error);
+              if (error.name === 'NotSupportedError') {
+                handleError();
+              }
+            });
+          }
+        };
+
+        // On browsers with native HLS and no MSE (e.g. iOS Safari), attach directly
+        // without downloading the hls.js chunk.
+        const hasMse = typeof MediaSource !== 'undefined'
+          || typeof (window as { ManagedMediaSource?: unknown }).ManagedMediaSource !== 'undefined';
+        if (!hasMse && video.canPlayType('application/vnd.apple.mpegurl')) {
+          verboseLog(`[VideoPlayer ${videoId}] Using native HLS support without loading hls.js: ${hlsUrl}`);
+          isHlsLoadingRef.current = false;
+          video.src = hlsUrl;
+          tryStartIfActive();
+          return;
+        }
+
+        isHlsLoadingRef.current = true;
+
         void (async () => {
           try {
             const HlsModule = await loadHlsModule();
-            if (abortController.signal.aborted || videoRef.current !== video) return;
+            if (abortController.signal.aborted || videoRef.current !== video) {
+              isHlsLoadingRef.current = false;
+              return;
+            }
 
             if (HlsModule.isSupported()) {
               verboseLog(`[VideoPlayer ${videoId}] Using HLS.js for adaptive streaming: ${hlsUrl}`);
@@ -895,7 +930,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
               if (isAdultVerified && isKnownAgeRestricted) {
                 verboseLog(`[VideoPlayer ${videoId}] Using NIP-98 auth loader for each HLS request`);
                 const { createAuthLoader } = await import('@/lib/hlsAuthLoader');
-                if (abortController.signal.aborted || videoRef.current !== video) return;
+                if (abortController.signal.aborted || videoRef.current !== video) {
+                  isHlsLoadingRef.current = false;
+                  return;
+                }
                 hlsConfig.loader = createAuthLoader(getAuthHeaderRef.current);
               }
 
@@ -903,10 +941,12 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
               hls.loadSource(hlsUrl);
               hls.attachMedia(video);
+              isHlsLoadingRef.current = false;
 
               hls.on(HlsModule.Events.MANIFEST_PARSED, () => {
                 verboseLog(`[VideoPlayer ${videoId}] HLS manifest parsed, ${hls.levels.length} quality levels available`);
                 setIsLoading(false);
+                tryStartIfActive();
               });
 
               hls.on(HlsModule.Events.ERROR, (event, data) => {
@@ -942,22 +982,29 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
               // Native HLS support (Safari)
               verboseLog(`[VideoPlayer ${videoId}] Using native HLS support: ${hlsUrl}`);
+              isHlsLoadingRef.current = false;
               video.src = hlsUrl;
+              tryStartIfActive();
             } else {
+              isHlsLoadingRef.current = false;
               const currentUrl = allUrls[currentUrlIndex];
               if (currentUrl) {
                 video.src = currentUrl;
+                tryStartIfActive();
               }
             }
           } catch (error) {
+            isHlsLoadingRef.current = false;
             debugError(`[VideoPlayer ${videoId}] Failed to initialize HLS.js:`, error);
             const currentUrl = allUrls[currentUrlIndex];
             if (currentUrl && !abortController.signal.aborted && videoRef.current === video) {
               video.src = currentUrl;
+              tryStartIfActive();
             }
           }
         })();
       } else {
+        isHlsLoadingRef.current = false;
         // Fall back to regular MP4 playback
         const currentUrl = allUrls[currentUrlIndex];
         verboseLog(`[VideoPlayer ${videoId}] Using direct playback - URL ${currentUrlIndex}/${allUrls.length - 1}: ${currentUrl}`);

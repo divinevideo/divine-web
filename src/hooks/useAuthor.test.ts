@@ -139,4 +139,47 @@ describe('useAuthor', () => {
     expect(global.fetch).not.toHaveBeenCalled();
     expect(mockNostrQuery).not.toHaveBeenCalled();
   });
+
+  it('coalesces child useAuthor into parent useBatchedAuthors without firing individual GETs', async () => {
+    const { render, screen } = await import('@testing-library/react');
+    const { useBatchedAuthors } = await import('./useBatchedAuthors');
+
+    (global.fetch as ReturnType<typeof vi.fn>).mockImplementation((url: string) => {
+      if (url.includes('/api/users/bulk')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            users: [
+              {
+                pubkey: 'pubkey-parent-child',
+                profile: { name: 'Coalesced Creator' },
+              },
+            ],
+            missing: [],
+          }),
+        });
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    function ChildCard() {
+      const { data } = useAuthor('pubkey-parent-child');
+      return React.createElement('span', null, data?.metadata?.name ?? 'loading');
+    }
+
+    function ParentFeed() {
+      useBatchedAuthors(['pubkey-parent-child']);
+      return React.createElement(ChildCard);
+    }
+
+    render(React.createElement(ParentFeed), { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('Coalesced Creator')).toBeTruthy();
+    });
+
+    const fetchUrls = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.map(([u]) => String(u));
+    expect(fetchUrls.filter((u) => u.includes('/api/users/bulk'))).toHaveLength(1);
+    expect(fetchUrls.filter((u) => u.includes('/api/users/pubkey-parent-child'))).toHaveLength(0);
+  });
 });

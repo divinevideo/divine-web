@@ -56,7 +56,7 @@ describe('NIP-11 metadata URL', () => {
     expect(fetchMock).toHaveBeenCalledWith(expectedUrl, expect.anything());
   });
 
-  it('skips live NIP-11 fetch for canonical relay.divine.video', async () => {
+  it('skips live NIP-11 fetch for canonical relay.divine.video while preserving funnelcake routing bonus', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
@@ -65,6 +65,9 @@ describe('NIP-11 metadata URL', () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(caps.supportsNIP50).toBe(true);
     expect(caps.supportsVideoSorts).toBe(true);
+    expect(relayHealth.score('wss://relay.divine.video', 34236)).toBeGreaterThan(
+      relayHealth.score('wss://relay.divine.video'),
+    );
   });
 });
 

@@ -27,10 +27,11 @@ hydrates login from cross-subdomain cookies, registers the PWA service worker
 (apex domain only), then mounts the React tree inside an `ErrorBoundary`.
 [`src/App.tsx`](./src/App.tsx) assembles multiple provider layers and UI
 primitives (toast, tooltip). Add new providers there. [`src/AppRouter.tsx`](./src/AppRouter.tsx) defines all routes using
-react-router-dom `BrowserRouter`. First-paint routes (`Index`, `DiscoveryPage`,
-`AppLayout`) import directly; secondary routes load via `React.lazy()` inside a
-`<Suspense>` boundary so initial page loads do not download inactive pages. Add
-new routes there.
+react-router-dom `BrowserRouter`. Primary feed routes (`Index`, `DiscoveryPage`,
+`AppLayout`) import directly; other routes (including `ProfilePage`) load via
+`React.lazy()` with a `<Suspense>` boundary inside `AppLayout` around
+`<Outlet />` (and an outer boundary for standalone routes) so lazy transitions
+keep the app shell mounted. Add new routes there.
 
 ## Source Layout
 
@@ -227,7 +228,8 @@ On Fastly, some routes are not served from
 [`compute-js/`](./compute-js) renders its own HTML document from
 [`compute-js/src/templates/shell.js`](./compute-js/src/templates/shell.js) —
 identifiable by the `x-divine-edge: template` response header — and that shell
-boots the same SPA bundle. `/` and `/discovery/hot` go through it today;
+boots the same SPA bundle. `/`, `/discovery/hot`, `/video/:id`, `/@username`,
+and vanity subdomains go through it today;
 [`compute-js/src/index.js`](./compute-js/src/index.js) can route more.
 Feed HTML is cached by path so the homepage and hot discovery page keep
 their own titles and canonical URLs even though both use the trending feed;

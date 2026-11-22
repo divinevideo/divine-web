@@ -53,16 +53,26 @@ export function useAuthor(pubkey: string | undefined, options?: UseAuthorOptions
       }
 
       // If VideoFeed's useBatchedAuthors already has a POST /api/users/bulk
-      // request in flight for this pubkey, await it instead of firing a duplicate
-      // individual GET /api/users/{pubkey}.
+      // request in flight for this pubkey, await it (respecting cancellation)
+      // instead of firing a duplicate individual GET /api/users/{pubkey}.
       const inFlightBatch = getInFlightBatchedAuthor(pubkey);
       if (inFlightBatch) {
-        const batched = await inFlightBatch;
-        if (batched?.metadata || batched?.event) {
-          return batched;
-        }
         if (signal.aborted) {
           throw new DOMException('The operation was aborted.', 'AbortError');
+        }
+        let onAbort: (() => void) | undefined;
+        const abortPromise = new Promise<never>((_, reject) => {
+          onAbort = () => reject(new DOMException('The operation was aborted.', 'AbortError'));
+          signal.addEventListener('abort', onAbort, { once: true });
+        });
+        let batched: Awaited<typeof inFlightBatch>;
+        try {
+          batched = await Promise.race([inFlightBatch, abortPromise]);
+        } finally {
+          if (onAbort) signal.removeEventListener('abort', onAbort);
+        }
+        if (batched?.metadata || batched?.event) {
+          return batched;
         }
       }
 

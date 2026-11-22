@@ -104,9 +104,11 @@ export function renderFeedPage({ videos, feedType = 'trending', pathname, feedJs
 export function renderVideoPage({ video, videoId, staticAssets = null }) {
   const title = video.title || 'Video on Divine';
   const description = video.description || video.content || 'Watch this short video on Divine';
-  const thumbnail = video.thumbnail || 'https://divine.video/og.png';
-  const ogUrl = `https://divine.video/video/${escapeHtml(videoId)}`;
-  const videoUrl = video.video_url || video.videoUrl || '';
+  const isAgeRestricted = video.age_restricted === true || video.moderation_status === 'age_restricted';
+  const thumbnail = isAgeRestricted ? 'https://divine.video/og.png' : (video.thumbnail || 'https://divine.video/og.png');
+  // renderShell escapes ogUrl once when writing meta/canonical attributes.
+  const ogUrl = `https://divine.video/video/${videoId}`;
+  const videoUrl = isAgeRestricted ? '' : (video.video_url || video.videoUrl || '');
 
   const body = `<div class="divine-shell">
   ${navbar({ currentPath: '/video' })}
@@ -118,9 +120,9 @@ export function renderVideoPage({ video, videoId, staticAssets = null }) {
   </div>
 </div>`;
 
-  // Preload poster image
+  // Preload poster image (skip for age-restricted videos)
   let preloadLinks = '';
-  if (video.thumbnail) {
+  if (!isAgeRestricted && video.thumbnail) {
     preloadLinks = `<link rel="preload" href="${escapeHtml(video.thumbnail)}" as="image" fetchpriority="high">`;
   }
 
@@ -143,8 +145,11 @@ export function renderVideoPage({ video, videoId, staticAssets = null }) {
   // Inject feed data for hydration (single video). The feed type must be set:
   // useInfiniteVideosFunnelcake treats an undefined __DIVINE_FEED_TYPE__ as a
   // trending match and would consume this single-video payload as a feed page.
+  const hydrationVideo = isAgeRestricted
+    ? { ...video, thumbnail: undefined, video_url: undefined, videoUrl: undefined }
+    : video;
   const feedJson = serializeJsonForScript({
-    videos: [video],
+    videos: [hydrationVideo],
     type: 'single',
   });
   const jsonInjection = `<script>window.__DIVINE_FEED__=${feedJson};window.__DIVINE_FEED_TYPE__="single";</script>`;
@@ -171,12 +176,13 @@ export function renderVideoPage({ video, videoId, staticAssets = null }) {
  * @param {Array} options.videos - User's videos
  * @param {Object} [options.staticAssets] - Build manifest asset paths
  */
-export function renderProfilePage({ profile, videos = [], staticAssets = null }) {
+export function renderProfilePage({ profile, videos = [], staticAssets = null, canonicalUrl = null }) {
   const name = profile.displayName || profile.username || 'Unknown';
   const ogTitle = `${name} on Divine`;
   const ogDescription = profile.about || `Watch ${name}'s videos on Divine`;
   const ogImage = profile.picture || 'https://divine.video/og.png';
-  const ogUrl = `https://${escapeHtml(profile.subdomain)}.${escapeHtml(profile.apexDomain || 'divine.video')}/`;
+  // renderShell escapes ogUrl once when writing meta/canonical attributes.
+  const ogUrl = canonicalUrl || `https://${profile.subdomain}.${profile.apexDomain || 'divine.video'}/`;
 
   const body = `<div class="divine-shell">
   ${navbar({ currentPath: '/profile', apexDomain: profile.apexDomain || 'divine.video' })}

@@ -137,8 +137,9 @@ export function videoGrid(videos) {
 export function videoDetail(video) {
   const title = escapeHtml(video.title || 'Video on Divine');
   const description = escapeHtml(video.description || video.content || '');
-  const thumbnail = escapeHtml(video.thumbnail || '');
-  const videoUrl = escapeHtml(video.video_url || video.videoUrl || '');
+  const isAgeRestricted = video.age_restricted === true || video.moderation_status === 'age_restricted';
+  const thumbnail = isAgeRestricted ? '' : escapeHtml(video.thumbnail || '');
+  const videoUrl = isAgeRestricted ? '' : escapeHtml(video.video_url || video.videoUrl || '');
   const authorName = escapeHtml(video.author_name || video.authorName || '');
   const authorAvatar = escapeHtml(video.author_avatar || video.authorAvatar || '');
 

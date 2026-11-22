@@ -97,6 +97,11 @@ export function transformVideoApiResponse(result, { defaultOgImage = null } = {}
   else if (statsList.length > 0) description = `${statsList.join(' • ')} on Divine`;
   else description = 'Watch this short video on Divine';
 
+  const createdAt = typeof event.created_at === 'number' && Number.isFinite(event.created_at) && event.created_at > 0
+    ? event.created_at
+    : null;
+  const ageRestricted = stats.age_restricted === true || stats.moderation_status === 'age_restricted';
+
   return {
     title: title || 'Video on Divine',
     description,
@@ -114,5 +119,7 @@ export function transformVideoApiResponse(result, { defaultOgImage = null } = {}
     imageWidth: imageW || null,
     imageHeight: imageH || null,
     originExternalId: getVineExternalId(event),
+    created_at: createdAt,
+    age_restricted: ageRestricted,
   };
 }

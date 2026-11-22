@@ -599,7 +599,7 @@ export function VideoFeed({
                 navigationIndex={navigationIndices.get(video.id)}
                 mode={mode}
                 isPriority={index === 0}
-                skipStatsFetch={dataSource === 'funnelcake'}
+                skipStatsFetch={dataSource === 'funnelcake' && feedType !== 'profile'}
                 showComments={showCommentsForVideo === video.id}
                 onOpenComments={() => handleOpenComments(video)}
                 onCloseComments={handleCloseComments}

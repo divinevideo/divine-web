@@ -231,9 +231,11 @@ async function handleRequest(event) {
   // 5. Handle video pages — serve full edge-templated HTML (with VideoObject JSON-LD)
   // for browsers and search engines; keep compact OG player cards for social unfurlers.
   const isSearchEngineForVideo = isSearchCrawler(request.headers.get('User-Agent') || '');
+  let attemptedEdgeVideoPage = false;
   if ((!isSocialMediaCrawler(request) || isSearchEngineForVideo) && url.pathname.startsWith('/video/')) {
     const videoId = url.pathname.split('/video/')[1]?.split('?')[0];
     if (videoId) {
+      attemptedEdgeVideoPage = true;
       console.log('Handling video page, id:', videoId);
       try {
         const videoPageResponse = await handleVideoPage(event, request, videoId, url, funnelcakeTarget);
@@ -249,7 +251,7 @@ async function handleRequest(event) {
 
   // 6. Handle dynamic OG meta tags for crawler requests
   if (isSocialMediaCrawler(request) && !serveSearchFeed) {
-    if (url.pathname.startsWith('/video/')) {
+    if (url.pathname.startsWith('/video/') && !attemptedEdgeVideoPage) {
       console.log('Handling video OG tags for crawler, path:', url.pathname);
       const videoId = url.pathname.split('/video/')[1]?.split('?')[0];
       console.log('Video ID:', videoId);
@@ -610,7 +612,9 @@ async function fetchFeedData(
   // True SWR: return stale data immediately and revalidate in background,
   // unless caller is already a background revalidation that needs fresh data.
   if (!forceRefresh && staleData && typeof event?.waitUntil === 'function') {
-    event.waitUntil(refreshFeed());
+    event.waitUntil(refreshFeed().catch((e) => {
+      console.error(`Background feed ${feedType} refresh failed:`, e.message);
+    }));
     return staleData;
   }
 
@@ -1036,7 +1040,15 @@ async function handleSubdomainProfile(subdomain, url, request, originalHostname,
     const profileUrl = `https://${apexDomain}/profile/${npub}`;
     return Response.redirect(profileUrl, 302);
   }
-  const profileHtml = renderProfilePage({ profile: divineUser, videos: userVideos, staticAssets });
+  const canonicalUrl = isVanitySubdomain
+    ? `https://${subdomain}.${apexDomain}/`
+    : `https://${apexDomain}/@${subdomain}`;
+  const profileHtml = renderProfilePage({
+    profile: divineUser,
+    videos: userVideos,
+    staticAssets,
+    canonicalUrl,
+  });
 
   return new Response(profileHtml, {
     status: 200,
@@ -1273,7 +1285,9 @@ async function handleVideoPage(event, request, videoId, url, funnelcakeTarget) {
   };
 
   if (staleHtml && typeof event?.waitUntil === 'function') {
-    event.waitUntil(refreshVideoPage(true));
+    event.waitUntil(refreshVideoPage(true).catch((e) => {
+      console.error(`Background video page refresh failed for ${videoId}:`, e.message);
+    }));
     return new Response(staleHtml, {
       status: 200,
       headers: createEdgeTemplateHeaders({
@@ -1334,8 +1348,10 @@ async function handleFeedPage(event, feedType, funnelcakeTarget, pathname) {
   }
 
   const refreshFeedPage = async (isBackground = false) => {
+    // Always fetch fresh feed data when rebuilding the HTML cache entry so a
+    // cold page:feed:* miss cannot stamp up-to-1h-stale cache:feed:* data as fresh.
     const feedData = await fetchFeedData(feedType, funnelcakeTarget, event, {
-      forceRefresh: isBackground,
+      forceRefresh: true,
     });
     if (!feedData) return null;
 
@@ -1364,7 +1380,9 @@ async function handleFeedPage(event, feedType, funnelcakeTarget, pathname) {
 
   // True SWR: return stale KV HTML immediately instead of blocking TTFB on Funnelcake
   if (staleHtml && typeof event?.waitUntil === 'function') {
-    event.waitUntil(refreshFeedPage(true));
+    event.waitUntil(refreshFeedPage(true).catch((e) => {
+      console.error(`Background feed page refresh failed for ${pathname}:`, e.message);
+    }));
     return new Response(staleHtml, {
       status: 200,
       headers: createEdgeTemplateHeaders({

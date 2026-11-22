@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { Suspense, useCallback } from 'react';
 import { Outlet, useSearchParams } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { BottomNav } from '@/components/BottomNav';
@@ -58,7 +58,9 @@ export function AppLayout() {
 
         {/* Main content */}
         <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
-          <Outlet />
+          <Suspense fallback={null}>
+            <Outlet />
+          </Suspense>
         </main>
 
         {/* Bottom nav - mobile only */}

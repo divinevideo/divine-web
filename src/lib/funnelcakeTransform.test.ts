@@ -362,6 +362,34 @@ describe('transformFunnelcakeVideo', () => {
     expect(video.proofMode?.deviceAttestation).toBe('attest-blob');
   });
 
+  it('merges compact proof summary presence markers when bulky proof tags are stripped', () => {
+    const video = transformOk(makeRawVideo({
+      tags: [
+        ['d', 'trimmed-proof-video'],
+        ['verification', 'verified_mobile'],
+        ['pgp_fingerprint', 'ABCD1234'],
+      ],
+      proof: {
+        version: 1,
+        status: 'verified',
+        level: 'verified_mobile',
+        checks: {
+          proofmode_present: true,
+          proofmode_parse_ok: true,
+          device_attestation_present: true,
+          device_attestation_valid: true,
+          pgp_signature_present: true,
+          pgp_signature_valid: true,
+        },
+      },
+    }));
+
+    expect(video.proofMode?.level).toBe('verified_mobile');
+    expect(video.proofMode?.pgpFingerprint).toBe('ABCD1234');
+    expect(video.proofMode?.manifest).toBe('summary:present');
+    expect(video.proofMode?.deviceAttestation).toBe('summary:present');
+  });
+
   it('maps the raw Nostr content (description) to video.content, not the title', () => {
     const video = transformOk(makeRawVideo({
       title: 'First Divine Compilation 2026!',

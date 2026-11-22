@@ -157,5 +157,38 @@ describe('edge page templates', () => {
     expect(html).toContain('"@type":"VideoObject"');
     expect(html).toContain('"embedUrl":"https://divine.video/embed/video-1"');
     expect(html).toContain('"contentUrl":"https://media.divine.video/video.mp4"');
+    expect(html).toContain('"uploadDate":"2023-11-14T22:13:20.000Z"');
+  });
+
+  it('omits media URLs and poster preload for age-restricted video pages', () => {
+    const html = renderVideoPage({
+      videoId: 'restricted-1',
+      video: {
+        id: 'restricted-1',
+        title: 'Age-gated clip',
+        thumbnail: 'https://media.divine.video/secret-thumb.jpg',
+        video_url: 'https://media.divine.video/secret-video.mp4',
+        age_restricted: true,
+      },
+    });
+
+    expect(html).not.toContain('secret-thumb.jpg');
+    expect(html).not.toContain('secret-video.mp4');
+    expect(html).not.toContain('"contentUrl"');
+  });
+
+  it('uses explicit canonicalUrl for apex /@username profile pages without double-escaping', () => {
+    const html = renderProfilePage({
+      profile: {
+        subdomain: 'alice',
+        apexDomain: 'divine.video',
+        displayName: 'Alice',
+      },
+      videos: [],
+      canonicalUrl: 'https://divine.video/@alice',
+    });
+
+    expect(html).toContain('<link rel="canonical" href="https://divine.video/@alice" />');
+    expect(html).toContain('<meta property="og:url" content="https://divine.video/@alice" />');
   });
 });
