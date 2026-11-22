@@ -47,6 +47,7 @@ describe('handleApexOgTags', () => {
       json: async () => ({ videos: [{ thumbnail: 'https://x/hero.jpg' }] }),
     }));
     const result = await handleApexOgTags();
+    expect(result.headers.get('Cache-Control')).toBe('public, max-age=300');
     const html = await result!.text();
     expect(html).toContain('Divine: Watch Classic Vines and New Short Videos');
     expect(html).toContain('Watch classic Vines and new short videos on Divine.');
@@ -103,6 +104,7 @@ describe('handleAtUsernameOg', () => {
     }));
     const result = await handleAtUsernameOg('alice', new URL('https://divine.video/@alice'));
     expect(result).not.toBeNull();
+    expect(result!.headers.get('Cache-Control')).toBe('public, max-age=300');
     const html = await result!.text();
     expect(html).toContain('Alice on Divine');
     expect(html).toContain('Hello');
@@ -192,6 +194,7 @@ describe('handleDiscoveryOgTags', () => {
       json: async () => ({ videos: [{ thumbnail: 'https://x/top.jpg' }] }),
     }));
     const result = await handleDiscoveryOgTags('trending');
+    expect(result.headers.get('Cache-Control')).toBe('public, max-age=300');
     const html = await result!.text();
     expect(html).toContain('Trending videos on Divine');
     expect(html).toContain('https://x/top.jpg');

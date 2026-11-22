@@ -11,7 +11,7 @@ import { HOME_DESCRIPTION, HOME_TITLE, HOT_DESCRIPTION, HOT_TITLE } from './site
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
 const DEFAULT_SITE_DESCRIPTION = 'Watch and share 6-second looping videos on the decentralized Nostr network.';
-const CRAWLER_OG_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600, stale-while-revalidate=3600';
+const STATIC_OG_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600, stale-while-revalidate=3600';
 
 export function handleDownloadOgTags(url, hostnameToUse) {
   const html = buildCrawlerHtml({
@@ -29,7 +29,7 @@ export function handleDownloadOgTags(url, hostnameToUse) {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': CRAWLER_OG_CACHE_CONTROL,
+      'Cache-Control': STATIC_OG_CACHE_CONTROL,
       'Vary': HOST_DEPENDENT_CRAWLER_VARY,
     },
   });
@@ -179,7 +179,7 @@ export async function handleVideoOgTags(request, videoId, url) {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': CRAWLER_OG_CACHE_CONTROL,
+        'Cache-Control': 'public, max-age=300',
         'Vary': 'User-Agent', // Cache different versions for crawlers vs browsers
       },
     });
@@ -222,7 +222,7 @@ export async function handleProfileOgTags(request, url) {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': CRAWLER_OG_CACHE_CONTROL,
+        'Cache-Control': 'public, max-age=300',
         'Vary': 'User-Agent',
       },
     });
@@ -268,7 +268,7 @@ export async function handleCategoryOgTags(request, url) {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': CRAWLER_OG_CACHE_CONTROL,
+        'Cache-Control': 'public, max-age=300',
         'Vary': 'User-Agent',
       },
     });
@@ -302,7 +302,7 @@ export async function handleHashtagOgTags(tag) {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': CRAWLER_OG_CACHE_CONTROL,
+        'Cache-Control': STATIC_OG_CACHE_CONTROL,
         'Vary': 'User-Agent',
       },
     });
@@ -332,7 +332,7 @@ export function handleSearchOgTags(query) {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': CRAWLER_OG_CACHE_CONTROL,
+      'Cache-Control': STATIC_OG_CACHE_CONTROL,
       'Vary': 'User-Agent',
     },
   });
@@ -377,7 +377,7 @@ export async function handleDiscoveryOgTags(feedType) {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': CRAWLER_OG_CACHE_CONTROL,
+      'Cache-Control': 'public, max-age=300',
       'Vary': 'User-Agent',
     },
   });
@@ -412,7 +412,7 @@ export async function handleApexOgTags() {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': CRAWLER_OG_CACHE_CONTROL,
+      'Cache-Control': 'public, max-age=300',
       'Vary': 'User-Agent',
     },
   });
@@ -465,7 +465,7 @@ export async function handleAtUsernameOg(username, url) {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': CRAWLER_OG_CACHE_CONTROL,
+        'Cache-Control': 'public, max-age=300',
         'Vary': 'User-Agent',
       },
     });
