@@ -17,7 +17,40 @@ describe('public robots.txt', () => {
   }
 
   it('allows default crawling outside the restricted paths', () => {
-    expect(rulesFor('*')).toEqual(['Allow: /', 'Disallow: /t/', 'Disallow: /search']);
+    expect(rulesFor('*')).toEqual([
+      'Allow: /',
+      'Disallow: /t/',
+      'Disallow: /hashtag/',
+      'Disallow: /search',
+    ]);
+    expect(rulesFor('*')).not.toContain('Disallow: /hashtags');
+  });
+
+  it.each([
+    'GPTBot',
+    'ClaudeBot',
+    'anthropic-ai',
+    'Google-Extended',
+    'GoogleOther',
+    'GoogleOther-Image',
+    'GoogleOther-Video',
+    'FacebookBot',
+    'Meta-ExternalAgent',
+    'Bytespider',
+    'Amazonbot',
+    'CCBot',
+    'Applebot-Extended',
+    'cohere-ai',
+    'cohere-training-data-crawler',
+    'AI2Bot',
+    'Ai2Bot-Dolma',
+    'Timpibot',
+    'Omgilibot',
+    'Webzio-Extended',
+    'DeepSeekBot',
+    'PanguBot',
+  ])('disallows AI training and scraping crawler %s', agent => {
+    expect(rulesFor(agent)).toEqual(['Disallow: /']);
   });
 
   it.each(['Claude-Web', 'Claude-User', 'Claude-SearchBot', 'OAI-SearchBot', 'PerplexityBot'])(

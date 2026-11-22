@@ -56,6 +56,48 @@ Disallow: /
 User-agent: YouBot
 Disallow: /
 
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: GoogleOther
+Disallow: /
+
+User-agent: GoogleOther-Image
+Disallow: /
+
+User-agent: GoogleOther-Video
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: cohere-training-data-crawler
+Disallow: /
+
+User-agent: AI2Bot
+Disallow: /
+
+User-agent: Ai2Bot-Dolma
+Disallow: /
+
+User-agent: Timpibot
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+User-agent: Webzio-Extended
+Disallow: /
+
+User-agent: DeepSeekBot
+Disallow: /
+
+User-agent: PanguBot
+Disallow: /
+
 # Keep the assistant guide accessible without opening the catalog to these agents.
 User-agent: ChatGPT-User
 User-agent: OAI-SearchBot
@@ -79,9 +121,11 @@ Allow: /
 
 # Allow search engines to index core pages, videos, profiles, and categories,
 # but keep unbounded long-tail hashtag permutations and search queries out of crawls.
+# Keep the trailing slash on /hashtag/ so the /hashtags discovery directory stays crawlable.
 User-agent: *
 Allow: /
 Disallow: /t/
+Disallow: /hashtag/
 Disallow: /search
 
 Sitemap: https://divine.video/sitemap.xml
