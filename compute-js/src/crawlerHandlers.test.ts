@@ -172,9 +172,12 @@ describe('handleHashtagOgTags', () => {
     expect(html).toContain('https://divine.video/og.png');
     expect(html).toContain('og:image:width');
     expect(html).toContain('content="1200"');
+    expect(html).toContain('og:image:height');
+    expect(html).toContain('content="630"');
     expect(result!.headers.get('Cache-Control')).toBe(
-      'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+      'public, max-age=300, s-maxage=3600, stale-while-revalidate=3600',
     );
+    expect(result!.headers.get('Vary')).toBe('User-Agent');
   });
 });
 

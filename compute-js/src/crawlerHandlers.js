@@ -11,7 +11,7 @@ import { HOME_DESCRIPTION, HOME_TITLE, HOT_DESCRIPTION, HOT_TITLE } from './site
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
 const DEFAULT_SITE_DESCRIPTION = 'Watch and share 6-second looping videos on the decentralized Nostr network.';
-const CRAWLER_OG_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400';
+const CRAWLER_OG_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600, stale-while-revalidate=3600';
 
 export function handleDownloadOgTags(url, hostnameToUse) {
   const html = buildCrawlerHtml({
