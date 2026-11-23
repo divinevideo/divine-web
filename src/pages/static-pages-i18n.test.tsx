@@ -98,7 +98,7 @@ describe('static pages i18n', () => {
       '/delete-account',
     );
     const supportLinks = screen.getAllByRole('link', { name: 'support@divine.video' });
-    expect(supportLinks.length).toBeGreaterThanOrEqual(1);
+    expect(supportLinks).toHaveLength(2);
     for (const link of supportLinks) {
       expect(link).toHaveAttribute('href', 'mailto:support@divine.video');
     }

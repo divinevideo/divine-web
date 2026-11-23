@@ -104,13 +104,7 @@ export function SafetyPage() {
             <p>
               To report child safety concerns or reach our child safety point of contact regarding child sexual
               abuse and exploitation (CSAE) prevention and compliance, email{' '}
-              <a
-                href="mailto:support@divine.video"
-                className="text-primary hover:underline font-medium"
-              >
-                support@divine.video
-              </a>
-              .
+              <a href="mailto:support@divine.video" className="text-primary hover:underline font-medium">support@divine.video</a>.
             </p>
           </section>
 
@@ -238,13 +232,7 @@ export function SafetyPage() {
             <h2 className="text-2xl font-extrabold text-foreground mb-3">{t('sections.contact')}</h2>
             <p>
               For safety questions, reports, or child safety compliance inquiries, email{' '}
-              <a
-                href="mailto:support@divine.video"
-                className="text-primary hover:underline font-medium"
-              >
-                support@divine.video
-              </a>
-              .
+              <a href="mailto:support@divine.video" className="text-primary hover:underline font-medium">support@divine.video</a>.
             </p>
           </section>
         </div>

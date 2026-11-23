@@ -212,8 +212,11 @@ describe('prerendered legal pages', () => {
 
     expect(html).toContain('id="contact"');
     expect(html).toContain('15. Contact');
-    expect(html).toContain('href="mailto:support@divine.video"');
-    expect(html).toContain('support@divine.video');
+    expect(html).toContain('child sexual\n              abuse and exploitation (CSAE) prevention and compliance');
+    const inlineMailtoMatches = html.match(
+      /<a href="mailto:support@divine\.video" class="text-primary hover:underline font-medium">support@divine\.video<\/a>\./g,
+    );
+    expect(inlineMailtoMatches).toHaveLength(2);
   });
 
   it('inserts option values literally and escapes catalog text like React does', () => {
