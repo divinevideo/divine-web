@@ -84,7 +84,7 @@ describe('static pages i18n', () => {
   });
 
   it('renders safety copy in spanish', () => {
-    render(
+    const { container } = render(
       <MemoryRouter>
         <SafetyPage />
       </MemoryRouter>,
@@ -102,6 +102,9 @@ describe('static pages i18n', () => {
     for (const link of supportLinks) {
       expect(link).toHaveAttribute('href', 'mailto:support@divine.video');
     }
+    // Dropping the {' '} before a link would run "email" into the address for every reader
+    // with JavaScript, while the prerendered page still shows a space.
+    expect(container.textContent?.match(/email support@divine\.video\./g)).toHaveLength(2);
   });
 
   it('renders DMCA copy in spanish', () => {

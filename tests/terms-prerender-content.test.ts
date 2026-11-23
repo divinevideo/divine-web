@@ -209,9 +209,10 @@ describe('prerendered legal pages', () => {
 
   it('includes the support contact email on the prerendered safety page', () => {
     const html = prerenderLegalPages()('safety');
-    // The prerender copies JSX line breaks and indentation verbatim, so check what a reader
-    // sees, with tags stripped and whitespace collapsed. Re-wrapping or restyling the links
-    // must not fail the test; a period that drifts off its link must.
+    // The prerender copies JSX line breaks and indentation verbatim, so check what a reader of
+    // the static page (no JavaScript) sees, with tags stripped and whitespace collapsed.
+    // Re-wrapping or restyling the links must not fail the test; a period that drifts off its
+    // link must. src/pages/static-pages-i18n.test.tsx checks the same text in the React render.
     const visible = html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
 
     // scroll-mt-24 keeps a /safety#contact jump below the fixed MarketingHeader, as on Terms.
