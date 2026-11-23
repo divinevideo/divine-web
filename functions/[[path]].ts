@@ -111,11 +111,9 @@ function injectMetaTags(html: string, meta: PageMeta, path: string): string {
   updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:description', meta.description);
   updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:image', meta.image);
 
-  // Unfurlers load previewVideoUrl, which is the smaller 720p rendition when it surely exists.
-  const unfurlVideoUrl = meta.previewVideoUrl || meta.videoUrl;
-  if (unfurlVideoUrl) {
-    updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video', unfurlVideoUrl);
-    updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:secure_url', unfurlVideoUrl);
+  if (meta.videoUrl) {
+    updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video', meta.videoUrl);
+    updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:secure_url', meta.videoUrl);
     updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:width', String(meta.videoWidth || 720));
     updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:height', String(meta.videoHeight || 1280));
   } else {
@@ -135,7 +133,7 @@ function injectMetaTags(html: string, meta: PageMeta, path: string): string {
     updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player', meta.twitterPlayerUrl);
     updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:width', String(meta.videoWidth || 720));
     updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:height', String(meta.videoHeight || 1280));
-    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:stream', unfurlVideoUrl || '');
+    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:stream', meta.videoUrl || '');
     updatedHtml = upsertMetaTag(
       updatedHtml,
       'name',
@@ -363,10 +361,8 @@ function renderEmbedPage(meta: PageMeta): string {
   const poster = escapeHtml(meta.image);
   const mimeType = escapeHtml(meta.videoMimeType || 'video/mp4');
   // The player falls back to the original when the 720p rendition is missing.
-  const sources = [getProgressive720pUrl(meta.videoUrl || ''), meta.videoUrl]
-    .filter((source): source is string => Boolean(source))
-    .map(source => `<source src="${escapeHtml(source)}" type="${mimeType}">`)
-    .join('\n    ');
+  const rendition = getProgressive720pUrl(meta.videoUrl || '');
+  const videoUrl = escapeHtml(meta.videoUrl || '');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -381,7 +377,7 @@ function renderEmbedPage(meta: PageMeta): string {
 </head>
 <body>
   <video autoplay loop muted playsinline poster="${poster}">
-    ${sources}
+    ${rendition ? `<source src="${escapeHtml(rendition)}" type="video/mp4">\n    ` : ''}<source src="${videoUrl}" type="${mimeType}">
   </video>
 </body>
 </html>`;

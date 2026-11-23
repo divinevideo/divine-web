@@ -6,7 +6,6 @@ import {
   buildPlaybackUrls,
   getProgressive720pUrl,
   markProgressiveUnavailable,
-  selectLinkPreviewVideoUrl,
 } from './divineMediaUrls';
 
 const hashOf = (char: string) => char.repeat(64);
@@ -35,35 +34,6 @@ describe('getProgressive720pUrl', () => {
     ['an invalid URL', 'not a url'],
   ])('returns undefined for %s', (_, url) => {
     expect(getProgressive720pUrl(url)).toBeUndefined();
-  });
-});
-
-describe('selectLinkPreviewVideoUrl', () => {
-  const original = `https://media.divine.video/${hashOf('8')}`;
-  const now = 2_000_000_000;
-
-  it('uses the 720p MP4 once the video is more than an hour old', () => {
-    expect(selectLinkPreviewVideoUrl(original, { createdAt: now - 2 * 3600, isClassicVine: false }, now))
-      .toBe(`${original}/720p.mp4`);
-  });
-
-  it('keeps the original while the rendition may still be in the queue', () => {
-    expect(selectLinkPreviewVideoUrl(original, { createdAt: now - 600, isClassicVine: false }, now))
-      .toBe(original);
-  });
-
-  it('keeps the original for classic Vines', () => {
-    expect(selectLinkPreviewVideoUrl(original, { createdAt: now - 2 * 3600, isClassicVine: true }, now))
-      .toBe(original);
-  });
-
-  it('keeps the original when the publish time is unknown', () => {
-    expect(selectLinkPreviewVideoUrl(original, { isClassicVine: false }, now)).toBe(original);
-  });
-
-  it('keeps URLs on other hosts', () => {
-    expect(selectLinkPreviewVideoUrl('https://cdn.example.com/v.mp4', { createdAt: 1, isClassicVine: false }, now))
-      .toBe('https://cdn.example.com/v.mp4');
   });
 });
 

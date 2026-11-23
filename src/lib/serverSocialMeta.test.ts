@@ -37,26 +37,6 @@ describe('serverSocialMeta', () => {
     expect(meta.videoUrl).toBe('https://media.divine.video/0b5bb00712dfcb9a835b0f81a64b003dec950f85e9176930aa9b9389f0da24cb');
   });
 
-  it('points link previews at the 720p rendition of an older video, not of a classic Vine', () => {
-    const original = `https://media.divine.video/${'e'.repeat(64)}`;
-    const payload = (tags: string[][]) => ({
-      event: {
-        id: 'f'.repeat(64),
-        content: 'Clip',
-        created_at: 1_700_000_000,
-        tags: [['imeta', `url ${original}`, 'm video/mp4'], ...tags],
-      },
-    });
-    const url = new URL('https://divine.video/video/abc');
-
-    const recent = buildVideoPageMeta(url, payload([]));
-    expect(recent.videoUrl).toBe(original);
-    expect(recent.previewVideoUrl).toBe(`${original}/720p.mp4`);
-
-    const vine = buildVideoPageMeta(url, payload([['origin', 'vine', 'abc']]));
-    expect(vine.previewVideoUrl).toBe(original);
-  });
-
   it('builds profile metadata for apex /profile/:npub routes', () => {
     const meta = buildProfilePageMeta(
       new URL('https://divine.video/profile/npub1qakf0yuzhy846w3ty8u4u8hgddsr8u2vjtneklad8lslzpelfzrqsy63m7'),

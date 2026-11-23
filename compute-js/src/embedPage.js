@@ -21,10 +21,7 @@ export function renderEmbedPage({ videoUrl, mime, poster, title }) {
   }
 
   // The player falls back to the original when the 720p rendition is missing.
-  const sources = [progressive720pUrl(videoUrl), videoUrl]
-    .filter(Boolean)
-    .map((source) => `<source src="${e(source)}" type="${e(mime || 'video/mp4')}">`)
-    .join('\n    ');
+  const rendition = progressive720pUrl(videoUrl);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -39,7 +36,7 @@ export function renderEmbedPage({ videoUrl, mime, poster, title }) {
 </head>
 <body>
   <video autoplay loop muted playsinline${poster ? ` poster="${e(poster)}"` : ''}>
-    ${sources}
+    ${rendition ? `<source src="${e(rendition)}" type="video/mp4">\n    ` : ''}<source src="${e(videoUrl)}" type="${e(mime || 'video/mp4')}">
   </video>
 </body>
 </html>`;

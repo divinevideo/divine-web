@@ -5,10 +5,6 @@ import { cleanText, truncateText } from './ogTags.js';
 
 const DIVINE_ORIGINAL_BLOB_URL = /^https:\/\/media\.divine\.video\/([0-9a-f]{64})(?:\.[a-z0-9]+)?$/i;
 
-// The rendition is made from a queue after upload and may lag behind, so link
-// previews keep the original for this long after publishing.
-const LINK_PREVIEW_RENDITION_DELAY_SECONDS = 60 * 60;
-
 /**
  * The progressive 720p MP4 that the media server makes from an original Divine
  * blob URL (`https://media.divine.video/{sha256}`), or null for any other URL.
@@ -17,20 +13,6 @@ const LINK_PREVIEW_RENDITION_DELAY_SECONDS = 60 * 60;
 export function progressive720pUrl(url) {
   const hash = typeof url === 'string' ? DIVINE_ORIGINAL_BLOB_URL.exec(url)?.[1] : undefined;
   return hash ? `https://media.divine.video/${hash.toLowerCase()}/720p.mp4` : null;
-}
-
-/**
- * The video URL for link previews (`og:video`, `twitter:player:stream`).
- * Unfurlers cannot fall back to a second URL, so the 720p rendition is used
- * only where it surely exists: an hour after publishing, and never for classic
- * Vines, which may not have a rendition yet. Mirrors
- * `selectLinkPreviewVideoUrl` in `src/lib/divineMediaUrls.ts`.
- */
-export function linkPreviewVideoUrl(meta, nowSeconds = Math.floor(Date.now() / 1000)) {
-  const original = meta?.videoUrl || null;
-  if (!original || meta.isClassicVine || !meta.created_at) return original;
-  if (nowSeconds - meta.created_at < LINK_PREVIEW_RENDITION_DELAY_SECONDS) return original;
-  return progressive720pUrl(original) || original;
 }
 
 // The d tag after the second colon may be empty or start with any character,
@@ -75,13 +57,6 @@ function parseDim(dim) {
   const m = dim.match(/^(\d+)x(\d+)$/i);
   if (!m) return [null, null];
   return [Number(m[1]), Number(m[2])];
-}
-
-/** Classic Vine imports carry an `origin` or `platform` tag naming Vine. */
-function isClassicVineEvent(event) {
-  return ['origin', 'platform'].some(
-    (name) => event.tags?.find((t) => t[0] === name)?.[1]?.toLowerCase() === 'vine',
-  );
 }
 
 function getVineExternalId(event) {
@@ -156,7 +131,6 @@ export function transformVideoApiResponse(result, { defaultOgImage = null } = {}
     imageWidth: imageW || null,
     imageHeight: imageH || null,
     originExternalId: getVineExternalId(event),
-    isClassicVine: isClassicVineEvent(event),
     created_at: createdAt,
     age_restricted: ageRestricted,
   };

@@ -4,7 +4,7 @@
 import { KVStore } from 'fastly:kv-store';
 import { buildCrawlerHtml, cleanText, truncateText } from './ogTags.js';
 import { hexToNpub, decodeNpubToHex } from './bech32.js';
-import { linkPreviewVideoUrl, transformVideoApiResponse } from './videoMetadata.js';
+import { transformVideoApiResponse } from './videoMetadata.js';
 import { HOST_DEPENDENT_CRAWLER_VARY } from './templateCachePolicy.js';
 import { HOME_DESCRIPTION, HOME_TITLE, HOT_DESCRIPTION, HOT_TITLE } from './siteCopy.js';
 
@@ -152,7 +152,7 @@ export async function handleVideoOgTags(request, videoId, url) {
 
     const hasPlayableVideo = Boolean(videoMeta?.videoUrl);
     const videoBlock = hasPlayableVideo ? {
-      url: linkPreviewVideoUrl(videoMeta),
+      url: videoMeta.videoUrl,
       type: videoMeta.videoMime || 'video/mp4',
       width: videoMeta.videoWidth || 720,
       height: videoMeta.videoHeight || 1280,

@@ -1,5 +1,3 @@
-import { selectLinkPreviewVideoUrl } from './divineMediaUrls';
-
 const DEFAULT_OG_IMAGE = 'https://divine.video/og.png';
 
 const CATEGORY_LABEL_OVERRIDES: Record<string, string> = {
@@ -19,8 +17,6 @@ export interface PageMeta {
   imageAlt: string;
   twitterCard: string;
   videoUrl?: string;
-  /** The URL unfurlers should load; can be the 720p rendition of `videoUrl`. */
-  previewVideoUrl?: string;
   videoMimeType?: string;
   videoWidth?: number;
   videoHeight?: number;
@@ -32,7 +28,6 @@ export interface VideoApiResponse {
     id: string;
     content: string;
     tags: string[][];
-    created_at?: number;
   };
   stats?: {
     author_name?: string;
@@ -77,11 +72,6 @@ function truncateText(value: string, maxLength: number): string {
 
 function getTagValue(tags: string[][], name: string): string | undefined {
   return tags.find(tag => tag[0] === name)?.[1];
-}
-
-/** Classic Vine imports carry an `origin` or `platform` tag naming Vine. */
-function isClassicVineEvent(tags: string[][]): boolean {
-  return ['origin', 'platform'].some(name => getTagValue(tags, name)?.toLowerCase() === 'vine');
 }
 
 export function safeDecodeURIComponent(value: string): string {
@@ -279,10 +269,6 @@ export function buildVideoPageMeta(url: URL, payload: VideoApiResponse): PageMet
     imageAlt: title,
     twitterCard: hasPlayableVideo ? 'player' : 'summary_large_image',
     videoUrl: media.url,
-    previewVideoUrl: selectLinkPreviewVideoUrl(media.url, {
-      createdAt: payload.event.created_at,
-      isClassicVine: isClassicVineEvent(payload.event.tags),
-    }),
     videoMimeType: media.mimeType,
     videoWidth: media.width,
     videoHeight: media.height,

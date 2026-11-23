@@ -52,7 +52,7 @@ describe('functions/[[path]]', () => {
             content: 'Clip',
             created_at: 1_700_000_000,
             tags: [
-              ['imeta', `url https://media.divine.video/${OLD_BLOB_HASH}`, 'm video/mp4', 'dim 1080x1920'],
+              ['imeta', `url https://media.divine.video/${OLD_BLOB_HASH}`, 'm video/webm', 'dim 1080x1920'],
             ],
           },
         }), {
@@ -158,7 +158,7 @@ describe('functions/[[path]]', () => {
     expect(html).toContain('href="https://relay.divine.video/api/oembed?url=https%3A%2F%2Fdivine.video%2Fvideo%2Fabc123"');
   });
 
-  it('points unfurlers at the 720p rendition of an older Divine upload', async () => {
+  it('keeps direct unfurls on the original when rendition availability is unknown', async () => {
     const response = await onRequest({
       request: new Request('https://divine.video/video/old-blob'),
       next: async () => new Response('not found', { status: 404 }),
@@ -166,11 +166,11 @@ describe('functions/[[path]]', () => {
     });
 
     const html = await response.text();
-    const rendition = `https://media.divine.video/${OLD_BLOB_HASH}/720p.mp4`;
+    const original = `https://media.divine.video/${OLD_BLOB_HASH}`;
 
-    expect(html).toContain(`property="og:video" content="${rendition}"`);
-    expect(html).toContain(`property="og:video:secure_url" content="${rendition}"`);
-    expect(html).toContain(`name="twitter:player:stream" content="${rendition}"`);
+    expect(html).toContain(`property="og:video" content="${original}"`);
+    expect(html).toContain(`property="og:video:secure_url" content="${original}"`);
+    expect(html).toContain(`name="twitter:player:stream" content="${original}"`);
   });
 
   it('embeds the 720p rendition with the original as fallback', async () => {
@@ -181,11 +181,12 @@ describe('functions/[[path]]', () => {
     });
 
     const html = await response.text();
-    const sources = [...html.matchAll(/<source src="([^"]+)"/g)].map((match) => match[1]);
+    const sources = [...html.matchAll(/<source src="([^"]+)" type="([^"]+)"/g)]
+      .map((match) => [match[1], match[2]]);
 
     expect(sources).toEqual([
-      `https://media.divine.video/${OLD_BLOB_HASH}/720p.mp4`,
-      `https://media.divine.video/${OLD_BLOB_HASH}`,
+      [`https://media.divine.video/${OLD_BLOB_HASH}/720p.mp4`, 'video/mp4'],
+      [`https://media.divine.video/${OLD_BLOB_HASH}`, 'video/webm'],
     ]);
   });
 
