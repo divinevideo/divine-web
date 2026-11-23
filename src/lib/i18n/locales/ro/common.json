@@ -1038,7 +1038,9 @@
     "hashtag": "Sticker cu hashtag, deschide #{{hashtag}}",
     "place": "Sticker cu locație, deschide {{place}} pe o hartă",
     "reply": "Sticker cu răspuns, deschide la ce răspunde acest videoclip",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Deschizi linkul extern?",
+    "linkDialogBody": "Acest link se deschide în afara Divine. Verifică adresa înainte să continui."
   },
   "thumbnailPlayer": {
     "videoPreview": "Previzualizare videoclip",

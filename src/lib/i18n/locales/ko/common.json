@@ -1031,7 +1031,9 @@
     "hashtag": "해시태그 스티커, #{{hashtag}} 열기",
     "place": "위치 스티커, 지도에서 {{place}} 열기",
     "reply": "답글 스티커, 이 동영상이 답하는 대상 열기",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "외부 링크를 열까요?",
+    "linkDialogBody": "이 링크는 Divine 밖에서 열려요. 이동하기 전에 주소를 확인하세요."
   },
   "thumbnailPlayer": {
     "videoPreview": "비디오 미리보기",

@@ -1031,7 +1031,9 @@
     "hashtag": "Stiker tagar, membuka #{{hashtag}}",
     "place": "Stiker lokasi, membuka {{place}} di peta",
     "reply": "Stiker balasan, membuka apa yang dibalas video ini",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Buka tautan eksternal?",
+    "linkDialogBody": "Tautan ini terbuka di luar Divine. Periksa alamatnya sebelum kamu lanjut."
   },
   "thumbnailPlayer": {
     "videoPreview": "Pratinjau Video",

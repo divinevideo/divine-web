@@ -1031,7 +1031,9 @@
     "hashtag": "Hashtag sticker, binubuksan ang #{{hashtag}}",
     "place": "Location sticker, binubuksan ang {{place}} sa mapa",
     "reply": "Reply sticker, binubuksan ang sinasagot ng video na ito",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Buksan ang external na link?",
+    "linkDialogBody": "Bubuksan ang link na ito sa labas ng Divine. Tingnan muna ang address bago ka tumuloy."
   },
   "thumbnailPlayer": {
     "videoPreview": "Preview ng video",

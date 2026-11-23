@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MouseEvent, RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { VideoLinkStickerDialog } from '@/components/VideoLinkStickerDialog';
 import { cn } from '@/lib/utils';
 import { getSubdomainAwareUrl } from '@/lib/subdomainLinks';
 import { isVideoStickerShownAt } from '@/lib/videoStickers';
@@ -223,6 +224,7 @@ function StickerButtons({
   const layout = useStickerLayout(overlayRef, videoElement, objectFit);
   const shown = useShownStickers(videoElement, stickers);
   const lastTapRef = useRef<{ time: number; timer?: ReturnType<typeof setTimeout> } | null>(null);
+  const [linkToConfirm, setLinkToConfirm] = useState<string | null>(null);
 
   useEffect(() => () => {
     if (lastTapRef.current?.timer) clearTimeout(lastTapRef.current.timer);
@@ -231,6 +233,10 @@ function StickerButtons({
   const runAction = useCallback((action: VideoStickerAction) => {
     if (action.type === 'external') {
       window.open(action.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (action.type === 'confirmExternal') {
+      setLinkToConfirm(action.url);
       return;
     }
     const { href, isExternal } = getSubdomainAwareUrl(action.path, action.ownerPubkey);
@@ -342,6 +348,7 @@ function StickerButtons({
           })}
         </div>
       )}
+      <VideoLinkStickerDialog url={linkToConfirm} onClose={() => setLinkToConfirm(null)} />
     </div>
   );
 }

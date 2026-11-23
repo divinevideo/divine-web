@@ -231,13 +231,66 @@ describe('VideoStickerOverlay', () => {
     }
   });
 
-  it('opens a link in a new tab without opener or referrer', () => {
-    renderOverlay([sticker({ kind: 'link', target: 'https://example.com/a' })]);
+  it('opens a link to Divine in a new tab without opener or referrer', () => {
+    renderOverlay([sticker({ kind: 'link', target: 'https://support.divine.video/a' })]);
 
     tap(screen.getByRole('button'));
 
-    expect(openSpy).toHaveBeenCalledWith('https://example.com/a', '_blank', 'noopener,noreferrer');
+    expect(openSpy).toHaveBeenCalledWith('https://support.divine.video/a', '_blank', 'noopener,noreferrer');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent('/video/current');
+  });
+
+  it('shows where a link outside Divine goes before it opens', () => {
+    renderOverlay([sticker({ kind: 'link', target: 'https://www.example.com/a?b=c', label: 'Divine support' })]);
+
+    tap(screen.getByRole('button', { name: /Divine support/ }));
+
+    expect(openSpy).not.toHaveBeenCalled();
+    const dialog = screen.getByRole('dialog', { name: 'Open external link?' });
+    expect(dialog).toHaveTextContent('This link opens outside Divine. Check the address before you go.');
+    const link = screen.getByTestId('video-link-sticker-open');
+    expect(link).toHaveTextContent('example.com');
+    expect(link).toHaveTextContent('https://www.example.com/a?b=c');
+    expect(link).toHaveAttribute('href', 'https://www.example.com/a?b=c');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+
+    fireEvent.click(link);
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent('/video/current');
+  });
+
+  it('shows the whole host of a link that only starts like Divine', () => {
+    renderOverlay([sticker({ kind: 'link', target: 'https://divine.video.login.example.com/' })]);
+
+    tap(screen.getByRole('button'));
+
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(screen.getByTestId('video-link-sticker-open')).toHaveTextContent('divine.video.login.example.com');
+  });
+
+  it('keeps clicks and keys in the link dialog from the player and the feed around it', () => {
+    const onParentClick = vi.fn();
+    const onWindowKey = vi.fn();
+    window.addEventListener('keydown', onWindowKey);
+    try {
+      renderOverlay([sticker({ kind: 'link', target: 'https://example.com/' })], { onParentClick });
+      tap(screen.getByRole('button'));
+      const dialog = screen.getByRole('dialog');
+
+      fireEvent.click(dialog);
+      fireEvent.keyDown(dialog, { key: 'ArrowDown' });
+      fireEvent.keyDown(dialog, { key: 'Escape' });
+
+      expect(onParentClick).not.toHaveBeenCalled();
+      expect(onWindowKey).not.toHaveBeenCalled();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(openSpy).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('keydown', onWindowKey);
+    }
   });
 
   it('opens a place in an OpenStreetMap search in a new tab', () => {
@@ -297,7 +350,7 @@ describe('VideoStickerOverlay', () => {
   });
 
   it('opens once for a double click when the player has no double tap', () => {
-    renderOverlay([sticker({ kind: 'link', target: 'https://example.com/' })]);
+    renderOverlay([sticker({ kind: 'link', target: 'https://divine.video/' })]);
     const button = screen.getByRole('button');
 
     tap(button);
@@ -310,7 +363,7 @@ describe('VideoStickerOverlay', () => {
     it('opens a single click once a double tap can no longer follow', () => {
       vi.useFakeTimers();
       const onDoubleTap = vi.fn();
-      renderOverlay([sticker({ kind: 'link', target: 'https://example.com/' })], { onDoubleTap });
+      renderOverlay([sticker({ kind: 'link', target: 'https://divine.video/' })], { onDoubleTap });
 
       tap(screen.getByRole('button'));
       expect(openSpy).not.toHaveBeenCalled();
@@ -337,7 +390,7 @@ describe('VideoStickerOverlay', () => {
 
     it('opens at once from the keyboard', () => {
       const onDoubleTap = vi.fn();
-      renderOverlay([sticker({ kind: 'link', target: 'https://example.com/' })], { onDoubleTap });
+      renderOverlay([sticker({ kind: 'link', target: 'https://divine.video/' })], { onDoubleTap });
 
       // Enter or Space on a button fires a click that counts no clicks.
       fireEvent.click(screen.getByRole('button'), { detail: 0 });

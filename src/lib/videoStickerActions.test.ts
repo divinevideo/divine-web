@@ -7,6 +7,8 @@ import type { VideoStickerKind } from '@/types/video';
 import {
   getVideoStickerAction,
   isClickableVideoSticker,
+  isTrustedLinkHost,
+  linkDomain,
   mapSearchUrl,
   videoRoutePath,
 } from './videoStickerActions';
@@ -16,9 +18,28 @@ const EVENT_ID = 'e'.repeat(64);
 const NO_ROOT = { replyRootRouteId: undefined };
 
 describe('getVideoStickerAction', () => {
-  it('opens a link as a page outside the app', () => {
+  it('opens a link to Divine or one of its subdomains at once', () => {
+    for (const target of ['https://divine.video/about', 'https://support.divine.video/a', 'https://DIVINE.video/']) {
+      expect(getVideoStickerAction({ kind: 'link', target }, NO_ROOT))
+        .toEqual({ type: 'external', url: new URL(target).href });
+    }
+  });
+
+  it('shows where any other link goes before it opens', () => {
     expect(getVideoStickerAction({ kind: 'link', target: 'https://example.com/a?b=c' }, NO_ROOT))
-      .toEqual({ type: 'external', url: 'https://example.com/a?b=c' });
+      .toEqual({ type: 'confirmExternal', url: 'https://example.com/a?b=c' });
+  });
+
+  it('shows hosts that only look like Divine before they open', () => {
+    for (const target of [
+      'https://divine.video.login.example.com/',
+      'https://evildivine.video/',
+      'https://divine.video@example.com/',
+      'https://divine-video.com/',
+      'http://divine.video.:8080/',
+    ]) {
+      expect(getVideoStickerAction({ kind: 'link', target }, NO_ROOT)?.type).toBe('confirmExternal');
+    }
   });
 
   it('never opens a link that is no http(s) page, however it got here', () => {
@@ -85,5 +106,25 @@ describe('videoRoutePath', () => {
   it('opens anything else as an id', () => {
     expect(videoRoutePath(EVENT_ID)).toBe(`/video/${EVENT_ID}`);
     expect(videoRoutePath('../x')).toBe('/video/..%2Fx');
+  });
+});
+
+describe('isTrustedLinkHost', () => {
+  it('trusts divine.video and its subdomains only', () => {
+    expect(isTrustedLinkHost('divine.video')).toBe(true);
+    expect(isTrustedLinkHost('api.divine.video')).toBe(true);
+    expect(isTrustedLinkHost('Divine.Video')).toBe(true);
+    expect(isTrustedLinkHost('divine.video.example.com')).toBe(false);
+    expect(isTrustedLinkHost('notdivine.video')).toBe(false);
+    expect(isTrustedLinkHost('')).toBe(false);
+  });
+});
+
+describe('linkDomain', () => {
+  it('names the whole host a link goes to, without www', () => {
+    expect(linkDomain('https://www.example.com/a')).toBe('example.com');
+    expect(linkDomain('https://divine.video.login.example.com/')).toBe('divine.video.login.example.com');
+    expect(linkDomain('https://divine.video@example.com/')).toBe('example.com');
+    expect(linkDomain('not a url')).toBe('');
   });
 });

@@ -1045,7 +1045,9 @@
     "hashtag": "Naklejka z hashtagiem, otwiera #{{hashtag}}",
     "place": "Naklejka z miejscem, otwiera {{place}} na mapie",
     "reply": "Naklejka z odpowiedzią, otwiera to, na co odpowiada ten film",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Otworzyć link zewnętrzny?",
+    "linkDialogBody": "Ten link otwiera się poza Divine. Sprawdź adres, zanim przejdziesz dalej."
   },
   "thumbnailPlayer": {
     "videoPreview": "Podgląd wideo",

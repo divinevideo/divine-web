@@ -1,5 +1,5 @@
 // ABOUTME: Decides what a click on a video sticker opens: a web page, profile, hashtag, video or map
-// ABOUTME: Pure mapping from a parsed sticker to a route or an external http(s) address
+// ABOUTME: Pure mapping from a parsed sticker to a route, or an http(s) address to open or show first
 
 import { nip19 } from 'nostr-tools';
 import { buildAddressableVideoPath, buildProfilePath, buildVideoPath } from '@/lib/eventRouting';
@@ -7,10 +7,35 @@ import { parseAddressableCoordinate } from '@/lib/nostrCoordinates';
 import type { ParsedVideoData, VideoSticker, VideoStickerKind } from '@/types/video';
 
 export type VideoStickerAction =
-  /** A page outside Divine, opened in a new tab with no opener or referrer. */
+  /** A page opened at once in a new tab with no opener or referrer. */
   | { type: 'external'; url: string }
+  /**
+   * A creator's link to a site outside Divine. The sticker can show a title
+   * of its own instead of the domain, so the viewer first sees where it goes,
+   * as in the app, and opens it from there.
+   */
+  | { type: 'confirmExternal'; url: string }
   /** A page of this app; `ownerPubkey` keeps a profile subdomain link local. */
   | { type: 'internal'; path: string; ownerPubkey?: string };
+
+/** The domains whose links open without showing where they go first, as in the app. */
+const TRUSTED_LINK_DOMAINS: readonly string[] = ['divine.video'];
+
+/** Whether a link to `hostname` stays with Divine: `divine.video` or one of its subdomains. */
+export function isTrustedLinkHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return TRUSTED_LINK_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+}
+
+/** The host `url` goes to without a leading `www.`, as the app's link sheet names it. */
+export function linkDomain(url: string): string {
+  try {
+    const host = new URL(url).hostname;
+    return host.startsWith('www.') ? host.slice(4) : host;
+  } catch {
+    return '';
+  }
+}
 
 /**
  * The kinds that get a button on the web for now. The rest stay visible in
@@ -48,12 +73,12 @@ export function videoRoutePath(routeId: string): string {
     : buildVideoPath(routeId);
 }
 
-/** `url` when it is an http(s) address with a host, else null. */
-function safeExternalUrl(url: string): string | null {
+/** `url` parsed when it is an http(s) address with a host, else null. */
+function safeExternalUrl(url: string): URL | null {
   try {
     const parsed = new URL(url);
     if ((parsed.protocol === 'https:' || parsed.protocol === 'http:') && parsed.hostname) {
-      return parsed.href;
+      return parsed;
     }
   } catch {
     // Not a URL.
@@ -75,7 +100,10 @@ export function getVideoStickerAction(
     case 'link': {
       // Parsing already allows only http(s); checked again where it opens.
       const url = safeExternalUrl(sticker.target);
-      return url ? { type: 'external', url } : null;
+      if (!url) return null;
+      return isTrustedLinkHost(url.hostname)
+        ? { type: 'external', url: url.href }
+        : { type: 'confirmExternal', url: url.href };
     }
     case 'mention':
       try {

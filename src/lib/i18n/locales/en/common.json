@@ -1031,7 +1031,9 @@
     "hashtag": "Hashtag sticker, opens #{{hashtag}}",
     "place": "Location sticker, opens {{place}} in a map",
     "reply": "Reply sticker, opens what this video replies to",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Open external link?",
+    "linkDialogBody": "This link opens outside Divine. Check the address before you go."
   },
   "thumbnailPlayer": {
     "videoPreview": "Video Preview",

@@ -1031,7 +1031,9 @@
     "hashtag": "ہیش ٹیگ اسٹیکر، #{{hashtag}} کھولتا ہے",
     "place": "مقام اسٹیکر، {{place}} کو نقشے میں کھولتا ہے",
     "reply": "جواب اسٹیکر، وہ کھولتا ہے جس کا یہ ویڈیو جواب ہے",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "بیرونی لنک کھولیں؟",
+    "linkDialogBody": "یہ لنک Divine سے باہر کھلتا ہے۔ آگے جانے سے پہلے ایڈریس دیکھ لیں۔"
   },
   "thumbnailPlayer": {
     "videoPreview": "ویڈیو پریویو",

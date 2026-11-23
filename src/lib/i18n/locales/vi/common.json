@@ -1031,7 +1031,9 @@
     "hashtag": "Nhãn dán hashtag, mở #{{hashtag}}",
     "place": "Nhãn dán địa điểm, mở {{place}} trên bản đồ",
     "reply": "Nhãn dán trả lời, mở nội dung video này trả lời",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Mở liên kết ngoài?",
+    "linkDialogBody": "Liên kết này mở bên ngoài Divine. Hãy kiểm tra địa chỉ trước khi tiếp tục."
   },
   "thumbnailPlayer": {
     "videoPreview": "Xem trước video",

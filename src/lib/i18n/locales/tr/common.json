@@ -1031,7 +1031,9 @@
     "hashtag": "Hashtag çıkartması, #{{hashtag}} etiketini açar",
     "place": "Konum çıkartması, {{place}} yerini haritada açar",
     "reply": "Yanıt çıkartması, bu videonun yanıt verdiği şeyi açar",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Harici bağlantı açılsın mı?",
+    "linkDialogBody": "Bu bağlantı Divine dışında açılır. Devam etmeden önce adresi kontrol et."
   },
   "thumbnailPlayer": {
     "videoPreview": "Video Önizlemesi",

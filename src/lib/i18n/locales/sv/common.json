@@ -1031,7 +1031,9 @@
     "hashtag": "Hashtagklistermärke, öppnar #{{hashtag}}",
     "place": "Platsklistermärke, öppnar {{place}} i en karta",
     "reply": "Svarsklistermärke, öppnar det som videon svarar på",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Öppna extern länk?",
+    "linkDialogBody": "Länken öppnas utanför Divine. Kolla adressen innan du fortsätter."
   },
   "thumbnailPlayer": {
     "videoPreview": "Förhandsvisning av video",

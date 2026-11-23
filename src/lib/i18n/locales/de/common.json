@@ -1031,7 +1031,9 @@
     "hashtag": "Hashtag-Sticker, öffnet #{{hashtag}}",
     "place": "Ort-Sticker, öffnet {{place}} in einer Karte",
     "reply": "Antwort-Sticker, öffnet, worauf dieses Video antwortet",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Externen Link öffnen?",
+    "linkDialogBody": "Dieser Link öffnet sich außerhalb von Divine. Prüf die Adresse, bevor du weitergehst."
   },
   "thumbnailPlayer": {
     "videoPreview": "Videovorschau",

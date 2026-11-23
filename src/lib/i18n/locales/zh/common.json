@@ -1031,7 +1031,9 @@
     "hashtag": "话题标签贴纸，打开 #{{hashtag}}",
     "place": "地点贴纸，在地图中打开 {{place}}",
     "reply": "回复贴纸，打开这个视频回复的内容",
-    "labeled": "{{label}}：{{action}}"
+    "labeled": "{{label}}：{{action}}",
+    "linkDialogTitle": "打开外部链接？",
+    "linkDialogBody": "此链接会在 Divine 之外打开。继续之前请先核对网址。"
   },
   "thumbnailPlayer": {
     "videoPreview": "视频预览",

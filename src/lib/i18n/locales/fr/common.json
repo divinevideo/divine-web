@@ -1038,7 +1038,9 @@
     "hashtag": "Sticker hashtag, ouvre #{{hashtag}}",
     "place": "Sticker lieu, ouvre {{place}} dans une carte",
     "reply": "Sticker réponse, ouvre ce à quoi cette vidéo répond",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Ouvrir le lien externe ?",
+    "linkDialogBody": "Ce lien s'ouvre en dehors de Divine. Vérifie l'adresse avant d'y aller."
   },
   "thumbnailPlayer": {
     "videoPreview": "Aperçu de la vidéo",

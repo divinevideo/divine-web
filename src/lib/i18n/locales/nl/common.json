@@ -1031,7 +1031,9 @@
     "hashtag": "Hashtagsticker, opent #{{hashtag}}",
     "place": "Locatiesticker, opent {{place}} in een kaart",
     "reply": "Antwoordsticker, opent waarop deze video reageert",
-    "labeled": "{{label}}: {{action}}"
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Externe link openen?",
+    "linkDialogBody": "Deze link opent buiten Divine. Controleer het adres voordat je verdergaat."
   },
   "thumbnailPlayer": {
     "videoPreview": "Videovoorbeeld",

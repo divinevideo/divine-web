@@ -711,7 +711,10 @@ browser draws the video in for `object-fit` contain or cover, and the overlay
 follows the time window with `requestVideoFrameCallback`, falling back to
 `timeupdate`. `videoStickerActions` decides what a click opens and which kinds
 get a button: link, mention, hashtag, reply and place (OpenStreetMap search)
-for now. `VideoPlayer` renders the overlay itself, except in the fullscreen
+for now. A link to a host other than `divine.video` or its subdomains first
+opens `VideoLinkStickerDialog`, which shows its whole domain and address, as
+the app's link sheet does: the sticker can show a creator's title instead of
+its domain. `VideoPlayer` renders the overlay itself, except in the fullscreen
 feed, whose tap layer covers the player: `FullscreenVideoItem` passes
 `showStickers={false}` and renders the overlay above that layer. With an
 `onDoubleTap`, a click waits for a possible second one so a double tap on a
