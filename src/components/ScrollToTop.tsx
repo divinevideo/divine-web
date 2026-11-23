@@ -5,9 +5,39 @@ const scrollPositions = new Map<string, number>();
 
 /** How long to keep chasing a saved position while content loads in. */
 const RESTORE_TIMEOUT_MS = 3000;
+const HASH_SCROLL_TIMEOUT_MS = 10_000;
+const scrollInputEvents = ['wheel', 'touchstart', 'keydown', 'mousedown'] as const;
 
 function getScrollKey(pathname: string, search: string) {
   return `${pathname}${search}`;
+}
+
+function scrollToHashWhenAvailable(id: string) {
+  const scrollToHash = () => {
+    const element = document.getElementById(id);
+    if (!element) return false;
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
+  };
+
+  if (scrollToHash()) return;
+
+  const observer = new MutationObserver(() => {
+    if (scrollToHash()) stop();
+  });
+  const timeout = window.setTimeout(stop, HASH_SCROLL_TIMEOUT_MS);
+
+  function stop() {
+    observer.disconnect();
+    window.clearTimeout(timeout);
+    for (const event of scrollInputEvents) window.removeEventListener(event, stop, true);
+  }
+
+  observer.observe(document.body, { childList: true, subtree: true, attributeFilter: ['id'] });
+  for (const event of scrollInputEvents) {
+    window.addEventListener(event, stop, { capture: true, passive: true });
+  }
+  return stop;
 }
 
 /**
@@ -67,8 +97,6 @@ function restoreScrollPosition(target: number): ScrollRestoration {
   // Once the viewer takes over, stop dragging them back to where they were.
   // `mousedown` covers grabbing the scrollbar, which fires none of the others
   // and is exactly how someone escapes a page the loop cannot satisfy.
-  const inputEvents = ['wheel', 'touchstart', 'keydown', 'mousedown'] as const;
-
   const noteViewerInput = () => {
     viewerTookOver = true;
     handOver();
@@ -90,10 +118,10 @@ function restoreScrollPosition(target: number): ScrollRestoration {
   const stop = () => {
     handOver();
     window.removeEventListener('scroll', noteViewerScroll);
-    for (const event of inputEvents) window.removeEventListener(event, noteViewerInput);
+    for (const event of scrollInputEvents) window.removeEventListener(event, noteViewerInput);
   };
 
-  for (const event of inputEvents) {
+  for (const event of scrollInputEvents) {
     window.addEventListener(event, noteViewerInput, { passive: true });
   }
 
@@ -128,7 +156,6 @@ export function ScrollToTop() {
   const { pathname, search, hash } = useLocation();
   const navigationType = useNavigationType();
   const scrollKey = getScrollKey(pathname, search);
-  const timeoutRef = useRef<number | null>(null);
   const restorationRef = useRef<ScrollRestoration | null>(null);
 
   useEffect(() => {
@@ -163,28 +190,10 @@ export function ScrollToTop() {
 
   useLayoutEffect(() => {
     if (hash) {
-      // If there's a hash, scroll to that element after a short delay
-      // to allow the page content to render
-      const scrollToHash = () => {
-        const id = hash.replace('#', '');
-        const element = document.getElementById(id);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      };
-
-      // Try immediately
-      scrollToHash();
-
-      // Also try after a delay to handle slow-loading content
-      timeoutRef.current = window.setTimeout(scrollToHash, 100);
-
+      const stopHashScroll = scrollToHashWhenAvailable(hash.slice(1));
       return () => {
         scrollPositions.set(scrollKey, window.scrollY);
-        if (timeoutRef.current !== null) {
-          window.clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
+        stopHashScroll?.();
       };
     }
 
