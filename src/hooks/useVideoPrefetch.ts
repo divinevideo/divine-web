@@ -80,7 +80,7 @@ export function useVideoPrefetch(
 
       if (prefetchVideos && video.videoUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.videoUrl))) {
         // Prefetch the URL the player will request first, not the original blob.
-        const [playbackUrl] = buildPlaybackUrls(video.videoUrl);
+        const [playbackUrl] = buildPlaybackUrls(video.videoUrl, [], { isVineMigrated: video.isVineMigrated });
         urlsToPrefetch.push({ url: playbackUrl, as: 'video' });
       }
       if (video.thumbnailUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.thumbnailUrl))) {

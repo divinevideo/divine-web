@@ -53,6 +53,13 @@ describe('buildPlaybackUrls', () => {
       .toEqual(['https://cdn.example.com/video.mp4', 'https://cdn.example.com/fallback.mp4']);
   });
 
+  it('does not speculate on a 720p rendition for migrated archive clips', () => {
+    const original = `https://media.divine.video/${hashOf('7')}`;
+
+    expect(buildPlaybackUrls(original, ['https://mirror.example.com/v.mp4'], { isVineMigrated: true }))
+      .toEqual([original, 'https://mirror.example.com/v.mp4']);
+  });
+
   it('drops duplicate URLs', () => {
     const original = `https://media.divine.video/${hashOf('f')}`;
 
@@ -70,8 +77,8 @@ describe('buildPlaybackUrls', () => {
 
     markProgressiveUnavailable(`${original}/720p.mp4`, failedAt);
 
-    expect(buildPlaybackUrls(original, [], failedAt + 60_000)).toEqual([original]);
-    expect(buildPlaybackUrls(original, [], failedAt + 11 * 60_000))
+    expect(buildPlaybackUrls(original, [], { now: failedAt + 60_000 })).toEqual([original]);
+    expect(buildPlaybackUrls(original, [], { now: failedAt + 11 * 60_000 }))
       .toEqual([`${original}/720p.mp4`, original]);
   });
 

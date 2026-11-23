@@ -246,6 +246,8 @@ On Fastly and Cloudflare Pages, `/embed/:id` tries the 720p MP4 of a Divine
 blob before the original. Direct social video metadata still names the original:
 unfurlers have no fallback source, and the video's age does not establish that
 its rendition is ready.
+The feed player and its prefetch use the original for migrated archive clips:
+copy-only media may not have a 720p rendition to request.
 The SPA updates discovery titles and canonical URLs on client navigation through
 `DiscoverySeo`; the homepage keeps its metadata in `Index`. Discovery titles come
 from `src/lib/discoveryMeta.ts`, which Cloudflare's function uses too.

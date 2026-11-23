@@ -789,8 +789,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     useEffect(() => {
       verboseLog(`[VideoPlayer ${videoId}] Initializing URLs - src: ${src}, fallbackUrls: ${JSON.stringify(fallbackUrls)}`);
 
-      // Divine blobs play their 720p rendition first; the original stays as fallback.
-      const urls = buildPlaybackUrls(src, fallbackUrls);
+      const urls = buildPlaybackUrls(src, fallbackUrls, { isVineMigrated: videoData?.isVineMigrated });
 
       if (urls.length === 0) {
         debugError(`[VideoPlayer ${videoId}] No valid URLs provided!`);
@@ -801,7 +800,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       setAllUrls(urls);
       setCurrentUrlIndex(0);
       verboseLog(`[VideoPlayer ${videoId}] Initialized with ${urls.length} URLs (primary: ${!!src}, fallbacks: ${fallbackUrls?.length || 0})`);
-    }, [src, fallbackUrls, videoId]);
+    }, [src, fallbackUrls, videoId, videoData?.isVineMigrated]);
 
     // Set video source - with HLS.js support for adaptive bitrate streaming
     useEffect(() => {

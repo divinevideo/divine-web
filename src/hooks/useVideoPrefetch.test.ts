@@ -86,6 +86,23 @@ describe('useVideoPrefetch', () => {
     expect(prefetchHrefs).not.toContain(original);
   });
 
+  it('prefetches the original for a migrated archive clip', () => {
+    const original = `https://media.divine.video/${'a'.repeat(64)}`;
+
+    renderHook(() =>
+      useVideoPrefetch('video-1', [
+        makeVideo({ id: 'video-1' }),
+        makeVideo({ id: 'archive-video', videoUrl: original, isVineMigrated: true }),
+      ]),
+    );
+
+    const prefetchHrefs = Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="prefetch"]'))
+      .map((link) => link.href);
+
+    expect(prefetchHrefs).toContain(original);
+    expect(prefetchHrefs).not.toContain(`${original}/720p.mp4`);
+  });
+
   it('prefetches thumbnails but not video files when video prefetching is disabled', () => {
     renderHook(() =>
       useVideoPrefetch('video-1', [

@@ -66,17 +66,18 @@ export function markProgressiveUnavailable(url: string, now: number = Date.now()
 
 /**
  * Orders the URLs a player should try: the 720p rendition of a Divine blob
- * (unless it recently failed), then the source itself, then the fallbacks.
+ * (unless it recently failed or the clip is from the migrated archive), then
+ * the source itself, then the fallbacks.
  */
 export function buildPlaybackUrls(
   src: string | undefined,
   fallbackUrls: readonly string[] = [],
-  now: number = Date.now(),
+  { now = Date.now(), isVineMigrated = false }: { now?: number; isVineMigrated?: boolean } = {},
 ): string[] {
   const urls: string[] = [];
   if (src) {
     const original = matchDivineMediaPath(src, ORIGINAL_BLOB_PATH);
-    if (original && !isMarkedUnavailable(original.hash, now)) {
+    if (original && !isVineMigrated && !isMarkedUnavailable(original.hash, now)) {
       urls.push(toProgressiveUrl(original));
     }
     urls.push(src);
