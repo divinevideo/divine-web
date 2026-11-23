@@ -69,6 +69,23 @@ describe('useVideoPrefetch', () => {
     expect(prefetchHrefs).toContain('https://media.divine.video/public-video.jpg');
   });
 
+  it('prefetches the 720p rendition of a Divine blob instead of the original', () => {
+    const original = `https://media.divine.video/${'e'.repeat(64)}`;
+
+    renderHook(() =>
+      useVideoPrefetch('video-1', [
+        makeVideo({ id: 'video-1' }),
+        makeVideo({ id: 'blob-video', videoUrl: original }),
+      ]),
+    );
+
+    const prefetchHrefs = Array.from(document.head.querySelectorAll('link[rel="prefetch"]'))
+      .map((link) => (link as HTMLLinkElement).href);
+
+    expect(prefetchHrefs).toContain(`${original}/720p.mp4`);
+    expect(prefetchHrefs).not.toContain(original);
+  });
+
   it('prefetches thumbnails but not video files when video prefetching is disabled', () => {
     renderHook(() =>
       useVideoPrefetch('video-1', [

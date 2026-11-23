@@ -1117,4 +1117,46 @@ describe('VideoPlayer', () => {
       expect(srcValues.filter((value) => value === src)).toHaveLength(1);
     });
   });
+
+  describe('Divine 720p rendition', () => {
+    const renderPlayer = (videoId: string, src: string) => {
+      const { container, unmount } = render(<VideoPlayer videoId={videoId} src={src} />);
+      const video = container.querySelector('video');
+      if (!video) {
+        throw new Error('expected rendered video element');
+      }
+      return { video, unmount };
+    };
+
+    it('plays the 720p MP4 instead of the original blob', async () => {
+      const original = `https://media.divine.video/${'5'.repeat(64)}`;
+
+      const { video } = renderPlayer('rendition-first', original);
+
+      await waitFor(() => {
+        expect(video.src).toBe(`${original}/720p.mp4`);
+      });
+    });
+
+    it('falls back to the original when the 720p MP4 fails, and skips it next time', async () => {
+      const original = `https://media.divine.video/${'6'.repeat(64)}`;
+
+      const first = renderPlayer('rendition-missing', original);
+      await waitFor(() => {
+        expect(first.video.src).toBe(`${original}/720p.mp4`);
+      });
+
+      fireEvent.error(first.video);
+
+      await waitFor(() => {
+        expect(first.video.src).toBe(original);
+      });
+      first.unmount();
+
+      const second = renderPlayer('rendition-missing', original);
+      await waitFor(() => {
+        expect(second.video.src).toBe(original);
+      });
+    });
+  });
 });

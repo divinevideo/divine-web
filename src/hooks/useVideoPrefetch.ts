@@ -4,6 +4,7 @@
 import { useEffect, useRef } from 'react';
 import type { ParsedVideoData } from '@/types/video';
 import { debugLog } from '@/lib/debug';
+import { buildPlaybackUrls } from '@/lib/divineMediaUrls';
 
 const PREFETCH_COUNT = 2;
 
@@ -78,7 +79,9 @@ export function useVideoPrefetch(
       const shouldSkipProtectedMediaPrefetch = !!video.ageRestricted;
 
       if (prefetchVideos && video.videoUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.videoUrl))) {
-        urlsToPrefetch.push({ url: video.videoUrl, as: 'video' });
+        // Prefetch the URL the player will request first, not the original blob.
+        const [playbackUrl] = buildPlaybackUrls(video.videoUrl);
+        urlsToPrefetch.push({ url: playbackUrl, as: 'video' });
       }
       if (video.thumbnailUrl && !(shouldSkipProtectedMediaPrefetch && isProtectedDivineMediaUrl(video.thumbnailUrl))) {
         urlsToPrefetch.push({ url: video.thumbnailUrl, as: 'image' });

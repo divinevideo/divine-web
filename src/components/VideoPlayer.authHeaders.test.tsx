@@ -131,6 +131,44 @@ describe('VideoPlayer auth headers', () => {
     expect(sha256).toBeUndefined();
   });
 
+  it('falls back to the original when an age-gated 720p MP4 is missing', async () => {
+    const original = `https://media.divine.video/${'7'.repeat(64)}`;
+    const rendition = `${original}/720p.mp4`;
+    global.fetch = vi.fn((url: string) => Promise.resolve(
+      url === rendition
+        ? { ok: false, status: 404, blob: () => Promise.resolve(new Blob()) }
+        : { ok: true, status: 200, blob: () => Promise.resolve(new Blob(['x'], { type: 'video/mp4' })) },
+    )) as unknown as typeof fetch;
+
+    render(
+      <VideoPlayer
+        videoId="v3"
+        src={original}
+        videoData={{
+          id: 'v3',
+          pubkey: 'pub',
+          kind: SHORT_VIDEO_KIND,
+          createdAt: 0,
+          content: '',
+          videoUrl: original,
+          hashtags: [],
+          vineId: null,
+          reposts: [],
+          isVineMigrated: false,
+          ageRestricted: true,
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(getAuthHeader.mock.calls.map(([url]) => url)).toEqual([rendition, original]);
+    });
+    await waitFor(() => {
+      expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls.map(([url]) => url))
+        .toEqual([rendition, original]);
+    });
+  });
+
   it('skips auth headers when ageRestricted is false', async () => {
     render(
       <VideoPlayer

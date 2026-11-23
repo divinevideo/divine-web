@@ -20,6 +20,7 @@ import { markAgeRestricted } from '@/hooks/useAgeRestrictedPreference';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 import { SubtitleOverlay } from '@/components/SubtitleOverlay';
 import { bandwidthTracker } from '@/lib/bandwidthTracker';
+import { buildPlaybackUrls, markProgressiveUnavailable } from '@/lib/divineMediaUrls';
 import { isProtectedDivineMediaUrl, useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
 import type Hls from 'hls.js';
 
@@ -598,8 +599,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         // Record bandwidth sample for adaptive quality selection
         // Try to get actual transfer size from Performance API first
         const entries = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+        const playedUrl = allUrls[currentUrlIndex] || src;
         const videoEntry = entries.find(e =>
-          (src && e.name.includes(src)) ||
+          (playedUrl && e.name.includes(playedUrl)) ||
           (hlsUrl && e.name.includes(hlsUrl))
         );
 
@@ -667,6 +669,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           }
           return;
         }
+      }
+
+      if (failedUrl) {
+        markProgressiveUnavailable(failedUrl);
       }
 
       // Try next fallback URL if available
@@ -783,13 +789,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     useEffect(() => {
       verboseLog(`[VideoPlayer ${videoId}] Initializing URLs - src: ${src}, fallbackUrls: ${JSON.stringify(fallbackUrls)}`);
 
-      const urls: string[] = [];
-      if (src) {
-        urls.push(src);
-      }
-      if (fallbackUrls && fallbackUrls.length > 0) {
-        urls.push(...fallbackUrls);
-      }
+      // Divine blobs play their 720p rendition first; the original stays as fallback.
+      const urls = buildPlaybackUrls(src, fallbackUrls);
 
       if (urls.length === 0) {
         debugError(`[VideoPlayer ${videoId}] No valid URLs provided!`);
@@ -1032,7 +1033,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                     headers: { 'Authorization': authHeader },
                     signal: abortController.signal
                   });
-                  if (response.ok) {
+                  // 202 means the media server is still preparing this rendition.
+                  if (response.ok && response.status !== 202) {
                     const blob = await response.blob();
                     // Check if request was aborted while getting blob
                     if (abortController.signal.aborted) {
@@ -1057,6 +1059,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                       setRequiresAuth(true);
                     }
                     setIsLoading(false);
+                  } else if (currentUrlIndex < allUrls.length - 1) {
+                    debugError(`[VideoPlayer ${videoId}] Fetch failed: ${response.status}, trying next URL`);
+                    markProgressiveUnavailable(currentUrl);
+                    setCurrentUrlIndex(currentUrlIndex + 1);
                   } else {
                     debugError(`[VideoPlayer ${videoId}] Fetch failed: ${response.status}`);
                     setHasError(true);
