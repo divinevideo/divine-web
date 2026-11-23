@@ -1032,6 +1032,16 @@
     "loadFailed": "Échec du chargement de la vidéo",
     "tapToRetry": "Appuie pour réessayer"
   },
+  "videoStickers": {
+    "link": "Sticker lien, ouvre {{url}}",
+    "mention": "Sticker mention, ouvre le profil",
+    "hashtag": "Sticker hashtag, ouvre #{{hashtag}}",
+    "place": "Sticker lieu, ouvre {{place}} dans une carte",
+    "reply": "Sticker réponse, ouvre ce à quoi cette vidéo répond",
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Ouvrir le lien externe ?",
+    "linkDialogBody": "Ce lien s'ouvre en dehors de Divine. Vérifie l'adresse avant d'y aller."
+  },
   "thumbnailPlayer": {
     "videoPreview": "Aperçu de la vidéo",
     "thumbnailAlt": "Miniature de la vidéo",

@@ -8,6 +8,7 @@ import { debugLog } from './debug';
 import { getProofModeData, getVineId } from './videoParser';
 import { extractSha256FromVideoUrl, normalizeSha256 } from './videoVerification';
 import { videoAddress } from '@/lib/videoAddress';
+import { getVideoStickerFields } from '@/lib/videoStickers';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 /**
@@ -261,6 +262,9 @@ export function transformFunnelcakeVideo(raw: FunnelcakeVideoRaw): ParsedVideoDa
     // Subtitle / text track fields from API
     textTrackRef: raw.text_track_ref,
     textTrackContent: raw.text_track_content,
+
+    // Clickable stickers and the video a reply answers, from the event's tags
+    ...getVideoStickerFields(fullEvent?.tags),
 
     // ProofMode data - merge parsed event tags with compact proof summary fallbacks
     proofMode: mergedProofMode,

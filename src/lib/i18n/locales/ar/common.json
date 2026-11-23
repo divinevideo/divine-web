@@ -1097,6 +1097,16 @@
     "loadFailed": "فشل تحميل الفيديو",
     "tapToRetry": "انقر للمحاولة مجدداً"
   },
+  "videoStickers": {
+    "link": "ملصق رابط، يفتح {{url}}",
+    "mention": "ملصق إشارة، يفتح الملف الشخصي",
+    "hashtag": "ملصق وسم، يفتح #{{hashtag}}",
+    "place": "ملصق موقع، يفتح {{place}} في خريطة",
+    "reply": "ملصق رد، يفتح ما يرد عليه هذا الفيديو",
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "فتح رابط خارجي؟",
+    "linkDialogBody": "يُفتح هذا الرابط خارج Divine. تحقّق من العنوان قبل أن تنتقل."
+  },
   "thumbnailPlayer": {
     "videoPreview": "معاينة الفيديو",
     "thumbnailAlt": "صورة الفيديو المصغرة",

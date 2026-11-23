@@ -12,6 +12,7 @@ import { SHORT_VIDEO_KIND, VIDEO_KINDS, REPOST_KIND, type ParsedVideoData } from
 import type { NIP50Filter } from '@/types/nostr';
 import { parseVideoEvent, getVineId, getThumbnailUrl, getLoopCount, getOriginalVineTimestamp, getProofModeData, getOriginalLikeCount, getOriginalRepostCount, getOriginalCommentCount, getOriginPlatform, isVineMigrated, getLatestRepostTime, validateVideoEvent, getTextTrackRef } from '@/lib/videoParser';
 import { debugLog, debugError, verboseLog } from '@/lib/debug';
+import { getVideoStickerFields } from '@/lib/videoStickers';
 import type { SortMode } from '@/types/nostr';
 
 interface UseVideoEventsOptions {
@@ -143,6 +144,7 @@ async function parseVideoEvents(
       isVineMigrated: isVineMigrated(event),
       textTrackRef: textTrack?.ref,
       textTrackLanguage: textTrack?.language,
+      ...getVideoStickerFields(event.tags),
       reposts: [], // Initialize empty reposts array
       originalEvent: event // Store original event for source viewing
     });
@@ -249,6 +251,7 @@ async function parseVideoEvents(
         isVineMigrated: isVineMigrated(originalVideo),
         textTrackRef: repostTextTrack?.ref,
         textTrackLanguage: repostTextTrack?.language,
+        ...getVideoStickerFields(originalVideo.tags),
         reposts: [],
         originalEvent: originalVideo // Store original event for source viewing
       };

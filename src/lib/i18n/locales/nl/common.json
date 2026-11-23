@@ -1025,6 +1025,16 @@
     "loadFailed": "Video kon niet geladen worden",
     "tapToRetry": "Tik om opnieuw te proberen"
   },
+  "videoStickers": {
+    "link": "Linksticker, opent {{url}}",
+    "mention": "Vermeldingssticker, opent het profiel",
+    "hashtag": "Hashtagsticker, opent #{{hashtag}}",
+    "place": "Locatiesticker, opent {{place}} in een kaart",
+    "reply": "Antwoordsticker, opent waarop deze video reageert",
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Externe link openen?",
+    "linkDialogBody": "Deze link opent buiten Divine. Controleer het adres voordat je verdergaat."
+  },
   "thumbnailPlayer": {
     "videoPreview": "Videovoorbeeld",
     "thumbnailAlt": "Videothumbnail",

@@ -1025,6 +1025,16 @@
     "loadFailed": "Gagal memuatkan video",
     "tapToRetry": "Ketik untuk cuba lagi"
   },
+  "videoStickers": {
+    "link": "Pelekat pautan, membuka {{url}}",
+    "mention": "Pelekat sebutan, membuka profil",
+    "hashtag": "Pelekat tanda pagar, membuka #{{hashtag}}",
+    "place": "Pelekat lokasi, membuka {{place}} dalam peta",
+    "reply": "Pelekat balasan, membuka apa yang dibalas oleh video ini",
+    "labeled": "{{label}}: {{action}}",
+    "linkDialogTitle": "Buka pautan luaran?",
+    "linkDialogBody": "Pautan ini dibuka di luar Divine. Semak alamatnya sebelum anda teruskan."
+  },
   "thumbnailPlayer": {
     "videoPreview": "Pratonton Video",
     "thumbnailAlt": "Thumbnail video",

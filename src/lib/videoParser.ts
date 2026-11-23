@@ -4,6 +4,7 @@
 import type { NostrEvent } from '@nostrify/nostrify';
 import { SHORT_VIDEO_KIND, VIDEO_KINDS, type ParsedVideoData, type RepostMetadata } from '@/types/video';
 import type { VideoMetadata, VideoEvent, ProofModeData, ProofModeLevel } from '@/types/video';
+import { getVideoStickerFields } from '@/lib/videoStickers';
 
 // Common video file extensions - used only as hints, not requirements
 const _VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.gif', '.m3u8', '.mpd', '.avi', '.mkv', '.ogv', '.ogg'];
@@ -743,6 +744,7 @@ export function parseVideoEvents(events: NostrEvent[]): ParsedVideoData[] {
       isVineMigrated: isVineMigrated(event),
       textTrackRef: textTrack?.ref,
       textTrackLanguage: textTrack?.language,
+      ...getVideoStickerFields(event.tags),
       reposts: [],
       originalEvent: event
     });

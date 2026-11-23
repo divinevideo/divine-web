@@ -19,6 +19,8 @@ import { AgeVerificationOverlay } from '@/components/AgeVerificationOverlay';
 import { markAgeRestricted } from '@/hooks/useAgeRestrictedPreference';
 import { AgeRestrictedMediaPlaceholder } from '@/components/AgeRestrictedMediaPlaceholder';
 import { SubtitleOverlay } from '@/components/SubtitleOverlay';
+import { VideoStickerOverlay } from '@/components/VideoStickerOverlay';
+import { isClickableVideoSticker } from '@/lib/videoStickerActions';
 import { bandwidthTracker } from '@/lib/bandwidthTracker';
 import { buildPlaybackUrls, markProgressiveUnavailable } from '@/lib/divineMediaUrls';
 import { isProtectedDivineMediaUrl, useAuthenticatedMediaUrl } from '@/hooks/useAuthenticatedMediaUrl';
@@ -80,6 +82,9 @@ interface VideoPlayerProps {
   analyticsPosition?: number;
   // Object-fit mode for the video element (default: 'contain')
   objectFit?: 'contain' | 'cover';
+  // Buttons over the video's clickable stickers (default: true). Off where a
+  // parent lays its own over the player, such as the fullscreen feed's tap layer.
+  showStickers?: boolean;
 }
 
 interface TouchState {
@@ -127,6 +132,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       trafficSource,
       analyticsPosition = 0,
       objectFit = 'contain',
+      showStickers = true,
     },
     ref
   ) => {
@@ -134,6 +140,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const hlsRef = useRef<Hls | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
+    // The <video> the sticker buttons follow, kept in state so they re-measure
+    // once it is mounted. Only held for a video with stickers to open.
+    const hasClickableStickers = showStickers && !!videoData?.stickers?.some(isClickableVideoSticker);
+    const [stickerVideoElement, setStickerVideoElement] = useState<HTMLVideoElement | null>(null);
+    useEffect(() => {
+      setStickerVideoElement(hasClickableStickers ? videoRef.current : null);
+    }, [hasClickableStickers]);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -1218,6 +1231,16 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           onPause={handlePause}
           onClick={!isMobile ? togglePlay : undefined}
         />
+
+        {/* Buttons over the stickers burned into the frames */}
+        {hasClickableStickers && videoData && (
+          <VideoStickerOverlay
+            videoElement={stickerVideoElement}
+            video={videoData}
+            objectFit={objectFit}
+            onDoubleTap={onDoubleTap}
+          />
+        )}
 
         {/* Subtitle overlay */}
         {subtitleCues && subtitleCues.length > 0 && (

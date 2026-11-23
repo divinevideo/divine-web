@@ -69,6 +69,66 @@ export interface RepostMetadata {
   repostedAt: number;        // When they reposted
 }
 
+/**
+ * What a sticker the Divine app placed on a video opens or takes answers on.
+ * The `kind` field of a `sticker` tag; see `src/lib/videoStickers.ts`.
+ */
+export type VideoStickerKind =
+  | 'link'
+  | 'mention'
+  | 'hashtag'
+  | 'sound'
+  | 'place'
+  | 'countdown'
+  | 'reply'
+  | 'poll'
+  | 'quiz'
+  | 'slider'
+  | 'question'
+  | 'prompt'
+  | 'replies';
+
+/**
+ * Who may answer a `prompt` (Add yours) or `replies` sticker with a video of
+ * their own. Always `everyone` on any other kind.
+ */
+export type VideoStickerAudience = 'everyone' | 'following' | 'creator';
+
+/**
+ * A sticker burned into a video's frames that a viewer can click, read from
+ * the video event's `sticker` tag.
+ *
+ * The area is where the sticker stands on the video frame: its centre and its
+ * size before it is turned, as fractions of the frame's width (`centerX`,
+ * `width`) and height (`centerY`, `height`), turned clockwise by
+ * `rotationDegrees` around its centre.
+ */
+export interface VideoSticker {
+  kind: VideoStickerKind;
+  /**
+   * What a click opens: an http(s) address for `link`, a lowercase hex pubkey
+   * for `mention`, a lowercase hashtag without `#` for `hashtag`, a place's
+   * full name for `place`, a lowercase hex event id for `reply`. Empty for
+   * some kinds; see the Divine sticker tag spec.
+   */
+  target: string;
+  centerX: number;
+  centerY: number;
+  width: number;
+  height: number;
+  /** Clockwise, already reduced to less than a whole turn. */
+  rotationDegrees: number;
+  /** When the sticker appears, in ms of the published video; absent from its start. */
+  startMs?: number;
+  /** When the sticker disappears, in ms; absent until the video ends. */
+  endMs?: number;
+  /** The look the app drew it in, such as `light`. */
+  style?: string;
+  /** The text the sticker shows, without `@` or `#`; lines split by `\n`. */
+  label?: string;
+  audience: VideoStickerAudience;
+}
+
 export interface ParsedVideoData {
   id: string;                // Original video event ID
   pubkey: string;            // Original author pubkey
@@ -106,6 +166,12 @@ export interface ParsedVideoData {
   textTrackRef?: string;       // "39307:<pubkey>:subtitles:<d-tag>"
   textTrackContent?: string;   // Embedded VTT string from API
   textTrackLanguage?: string;  // e.g. "en"
+
+  // Clickable stickers from the event's `sticker` tags (absent when none)
+  stickers?: VideoSticker[];
+  // The video this one replies to, from its NIP-22 root tags: a
+  // `kind:pubkey:d` address or an event id (absent when it is no video reply)
+  replyRootRouteId?: string;
 
   // Original Nostr event for full source viewing
   originalEvent?: NostrEvent;

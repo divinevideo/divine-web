@@ -1025,6 +1025,16 @@
     "loadFailed": "動画の読み込みに失敗しました",
     "tapToRetry": "タップして再試行"
   },
+  "videoStickers": {
+    "link": "リンクステッカー、{{url}} を開きます",
+    "mention": "メンションステッカー、プロフィールを開きます",
+    "hashtag": "ハッシュタグステッカー、#{{hashtag}} を開きます",
+    "place": "場所ステッカー、{{place}} を地図で開きます",
+    "reply": "返信ステッカー、この動画の返信先を開きます",
+    "labeled": "{{label}}：{{action}}",
+    "linkDialogTitle": "外部リンクを開きますか？",
+    "linkDialogBody": "このリンクはDivineの外で開きます。移動する前にアドレスを確認してください。"
+  },
   "thumbnailPlayer": {
     "videoPreview": "動画プレビュー",
     "thumbnailAlt": "動画サムネイル",
