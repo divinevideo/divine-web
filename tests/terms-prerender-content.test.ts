@@ -223,6 +223,16 @@ describe('prerendered legal pages', () => {
     expect(inlineMailtoMatches).toHaveLength(2);
   });
 
+  it('keeps the period attached to the account-deletion link on the prerendered safety page', () => {
+    // React trims the line break between a multi-line </a> and a following period, but the
+    // prerender copies it into the HTML, where crawlers and no-JS visitors see "works ."
+    const text = prerenderLegalPages()('safety')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ');
+
+    expect(text).toContain('see how account deletion works.');
+  });
+
   it('inserts option values literally and escapes catalog text like React does', () => {
     // String.prototype.replaceAll treats $&, $$ and friends in a replacement
     // string as patterns, and React would escape & < > in text but the prerender

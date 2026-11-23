@@ -189,13 +189,7 @@ export function SafetyPage() {
             </p>
             <p>
               For simple steps and limits, see{' '}
-              <a
-                href="/delete-account"
-                className="text-primary hover:underline font-medium"
-              >
-                how account deletion works
-              </a>
-              .
+              <a href="/delete-account" className="text-primary hover:underline font-medium">how account deletion works</a>.
             </p>
           </section>
 
