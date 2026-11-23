@@ -209,18 +209,17 @@ describe('prerendered legal pages', () => {
 
   it('includes the support contact email on the prerendered safety page', () => {
     const html = prerenderLegalPages()('safety');
-    // The prerender copies JSX line breaks and indentation verbatim, so compare copy with
-    // whitespace collapsed; re-wrapping the paragraph must not fail the test.
-    const text = html.replace(/\s+/g, ' ');
+    // The prerender copies JSX line breaks and indentation verbatim, so check what a reader
+    // sees, with tags stripped and whitespace collapsed. Re-wrapping or restyling the links
+    // must not fail the test; a period that drifts off its link must.
+    const visible = html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
 
     // scroll-mt-24 keeps a /safety#contact jump below the fixed MarketingHeader, as on Terms.
     expect(html).toMatch(/<section id="contact" class="scroll-mt-24">/);
     expect(html).toContain('15. Contact');
-    expect(text).toContain('child sexual abuse and exploitation (CSAE) prevention and compliance');
-    const inlineMailtoMatches = html.match(
-      /<a href="mailto:support@divine\.video" class="text-primary hover:underline font-medium">support@divine\.video<\/a>\./g,
-    );
-    expect(inlineMailtoMatches).toHaveLength(2);
+    expect(visible).toContain('child sexual abuse and exploitation (CSAE) prevention and compliance');
+    expect(visible.match(/email support@divine\.video\./g)).toHaveLength(2);
+    expect(html.match(/href="mailto:support@divine\.video"/g)).toHaveLength(2);
   });
 
   it('keeps the period attached to the account-deletion link on the prerendered safety page', () => {
