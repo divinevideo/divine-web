@@ -209,11 +209,14 @@ describe('prerendered legal pages', () => {
 
   it('includes the support contact email on the prerendered safety page', () => {
     const html = prerenderLegalPages()('safety');
+    // The prerender copies JSX line breaks and indentation verbatim, so compare copy with
+    // whitespace collapsed; re-wrapping the paragraph must not fail the test.
+    const text = html.replace(/\s+/g, ' ');
 
     // scroll-mt-24 keeps a /safety#contact jump below the fixed MarketingHeader, as on Terms.
     expect(html).toMatch(/<section id="contact" class="scroll-mt-24">/);
     expect(html).toContain('15. Contact');
-    expect(html).toContain('child sexual\n              abuse and exploitation (CSAE) prevention and compliance');
+    expect(text).toContain('child sexual abuse and exploitation (CSAE) prevention and compliance');
     const inlineMailtoMatches = html.match(
       /<a href="mailto:support@divine\.video" class="text-primary hover:underline font-medium">support@divine\.video<\/a>\./g,
     );
