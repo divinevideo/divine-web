@@ -1032,6 +1032,14 @@
     "loadFailed": "Falló al cargar el video",
     "tapToRetry": "Toca para reintentar"
   },
+  "videoStickers": {
+    "link": "Sticker de enlace, abre {{url}}",
+    "mention": "Sticker de mención, abre el perfil",
+    "hashtag": "Sticker de hashtag, abre #{{hashtag}}",
+    "place": "Sticker de ubicación, abre {{place}} en un mapa",
+    "reply": "Sticker de respuesta, abre a qué responde este video",
+    "labeled": "{{label}}: {{action}}"
+  },
   "thumbnailPlayer": {
     "videoPreview": "Vista previa del video",
     "thumbnailAlt": "Miniatura del video",

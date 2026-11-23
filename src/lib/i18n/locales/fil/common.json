@@ -1025,6 +1025,14 @@
     "loadFailed": "Hindi nag-load ang video.",
     "tapToRetry": "I-tap para subukan ulit"
   },
+  "videoStickers": {
+    "link": "Link sticker, binubuksan ang {{url}}",
+    "mention": "Mention sticker, binubuksan ang profile",
+    "hashtag": "Hashtag sticker, binubuksan ang #{{hashtag}}",
+    "place": "Location sticker, binubuksan ang {{place}} sa mapa",
+    "reply": "Reply sticker, binubuksan ang sinasagot ng video na ito",
+    "labeled": "{{label}}: {{action}}"
+  },
   "thumbnailPlayer": {
     "videoPreview": "Preview ng video",
     "thumbnailAlt": "Thumbnail ng video",

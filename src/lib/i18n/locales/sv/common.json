@@ -1025,6 +1025,14 @@
     "loadFailed": "Kunde inte ladda videon",
     "tapToRetry": "Tryck för att försöka igen"
   },
+  "videoStickers": {
+    "link": "Länkklistermärke, öppnar {{url}}",
+    "mention": "Omnämnandeklistermärke, öppnar profilen",
+    "hashtag": "Hashtagklistermärke, öppnar #{{hashtag}}",
+    "place": "Platsklistermärke, öppnar {{place}} i en karta",
+    "reply": "Svarsklistermärke, öppnar det som videon svarar på",
+    "labeled": "{{label}}: {{action}}"
+  },
   "thumbnailPlayer": {
     "videoPreview": "Förhandsvisning av video",
     "thumbnailAlt": "Videominiatyr",

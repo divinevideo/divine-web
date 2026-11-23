@@ -1039,6 +1039,14 @@
     "loadFailed": "Nie udało się załadować wideo",
     "tapToRetry": "Stuknij, by spróbować ponownie"
   },
+  "videoStickers": {
+    "link": "Naklejka z linkiem, otwiera {{url}}",
+    "mention": "Naklejka ze wzmianką, otwiera profil",
+    "hashtag": "Naklejka z hashtagiem, otwiera #{{hashtag}}",
+    "place": "Naklejka z miejscem, otwiera {{place}} na mapie",
+    "reply": "Naklejka z odpowiedzią, otwiera to, na co odpowiada ten film",
+    "labeled": "{{label}}: {{action}}"
+  },
   "thumbnailPlayer": {
     "videoPreview": "Podgląd wideo",
     "thumbnailAlt": "Miniatura wideo",

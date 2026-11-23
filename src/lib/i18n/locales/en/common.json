@@ -1025,6 +1025,14 @@
     "loadFailed": "Failed to load video",
     "tapToRetry": "Tap to retry"
   },
+  "videoStickers": {
+    "link": "Link sticker, opens {{url}}",
+    "mention": "Mention sticker, opens the profile",
+    "hashtag": "Hashtag sticker, opens #{{hashtag}}",
+    "place": "Location sticker, opens {{place}} in a map",
+    "reply": "Reply sticker, opens what this video replies to",
+    "labeled": "{{label}}: {{action}}"
+  },
   "thumbnailPlayer": {
     "videoPreview": "Video Preview",
     "thumbnailAlt": "Video thumbnail",

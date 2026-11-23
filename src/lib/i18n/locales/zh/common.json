@@ -1025,6 +1025,14 @@
     "loadFailed": "视频加载失败",
     "tapToRetry": "点按重试"
   },
+  "videoStickers": {
+    "link": "链接贴纸，打开 {{url}}",
+    "mention": "提及贴纸，打开个人主页",
+    "hashtag": "话题标签贴纸，打开 #{{hashtag}}",
+    "place": "地点贴纸，在地图中打开 {{place}}",
+    "reply": "回复贴纸，打开这个视频回复的内容",
+    "labeled": "{{label}}：{{action}}"
+  },
   "thumbnailPlayer": {
     "videoPreview": "视频预览",
     "thumbnailAlt": "视频缩略图",

@@ -1032,6 +1032,14 @@
     "loadFailed": "Videoclipul nu s-a încărcat",
     "tapToRetry": "Apasă ca să reîncerci"
   },
+  "videoStickers": {
+    "link": "Sticker cu link, deschide {{url}}",
+    "mention": "Sticker cu menționare, deschide profilul",
+    "hashtag": "Sticker cu hashtag, deschide #{{hashtag}}",
+    "place": "Sticker cu locație, deschide {{place}} pe o hartă",
+    "reply": "Sticker cu răspuns, deschide la ce răspunde acest videoclip",
+    "labeled": "{{label}}: {{action}}"
+  },
   "thumbnailPlayer": {
     "videoPreview": "Previzualizare videoclip",
     "thumbnailAlt": "Miniatură videoclip",

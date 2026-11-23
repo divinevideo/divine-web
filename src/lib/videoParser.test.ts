@@ -153,6 +153,42 @@ describe('parseVideoEvents', () => {
   });
 });
 
+describe('parseVideoEvents stickers', () => {
+  const pubkey = 'a'.repeat(64);
+  const rootId = 'e'.repeat(64);
+
+  it('reads the sticker tags and the NIP-22 root a reply sticker opens', () => {
+    const [video] = parseVideoEvents([{
+      id: 'test-id',
+      pubkey,
+      created_at: 1700000000,
+      kind: 34236,
+      tags: [
+        ['d', 'test-vine-id'],
+        ['imeta', 'url https://example.com/video.mp4'],
+        ['sticker', 'hashtag', '#Summer', '0.5 0.5 0.2 0.1', '0', '', '', 'light', 'Summer'],
+        ['sticker', 'link', 'javascript:alert(1)', '0.5 0.5 0.2 0.1', '0'],
+        ['E', rootId],
+        ['K', '34236'],
+      ],
+      content: '',
+      sig: 'test-sig',
+    }]);
+
+    expect(video.stickers).toEqual([
+      expect.objectContaining({ kind: 'hashtag', target: 'summer', label: 'Summer' }),
+    ]);
+    expect(video.replyRootRouteId).toBe(rootId);
+  });
+
+  it('leaves both out for a video without them', () => {
+    const [video] = parseVideoEvents([makeEvent([['d', 'x'], ['imeta', 'url https://example.com/video.mp4']])]);
+
+    expect(video).not.toHaveProperty('stickers');
+    expect(video).not.toHaveProperty('replyRootRouteId');
+  });
+});
+
 describe('getProofModeData', () => {
   it('returns undefined for archived Vine imports even if verification tags are present', () => {
     const event = makeEvent([

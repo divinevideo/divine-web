@@ -411,6 +411,31 @@ describe('transformFunnelcakeVideo', () => {
   });
 });
 
+describe('transformFunnelcakeVideo stickers', () => {
+  const sticker = ['sticker', 'mention', 'A'.repeat(64), '0.5 0.5 0.2 0.1', '0', '', '', '', 'Alex'];
+
+  it('reads the sticker tags of the row', () => {
+    const video = transformOk(makeRawVideo({ tags: [['d', 'vine-id'], sticker] }));
+
+    expect(video.stickers).toEqual([
+      expect.objectContaining({ kind: 'mention', target: 'a'.repeat(64), label: 'Alex' }),
+    ]);
+  });
+
+  it('reads them from the full event when the row carries one', () => {
+    const video = transformOk(makeRawVideo({
+      event_json: JSON.stringify({ tags: [['d', 'vine-id'], sticker, ['A', `34236:${'b'.repeat(64)}:root`]] }),
+    }));
+
+    expect(video.stickers).toHaveLength(1);
+    expect(video.replyRootRouteId).toBe(`34236:${'b'.repeat(64)}:root`);
+  });
+
+  it('leaves them out for a row without tags', () => {
+    expect(transformOk(makeRawVideo())).not.toHaveProperty('stickers');
+  });
+});
+
 describe('transformFunnelcakeVideo addressable coordinate guard', () => {
   it('drops a row with no d tag, matching the relay parse path', () => {
     // videoParser skips kind-34236 events with no d tag; every row here becomes

@@ -1025,6 +1025,14 @@
     "loadFailed": "Video yüklenemedi",
     "tapToRetry": "Tekrar denemek için dokun"
   },
+  "videoStickers": {
+    "link": "Bağlantı çıkartması, {{url}} adresini açar",
+    "mention": "Bahsetme çıkartması, profili açar",
+    "hashtag": "Hashtag çıkartması, #{{hashtag}} etiketini açar",
+    "place": "Konum çıkartması, {{place}} yerini haritada açar",
+    "reply": "Yanıt çıkartması, bu videonun yanıt verdiği şeyi açar",
+    "labeled": "{{label}}: {{action}}"
+  },
   "thumbnailPlayer": {
     "videoPreview": "Video Önizlemesi",
     "thumbnailAlt": "Video küçük resmi",

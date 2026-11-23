@@ -1025,6 +1025,14 @@
     "loadFailed": "Gagal memuat video",
     "tapToRetry": "Tap untuk coba lagi"
   },
+  "videoStickers": {
+    "link": "Stiker tautan, membuka {{url}}",
+    "mention": "Stiker sebutan, membuka profil",
+    "hashtag": "Stiker tagar, membuka #{{hashtag}}",
+    "place": "Stiker lokasi, membuka {{place}} di peta",
+    "reply": "Stiker balasan, membuka apa yang dibalas video ini",
+    "labeled": "{{label}}: {{action}}"
+  },
   "thumbnailPlayer": {
     "videoPreview": "Pratinjau Video",
     "thumbnailAlt": "Thumbnail video",

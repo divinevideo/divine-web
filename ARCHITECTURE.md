@@ -689,3 +689,30 @@ The Actions PR preview build explicitly disables short-link sending because its
 pages.dev origin is not allowed by the production gateway. Those previews share
 canonical URLs without requesting a signature. Other preview build integrations
 must set the same build override to opt out of production shortening.
+
+## Video stickers
+
+The Divine app burns stickers (links, mentions, hashtags, places, replies,
+polls and more) into a video's frames and publishes a `sticker` tag per
+tappable one: kind, target, normalized area, angle, time window, style, label
+and, for Add yours and replies, who may answer. The spec is "Divine Sticker
+Tags" in divine-mobile's `mobile/docs/NOSTR_VIDEO_EVENTS.md`.
+
+`src/lib/videoStickers.ts` parses the tags into `ParsedVideoData.stickers`
+on every path that builds one (`videoParser`, `useVideoEvents`,
+`funnelcakeTransform`), mirroring the app's `VideoStickerRegion.fromTag`
+drop rules number for number. It is the security boundary for link stickers:
+only an http(s) address with a host survives. It also reads the video's
+NIP-22 root into `replyRootRouteId`, which a reply sticker opens.
+
+`VideoStickerOverlay` lays transparent buttons over the frames; the stickers
+are not drawn again. `videoStickerLayout` maps an area onto the rect the
+browser draws the video in for `object-fit` contain or cover, and the overlay
+follows the time window with `requestVideoFrameCallback`, falling back to
+`timeupdate`. `videoStickerActions` decides what a click opens and which kinds
+get a button: link, mention, hashtag, reply and place (OpenStreetMap search)
+for now. `VideoPlayer` renders the overlay itself, except in the fullscreen
+feed, whose tap layer covers the player: `FullscreenVideoItem` passes
+`showStickers={false}` and renders the overlay above that layer. With an
+`onDoubleTap`, a click waits for a possible second one so a double tap on a
+sticker still likes.

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { VideoPlayer } from '@/components/VideoPlayer';
+import { VideoStickerOverlay } from '@/components/VideoStickerOverlay';
 import { VideoCommentsModal } from '@/components/VideoCommentsModal';
 import { VideoReactionsModal } from '@/components/VideoReactionsModal';
 import { NoteContent } from '@/components/NoteContent';
@@ -109,7 +110,13 @@ export function FullscreenVideoItem({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewSourceDialog, setShowViewSourceDialog] = useState(false);
   const videoContainerRef = useRef<HTMLDivElement>(null);
-  const videoElementRef = useRef<HTMLVideoElement>(null);
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
+  // The same element in state, for the sticker buttons that follow it.
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+  const setVideoElementRef = useCallback((node: HTMLVideoElement | null) => {
+    videoElementRef.current = node;
+    setVideoElement(node);
+  }, []);
   const { globalMuted, setGlobalMuted, setActiveVideo, setUserPaused } = useVideoPlayback();
   const { cues: subtitleCues, hasSubtitles } = useSubtitles(video);
   // Subtitles default to ON when available, independent of mute state
@@ -255,7 +262,7 @@ export function FullscreenVideoItem({
       <div className="absolute inset-0 z-0 flex items-center justify-center">
         {!videoError ? (
           <VideoPlayer
-            ref={videoElementRef}
+            ref={setVideoElementRef}
             videoId={video.id}
             playbackId={playbackId}
             src={video.videoUrl}
@@ -269,6 +276,8 @@ export function FullscreenVideoItem({
             loopPlayback={loopPlayback}
             onSwipeRight={handleSwipeRight}
             onDoubleTap={handleDoubleTap}
+            // Laid over the tap layer below instead, which covers the player.
+            showStickers={false}
             subtitleCues={subtitleCues}
             subtitlesVisible={showSubtitles}
             videoData={video}
@@ -299,6 +308,17 @@ export function FullscreenVideoItem({
           className="absolute inset-0 pointer-events-auto"
           onClick={handleOverlayClick}
         />
+
+        {/* Buttons over the stickers in the frames, above the tap area */}
+        {!videoError && (
+          <VideoStickerOverlay
+            videoElement={videoElement}
+            video={video}
+            onDoubleTap={handleDoubleTap}
+            onBeforeNavigate={onBack}
+            className="z-0"
+          />
+        )}
 
         {/* Back button - top left */}
         <Button
