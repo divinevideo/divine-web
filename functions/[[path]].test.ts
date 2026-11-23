@@ -7,6 +7,7 @@ import { DISCOVERY_DESCRIPTION } from '../src/lib/discoveryMeta';
 const INDEX_HTML = readFileSync('index.html', 'utf8');
 const SHELL_META = new DOMParser().parseFromString(INDEX_HTML, 'text/html');
 const SHELL_TITLE = SHELL_META.title;
+const OLD_BLOB_HASH = '9'.repeat(64);
 
 describe('functions/[[path]]', () => {
   beforeEach(() => {
@@ -37,6 +38,22 @@ describe('functions/[[path]]', () => {
           },
           stats: {
             author_name: 'TravelTelly',
+          },
+        }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
+      if (url.includes('/api/videos/old-blob')) {
+        return new Response(JSON.stringify({
+          event: {
+            id: 'old-blob',
+            content: 'Clip',
+            created_at: 1_700_000_000,
+            tags: [
+              ['imeta', `url https://media.divine.video/${OLD_BLOB_HASH}`, 'm video/mp4', 'dim 1080x1920'],
+            ],
           },
         }), {
           status: 200,
@@ -139,6 +156,37 @@ describe('functions/[[path]]', () => {
     expect(html).toContain('name="twitter:title" content="Bangkok rooftop"');
     expect(html).toContain('rel="alternate" type="application/json+oembed"');
     expect(html).toContain('href="https://relay.divine.video/api/oembed?url=https%3A%2F%2Fdivine.video%2Fvideo%2Fabc123"');
+  });
+
+  it('points unfurlers at the 720p rendition of an older Divine upload', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/video/old-blob'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+    const rendition = `https://media.divine.video/${OLD_BLOB_HASH}/720p.mp4`;
+
+    expect(html).toContain(`property="og:video" content="${rendition}"`);
+    expect(html).toContain(`property="og:video:secure_url" content="${rendition}"`);
+    expect(html).toContain(`name="twitter:player:stream" content="${rendition}"`);
+  });
+
+  it('embeds the 720p rendition with the original as fallback', async () => {
+    const response = await onRequest({
+      request: new Request('https://divine.video/embed/old-blob'),
+      next: async () => new Response('not found', { status: 404 }),
+      env: {},
+    });
+
+    const html = await response.text();
+    const sources = [...html.matchAll(/<source src="([^"]+)"/g)].map((match) => match[1]);
+
+    expect(sources).toEqual([
+      `https://media.divine.video/${OLD_BLOB_HASH}/720p.mp4`,
+      `https://media.divine.video/${OLD_BLOB_HASH}`,
+    ]);
   });
 
   it('serves the video embed with iframe and indexing headers', async () => {

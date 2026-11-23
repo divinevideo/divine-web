@@ -55,6 +55,28 @@ export function getProgressive720pUrl(url: string): string | undefined {
 }
 
 /**
+ * How long after publishing link previews keep pointing at the original. The
+ * rendition is made from a queue after upload and may lag behind.
+ */
+const LINK_PREVIEW_RENDITION_DELAY_SECONDS = 60 * 60;
+
+/**
+ * Picks the video URL for link previews (`og:video`, `twitter:player:stream`).
+ * Unfurlers cannot fall back to a second URL, so the 720p rendition is used
+ * only where it surely exists: an hour after publishing, and never for classic
+ * Vines, which may not have a rendition yet.
+ */
+export function selectLinkPreviewVideoUrl(
+  videoUrl: string | undefined,
+  { createdAt, isClassicVine }: { createdAt?: number; isClassicVine: boolean },
+  nowSeconds: number = Math.floor(Date.now() / 1000),
+): string | undefined {
+  if (!videoUrl || isClassicVine || !createdAt) return videoUrl;
+  if (nowSeconds - createdAt < LINK_PREVIEW_RENDITION_DELAY_SECONDS) return videoUrl;
+  return getProgressive720pUrl(videoUrl) ?? videoUrl;
+}
+
+/**
  * Remembers that a 720p rendition failed to load, so the next playback of the
  * same video goes straight to the original for a while. URLs that are not
  * 720p renditions are ignored.

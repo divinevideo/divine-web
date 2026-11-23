@@ -2,6 +2,7 @@
 // ABOUTME: No JS bundles, no analytics — just an autoplaying loop
 
 import { escapeHtml } from './ogTags.js';
+import { progressive720pUrl } from './videoMetadata.js';
 
 export function renderEmbedPage({ videoUrl, mime, poster, title }) {
   const e = escapeHtml;
@@ -19,6 +20,12 @@ export function renderEmbedPage({ videoUrl, mime, poster, title }) {
 </html>`;
   }
 
+  // The player falls back to the original when the 720p rendition is missing.
+  const sources = [progressive720pUrl(videoUrl), videoUrl]
+    .filter(Boolean)
+    .map((source) => `<source src="${e(source)}" type="${e(mime || 'video/mp4')}">`)
+    .join('\n    ');
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,7 +39,7 @@ export function renderEmbedPage({ videoUrl, mime, poster, title }) {
 </head>
 <body>
   <video autoplay loop muted playsinline${poster ? ` poster="${e(poster)}"` : ''}>
-    <source src="${e(videoUrl)}" type="${e(mime || 'video/mp4')}">
+    ${sources}
   </video>
 </body>
 </html>`;

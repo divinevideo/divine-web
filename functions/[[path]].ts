@@ -20,6 +20,7 @@ import {
   type VideoApiResponse,
 } from '../src/lib/serverSocialMeta';
 import { getDiscoveryMeta } from '../src/lib/discoveryMeta';
+import { getProgressive720pUrl } from '../src/lib/divineMediaUrls';
 import { parseCoordinateWithOptionalDTag } from '../src/lib/nostrCoordinates';
 
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
@@ -110,9 +111,11 @@ function injectMetaTags(html: string, meta: PageMeta, path: string): string {
   updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:description', meta.description);
   updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:image', meta.image);
 
-  if (meta.videoUrl) {
-    updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video', meta.videoUrl);
-    updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:secure_url', meta.videoUrl);
+  // Unfurlers load previewVideoUrl, which is the smaller 720p rendition when it surely exists.
+  const unfurlVideoUrl = meta.previewVideoUrl || meta.videoUrl;
+  if (unfurlVideoUrl) {
+    updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video', unfurlVideoUrl);
+    updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:secure_url', unfurlVideoUrl);
     updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:width', String(meta.videoWidth || 720));
     updatedHtml = upsertMetaTag(updatedHtml, 'property', 'og:video:height', String(meta.videoHeight || 1280));
   } else {
@@ -132,7 +135,7 @@ function injectMetaTags(html: string, meta: PageMeta, path: string): string {
     updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player', meta.twitterPlayerUrl);
     updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:width', String(meta.videoWidth || 720));
     updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:height', String(meta.videoHeight || 1280));
-    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:stream', meta.videoUrl || '');
+    updatedHtml = upsertMetaTag(updatedHtml, 'name', 'twitter:player:stream', unfurlVideoUrl || '');
     updatedHtml = upsertMetaTag(
       updatedHtml,
       'name',
@@ -358,8 +361,12 @@ async function fetchRouteMeta(url: URL): Promise<PageMeta | null> {
 function renderEmbedPage(meta: PageMeta): string {
   const title = escapeHtml(meta.title);
   const poster = escapeHtml(meta.image);
-  const videoUrl = escapeHtml(meta.videoUrl || '');
   const mimeType = escapeHtml(meta.videoMimeType || 'video/mp4');
+  // The player falls back to the original when the 720p rendition is missing.
+  const sources = [getProgressive720pUrl(meta.videoUrl || ''), meta.videoUrl]
+    .filter((source): source is string => Boolean(source))
+    .map(source => `<source src="${escapeHtml(source)}" type="${mimeType}">`)
+    .join('\n    ');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -374,7 +381,7 @@ function renderEmbedPage(meta: PageMeta): string {
 </head>
 <body>
   <video autoplay loop muted playsinline poster="${poster}">
-    <source src="${videoUrl}" type="${mimeType}">
+    ${sources}
   </video>
 </body>
 </html>`;

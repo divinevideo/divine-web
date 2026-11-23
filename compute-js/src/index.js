@@ -23,7 +23,7 @@ import {
   handleDownloadOgTags,
   handleApexOgTags,
 } from './crawlerHandlers.js';
-import { isAddressableVideoRouteId, transformVideoApiResponse } from './videoMetadata.js';
+import { isAddressableVideoRouteId, linkPreviewVideoUrl, transformVideoApiResponse } from './videoMetadata.js';
 import { resolveCachedVideoPage } from './videoPageCache.js';
 import { compactVideoForHydration, normalizeFeedResponse } from './feedHydration.js';
 import { renderEmbedPage } from './embedPage.js';
@@ -1188,7 +1188,7 @@ async function handleVideoOgTags(request, videoId, url, funnelcakeTarget) {
 
     const hasPlayableVideo = Boolean(videoMeta?.videoUrl);
     const videoBlock = hasPlayableVideo ? {
-      url: videoMeta.videoUrl,
+      url: linkPreviewVideoUrl(videoMeta),
       type: videoMeta.videoMime || 'video/mp4',
       width: videoMeta.videoWidth || 720,
       height: videoMeta.videoHeight || 1280,
