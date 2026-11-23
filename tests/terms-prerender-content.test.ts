@@ -210,7 +210,8 @@ describe('prerendered legal pages', () => {
   it('includes the support contact email on the prerendered safety page', () => {
     const html = prerenderLegalPages()('safety');
 
-    expect(html).toContain('id="contact"');
+    // scroll-mt-24 keeps a /safety#contact jump below the fixed MarketingHeader, as on Terms.
+    expect(html).toMatch(/<section id="contact" class="scroll-mt-24">/);
     expect(html).toContain('15. Contact');
     expect(html).toContain('child sexual\n              abuse and exploitation (CSAE) prevention and compliance');
     const inlineMailtoMatches = html.match(
