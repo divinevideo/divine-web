@@ -73,7 +73,7 @@ function buildPage({ title, description, path, content, shell }) {
     <style>
       /* Prerender page base styles */
       .prerender-page { font-family: Inter, system-ui, sans-serif; }
-      .prerender-page a { color: #27C58B; }
+      .prerender-page a:not(.text-foreground) { color: #27C58B; }
       .prerender-page a:hover { text-decoration: underline; }
     </style>
   </head>

@@ -105,6 +105,7 @@ describe('static pages i18n', () => {
     // Dropping the {' '} before a link would run "email" into the address for every reader
     // with JavaScript, while the prerendered page still shows a space.
     expect(container.textContent?.match(/email support@divine\.video\./g)).toHaveLength(2);
+    expect(screen.getAllByText(/do not attach or forward suspected child sexual abuse material/i)).toHaveLength(2);
   });
 
   it('renders DMCA copy in spanish', () => {

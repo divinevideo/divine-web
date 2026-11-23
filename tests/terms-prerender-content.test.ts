@@ -221,6 +221,7 @@ describe('prerendered legal pages', () => {
     expect(visible).toContain('child sexual abuse and exploitation (CSAE) prevention and compliance');
     expect(visible.match(/email support@divine\.video\./g)).toHaveLength(2);
     expect(html.match(/href="mailto:support@divine\.video"/g)).toHaveLength(2);
+    expect(visible.match(/Do not attach or forward suspected child sexual abuse material/g)).toHaveLength(2);
   });
 
   it('keeps the period attached to the account-deletion link on the prerendered safety page', () => {
