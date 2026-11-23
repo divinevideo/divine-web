@@ -207,6 +207,15 @@ describe('prerendered legal pages', () => {
     }
   });
 
+  it('includes the support contact email on the prerendered safety page', () => {
+    const html = prerenderLegalPages()('safety');
+
+    expect(html).toContain('id="contact"');
+    expect(html).toContain('15. Contact');
+    expect(html).toContain('href="mailto:support@divine.video"');
+    expect(html).toContain('support@divine.video');
+  });
+
   it('inserts option values literally and escapes catalog text like React does', () => {
     // String.prototype.replaceAll treats $&, $$ and friends in a replacement
     // string as patterns, and React would escape & < > in text but the prerender

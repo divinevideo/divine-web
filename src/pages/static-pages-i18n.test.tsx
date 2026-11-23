@@ -92,10 +92,16 @@ describe('static pages i18n', () => {
 
     expect(screen.getByRole('heading', { name: 'Normas de seguridad' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '1. Descripción general' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '15. Contacto' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'how account deletion works' })).toHaveAttribute(
       'href',
       '/delete-account',
     );
+    const supportLinks = screen.getAllByRole('link', { name: 'support@divine.video' });
+    expect(supportLinks.length).toBeGreaterThanOrEqual(1);
+    for (const link of supportLinks) {
+      expect(link).toHaveAttribute('href', 'mailto:support@divine.video');
+    }
   });
 
   it('renders DMCA copy in spanish', () => {

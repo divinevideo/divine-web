@@ -96,10 +96,21 @@ export function SafetyPage() {
           {/* 4. Child Safety */}
           <section>
             <h2 className="text-2xl font-extrabold text-foreground mb-3">{t('sections.childSafety')}</h2>
-            <p>
+            <p className="mb-3">
               Divine maintains a zero-tolerance policy for child sexual abuse material and related exploitation.
               Divine may remove such content from Divine-controlled infrastructure, restrict access, preserve
               evidence, and report to appropriate authorities where required or appropriate.
+            </p>
+            <p>
+              To report child safety concerns or reach our child safety point of contact regarding child sexual
+              abuse and exploitation (CSAE) prevention and compliance, email{' '}
+              <a
+                href="mailto:support@divine.video"
+                className="text-primary hover:underline font-medium"
+              >
+                support@divine.video
+              </a>
+              .
             </p>
           </section>
 
@@ -219,6 +230,21 @@ export function SafetyPage() {
               version and revise the &ldquo;Last Updated&rdquo; date above. Unless a different effective date is
               stated, changes will become effective 30 days after posting. Your continued use of the Service after
               the effective date of the updated Safety Standards constitutes your acceptance of them.
+            </p>
+          </section>
+
+          {/* 15. Contact */}
+          <section id="contact" className="scroll-mt-24">
+            <h2 className="text-2xl font-extrabold text-foreground mb-3">{t('sections.contact')}</h2>
+            <p>
+              For safety questions, reports, or child safety compliance inquiries, email{' '}
+              <a
+                href="mailto:support@divine.video"
+                className="text-primary hover:underline font-medium"
+              >
+                support@divine.video
+              </a>
+              .
             </p>
           </section>
         </div>
