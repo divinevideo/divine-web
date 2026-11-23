@@ -242,6 +242,12 @@ Search crawlers receive full edge-rendered HTML at `/`, `/discovery/hot`,
 preview bots continue to receive compact OG responses, with the hot route's own
 canonical URL. When the hot route's feed page can't render, search crawlers get
 its OG response too, rather than the SPA shell's homepage metadata.
+On Fastly and Cloudflare Pages, `/embed/:id` tries the 720p MP4 of a Divine
+blob before the original. Direct social video metadata still names the original:
+unfurlers have no fallback source, and the video's age does not establish that
+its rendition is ready.
+The feed player and its prefetch use the original for migrated archive clips:
+copy-only media may not have a 720p rendition to request.
 The SPA updates discovery titles and canonical URLs on client navigation through
 `DiscoverySeo`; the homepage keeps its metadata in `Index`. Discovery titles come
 from `src/lib/discoveryMeta.ts`, which Cloudflare's function uses too.

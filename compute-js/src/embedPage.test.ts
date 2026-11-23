@@ -19,6 +19,15 @@ describe('renderEmbedPage', () => {
     expect(html).toContain('poster="https://media.divine.video/x.jpg"');
   });
 
+  it('plays the 720p rendition first and falls back to the original Divine blob', () => {
+    const original = `https://media.divine.video/${'d'.repeat(64)}`;
+    const html = renderEmbedPage({ videoUrl: original, mime: 'video/webm', poster: null, title: 'X' });
+
+    const sources = [...html.matchAll(/<source src="([^"]+)" type="([^"]+)"/g)]
+      .map((match) => [match[1], match[2]]);
+    expect(sources).toEqual([[`${original}/720p.mp4`, 'video/mp4'], [original, 'video/webm']]);
+  });
+
   it('omits poster attribute when none is provided', () => {
     const html = renderEmbedPage({
       videoUrl: 'https://media.divine.video/x.mp4',

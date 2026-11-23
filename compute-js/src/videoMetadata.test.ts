@@ -1,6 +1,11 @@
 // ABOUTME: Vitest unit tests for parseImetaTag and transformVideoApiResponse
 import { describe, expect, it } from 'vitest';
-import { isAddressableVideoRouteId, parseImetaTag, transformVideoApiResponse } from './videoMetadata.js';
+import {
+  isAddressableVideoRouteId,
+  parseImetaTag,
+  progressive720pUrl,
+  transformVideoApiResponse,
+} from './videoMetadata.js';
 
 describe('isAddressableVideoRouteId', () => {
   const pubkey = 'a'.repeat(64);
@@ -241,5 +246,23 @@ describe('transformVideoApiResponse', () => {
 
     expect(result?.created_at).toBe(1700000123);
     expect(result?.age_restricted).toBe(true);
+  });
+});
+
+describe('progressive720pUrl', () => {
+  const hash = 'b'.repeat(64);
+
+  it('returns the 720p MP4 of an original Divine blob', () => {
+    expect(progressive720pUrl(`https://media.divine.video/${hash}`))
+      .toBe(`https://media.divine.video/${hash}/720p.mp4`);
+    expect(progressive720pUrl(`https://media.divine.video/${hash}.mp4`))
+      .toBe(`https://media.divine.video/${hash}/720p.mp4`);
+  });
+
+  it('returns null for other hosts, renditions and non-hash paths', () => {
+    expect(progressive720pUrl(`https://cdn.example.com/${hash}`)).toBeNull();
+    expect(progressive720pUrl(`https://media.divine.video/${hash}/480p.mp4`)).toBeNull();
+    expect(progressive720pUrl('https://media.divine.video/x.mp4')).toBeNull();
+    expect(progressive720pUrl(null)).toBeNull();
   });
 });

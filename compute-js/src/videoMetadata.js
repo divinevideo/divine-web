@@ -3,6 +3,18 @@
 
 import { cleanText, truncateText } from './ogTags.js';
 
+const DIVINE_ORIGINAL_BLOB_URL = /^https:\/\/media\.divine\.video\/([0-9a-f]{64})(?:\.[a-z0-9]+)?$/i;
+
+/**
+ * The progressive 720p MP4 that the media server makes from an original Divine
+ * blob URL (`https://media.divine.video/{sha256}`), or null for any other URL.
+ * Mirrors `getProgressive720pUrl` in `src/lib/divineMediaUrls.ts`.
+ */
+export function progressive720pUrl(url) {
+  const hash = typeof url === 'string' ? DIVINE_ORIGINAL_BLOB_URL.exec(url)?.[1] : undefined;
+  return hash ? `https://media.divine.video/${hash.toLowerCase()}/720p.mp4` : null;
+}
+
 // The d tag after the second colon may be empty or start with any character,
 // line breaks included; the SPA holds all of these to the author.
 const ADDRESSABLE_ROUTE_ID = /^\d+:[0-9a-f]{64}:/i;

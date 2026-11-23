@@ -20,6 +20,7 @@ import {
   type VideoApiResponse,
 } from '../src/lib/serverSocialMeta';
 import { getDiscoveryMeta } from '../src/lib/discoveryMeta';
+import { getProgressive720pUrl } from '../src/lib/divineMediaUrls';
 import { parseCoordinateWithOptionalDTag } from '../src/lib/nostrCoordinates';
 
 const FUNNELCAKE_API_URL = 'https://relay.divine.video';
@@ -358,8 +359,10 @@ async function fetchRouteMeta(url: URL): Promise<PageMeta | null> {
 function renderEmbedPage(meta: PageMeta): string {
   const title = escapeHtml(meta.title);
   const poster = escapeHtml(meta.image);
-  const videoUrl = escapeHtml(meta.videoUrl || '');
   const mimeType = escapeHtml(meta.videoMimeType || 'video/mp4');
+  // The player falls back to the original when the 720p rendition is missing.
+  const rendition = getProgressive720pUrl(meta.videoUrl || '');
+  const videoUrl = escapeHtml(meta.videoUrl || '');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -374,7 +377,7 @@ function renderEmbedPage(meta: PageMeta): string {
 </head>
 <body>
   <video autoplay loop muted playsinline poster="${poster}">
-    <source src="${videoUrl}" type="${mimeType}">
+    ${rendition ? `<source src="${escapeHtml(rendition)}" type="video/mp4">\n    ` : ''}<source src="${videoUrl}" type="${mimeType}">
   </video>
 </body>
 </html>`;
