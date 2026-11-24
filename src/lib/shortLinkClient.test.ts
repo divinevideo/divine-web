@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { npubEncode } from 'nostr-tools/nip19';
+import { naddrEncode, npubEncode } from 'nostr-tools/nip19';
 
 import { ShortLinkClient } from '@/lib/shortLinkClient';
 
@@ -9,6 +9,14 @@ const short = 'https://divine.video/l/Abc12345';
 const mapping = (url = target) => new Response(JSON.stringify({ code: 'Abc12345', short_url: short, url }), { status: 201 });
 
 describe('ShortLinkClient', () => {
+  it('preserves a complete naddr destination when shortening', async () => {
+    const url = `https://divine.video/video/${naddrEncode({ kind: 34236, pubkey: 'a'.repeat(64), identifier: 'clip' })}`;
+    const fetcher = vi.fn().mockImplementation(async () => mapping(url));
+    const client = new ShortLinkClient({ enabled: true, fetcher });
+    expect(await client.prepare(url)).toBe(short);
+    expect(JSON.parse(fetcher.mock.calls[0][1].body).url).toBe(url);
+  });
+
   afterEach(() => vi.useRealTimers());
 
   it('does no work when disabled or the target is outside the canonical contract', async () => {

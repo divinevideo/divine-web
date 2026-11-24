@@ -18,6 +18,24 @@ function makeEvent(tags: string[][]): NostrEvent {
 }
 
 describe('extractVideoMetadata', () => {
+  it('chooses a video stream over a separate audio track', () => {
+    const event = makeEvent([
+      ['imeta', 'url https://media.example/clip.mp3', 'm audio/mpeg', 'x audio-hash'],
+      ['imeta', 'url https://media.example/clip.m3u8', 'm application/x-mpegURL'],
+    ]);
+
+    const metadata = extractVideoMetadata(event);
+    expect(metadata?.url).toBe('https://media.example/clip.m3u8');
+    expect(metadata?.hash).toBeUndefined();
+  });
+
+  it('identifies a primary HLS stream by MIME type when there is no file extension', () => {
+    const streamUrl = 'https://media.example/stream';
+    const event = makeEvent([['imeta', `url ${streamUrl}`, 'm application/x-mpegURL']]);
+
+    expect(extractVideoMetadata(event)?.hlsUrl).toBe(streamUrl);
+  });
+
   describe('HLS fallback URL handling', () => {
     it('should preserve hlsUrl when present in imeta alongside MP4', () => {
       const event = makeEvent([

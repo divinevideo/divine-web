@@ -9,6 +9,7 @@ interface UseDeferredVideoMetricsOptions {
   videoPubkey: string;
   vineId: string | null;
   userPubkey?: string;
+  enabled?: boolean;
   /**
    * Delay in ms before loading metrics
    * @default 100
@@ -38,6 +39,7 @@ export function useDeferredVideoMetrics({
   videoPubkey,
   vineId,
   userPubkey,
+  enabled = true,
   delay = 100,
   immediate = false,
   skipStatsFetch = false,
@@ -46,18 +48,18 @@ export function useDeferredVideoMetrics({
 
   // Enable loading after delay
   useEffect(() => {
-    if (immediate) return;
+    if (immediate || !enabled) return;
 
     const timer = setTimeout(() => {
       setShouldLoad(true);
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [delay, immediate]);
+  }, [delay, enabled, immediate]);
 
   // Only fetch when enabled
   const socialMetrics = useVideoSocialMetrics(videoId, videoPubkey, vineId, {
-    enabled: shouldLoad && !skipStatsFetch,
+    enabled: enabled && shouldLoad && !skipStatsFetch,
   });
 
   const userInteractions = useVideoUserInteractions(
@@ -66,13 +68,13 @@ export function useDeferredVideoMetrics({
     vineId,
     userPubkey,
     {
-      enabled: shouldLoad && !!userPubkey,
+      enabled: enabled && shouldLoad && !!userPubkey,
     }
   );
 
   return {
     socialMetrics,
     userInteractions,
-    isLoading: !shouldLoad,
+    isLoading: enabled && !shouldLoad,
   };
 }

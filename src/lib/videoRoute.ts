@@ -1,12 +1,18 @@
 // ABOUTME: Decodes the /video/:id route segment into what the video page looks a video up by
 // ABOUTME: A kind:pubkey:d coordinate holds the lookup to that author; anything else is a bare id
 
+import { decode } from 'nostr-tools/nip19';
+
 import { parseCoordinateWithOptionalDTag, type AddressableCoordinate } from '@/lib/nostrCoordinates';
 import { VIDEO_KINDS, type ParsedVideoData } from '@/types/video';
 
 export interface VideoRouteTarget {
   /** The event id or `d` tag to look the video up by. REST `/api/videos/{id}` accepts either. */
   lookupId: string;
+  eventId?: string;
+  relayHints?: string[];
+  strictKind?: true;
+  legacyAuthor?: string;
   /**
    * The author and `d` tag the route names, or null when it names no author.
    *
@@ -24,10 +30,36 @@ export interface VideoRouteTarget {
  * bare lookup id, as before. An empty `d` tag, which NIP-19 allows, stays held
  * to the author and so resolves to nothing: no valid video has one.
  */
-export function parseVideoRouteId(routeId: string): VideoRouteTarget {
+export function parseVideoRouteId(routeId: string, legacyAuthor?: string | null): VideoRouteTarget {
+  const legacyTarget: VideoRouteTarget = /^[0-9a-f]{64}$/i.test(legacyAuthor ?? '')
+    ? { lookupId: routeId, address: null, legacyAuthor: legacyAuthor!.toLowerCase() }
+    : { lookupId: routeId, address: null };
+  if (/^(naddr|nevent|note)1/i.test(routeId)) {
+    try {
+      const reference = decode(routeId);
+      if (reference.type === 'naddr') {
+        const { identifier, pubkey, kind, relays } = reference.data;
+        if (![34235, 34236].includes(kind)) return { lookupId: '', address: null };
+        return {
+          lookupId: identifier,
+          strictKind: true,
+          address: { kind, pubkey: pubkey.toLowerCase(), dTag: identifier },
+          ...(relays?.length && { relayHints: relays }),
+        };
+      }
+      if (reference.type === 'nevent') {
+        const { id, relays } = reference.data;
+        return { lookupId: id, eventId: id, address: null, ...(relays?.length && { relayHints: relays }) };
+      }
+      if (reference.type === 'note') return { lookupId: reference.data, eventId: reference.data, address: null };
+      return { lookupId: routeId, address: null };
+    } catch {
+      return legacyTarget;
+    }
+  }
   const coordinate = parseCoordinateWithOptionalDTag(routeId);
   if (!coordinate || !VIDEO_KINDS.includes(coordinate.kind as typeof VIDEO_KINDS[number])) {
-    return { lookupId: routeId, address: null };
+    return legacyTarget;
   }
 
   const address = { ...coordinate, pubkey: coordinate.pubkey.toLowerCase() };
@@ -49,4 +81,18 @@ export function matchesVideoRoute(
     return video.vineId === lookupId && video.pubkey.toLowerCase() === author.toLowerCase();
   }
   return video.id === lookupId || video.vineId === lookupId;
+}
+
+export function matchesVideoTarget(
+  video: Pick<ParsedVideoData, 'id' | 'vineId' | 'pubkey'> & { kind?: number; originalEvent?: { kind: number } },
+  target: VideoRouteTarget,
+): boolean {
+  if (!target.lookupId) return false;
+  if (target.eventId) return video.id === target.eventId;
+  if (target.legacyAuthor) {
+    return video.pubkey.toLowerCase() === target.legacyAuthor
+      && (video.id === target.lookupId || video.vineId === target.lookupId);
+  }
+  if (target.strictKind && target.address && (video.originalEvent?.kind ?? video.kind) !== target.address.kind) return false;
+  return matchesVideoRoute(video, target.lookupId, target.address?.pubkey);
 }

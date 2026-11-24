@@ -2,6 +2,8 @@
 // ABOUTME: Ensures stable d-tag IDs are preferred and apex domain URLs are always used
 
 import { describe, it, expect, vi } from 'vitest';
+import { decode } from 'nostr-tools/nip19';
+import { parseVideoRouteId } from './videoRoute';
 import type { ParsedVideoData } from '@/types/video';
 
 // Mock subdomainLinks before importing shareUtils
@@ -35,6 +37,29 @@ function makeVideo(overrides: Partial<ParsedVideoData> = {}): ParsedVideoData {
 }
 
 describe('getVideoShareUrl', () => {
+  it('uses an exact event when a d tag exceeds the NIP-19 TLV limit in UTF-8 bytes', () => {
+    for (const vineId of ['a'.repeat(256), '🙂'.repeat(64)]) {
+      const video = makeVideo({ pubkey: 'a'.repeat(64), id: 'e'.repeat(64), vineId });
+      const reference = new URL(getVideoShareUrl(video)).pathname.slice('/video/'.length);
+      expect(decode(reference)).toMatchObject({ type: 'nevent', data: { id: video.id } });
+    }
+  });
+
+  it('shares a standard complete address that routes back to the same author', () => {
+    const video = makeVideo({ pubkey: 'a'.repeat(64), id: 'e'.repeat(64), vineId: 'folder/clip:1' });
+    const url = new URL(getVideoShareUrl(video));
+    const reference = url.pathname.slice('/video/'.length);
+    expect(url.search).toBe('');
+    expect(decode(reference)).toMatchObject({ type: 'naddr', data: { kind: 34236, pubkey: video.pubkey, identifier: video.vineId } });
+    expect(parseVideoRouteId(reference)).toEqual({ lookupId: video.vineId, strictKind: true, address: { kind: 34236, pubkey: video.pubkey, dTag: video.vineId } });
+  });
+
+  it('uses an exact event reference when there is no real d tag', () => {
+    const video = makeVideo({ pubkey: 'a'.repeat(64), id: 'e'.repeat(64), vineId: null });
+    const reference = new URL(getVideoShareUrl(video)).pathname.slice('/video/'.length);
+    expect(decode(reference)).toMatchObject({ type: 'nevent', data: { id: video.id } });
+  });
+
   it('prefers vineId (d-tag) over event ID for stable URLs', () => {
     const video = makeVideo({ vineId: 'my-vine-id', id: 'event-id' });
     expect(getVideoShareUrl(video)).toBe('https://divine.video/video/my-vine-id');

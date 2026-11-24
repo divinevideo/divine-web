@@ -672,6 +672,23 @@ describe('VideoCard', () => {
     expect(within(actions).getByRole('button', { name: 'More options' })).toBeInTheDocument();
   });
 
+  it('allows sharing but hides Divine-only interactions on a referenced external video kind', () => {
+    const video = makeVideo({ kind: 34235 });
+    render(<VideoCard video={video} />);
+
+    expect(screen.getByRole('button', { name: 'Share' })).toBeInTheDocument();
+    for (const action of ['Like', 'Repost', 'Comment', 'Lists']) {
+      expect(screen.queryByRole('button', { name: action })).not.toBeInTheDocument();
+    }
+  });
+
+  it('passes a primary HLS stream to the player even when the video has no duration', () => {
+    const video = makeVideo({ kind: 21, videoUrl: 'https://media.example/clip.m3u8?token=fixture', duration: undefined });
+    render(<VideoCard video={video} />);
+
+    expect(screen.getByTestId(`video-player-${video.id}`)).toHaveAttribute('data-hls-url', video.videoUrl);
+  });
+
   it('renders the native playback total instead of raw loop count', () => {
     render(
       <VideoCard
