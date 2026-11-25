@@ -72,6 +72,16 @@ beforeEach(async () => {
 });
 
 describe('useAuthor', () => {
+  it('shows lookup metadata immediately while the fresh profile request is pending', () => {
+    vi.mocked(global.fetch).mockImplementation(() => new Promise(() => {}));
+    const { result } = renderHook(
+      () => useAuthor('a'.repeat(64), { initialMetadata: { name: 'Alice', picture: 'https://example.com/avatar.jpg' } }),
+      { wrapper: createWrapper() },
+    );
+    expect(result.current.data?.metadata?.name).toBe('Alice');
+    expect(result.current.data?.metadata?.picture).toBe('https://example.com/avatar.jpg');
+  });
+
   it('reports a fallback and queries the relay when the REST call fails', async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: false,

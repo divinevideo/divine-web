@@ -46,8 +46,9 @@ vi.mock('./ProfilePage', () => ({
 function renderPage(
   initialEntry: string,
   queryDefaults: Record<string, unknown> = { retry: false },
+  existingClient?: QueryClient,
 ) {
-  const queryClient = new QueryClient({
+  const queryClient = existingClient ?? new QueryClient({
     defaultOptions: {
       queries: queryDefaults,
     },
@@ -79,6 +80,7 @@ function createProfileEvent(pubkey: string, metadata: Record<string, unknown>) {
 describe('UniversalUserPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
     const storage = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -94,6 +96,47 @@ describe('UniversalUserPage', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('resolves a qualified NIP-05 without waiting for the global profile scan', async () => {
+    const pubkey = 'a'.repeat(64);
+    mockNostrQuery.mockImplementation(() => new Promise(() => {}));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ names: { _: pubkey } }),
+    }));
+    try {
+      renderPage('/u/alice.divine.video');
+      await waitFor(() => expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey));
+      expect(mockNostrQuery).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('does not renew the verification lifetime when a registered name comes from cache', async () => {
+    const pubkey = 'c'.repeat(64);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const verifiedAt = Date.now() - 40_000;
+    const key = ['nip05-pubkey', 'alice@divine.video'];
+    queryClient.setQueryData(key, pubkey, { updatedAt: verifiedAt });
+    renderPage('/u/alice', { retry: false }, queryClient);
+    await waitFor(() => expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey));
+    expect(queryClient.getQueryState(key)?.dataUpdatedAt).toBe(verifiedAt);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('opens a registered bare Divine name without scanning legacy profiles', async () => {
+    const registeredPubkey = 'a'.repeat(64);
+    mockNostrQuery.mockResolvedValue([
+      createProfileEvent('b'.repeat(64), { vine_metadata: { username: 'alice' } }),
+    ]);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ names: { alice: registeredPubkey } }),
+    }));
+    renderPage('/u/alice');
+    await waitFor(() => expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(registeredPubkey));
+    expect(mockNostrQuery).not.toHaveBeenCalled();
   });
 
   it('resolves numeric Vine user IDs from vine metadata and renders ProfilePage', async () => {
@@ -119,7 +162,7 @@ describe('UniversalUserPage', () => {
     );
   });
 
-  it('prefers exact legacy Vine username matches over the default-apex NIP-05 candidates', async () => {
+  it('prefers exact legacy Vine username matches over declared NIP-05 metadata when no registered name exists', async () => {
     const legacyPubkey = 'b'.repeat(64);
     const fallbackPubkey = 'c'.repeat(64);
     mockNostrQuery.mockResolvedValue([
@@ -358,7 +401,8 @@ describe('UniversalUserPage', () => {
         expect(screen.getByTestId('profile-page')).toBeInTheDocument();
       });
       expect(screen.getByTestId('profile-page').dataset.pubkeyOverride).toBe(pubkey);
-      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(dnsTimeouts).toBe(2);
     } finally {
       globalThis.fetch = originalFetch;
     }

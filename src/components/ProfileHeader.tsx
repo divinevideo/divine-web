@@ -337,7 +337,7 @@ export function ProfileHeader({
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-2 justify-center sm:justify-start">
-            <LinkedAccounts pubkey={pubkey} />
+            <LinkedAccounts pubkey={pubkey} verificationEnabled={!stillLoadingName && nip05State !== 'loading'} />
             <ProfileBadges badges={badgesQuery.data ?? []} />
           </div>
 
