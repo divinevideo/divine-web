@@ -187,7 +187,8 @@ describe('NoteContent — bare nostr identifiers', () => {
   it('linkifies a bare nprofile1...', () => {
     renderContent(`hi ${NPROFILE}`);
     const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', `/${NPROFILE}`);
+    expect(link).toHaveAttribute('href', `/${NPUB}`);
+    expect(link).toHaveTextContent('@rabble');
   });
 
   it('uses a friendly mention profile link when the NIP-05 is valid', () => {
@@ -205,7 +206,7 @@ describe('NoteContent — bare nostr identifiers', () => {
 
     renderContent(`hello ${NPUB}`);
 
-    expect(screen.getByRole('link', { name: '@rabble' })).toHaveAttribute('href', '/u/rabble');
+    expect(screen.getByRole('link', { name: '@rabble.divine.video' })).toHaveAttribute('href', '/u/rabble');
   });
 
   it('uses the npub mention profile link when the NIP-05 is invalid', () => {
@@ -284,6 +285,13 @@ describe('NoteContent — non-matches', () => {
     renderContent('check https://example.com out');
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', 'https://example.com');
+  });
+
+  // The combined pattern is case-insensitive so uppercase Nostr references match;
+  // URL schemes are case-insensitive too (RFC 3986 section 3.1), so these link.
+  it.each(['HTTPS://example.com/x', 'Http://example.com/x'])('linkifies %s with an uppercase scheme', (url) => {
+    renderContent(`see ${url} now`);
+    expect(screen.getByRole('link', { name: url })).toHaveAttribute('href', url);
   });
 
   it('still linkifies hashtags', () => {
