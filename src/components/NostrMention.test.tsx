@@ -235,4 +235,11 @@ describe('title non-profile references', () => {
     expect(screen.getByRole('link', { name: '@alice.divine.video' })).toHaveAttribute('href', '/u/alice');
     expect(container.textContent).toBe(`nostr:${note}@alice.divine.video`);
   });
+
+  it('leaves a profile reference inside a URL as text', () => {
+    const text = `see https://example.com/${NPUB}`;
+    const { container } = render(<Content renderer="title" text={text} />);
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(container.textContent).toBe(text);
+  });
 });
