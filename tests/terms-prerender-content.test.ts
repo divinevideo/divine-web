@@ -207,6 +207,33 @@ describe('prerendered legal pages', () => {
     }
   });
 
+  it('includes the support contact email on the prerendered safety page', () => {
+    const html = prerenderLegalPages()('safety');
+    // The prerender copies JSX line breaks and indentation verbatim, so check what a reader of
+    // the static page (no JavaScript) sees, with tags stripped and whitespace collapsed.
+    // Re-wrapping or restyling the links must not fail the test; a period that drifts off its
+    // link must. src/pages/static-pages-i18n.test.tsx checks the same text in the React render.
+    const visible = html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
+
+    // scroll-mt-24 keeps a /safety#contact jump below the fixed MarketingHeader, as on Terms.
+    expect(html).toMatch(/<section id="contact" class="scroll-mt-24">/);
+    expect(html).toContain('15. Contact');
+    expect(visible).toContain('child sexual abuse and exploitation (CSAE) prevention and compliance');
+    expect(visible.match(/email support@divine\.video\./g)).toHaveLength(2);
+    expect(html.match(/href="mailto:support@divine\.video"/g)).toHaveLength(2);
+    expect(visible.match(/Do not attach or forward suspected child sexual abuse material/g)).toHaveLength(2);
+  });
+
+  it('keeps the period attached to the account-deletion link on the prerendered safety page', () => {
+    // React trims the line break between a multi-line </a> and a following period, but the
+    // prerender copies it into the HTML, where crawlers and no-JS visitors see "works ."
+    const text = prerenderLegalPages()('safety')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ');
+
+    expect(text).toContain('see how account deletion works.');
+  });
+
   it('inserts option values literally and escapes catalog text like React does', () => {
     // String.prototype.replaceAll treats $&, $$ and friends in a replacement
     // string as patterns, and React would escape & < > in text but the prerender

@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { lazy, Suspense } from 'react';
 import { Link, MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ScrollToTop } from './ScrollToTop';
@@ -53,6 +54,40 @@ describe('ScrollToTop', () => {
         scrollY = Number(typeof first === 'number' ? second : first?.top);
       },
     );
+  });
+
+  it.each([
+    { expectedScrolls: 1, description: 'scrolls to contact after the lazy safety route mounts' },
+    { expectedScrolls: 0, description: 'lets the viewer take over before the lazy safety route mounts' },
+  ])('$description', async ({ expectedScrolls }) => {
+    vi.useFakeTimers();
+    try {
+      const scrollToContact = vi.fn();
+      function SafetyContact() {
+        return <section id="contact" ref={(element) => {
+          if (element) element.scrollIntoView = scrollToContact;
+        }}>Contact</section>;
+      }
+      const LazySafetyPage = lazy(() => new Promise<{ default: typeof SafetyContact }>((resolve) => {
+        setTimeout(() => resolve({ default: SafetyContact }), 250);
+      }));
+
+      render(
+        <MemoryRouter initialEntries={['/safety#contact']}>
+          <ScrollToTop />
+          <Suspense fallback={null}>
+            <LazySafetyPage />
+          </Suspense>
+        </MemoryRouter>,
+      );
+
+      if (expectedScrolls === 0) fireEvent.wheel(document.body);
+      await act(async () => vi.advanceTimersByTimeAsync(250));
+      expect(screen.getByText('Contact')).toBeInTheDocument();
+      expect(scrollToContact).toHaveBeenCalledTimes(expectedScrolls);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('scrolls to the top on forward (PUSH) navigation, even with a saved position', () => {

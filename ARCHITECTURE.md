@@ -225,6 +225,10 @@ node scripts/prerender-legal.mjs
 node scripts/verify-well-known.mjs
 ```
 
+The legal prerender shell leaves links marked `text-foreground` in the theme's
+foreground color. The Safety Standards contact links use it with an underline
+so the links remain distinct and readable before and after React loads.
+
 Dev server runs on port 8080 with CORS proxies for `/cdn-proxy`
 (cdn.divine.video) and `/api/moderation` (moderation-api.divine.video).
 Configuration lives in [`vite.config.ts`](./vite.config.ts). Deploy targets are

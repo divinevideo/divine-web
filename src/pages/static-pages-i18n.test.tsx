@@ -84,7 +84,7 @@ describe('static pages i18n', () => {
   });
 
   it('renders safety copy in spanish', () => {
-    render(
+    const { container } = render(
       <MemoryRouter>
         <SafetyPage />
       </MemoryRouter>,
@@ -92,10 +92,20 @@ describe('static pages i18n', () => {
 
     expect(screen.getByRole('heading', { name: 'Normas de seguridad' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '1. Descripción general' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '15. Contacto' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'how account deletion works' })).toHaveAttribute(
       'href',
       '/delete-account',
     );
+    const supportLinks = screen.getAllByRole('link', { name: 'support@divine.video' });
+    expect(supportLinks).toHaveLength(2);
+    for (const link of supportLinks) {
+      expect(link).toHaveAttribute('href', 'mailto:support@divine.video');
+    }
+    // Dropping the {' '} before a link would run "email" into the address for every reader
+    // with JavaScript, while the prerendered page still shows a space.
+    expect(container.textContent?.match(/email support@divine\.video\./g)).toHaveLength(2);
+    expect(screen.getAllByText(/do not attach or forward suspected child sexual abuse material/i)).toHaveLength(2);
   });
 
   it('renders DMCA copy in spanish', () => {
