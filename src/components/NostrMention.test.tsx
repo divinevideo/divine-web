@@ -82,6 +82,17 @@ describe.each(['title', 'description'])('%s profile mentions', (renderer) => {
     }
   });
 
+  it('styles a verified handle without a name as a known account', () => {
+    mocks.metadata = { nip05: '_@alice.divine.video' };
+    render(<Content renderer={renderer} text={NPUB} />);
+    const link = screen.getByRole('link', { name: '@alice.divine.video' });
+    if (renderer === 'title') {
+      expect(link).toHaveAttribute('class', 'hover:underline');
+    } else {
+      expect(link).toHaveClass('text-blue-500');
+    }
+  });
+
   it.each([NPUB, NPROFILE, `nostr:${NPUB}`, `nostr:${NPROFILE}`, `NOSTR:${NPUB.toUpperCase()}`])('resolves bare and prefixed profile formats', (reference) => {
     render(<Content renderer={renderer} text={`hello ${reference}!`} />);
     expect(screen.getByRole('link', { name: '@alice.divine.video' })).toHaveAttribute('href', '/u/alice');
