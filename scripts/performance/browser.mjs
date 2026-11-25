@@ -76,11 +76,13 @@ export function inspectContent(route) {
   const feedMetadata = [...document.querySelectorAll('[data-testid^="video-feed"] .brand-card')].some(card =>
     !card.querySelector('[data-testid="age-restricted-media-placeholder"]') && card.querySelector('video, [data-testid="video-thumbnail"]') &&
     [...card.querySelectorAll('a[href*="/u/"], a[href*="/profile/"]')].some(populated));
+  const searchResult = route.split('?')[0] === '/search' &&
+    [...document.querySelectorAll('main button[aria-label^="Search hashtag #"], main [role="button"][aria-label^="View profile of "]')].some(populated);
   const primary = route.startsWith('/profile/') || route.startsWith('/u/')
     ? [...document.querySelectorAll('[data-testid="profile-header"] h1')].some(populated)
     : route.startsWith('/video/')
       ? [...document.querySelectorAll('video, [data-testid="video-metadata"]')].some(visible)
-      : loadedVideo || thumbnail || feedMetadata || [...document.querySelectorAll('a[href*="/video/"]')].some(populated);
+      : loadedVideo || thumbnail || feedMetadata || searchResult || [...document.querySelectorAll('a[href*="/video/"]')].some(populated);
   const state = window.__publicPerformanceAudit;
   const marker = document.documentElement.dataset.performanceReady;
   const outcome = document.documentElement.dataset.performanceOutcome;

@@ -22,6 +22,7 @@ before(async () => {
     response.end(request.url === '/loading' ? '<h1>Loading</h1><div data-testid="video-skeleton">Loading content</div>'
       : request.url === '/empty' ? '<html data-performance-ready="true" data-performance-outcome="empty"><h1>Empty</h1></html>'
       : request.url === '/overlay' ? '<html data-performance-ready="true" data-performance-outcome="ready"><div role="dialog"><a href="/video/synthetic-item">Sign in</a></div></html>'
+      : request.url === '/search?q=synthetic' ? '<html data-performance-ready="true" data-performance-outcome="ready"><main><h1>Search</h1><button aria-label="Search hashtag #synthetic, 1 video">#synthetic</button></main></html>'
       : request.url === '/video/slow-synthetic' ? '<h1>Synthetic delayed video</h1><video autoplay muted width=320 height=180 onclick="this.pause()"></video><canvas hidden width=320 height=180></canvas><script>const canvas=document.querySelector("canvas");document.querySelector("video").play().catch(()=>{});setInterval(()=>canvas.getContext("2d").fillRect(0,0,320,180),30);setTimeout(()=>{document.querySelector("video").srcObject=canvas.captureStream(30)},6000)</script>'
       : request.url === '/delayed-discovery' ? '<h1>Synthetic discovery</h1><a href="/video/synthetic-item">Video</a><script>setTimeout(()=>{const anchor=document.createElement("a");anchor.href="/u/synthetic-creator";anchor.textContent="Creator";document.body.append(anchor)},800)</script>'
       : request.url === '/buffering-feed' ? '<h1>Synthetic feed</h1><div data-testid="video-feed-popular"><div class="brand-card"><a href="/u/synthetic-creator">Synthetic author</a><video width=320 height=180></video></div></div>'
@@ -55,6 +56,12 @@ test('login overlay links cannot satisfy readiness', async () => {
   const { row } = await auditPage(browser, options(), device, '/overlay', 1);
   assert.ok(row.failures.includes('content-timeout'));
   assert.equal(row.contentReadyMs, null);
+});
+
+test('a search with visible hashtag results can settle without a video', async () => {
+  const { row } = await auditPage(browser, { ...options(), timeoutMs: 2000 }, device, '/search?q=synthetic', 1);
+  assert.deepEqual(row.failures, []);
+  assert.ok(row.contentReadyMs > 0);
 });
 
 test('visible content and actual discovery links produce measurements without leaking identities', async () => {
