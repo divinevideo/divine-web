@@ -8,7 +8,7 @@ The production and PR-preview build workflows read the existing project's public
 
 The [Web page performance dashboard](https://divinevideo.sentry.io/dashboard/10782265/) has route tables for Web Vitals, content readiness and player startup, filtered to production and the last seven days. The built-in Web Vitals dashboard ranks initial page loads by p75 LCP, INP and CLS. Split mobile and desktop, inspect sample counts, and prioritize slow routes with substantial traffic. Good field targets at p75 are LCP ≤2,500 ms, INP ≤200 ms and CLS ≤0.1. Browser support and sampling mean some measurements can be absent. An empty dashboard is a telemetry gap to investigate, not evidence that pages are fast.
 
-React Router instrumentation groups dynamic paths into route templates. New performance span names omit account identifiers, search strings and fragments. Sign-in URL redaction remains active. The trace sample rate remains 30% in production builds.
+React Router instrumentation groups dynamic paths into route templates. New performance span names omit account identifiers, search strings and fragments. Sign-in URL redaction remains active. The trace sample rate remains 30% in production builds. Production session replay remains disabled; development replay, when explicitly enabled, masks text and blocks media.
 
 Two custom operations complement initial-load Web Vitals:
 
