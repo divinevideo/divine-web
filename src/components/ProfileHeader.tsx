@@ -5,7 +5,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { getDivineNip05Info } from '@/lib/nip05Utils';
-import { linkifyProfileBioText, normalizeExternalUrl } from '@/lib/profileBioLinkify';
+import { linkifyProfileBioText } from '@/lib/profileBioLinkify';
+import { getProfileWebsiteLink } from '@/lib/profileWebsite';
 import { OwnSupporterRecognition, PublicSupporterRecognition } from '@/components/SupporterRecognition';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -154,9 +155,7 @@ export function ProfileHeader({
   const userName = metadata?.name;
   const profileImage = getSafeProfileImage(metadata?.picture) || '/user-avatar.png';
   const about = metadata?.about;
-  const website = metadata?.website;
-  const websiteHref = normalizeExternalUrl(website);
-  const websiteLabel = website?.trim();
+  const websiteLink = getProfileWebsiteLink(metadata?.website, pubkey, nip05State === 'valid' ? nip05 : undefined);
   const blockedPubkeys = useBlockedPubkeys();
   const isBlocked = blockedPubkeys.has(pubkey);
   const blockUser = useBlockUser();
@@ -316,12 +315,12 @@ export function ProfileHeader({
               </div>
 
               {/* Website */}
-              {websiteLabel && websiteHref && (
+              {websiteLink && (
                 <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                   <Badge variant="outline" className="text-xs max-w-full">
-                    <a href={websiteHref} target="_blank" rel="noopener noreferrer" className="hover:underline inline-flex items-center gap-1 break-all">
+                    <a href={websiteLink.href} target="_blank" rel="noopener noreferrer" className="hover:underline inline-flex items-center gap-1 break-all">
                       <Link2 className="h-3 w-3 shrink-0" />
-                      {websiteLabel}
+                      {websiteLink.label}
                     </a>
                   </Badge>
                 </div>
