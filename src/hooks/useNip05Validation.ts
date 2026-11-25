@@ -31,9 +31,10 @@ export function useNip05Validation(
   });
 
   // Determine validation state
-  const isValid = !!pubkey && query.data === pubkey.toLowerCase();
-  const isInvalid = query.isFetched && !isValid;
-  const isLoading = query.isLoading;
+  const hasFreshResult = !!nip05 && !!pubkey && query.isSuccess && !query.isStale;
+  const isValid = hasFreshResult && query.data === pubkey.toLowerCase();
+  const isInvalid = hasFreshResult && !isValid;
+  const isLoading = query.isLoading || (query.isFetching && !hasFreshResult);
 
   let state: ValidationState = 'idle';
   if (!nip05) {

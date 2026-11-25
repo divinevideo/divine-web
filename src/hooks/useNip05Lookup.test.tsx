@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 
 import { useNip05Pubkey } from '@/hooks/useNip05Pubkey';
 import { useNip05Validation } from '@/hooks/useNip05Validation';
+import { NIP05_STALE_TIME_MS, nip05QueryOptions } from '@/lib/nip05Query';
 
 const PUBKEY = 'a'.repeat(64);
 function createWrapper() {
@@ -44,6 +45,22 @@ describe('shared NIP-05 lookup', () => {
     await result.current.resolution.refetch();
     await waitFor(() => expect(result.current.validation.isValid).toBe(true));
     expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['server error', 'offline'])('stops validating an expired mapping after a refresh fails: %s', async (failure) => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const options = nip05QueryOptions('alice@example.com');
+    client.setQueryData(options.queryKey, PUBKEY, { updatedAt: Date.now() - NIP05_STALE_TIME_MS - 1000 });
+    vi.stubGlobal('fetch', failure === 'offline'
+      ? vi.fn().mockRejectedValue(new TypeError('offline'))
+      : vi.fn().mockResolvedValue({ ok: false, status: 503 }));
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    const { result } = renderHook(() => useNip05Validation('alice@example.com', PUBKEY), { wrapper });
+    await waitFor(() => expect(client.getQueryState(options.queryKey)?.status).toBe('error'));
+    await waitFor(() => expect(result.current.isValid).toBe(false));
+    expect(result.current.isInvalid).toBe(false);
+    expect(result.current.state).toBe('idle');
   });
 
   it('keeps the shared lookup alive when one observer unmounts', async () => {
