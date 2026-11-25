@@ -223,18 +223,28 @@ export async function auditNavigation(browser, options, device) {
     if ((await source.jsonValue()).outcome !== 'ready') { row.failures.push('source-content-missing'); return row; }
     const { video } = await waitForRoutes(page, options.origin, sourceDeadline, ['video']);
     if (!video) { row.failures.push('discovery-link-missing'); return row; }
-    const index = await page.locator('a[href]').evaluateAll((elements, path) => elements.findIndex(element => new URL(element.href).pathname === path), video);
+    const links = page.locator('a[href]');
+    const destination = { origin: options.origin, path: video };
+    const index = await links.evaluateAll((elements, { origin, path }) =>
+      elements.findIndex(element => element.origin === origin && element.pathname === path), destination);
+    if (index === -1) { row.failures.push('discovery-link-missing'); return row; }
     const deadline = Date.now() + options.timeoutMs;
-    const timeOrigin = await page.evaluate(path => {
+    const timeOrigin = await page.evaluate(({ origin, path }) => {
       const state = window.__publicPerformanceAudit;
       state.stop();
-      state.startedAt = performance.now();
-      state.playbackPath = path;
-      state.firstAdvancingVideoMs = null;
-      state.contentReadyMs = null;
+      const start = event => {
+        const link = event.target.closest?.('a[href]');
+        if (link?.origin !== origin || link.pathname !== path) return;
+        state.startedAt = event.timeStamp;
+        state.playbackPath = path;
+        state.firstAdvancingVideoMs = null;
+        state.contentReadyMs = null;
+        document.removeEventListener('click', start, true);
+      };
+      document.addEventListener('click', start, true);
       return performance.timeOrigin;
-    }, video);
-    await page.locator('a[href]').nth(index).click({ timeout: Math.max(1, deadline - Date.now()) });
+    }, destination);
+    await links.nth(index).click({ timeout: Math.max(1, deadline - Date.now()) });
     await page.waitForFunction(path => location.pathname === path, video, { timeout: Math.max(1, deadline - Date.now()) });
     if (await page.evaluate(() => performance.timeOrigin) !== timeOrigin) {
       row.failures.push('internal-link-hard-reloaded');

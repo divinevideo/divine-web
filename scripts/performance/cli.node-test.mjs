@@ -14,6 +14,7 @@ async function runFixture(emptyPopular = false) {
     const empty = emptyPopular && request.url === '/popular';
     response.end(`<!doctype html><html data-performance-ready="true" data-performance-outcome="${empty ? 'empty' : 'ready'}"><body>
       <h1>Synthetic public fixture</h1>
+      ${request.url === '/discovery' ? '<a href="https://example.invalid/video/synthetic-item">External video</a>' : ''}
       ${empty ? '' : '<a href="/video/synthetic-item">Watch synthetic content</a><a href="/u/synthetic-creator">Synthetic profile</a><div data-testid="profile-header"><h1>Synthetic creator</h1></div>'}
       <video autoplay muted playsinline width="320" height="180"></video><canvas hidden width="320" height="180"></canvas>
       <script>
@@ -25,6 +26,7 @@ async function runFixture(emptyPopular = false) {
           const anchor = event.target.closest('a');
           if (!anchor || !anchor.pathname.startsWith('/video/')) return;
           event.preventDefault();
+          if (anchor.origin !== location.origin) return;
           document.documentElement.dataset.performanceReady = 'false';
           history.pushState(null, '', anchor.pathname);
           document.querySelector('video').remove();
