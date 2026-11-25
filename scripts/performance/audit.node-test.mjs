@@ -1,6 +1,30 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { runInNewContext } from 'node:vm';
+import { installObservers } from './browser.mjs';
 import { percentile, summarize, normalizeRoute, redactRequest, outcomeFailure, parseOptions, isExpectedRoute } from './report.mjs';
+
+test('CLS measures its first session window from the first layout shift', () => {
+  let deliverShifts;
+  class LayoutShiftObserver {
+    static supportedEntryTypes = ['layout-shift'];
+
+    constructor(callback) {
+      deliverShifts = entries => callback({ getEntries: () => entries });
+    }
+
+    observe() {}
+  }
+  const window = {};
+  runInNewContext(`(${installObservers})()`, {
+    window,
+    PerformanceObserver: LayoutShiftObserver,
+    requestAnimationFrame() {},
+  });
+
+  deliverShifts([900, 1800, 2700, 3600, 4500, 5400].map(startTime => ({ startTime, value: 0.02 })));
+  assert.equal(Number(window.__publicPerformanceAudit.cls.toFixed(2)), 0.12);
+});
 
 test('p75 uses nearest rank on measured samples only', () => {
   assert.equal(percentile([1000, 4000, 2000, 3000], 0.75), 3000);

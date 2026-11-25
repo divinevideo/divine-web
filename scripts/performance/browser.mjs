@@ -11,7 +11,7 @@ export function installObservers() {
     observer.observe({ type, buffered: true });
     observers.push(observer);
   };
-  let windowStart = 0;
+  let windowStart;
   let previousShift = 0;
   let windowScore = 0;
   observe('largest-contentful-paint', entries => { state.lcpMs = entries.at(-1).startTime; });
@@ -19,7 +19,7 @@ export function installObservers() {
   observe('layout-shift', entries => {
     for (const entry of entries) {
       if (entry.hadRecentInput) continue;
-      if (entry.startTime - previousShift > 1000 || entry.startTime - windowStart > 5000) {
+      if (windowStart === undefined || entry.startTime - previousShift >= 1000 || entry.startTime - windowStart >= 5000) {
         windowStart = entry.startTime;
         windowScore = 0;
       }
