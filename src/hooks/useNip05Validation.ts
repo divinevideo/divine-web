@@ -30,11 +30,16 @@ export function useNip05Validation(
     enabled: !!nip05 && !!pubkey,
   });
 
-  // Determine validation state
-  const hasFreshResult = !!nip05 && !!pubkey && query.isSuccess && !query.isStale;
-  const isValid = hasFreshResult && query.data === pubkey.toLowerCase();
-  const isInvalid = hasFreshResult && !isValid;
-  const isLoading = query.isLoading || (query.isFetching && !hasFreshResult);
+  // Determine validation state. A cached mapping keeps its verdict while it is
+  // only stale; it loses it while stale data is being re-verified (so a pending
+  // refresh never shows a stale verdict) and after a refresh fails (a failed
+  // refetch leaves the query unsuccessful even though the old data is
+  // retained), so an expired mapping cannot stay verified through a failure.
+  const revalidating = query.isFetching && query.isStale;
+  const hasVerifiedResult = !!nip05 && !!pubkey && query.isSuccess && !revalidating;
+  const isValid = hasVerifiedResult && query.data === pubkey.toLowerCase();
+  const isInvalid = hasVerifiedResult && !isValid;
+  const isLoading = query.isLoading || (query.isFetching && !hasVerifiedResult);
 
   let state: ValidationState = 'idle';
   if (!nip05) {

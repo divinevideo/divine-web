@@ -63,6 +63,37 @@ describe('shared NIP-05 lookup', () => {
     expect(result.current.state).toBe('idle');
   });
 
+  it('keeps a stale verified mapping verified while nothing refreshes it', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const options = nip05QueryOptions('alice@example.com');
+    // Fresh now, stale in 300 ms: the observer must keep the verdict when the
+    // staleTime boundary passes with no refetch in flight.
+    client.setQueryData(options.queryKey, PUBKEY, { updatedAt: Date.now() - NIP05_STALE_TIME_MS + 300 });
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    const { result } = renderHook(() => useNip05Validation('alice@example.com', PUBKEY), { wrapper });
+    expect(result.current.state).toBe('valid');
+    await new Promise(resolve => setTimeout(resolve, 800));
+    expect(result.current.isValid).toBe(true);
+    expect(result.current.state).toBe('valid');
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('does not verify while a refresh of stale data is in flight', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const options = nip05QueryOptions('alice@example.com');
+    client.setQueryData(options.queryKey, PUBKEY, { updatedAt: Date.now() - NIP05_STALE_TIME_MS - 1000 });
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    const { result } = renderHook(() => useNip05Validation('alice@example.com', PUBKEY), { wrapper });
+    await waitFor(() => expect(result.current.state).toBe('loading'));
+    expect(result.current.isValid).toBe(false);
+    expect(result.current.isInvalid).toBe(false);
+  });
+
   it('keeps the shared lookup alive when one observer unmounts', async () => {
     let respond!: (response: unknown) => void;
     let signal: AbortSignal | undefined;
