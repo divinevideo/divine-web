@@ -8,9 +8,10 @@ import { cn } from '@/lib/utils';
 
 interface NostrMentionProps {
   pubkey: string;
+  variant?: 'inline' | 'title';
 }
 
-export function NostrMention({ pubkey }: NostrMentionProps) {
+export function NostrMention({ pubkey, variant = 'inline' }: NostrMentionProps) {
   const author = useAuthor(pubkey);
   const metadata = author.data?.metadata;
   // Pass nip05 as published, like every other profile link, so they share one validation.
@@ -28,8 +29,11 @@ export function NostrMention({ pubkey }: NostrMentionProps) {
       to={profilePath}
       ownerPubkey={pubkey}
       className={cn(
-        'font-medium hover:underline',
-        hasIdentity ? 'text-blue-500' : 'text-gray-500 hover:text-gray-700',
+        'hover:underline',
+        variant === 'inline' && [
+          'font-medium',
+          hasIdentity ? 'text-blue-500' : 'text-gray-500 hover:text-gray-700',
+        ],
       )}
     >
       {label}

@@ -60,6 +60,17 @@ describe.each(['title', 'description'])('%s profile mentions', (renderer) => {
     expect(screen.getByRole('link', { name: label })).toHaveAttribute('href', path);
   });
 
+  it('preserves the surrounding text style for title mentions', () => {
+    render(<Content renderer={renderer} text={NPUB} />);
+    const link = screen.getByRole('link', { name: '@alice.divine.video' });
+    if (renderer === 'title') {
+      expect(link).not.toHaveClass('font-medium');
+      expect(link).not.toHaveClass('text-blue-500');
+    } else {
+      expect(link).toHaveClass('font-medium', 'text-blue-500');
+    }
+  });
+
   it.each([NPUB, NPROFILE, `nostr:${NPUB}`, `nostr:${NPROFILE}`, `NOSTR:${NPUB.toUpperCase()}`])('resolves bare and prefixed profile formats', (reference) => {
     render(<Content renderer={renderer} text={`hello ${reference}!`} />);
     expect(screen.getByRole('link', { name: '@alice.divine.video' })).toHaveAttribute('href', '/u/alice');

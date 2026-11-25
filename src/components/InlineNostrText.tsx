@@ -46,7 +46,7 @@ export function InlineNostrText({ text, textLinkTo, textLinkOwnerPubkey, textLin
   return (
     <>
       {parts.map((part, index) => {
-        if (part.kind === 'mention') return <NostrMention key={index} pubkey={part.pubkey} />;
+        if (part.kind === 'mention') return <NostrMention key={index} pubkey={part.pubkey} variant="title" />;
         if (!textLinkTo || part.text.trim() === '') return <span key={index}>{part.text}</span>;
         return (
           <SmartLink key={index} to={textLinkTo} ownerPubkey={textLinkOwnerPubkey} className={textLinkClassName}>
