@@ -14,15 +14,24 @@ describe('performance route grouping', () => {
     ['/unrecognized/private/value', '/:unmatched'],
     ['/privacy', '/privacy'],
     ['/u/:userId', '/u/:userId'],
+    ['//', '/'],
+    ['//video/synthetic', '/:unmatched'],
   ])('groups %s without identifiers', (input, expected) => {
     expect(getPerformanceRoute(input)).toBe(expected);
   });
 
-  it('gives every AppRouter route its own template rather than a catch-all', () => {
+  it('gives every AppRouter route its expected performance template', () => {
     const source = readFileSync(resolve('src/AppRouter.tsx'), 'utf8').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
     const paths = [...source.matchAll(/\bpath="([^"]+)"/g)].map(([, path]) => path)
       .filter(path => path !== '*' && path !== '/:nip19');
     expect(paths.length).toBeGreaterThan(50);
-    expect(paths.filter(path => ['/:nip19', '/:unmatched'].includes(getPerformanceRoute(path)))).toEqual([]);
+    const groupedPaths: Record<string, string> = {
+      '/discovery/new': '/discovery/:tab',
+      '/family/talking-to-your-teen': '/family/:page',
+      '/family/media-plan': '/family/:page',
+      '/family/when-something-goes-wrong': '/family/:page',
+      '/family/safety-tools': '/family/:page',
+    };
+    expect(paths.map(getPerformanceRoute)).toEqual(paths.map(path => groupedPaths[path] ?? path));
   });
 });

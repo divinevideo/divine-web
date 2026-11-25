@@ -1,4 +1,4 @@
-import { matchPath } from 'react-router-dom';
+import { matchPath, parsePath } from 'react-router-dom';
 
 const routes = [
   '/', '/discovery', '/discovery/:tab', '/trending', '/popular', '/hashtags',
@@ -18,7 +18,9 @@ const routes = [
 ];
 
 export function getPerformanceRoute(value: string): string {
-  const pathname = new URL(value, 'https://divine.video').pathname;
+  const pathname = value.startsWith('/')
+    ? parsePath(value).pathname ?? '/'
+    : new URL(value, 'https://divine.video').pathname;
   return routes.find(path => matchPath({ path, end: true }, pathname)) ?? '/:unmatched';
 }
 
