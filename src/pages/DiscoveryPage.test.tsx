@@ -1,9 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Tag } from '@phosphor-icons/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/config';
 import { initializeI18n } from '@/lib/i18n';
+import { PagePerformanceProvider } from '@/components/PagePerformanceProvider';
+import { usePageContentReady } from '@/hooks/usePageContentReady';
 import DiscoveryPage from './DiscoveryPage';
 import type { CategoryWithConfig } from '@/hooks/useCategories';
 import type { ResolvedFeaturedTab } from '@/types/featuredTabs';
@@ -92,6 +94,7 @@ vi.mock('@/components/DiscoverySeo', () => ({
 
 vi.mock('@/components/VideoFeed', () => ({
   VideoFeed: ({ feedType, featuredTabId }: { feedType: string; featuredTabId?: string }) => {
+    usePageContentReady(feedType === 'classics' ? 'empty' : 'ready');
     const message = feedType === 'featured' && mockFeaturedFeedState.current !== 'normal'
       ? mockFeaturedFeedState.current
       : null;
@@ -139,6 +142,35 @@ describe('DiscoveryPage', () => {
     mockFeaturedApiUrl.current = 'https://api.divine.video';
     mockFeaturedFeedState.current = 'normal';
     mockUseFeaturedTabArgs.length = 0;
+  });
+
+  it('reports readiness for the destination tab on browser back', () => {
+    function BackButton() {
+      const navigate = useNavigate();
+      return <button onClick={() => navigate(-1)}>Back</button>;
+    }
+
+    vi.useFakeTimers();
+    try {
+      render(
+        <MemoryRouter initialEntries={['/discovery/classics', '/discovery/hot']}>
+          <PagePerformanceProvider>
+            <BackButton />
+            <Routes>
+              <Route path="/discovery/:tab" element={<DiscoveryPage />} />
+            </Routes>
+          </PagePerformanceProvider>
+        </MemoryRouter>,
+      );
+      act(() => vi.advanceTimersByTime(40));
+      expect(document.documentElement.dataset.performanceOutcome).toBe('ready');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+      act(() => vi.advanceTimersByTime(40));
+      expect(document.documentElement.dataset.performanceOutcome).toBe('empty');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('renders localized discovery copy and category pills', () => {
