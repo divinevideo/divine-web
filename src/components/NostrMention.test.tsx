@@ -64,20 +64,19 @@ describe.each(['title', 'description'])('%s profile mentions', (renderer) => {
     render(<Content renderer={renderer} text={NPUB} />);
     const link = screen.getByRole('link', { name: '@alice.divine.video' });
     if (renderer === 'title') {
-      expect(link).not.toHaveClass('font-medium');
-      expect(link).not.toHaveClass('text-blue-500');
+      expect(link).toHaveAttribute('class', 'hover:underline');
     } else {
       expect(link).toHaveClass('font-medium', 'text-blue-500');
     }
   });
 
-  it('keeps the heading color for title mentions of unnamed accounts', () => {
+  it('keeps the heading style for title mentions of unnamed accounts', () => {
     mocks.metadata = {};
     mocks.validationState = 'idle';
     render(<Content renderer={renderer} text={NPUB} />);
     const link = screen.getByRole('link', { name: `@${genUserName(PUBKEY)}` });
     if (renderer === 'title') {
-      expect(link).not.toHaveClass('text-gray-500');
+      expect(link).toHaveAttribute('class', 'hover:underline');
     } else {
       expect(link).toHaveClass('text-gray-500');
     }
