@@ -166,6 +166,7 @@ for (const width of [320, 360, 390, 1505]) {
       }));
       expect(overhang.every((pixels) => Math.round(pixels) <= 0)).toBe(true);
       for (const card of await cards.all()) {
+        await card.scrollIntoViewIfNeeded();
         await expect(card.locator('video')).toHaveJSProperty('readyState', 4);
         await expect(card.getByRole('button', { name: 'Unmute', exact: true }).getByText('Unmute')).toBeVisible();
         await expectControlsFit(card);
@@ -292,7 +293,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
     await expect(button).toBeVisible();
     await button.scrollIntoViewIfNeeded();
     const videos = page.locator('main .brand-card video');
-    for (const video of await videos.all()) await expect(video).toHaveJSProperty('readyState', 4);
+    for (const video of await videos.all()) {
+      await video.scrollIntoViewIfNeeded();
+      await expect(video).toHaveJSProperty('readyState', 4);
+    }
     // Axe cannot read a color from a video frame, so over live media it files the label
     // under incomplete and never reports a violation. Hide every layer behind the
     // controls and paint the brightest possible frame, the worst case for white text.
