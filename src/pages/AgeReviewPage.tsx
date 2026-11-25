@@ -247,10 +247,12 @@ export function AgeReviewPage() {
                 <span>A note on privacy</span>
               </div>
               <p>
-                Only Divine's Support and Trust &amp; Safety teams see your
-                video, and they use it only to check your age. It is never
-                published on Divine and never shared with other users. We keep
-                it no longer than we need to.
+                Divine's Support and Trust &amp; Safety teams handle your video.
+                We use your video only to review your account, keep people safe,
+                and meet legal and compliance requirements. It is never published
+                on Divine and never shared with other users. We keep it only as
+                long as needed for those purposes, unless the law requires or
+                allows us to keep it longer.
               </p>
               <details className="mt-2 text-sm">
                 <summary className="cursor-pointer underline underline-offset-2">

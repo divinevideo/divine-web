@@ -343,8 +343,9 @@ export function KidsPolicyPage() {
               <p className="text-sm text-muted-foreground pt-1">
                 Phone-camera quality is fine. There's no script, and natural is
                 better. Keep it short, and please don't send more than we ask for.
-                We are only checking age, permission, and that a parent or guardian
-                knows about the account.
+                We check age, permission, and that a parent or guardian knows
+                about the account. We use your video only to review your account,
+                keep people safe, and meet legal and compliance requirements.
               </p>
               <details className="mt-2 text-sm">
                 <summary className="cursor-pointer underline underline-offset-2">

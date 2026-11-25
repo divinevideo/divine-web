@@ -6,6 +6,21 @@ import { TestApp } from "@/test/TestApp";
 import { AgeReviewPage } from "./AgeReviewPage";
 
 describe("AgeReviewPage", () => {
+  it("explains every permitted video use without opening the policy details", () => {
+    render(
+      <TestApp>
+        <AgeReviewPage />
+      </TestApp>
+    );
+
+    const summary = screen.getByText(/we use your video only to review your account/i);
+
+    expect(summary.closest("details")).toBeNull();
+    expect(summary).toHaveTextContent(/keep people safe/i);
+    expect(summary).toHaveTextContent(/legal and compliance requirements/i);
+    expect(screen.queryByText(/use it only to check your age|we are only checking age/i)).not.toBeInTheDocument();
+  });
+
   it("tells the reader directly what happens to their account", () => {
     render(
       <TestApp>
