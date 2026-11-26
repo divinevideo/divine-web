@@ -248,13 +248,24 @@ describe('Sentry setup keeps the sign-in code out of what it sends', () => {
 });
 
 
-it('uses the configured DSN and separates preview from production telemetry', () => {
+it('disables preview telemetry even if a DSN is configured', () => {
+  sentryMock.init.mockClear();
   vi.stubEnv('VITE_SENTRY_DEV_ENABLED', 'true');
   vi.stubEnv('VITE_SENTRY_DSN', 'https://public@example.invalid/1');
   vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'preview');
   initializeSentry();
-  expect(sentryMock.init).toHaveBeenLastCalledWith(expect.objectContaining({
-    dsn: 'https://public@example.invalid/1', environment: 'preview',
+  expect(sentryMock.init).not.toHaveBeenCalled();
+  vi.unstubAllEnvs();
+});
+
+it('keeps error reporting enabled but disables performance tracing on other production hosts', () => {
+  sentryMock.init.mockClear();
+  vi.stubEnv('DEV', false);
+  vi.stubEnv('VITE_SENTRY_DSN', 'https://public@example.invalid/1');
+  vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'production');
+  initializeSentry();
+  expect(sentryMock.init).toHaveBeenCalledWith(expect.objectContaining({
+    environment: 'production', tracesSampleRate: 0, tracePropagationTargets: [],
   }));
   vi.unstubAllEnvs();
 });

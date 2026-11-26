@@ -13,6 +13,7 @@ import {
   shouldDropFunnelcakeHttpClientEvent,
   shouldDropHandledMediaHttpClientEvent,
 } from '@/lib/sentryHttpClientFilter';
+import { makeSentryPerformanceTransport } from '@/lib/sentryPerformanceTransport';
 
 const BENIGN_SUBTITLE_VTT_STATUS_CODES = new Set([404, 410, 422]);
 
@@ -194,21 +195,25 @@ export function initializeSentry() {
   }
 
   const dsn = import.meta.env.VITE_SENTRY_DSN?.trim();
-  if (!dsn) {
+  const environment = import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE;
+  if (!dsn || environment === 'preview') {
     return;
   }
+  const sendPerformance = isDev || ['divine.video', 'www.divine.video'].includes(window.location.hostname);
 
   Sentry.init({
     dsn,
+    transport: options => makeSentryPerformanceTransport(options, sendPerformance),
 
     // Environment tagging
-    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
+    environment,
 
     // Release tracking - uses build time as version
     release: `divine-web@${__BUILD_DATE__}`,
 
     // Performance monitoring
-    tracesSampleRate: isDev ? 1.0 : 0.3, // 30% in production (small app benefits from more data)
+    tracesSampleRate: sendPerformance ? (isDev ? 1.0 : 0.3) : 0,
+    tracePropagationTargets: [],
 
     // Session replay for debugging: keep off in production until private surfaces
     // (DMs, settings, age review) have explicit unmasking policies, and default to

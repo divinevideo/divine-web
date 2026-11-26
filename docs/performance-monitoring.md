@@ -4,11 +4,11 @@ Use real visitor measurements to rank problems and the public-site audit to repr
 
 ## Real visitors: Sentry
 
-The production and PR-preview build workflows read the existing project's public client DSN from the repository variable `VITE_SENTRY_DSN`. This is an ingestion address, not an API auth token. No private Sentry token is included in browser builds. Set `VITE_SENTRY_ENVIRONMENT` to `production` or `preview` to keep their measurements separate. Other build surfaces must supply the same environment variables. Development remains disabled unless `VITE_SENTRY_DEV_ENABLED` is enabled.
+The production workflow reads the public client DSN from `VITE_SENTRY_DSN` and uses the `production` environment. PR previews use the browser audit with Sentry disabled. Development requires both a DSN and `VITE_SENTRY_DEV_ENABLED`.
 
 The [Web page performance dashboard](https://divinevideo.sentry.io/dashboard/10782265/) has route tables for Web Vitals, content readiness and player startup, filtered to production and the last seven days. The built-in Web Vitals dashboard ranks initial page loads by p75 LCP, INP and CLS. Split mobile and desktop, inspect sample counts, and prioritize slow routes with substantial traffic. Good field targets at p75 are LCP ≤2,500 ms, INP ≤200 ms and CLS ≤0.1. Browser support and sampling mean some measurements can be absent. An empty dashboard is a telemetry gap to investigate, not evidence that pages are fast.
 
-React Router instrumentation groups dynamic paths into route templates. New performance span names omit account identifiers, search strings and fragments. Sign-in URL redaction remains active. The trace sample rate remains 30% in production builds. Production session replay remains disabled; development replay, when explicitly enabled, masks text and blocks media.
+React Router instrumentation groups dynamic paths into route templates. The Sentry transport sends those templates, timings, outcomes, and the browser user agent for device classification. It drops captured URLs, referrers, breadcrumbs, user context, element descriptions, and attachments from performance envelopes. Production samples 30% of traces on `divine.video` and `www.divine.video`. The browser includes the page origin with cross-origin uploads, so performance uploads are disabled on personal subdomains. Production session replay is disabled. When explicitly enabled, development replay masks text and blocks media.
 
 Two custom operations complement initial-load Web Vitals:
 
@@ -35,8 +35,8 @@ LCP/CLS are bounded observations, not full-session field metrics; small lab samp
 
 1. Identify the slow route/device combination and its sample count.
 2. Compare initial LCP with content readiness and video startup. A fast shell can hide a slow feed.
-3. Inspect its trace for document TTFB, identity/API queuing, media loading and long tasks.
+3. Inspect its trace for document TTFB, request timing, media loading and long tasks. Use the browser audit when the specific resource matters.
 4. Reproduce with the browser audit, including cold contexts and in-app navigation.
-5. Compare equivalent builds under the same conditions. Keep production data and preview results separate.
+5. Compare equivalent builds under the same conditions.
 
 References: [Sentry Web Vitals](https://docs.sentry.io/product/dashboards/sentry-dashboards/frontend/web-vitals/), [React Router tracing](https://docs.sentry.io/platforms/javascript/guides/react/features/react-router/v6/), [Core Web Vitals targets](https://web.dev/articles/vitals).
