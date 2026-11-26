@@ -17,12 +17,19 @@ function Page({ ready = false, outcome = 'ready' }: { ready?: boolean; outcome?:
   return <MemoryRouter initialEntries={['/u/synthetic']}><PagePerformanceProvider><Content ready={ready} outcome={outcome} /></PagePerformanceProvider></MemoryRouter>;
 }
 
+function attachVideo(bounds = new DOMRect(0, 0, 200, 200)) {
+  const video = document.createElement('video');
+  vi.spyOn(video, 'getBoundingClientRect').mockReturnValue(bounds);
+  document.body.append(video);
+  return video;
+}
+
 beforeEach(() => {
   vi.useFakeTimers();
   spans.length = 0;
   startSpan.mockImplementation(() => { const span = { end: vi.fn(), setStatus: vi.fn(), setAttribute: vi.fn() }; spans.push(span); return span; });
 });
-afterEach(() => { vi.useRealTimers(); vi.clearAllMocks(); });
+afterEach(() => { vi.useRealTimers(); vi.clearAllMocks(); vi.restoreAllMocks(); });
 
 describe('page content readiness', () => {
   it('waits for primary data and a paint before marking ready, once', () => {
@@ -69,14 +76,48 @@ describe('page content readiness', () => {
 
 it('measures play intent until playing separately from content readiness', () => {
   render(<Page ready />);
-  const video = document.createElement('video');
-  vi.spyOn(video, 'getBoundingClientRect').mockReturnValue({ width: 200, height: 200, bottom: 200, top: 0 } as DOMRect);
-  document.body.append(video);
+  const video = attachVideo();
   fireEvent.play(video);
   expect(spans).toHaveLength(2);
   expect(startSpan).toHaveBeenLastCalledWith(expect.objectContaining({ name: '/u/:userId', op: 'ui.video.start' }));
   expect(spans[1].end).not.toHaveBeenCalled();
   fireEvent.playing(video);
+  expect(spans[1].end).toHaveBeenCalledOnce();
+  video.remove();
+});
+
+it('ignores playback starting outside the viewport or in a background tab', () => {
+  render(<Page />);
+  const offscreen = attachVideo(new DOMRect(-200, 0, 200, 200));
+  fireEvent.play(offscreen);
+  offscreen.remove();
+  const video = attachVideo();
+  const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+  fireEvent.play(video);
+  expect(spans).toHaveLength(1);
+  visibility.mockReturnValue('visible');
+  fireEvent.play(video);
+  expect(spans).toHaveLength(2);
+  video.remove();
+});
+
+it.each([false, true])('cancels video timing when the tab is hidden (frame pending: %s)', (framePending) => {
+  render(<Page />);
+  const video = attachVideo();
+  const request = vi.fn(() => 7);
+  const cancel = vi.fn();
+  Object.assign(video, { requestVideoFrameCallback: request, cancelVideoFrameCallback: cancel });
+  fireEvent.play(video);
+  if (framePending) fireEvent.playing(video);
+
+  const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+  fireEvent(document, new Event('visibilitychange'));
+  expect(spans[1].setAttribute).toHaveBeenCalledWith('playback.outcome', 'cancelled');
+  if (framePending) expect(cancel).toHaveBeenCalledWith(7);
+  visibility.mockReturnValue('visible');
+  fireEvent.playing(video);
+  act(() => vi.advanceTimersByTime(30_001));
+  expect(request).toHaveBeenCalledTimes(framePending ? 1 : 0);
   expect(spans[1].end).toHaveBeenCalledOnce();
   video.remove();
 });
@@ -102,12 +143,10 @@ it('does not time a route that opens in a background tab', () => {
 
 it('waits for a presented video frame and cancels its callback on unmount', () => {
   const view = render(<Page />);
-  const video = document.createElement('video');
-  vi.spyOn(video, 'getBoundingClientRect').mockReturnValue({ width: 200, height: 200, bottom: 200, top: 0 } as DOMRect);
+  const video = attachVideo();
   const request = vi.fn(() => 7);
   const cancel = vi.fn();
   Object.assign(video, { requestVideoFrameCallback: request, cancelVideoFrameCallback: cancel });
-  document.body.append(video);
   fireEvent.play(video);
   fireEvent.playing(video);
   expect(request).toHaveBeenCalledOnce();
