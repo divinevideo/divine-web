@@ -6,6 +6,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { nip19 } from 'nostr-tools';
+import type { NostrMetadata } from '@nostrify/nostrify';
 import { useHead, useSeoMeta } from '@unhead/react';
 import { feedUrls } from '@/lib/feedUrls';
 import { useRssFeedAvailable } from '@/hooks/useRssFeedAvailable';
@@ -48,7 +49,7 @@ import { buildProfileStats } from '@/lib/profileStats';
 import { buildProfileLinkPath } from '@/lib/profileLinks';
 import type { SortMode } from '@/types/nostr';
 
-export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}) {
+export function ProfilePage({ pubkeyOverride, initialMetadata }: { pubkeyOverride?: string; initialMetadata?: NostrMetadata } = {}) {
   const { t } = useTranslation();
   const { npub, nip19: nip19Param } = useParams<{ npub?: string; nip19?: string }>();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -105,7 +106,7 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
   const { data: funnelcakeProfile, isLoading: funnelcakeLoading } = useFunnelcakeProfile(pubkey || '', !!pubkey);
 
   // Fetch profile data from Nostr relays (slower, but more authoritative)
-  const { data: authorData, isLoading: authorLoading } = useAuthor(pubkey || '');
+  const { data: authorData, isLoading: authorLoading } = useAuthor(pubkey || '', { initialMetadata });
 
   // Fetch videos for profile using Funnelcake (fast, includes cached author data)
   const {
@@ -544,6 +545,7 @@ export function ProfilePage({ pubkeyOverride }: { pubkeyOverride?: string } = {}
               }
             >
               <VideoGrid
+                prioritizeFirstThumbnail
                 videos={videos || []}
                 onLoadMore={hasNextPage ? () => void fetchNextPage() : undefined}
                 isLoadingMore={isFetchingNextPage}

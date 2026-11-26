@@ -74,6 +74,19 @@ describe('VideoGrid age-restricted gating', () => {
     vi.restoreAllMocks();
   });
 
+  it('prioritizes the first accessible profile thumbnail and leaves later images lazy', () => {
+    renderGrid(<VideoGrid prioritizeFirstThumbnail videos={[
+      makeVideo({ id: 'restricted', ageRestricted: true }),
+      makeVideo({ id: 'first-visible' }),
+      makeVideo({ id: 'later' }),
+    ]} />);
+    expect(screen.getByTestId('video-thumbnail-first-visible')).toHaveAttribute('loading', 'eager');
+    expect(screen.getByTestId('video-thumbnail-first-visible')).toHaveAttribute('fetchpriority', 'high');
+    expect(screen.getByTestId('video-thumbnail-later')).toHaveAttribute('loading', 'lazy');
+    expect(screen.getByTestId('video-thumbnail-later')).not.toHaveAttribute('fetchpriority', 'high');
+    expect(screen.queryByTestId('video-thumbnail-restricted')).not.toBeInTheDocument();
+  });
+
   it('renders a logged-out gated tile without mounting restricted media elements', () => {
     renderGrid(
       <VideoGrid

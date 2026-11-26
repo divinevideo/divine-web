@@ -1,7 +1,7 @@
 // ABOUTME: Tests for divine.video NIP-05 utility functions
 
 import { describe, it, expect } from 'vitest';
-import { isDivineNip05, getDivineNip05Info } from '../nip05Utils';
+import { isDivineNip05, getDivineNip05Info, formatNip05Label } from '../nip05Utils';
 
 describe('isDivineNip05', () => {
   it('returns true for _@username.divine.video', () => {
@@ -84,5 +84,16 @@ describe('getDivineNip05Info', () => {
 
   it('returns null for nested subdomains like _@a.b.divine.video', () => {
     expect(getDivineNip05Info('_@a.b.divine.video')).toBeNull();
+  });
+});
+
+describe('formatNip05Label', () => {
+  it.each([
+    ['_@alice.divine.video', '@alice.divine.video'],
+    ['alice@divine.video', '@alice.divine.video'],
+    ['alice@example.com', '@alice@example.com'],
+    ['_@example.com', '@example.com'],
+  ])('formats %s as %s', (nip05, label) => {
+    expect(formatNip05Label(nip05)).toBe(label);
   });
 });

@@ -225,6 +225,10 @@ node scripts/prerender-legal.mjs
 node scripts/verify-well-known.mjs
 ```
 
+The legal prerender shell leaves links marked `text-foreground` in the theme's
+foreground color. The Safety Standards contact links use it with an underline
+so the links remain distinct and readable before and after React loads.
+
 Dev server runs on port 8080 with CORS proxies for `/cdn-proxy`
 (cdn.divine.video) and `/api/moderation` (moderation-api.divine.video).
 Configuration lives in [`vite.config.ts`](./vite.config.ts). Deploy targets are
@@ -740,3 +744,15 @@ feed, whose tap layer covers the player: `FullscreenVideoItem` passes
 `showStickers={false}` and renders the overlay above that layer. With an
 `onDoubleTap`, a click waits for a possible second one so a double tap on a
 sticker still likes.
+### Profile loading
+
+Profile URLs resolve registered Divine names before the legacy Vine fallback. Numeric
+Vine IDs retain their legacy lookup. Successful NIP-05 resolution is shared with
+validation; the expected pubkey is still checked before showing a verified identity.
+Lookup metadata supplies the header while REST refreshes, and identical in-flight
+profile reads share transport without coupling caller cancellation. Profile grids
+prioritize their first accessible thumbnail while retaining lazy loading below it.
+Optional linked-account proof checks wait for the critical name/NIP-05 reads; cached
+verified badges remain visible. Both HTML entry surfaces preconnect to the canonical
+REST API and media origins. HLS playback runtime code is imported only when a
+player needs an HLS source; MP4 playback and profile thumbnails do not load it.

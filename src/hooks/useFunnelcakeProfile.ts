@@ -2,7 +2,7 @@
 // ABOUTME: Provides fast profile loading via REST API with retries
 
 import { useQuery } from '@tanstack/react-query';
-import { type FunnelcakeProfile } from '@/lib/funnelcakeClient';
+import { fetchUserProfile, type FunnelcakeProfile } from '@/lib/funnelcakeClient';
 import { API_CONFIG, getFunnelcakeBaseUrl } from '@/config/api';
 import { debugLog } from '@/lib/debug';
 
@@ -15,7 +15,7 @@ interface UseFunnelcakeProfileResult {
 /**
  * Hook to fetch profile data from Funnelcake /api/users/{pubkey} endpoint
  *
- * Uses direct fetch with retries for reliability.
+ * Uses the shared fetchUserProfile request, with retries for reliability.
  */
 export function useFunnelcakeProfile(
   pubkey: string | undefined,
@@ -37,35 +37,8 @@ export function useFunnelcakeProfile(
         ? AbortSignal.any([signal, timeoutSignal])
         : timeoutSignal;
 
-      const response = await fetch(url, {
-        signal: combinedSignal,
-        headers: { 'Accept': 'application/json' },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Profile fetch failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      // Flatten the nested response
-      const profile: FunnelcakeProfile = {
-        pubkey: data.pubkey,
-        name: data.profile?.name,
-        display_name: data.profile?.display_name,
-        picture: data.profile?.picture,
-        banner: data.profile?.banner,
-        about: data.profile?.about,
-        nip05: data.profile?.nip05,
-        lud16: data.profile?.lud16,
-        website: data.profile?.website,
-        video_count: data.stats?.video_count,
-        follower_count: data.social?.follower_count,
-        following_count: data.social?.following_count,
-        total_reactions: data.engagement?.total_reactions,
-        total_loops: data.engagement?.total_loops,
-        total_views: data.engagement?.total_views,
-      };
+      const profile = await fetchUserProfile(getFunnelcakeBaseUrl(), pubkey, combinedSignal);
+      if (!profile) throw new Error('Profile fetch failed');
 
       debugLog(`[useFunnelcakeProfile] Got profile:`, profile.name || profile.display_name);
       return profile;

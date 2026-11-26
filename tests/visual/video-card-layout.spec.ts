@@ -1,6 +1,8 @@
-// ABOUTME: Lays out video cards from synthetic Funnelcake data and checks that each card stays inside
-// ABOUTME: its column and each card button inside its card, so its right-edge controls stay reachable.
-import { expect, test, type Page } from '@playwright/test';
+// ABOUTME: Plays synthetic cards with real media and checks that cards fit their column, that the
+// ABOUTME: player's sound, caption and fullscreen controls stay reachable, legible and clear of captions.
+import { fileURLToPath } from 'node:url';
+import AxeBuilder from '@axe-core/playwright';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // One run of text with no break opportunity, wider than any card. A classic Vine
 // caption like this once set the width of every card in the feed.
@@ -20,6 +22,7 @@ function syntheticVideo(index: number, title: string) {
     d_tag: dTag,
     title,
     content: '',
+    text_track_content: 'WEBVTT\n\n00:00.000 --> 00:06.000\nSynthetic captions\n',
     thumbnail: `${media}.jpg`,
     video_url: `${media}.mp4`,
     dimensions: '480x480',
@@ -55,13 +58,27 @@ const FEED = [
   syntheticVideo(3, 'Another short caption'),
 ];
 
-// Serves FEED for every Funnelcake read and keeps every other host and relay out,
-// so the layout depends on nothing but this file.
+const MEDIA_PATH = fileURLToPath(new URL('./fixtures/loop-with-audio.mp4', import.meta.url));
 async function serveSyntheticFeed(page: Page) {
   await page.routeWebSocket(/^wss:\/\//, (ws) => ws.close());
   await page.route(/^https?:\/\/(?!localhost[:/])/, (route) => {
     const url = new URL(route.request().url());
+    if (url.hostname === 'media.divine.video') {
+      if (url.pathname.endsWith('.jpg')) {
+        return route.fulfill({
+          contentType: 'image/svg+xml',
+          body: '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480"><rect width="480" height="480" fill="#0b483c"/></svg>',
+          headers: { 'access-control-allow-origin': '*' },
+        });
+      }
+      return route.fulfill({
+        path: MEDIA_PATH,
+        contentType: 'video/mp4',
+        headers: { 'access-control-allow-origin': '*' },
+      });
+    }
     if (url.hostname !== 'api.divine.video') return route.abort();
+    if (url.pathname === '/api/videos') return route.fulfill({ json: FEED });
     if (url.pathname === '/api/v2/videos') {
       return route.fulfill({ json: { data: FEED, pagination: { next_cursor: null, has_more: false } } });
     }
@@ -79,54 +96,226 @@ async function serveSyntheticFeed(page: Page) {
   });
 }
 
-test('a title with no break opportunities wraps inside the video card', async ({ page }) => {
-  // A cold dev server compiles the app on first load.
+async function expectControlsFit(card: Locator) {
+  const sound = card.getByRole('button', { name: /^(Unmute|Mute|Activează sunetul|إلغاء الكتم)$/ });
+  await expect(sound).toBeVisible();
+  const problems = await card.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    const video = element.querySelector('video')!;
+    const player = video.parentElement!.parentElement!.getBoundingClientRect();
+    const issues: string[] = [];
+    for (const button of element.querySelectorAll('button')) {
+      const box = button.getBoundingClientRect();
+      if (box.width && Math.round(Math.max(box.right - bounds.right, bounds.left - box.left)) > 0) {
+        issues.push(`${button.getAttribute('aria-label')} outside card`);
+      }
+    }
+    const playerElement = video.parentElement!.parentElement!;
+    const controls = [...playerElement.querySelectorAll('button')];
+    const cue = [...video.parentElement!.querySelectorAll('span')]
+      .find((span) => span.textContent === 'Synthetic captions')?.getBoundingClientRect();
+    for (const [index, button] of controls.entries()) {
+      const box = button.getBoundingClientRect();
+      if (box.width < 44 || box.height < 44) issues.push(`${button.getAttribute('aria-label')} below 44px`);
+      if (box.left < player.left || box.right > player.right || box.top < player.top || box.bottom > player.bottom) {
+        issues.push(`${button.getAttribute('aria-label')} outside player`);
+      }
+      if (cue && box.top < cue.bottom - 0.5) issues.push(`${button.getAttribute('aria-label')} covers the captions`);
+      for (const part of button.children) {
+        const inner = part.getBoundingClientRect();
+        if (!(part as HTMLElement).hidden && (inner.left < box.left - 0.5 || inner.right > box.right + 0.5)) {
+          issues.push(`${button.getAttribute('aria-label')} spills its ${part.tagName.toLowerCase()}`);
+        }
+      }
+      for (const other of controls.slice(index + 1)) {
+        const next = other.getBoundingClientRect();
+        if (box.left < next.right && box.right > next.left && box.top < next.bottom && box.bottom > next.top) {
+          issues.push(`${button.getAttribute('aria-label')} overlaps ${other.getAttribute('aria-label')}`);
+        }
+        // The group that holds two controls must let a tap between them through.
+        const group = button.parentElement!;
+        const [first, second] = box.left < next.left ? [box, next] : [next, box];
+        if (other.parentElement === group && group !== playerElement && second.left - first.right > 2) {
+          const hit = document.elementFromPoint((first.right + second.left) / 2, (first.top + first.bottom) / 2);
+          if (hit === group) issues.push(`gap beside ${button.getAttribute('aria-label')} swallows taps`);
+        }
+      }
+    }
+    return issues;
+  });
+  expect(problems).toEqual([]);
+}
+
+for (const width of [320, 360, 390, 1505]) {
+  for (const route of ['/discovery/classics', '/discovery/hot', `/video/${FEED[1].id}`]) {
+    test(`cards and playable sound controls fit at ${width}px on ${route}`, async ({ page }, testInfo) => {
+      test.setTimeout(60_000);
+      await serveSyntheticFeed(page);
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(route);
+      const cards = page.locator('main .brand-card');
+      await expect(cards.first()).toBeVisible({ timeout: 30_000 });
+      if (route.startsWith('/discovery/')) await expect(cards).toHaveCount(FEED.length);
+      const title = page.locator('main h3').filter({ hasText: 'Sing along' });
+      await expect(title).toBeVisible();
+      expect(await title.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+      const overhang = await cards.evaluateAll((elements) => elements.map((card) => {
+        const bounds = card.getBoundingClientRect();
+        const column = card.closest('.infinite-scroll-component')?.getBoundingClientRect() ?? card.parentElement!.getBoundingClientRect();
+        return Math.max(bounds.right - column.right, column.left - bounds.left);
+      }));
+      expect(overhang.every((pixels) => Math.round(pixels) <= 0)).toBe(true);
+      for (const card of await cards.all()) {
+        await card.scrollIntoViewIfNeeded();
+        await expect(card.locator('video')).toHaveJSProperty('readyState', 4);
+        await expect(card.getByRole('button', { name: 'Unmute', exact: true }).getByText('Unmute')).toBeVisible();
+        await expectControlsFit(card);
+        await card.getByRole('button', { name: 'More options', exact: true }).click({ trial: true });
+      }
+      const active = cards.first();
+      await active.scrollIntoViewIfNeeded();
+      await expect(active.locator('video')).toHaveJSProperty('paused', false);
+      if (route.startsWith('/discovery/')) {
+        await expect(active.getByRole('button', { name: 'Hide subtitles' })).toBeVisible();
+        await expectControlsFit(active);
+      }
+      await active.getByRole('button', { name: 'Unmute', exact: true }).click({ trial: true });
+      await testInfo.attach('card-layout', { body: await active.screenshot(), contentType: 'image/png' });
+    });
+  }
+}
+
+test('unmuting keeps playback running and the next active video inherits sound', async ({ page }) => {
   test.setTimeout(60_000);
   await serveSyntheticFeed(page);
-  await page.goto(`/video/${FEED[1].id}`);
-  const title = page.locator('main h3').first();
-  await expect(title).toContainText('Sing along', { timeout: 30_000 });
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto('/discovery/classics');
+  const cards = page.locator('main .brand-card');
+  await expect(cards).toHaveCount(FEED.length, { timeout: 30_000 });
+  const first = cards.first();
+  const video = first.locator('video');
+  await first.scrollIntoViewIfNeeded();
+  await expect(video).toHaveJSProperty('paused', false);
+  await expect(video).toHaveJSProperty('muted', true);
+  await first.getByRole('button', { name: 'Unmute', exact: true }).click();
+  await expect(video).toHaveJSProperty('muted', false);
+  await expect(video).toHaveJSProperty('paused', false);
+  const mute = first.getByRole('button', { name: 'Mute', exact: true });
+  await expect(mute).toHaveText('');
+  expect(page.url()).toContain('/discovery/classics');
+  await expectControlsFit(first);
+  await expect.poll(() => video.evaluate((el) => (el as HTMLVideoElement).currentTime)).toBeGreaterThan(0.25);
 
-  const overflow = await title.evaluate((el) => el.scrollWidth - el.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(0);
+  const second = cards.nth(1);
+  await second.scrollIntoViewIfNeeded();
+  await expect(second.locator('video')).toHaveJSProperty('paused', false);
+  await expect(second.locator('video')).toHaveJSProperty('muted', false);
+  await expect(video).toHaveJSProperty('paused', true);
+  await second.getByRole('button', { name: 'Mute', exact: true }).click();
+  await expect(second.locator('video')).toHaveJSProperty('muted', true);
+  await expect(second.locator('video')).toHaveJSProperty('paused', false);
+  await expect(second.getByRole('button', { name: 'Unmute', exact: true })).toHaveText('Unmute');
 });
 
-// Phone widths are where the action row runs out of room; 1505 is where the
-// unbroken title once set the width of every card.
-for (const width of [320, 360, 390, 1505]) {
-  test(`every feed card and its controls fit inside the feed column at ${width}px`, async ({ page }) => {
+test('a translated Unmute too long for the row falls back to the icon until there is room', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.addInitScript(() => localStorage.setItem('divine:locale', 'ro'));
+  await serveSyntheticFeed(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/discovery/classics');
+  const card = page.locator('main .brand-card').first();
+  const unmute = card.getByRole('button', { name: 'Activează sunetul', exact: true });
+  await expect(unmute).toBeVisible({ timeout: 30_000 });
+  await expect(card.getByRole('button', { name: 'Ascunde subtitrările' })).toBeVisible();
+  await expect(unmute.getByText('Activează sunetul')).toBeHidden();
+  await expectControlsFit(card);
+
+  // Muting again remounts the label, so it must be measured at the pill's final
+  // size. Let the compact Mute button settle first, as it does for a real viewer.
+  await unmute.click();
+  const mute = card.getByRole('button', { name: 'Mută sunetul', exact: true });
+  await expect.poll(() => mute.evaluate((button) => getComputedStyle(button).paddingLeft)).toBe('0px');
+  await mute.click();
+  await expect(unmute.getByText('Activează sunetul')).toBeHidden();
+  await expectControlsFit(card);
+
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect(unmute.getByText('Activează sunetul')).toBeVisible();
+  await expectControlsFit(card);
+});
+
+test('in a right-to-left locale the sound button keeps the corner beside captions', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.addInitScript(() => localStorage.setItem('divine:locale', 'ar'));
+  await serveSyntheticFeed(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/discovery/classics');
+  const card = page.locator('main .brand-card').first();
+  const sound = card.getByRole('button', { name: 'إلغاء الكتم', exact: true });
+  const captions = card.getByRole('button', { name: 'إخفاء الترجمة', exact: true });
+  await expect(sound).toBeVisible({ timeout: 30_000 });
+  await expect(captions).toBeVisible();
+  const [soundBox, captionsBox] = await Promise.all([sound.boundingBox(), captions.boundingBox()]);
+  expect(soundBox!.x).toBeGreaterThan(captionsBox!.x);
+  await expectControlsFit(card);
+});
+
+for (const [locale, label, fits] of [['en', 'Unmute', true], ['ro', 'Activează sunetul', false]] as const) {
+  test(`a player as narrow as one cell of a two-column phone grid keeps ${locale} Unmute inside its pill`, async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.addInitScript((code) => localStorage.setItem('divine:locale', code), locale);
+    await serveSyntheticFeed(page);
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto(`/video/${FEED[1].id}`);
+    const card = page.locator('main .brand-card').first();
+    const unmute = card.getByRole('button', { name: label, exact: true });
+    await expect(unmute).toBeVisible({ timeout: 30_000 });
+    // The collabs grid lays auto-play cards out two to a row, without fullscreen,
+    // which leaves each player about 144px wide on a 320px phone. With no
+    // fullscreen button to clear, the short English label still fits.
+    await card.locator('video').evaluate((video) => { video.parentElement!.parentElement!.style.width = '144px'; });
+    // The label was visible before the resize, so let the resize observer report
+    // the new width (it runs in the next rendering step) before checking it.
+    await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+    await expect(unmute.getByText(label)).toBeVisible({ visible: fits });
+    await expectControlsFit(card);
+  });
+}
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`Unmute label meets contrast requirements in ${colorScheme} mode`, async ({ page }) => {
     test.setTimeout(60_000);
     await serveSyntheticFeed(page);
-    await page.setViewportSize({ width, height: 900 });
-    // Hot's first page is the /api/v2/videos response served above. Classic reads
-    // /api/videos at a random offset instead, which this stub does not serve.
-    await page.goto('/discovery/hot');
-    const feed = page.locator('.infinite-scroll-component').first();
-    await expect(feed.locator('.brand-card')).toHaveCount(FEED.length, { timeout: 30_000 });
-    await expect(feed.getByRole('button', { name: 'More options' })).toHaveCount(FEED.length);
-
-    // A card wider than the feed column pushes its right edge, and the video's mute
-    // button with it, out of view behind a sideways scroll. A card clips its own
-    // overflow, so a button past its edge can't be reached at all. Media isn't
-    // served, so mute itself never renders here; the card's edge stands in for it.
-    const outOfBounds = await feed.evaluate((container) => {
-      const column = container.getBoundingClientRect();
-      return [...container.querySelectorAll('.brand-card')].flatMap((card, index) => {
-        const box = card.getBoundingClientRect();
-        const problems: string[] = [];
-        const overhang = Math.round(Math.max(box.right - column.right, column.left - box.left));
-        if (overhang > 0) problems.push(`card ${index + 1} overhangs the feed by ${overhang}px`);
-        for (const button of card.querySelectorAll('button')) {
-          const rect = button.getBoundingClientRect();
-          const past = Math.round(Math.max(rect.right - box.right, box.left - rect.left));
-          if (rect.width > 0 && past > 0) {
-            const name = button.getAttribute('aria-label') ?? button.textContent?.trim();
-            problems.push(`card ${index + 1} "${name}" ends ${past}px past the card`);
-          }
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/discovery/classics');
+    await expect(page.locator('main .brand-card')).toHaveCount(FEED.length, { timeout: 30_000 });
+    const button = page.getByRole('button', { name: 'Unmute', exact: true }).first();
+    await expect(button).toBeVisible();
+    await button.scrollIntoViewIfNeeded();
+    const videos = page.locator('main .brand-card video');
+    for (const video of await videos.all()) {
+      await video.scrollIntoViewIfNeeded();
+      await expect(video).toHaveJSProperty('readyState', 4);
+    }
+    // Axe cannot read a color from a video frame, so over live media it files the label
+    // under incomplete and never reports a violation. Hide every layer behind the
+    // controls and paint the brightest possible frame, the worst case for white text.
+    await videos.evaluateAll((elements) => {
+      for (const video of elements) {
+        const player = video.parentElement!.parentElement!;
+        for (const layer of player.children) {
+          if (!layer.querySelector('button[aria-label="Unmute"]')) (layer as HTMLElement).style.visibility = 'hidden';
         }
-        return problems;
-      });
+        player.style.backgroundColor = '#fff';
+      }
     });
-    expect(outOfBounds).toEqual([]);
+    const result = await new AxeBuilder({ page })
+      .include('button[aria-label="Unmute"]')
+      .withRules(['color-contrast'])
+      .analyze();
+    expect(result.violations).toEqual([]);
+    expect(result.incomplete).toEqual([]);
+    const measured = result.passes.flatMap((rule) => rule.nodes);
+    expect(measured).toHaveLength(FEED.length);
   });
 }
