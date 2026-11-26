@@ -1,6 +1,7 @@
 // ABOUTME: Video feed component for displaying scrollable lists of videos with infinite scroll
 // ABOUTME: Uses video provider hook with automatic Funnelcake/WebSocket selection
 
+import { usePageContentReady } from '@/hooks/usePageContentReady';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -351,6 +352,8 @@ export function VideoFeed({
       videoId: video.id,
     });
   }, [allVideos.length, filteredVideos, trackFirstPlayback]);
+
+  usePageContentReady(isLoading || (!data && !error) ? null : error ? 'error' : filteredVideos.length ? 'ready' : 'empty');
 
   // Loading state (initial load only)
   if (isLoading && !data) {

@@ -3,7 +3,9 @@
  */
 
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Outlet, Route, useLocation } from "react-router-dom";
+import { SentryRoutes } from '@/components/SentryRoutes';
+import { PagePerformanceProvider } from '@/components/PagePerformanceProvider';
 import { ScrollToTop } from "./components/ScrollToTop";
 import { SignInLoading } from "./components/auth/SignInLoading";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
@@ -203,8 +205,9 @@ export function AppRouter() {
           AnalyticsPageTracker's identity-linked events depend on. */}
       <AnalyticsUserTracker />
       <AnalyticsPageTracker />
+      <PagePerformanceProvider>
       <Suspense fallback={null}>
-      <Routes>
+      <SentryRoutes>
         {/* Marketing/informational pages - no app layout */}
         {/* /about redirects to about.divine.video via _redirects (301) */}
         <Route path="/authenticity" element={<AuthenticityPage />} />
@@ -259,8 +262,9 @@ export function AppRouter() {
           <Route path="/" element={subdomainUser ? <ProfilePage /> : <Index />} />
           {appShellRoutes}
         </Route>
-      </Routes>
+      </SentryRoutes>
       </Suspense>
+      </PagePerformanceProvider>
     </BrowserRouter></ChatInviteProvider>
   );
 }

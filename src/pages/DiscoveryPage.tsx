@@ -2,9 +2,10 @@
 // ABOUTME: Each video tab uses a moderated or curated feed source
 // ABOUTME: For You tab shows personalized recommendations when user is logged in
 
-import { type ComponentType, useEffect, useMemo, useState } from 'react';
+import { type ComponentProps, type ComponentType, useContext, useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useLocation, useParams } from 'react-router-dom';
+import { PagePerformanceContext } from '@/contexts/PagePerformanceContext';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { VideoFeed } from '@/components/VideoFeed';
 import { DiscoverySeo } from '@/components/DiscoverySeo';
@@ -84,6 +85,16 @@ function insertFeaturedTab(
 // Marks the redirect a signed-out visit to `/` takes into the default tab.
 interface HomeRedirectState {
   fromHome?: boolean;
+}
+
+function DiscoveryTabContent(props: ComponentProps<typeof TabsContent>) {
+  const { tab } = useParams<{ tab: string }>();
+  const reportReady = useContext(PagePerformanceContext);
+  return (
+    <PagePerformanceContext.Provider value={tab?.toLowerCase() === props.value ? reportReady : null}>
+      <TabsContent {...props} />
+    </PagePerformanceContext.Provider>
+  );
 }
 
 export function DiscoveryPage() {
@@ -343,7 +354,7 @@ export function DiscoveryPage() {
           </TabsList>
 
           {isLoggedIn && (
-            <TabsContent value="foryou" className="mt-0 space-y-6">
+            <DiscoveryTabContent value="foryou" className="mt-0 space-y-6">
               <VideoFeed
                 feedType="foryou"
                 verifiedOnly={verifiedOnly}
@@ -351,10 +362,10 @@ export function DiscoveryPage() {
                 className="space-y-6"
                 key="foryou"
               />
-            </TabsContent>
+            </DiscoveryTabContent>
           )}
 
-          <TabsContent value="classics" className="mt-0 space-y-6">
+          <DiscoveryTabContent value="classics" className="mt-0 space-y-6">
             {/* Classic Viners horizontal row */}
             <ClassicVinersRow />
 
@@ -367,9 +378,9 @@ export function DiscoveryPage() {
               className="space-y-6"
               key="classics"
             />
-          </TabsContent>
+          </DiscoveryTabContent>
 
-          <TabsContent value="hot" className="mt-0 space-y-6">
+          <DiscoveryTabContent value="hot" className="mt-0 space-y-6">
             <VideoFeed
               feedType="trending"
               sortMode="hot"
@@ -379,14 +390,14 @@ export function DiscoveryPage() {
               className="space-y-6"
               key="hot"
             />
-          </TabsContent>
+          </DiscoveryTabContent>
 
-          <TabsContent value="hashtags" className="mt-0 space-y-6">
+          <DiscoveryTabContent value="hashtags" className="mt-0 space-y-6">
             <HashtagExplorer />
-          </TabsContent>
+          </DiscoveryTabContent>
 
           {activeTabItem?.featuredTab && (
-            <TabsContent value={activeTabItem.featuredTab.slug} className="mt-0 space-y-6">
+            <DiscoveryTabContent value={activeTabItem.featuredTab.slug} className="mt-0 space-y-6">
               {activeTabItem.featuredTab.sponsorName && (
                 <div className="flex justify-center">
                   {/*
@@ -414,7 +425,7 @@ export function DiscoveryPage() {
                 className="space-y-6"
                 key={activeTabItem.featuredTab.id}
               />
-            </TabsContent>
+            </DiscoveryTabContent>
           )}
         </Tabs>
       </div>

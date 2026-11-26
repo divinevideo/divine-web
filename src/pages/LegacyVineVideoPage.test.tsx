@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { PagePerformanceContext } from '@/contexts/PagePerformanceContext';
 import { LegacyVineVideoPage } from './LegacyVineVideoPage';
 
 const { mockUseVideoByIdFunnelcake } = vi.hoisted(() => ({
@@ -17,15 +18,15 @@ vi.mock('@/hooks/useVideoByIdFunnelcake', () => ({
     mockUseVideoByIdFunnelcake(options),
 }));
 
-function renderWithRoute(initialPath: string) {
+function renderWithRoute(initialPath: string, report = vi.fn()) {
   return render(
-    <MemoryRouter initialEntries={[initialPath]}>
+    <PagePerformanceContext.Provider value={report}><MemoryRouter initialEntries={[initialPath]}>
       <Routes>
         <Route path="/v/:legacyVineId" element={<LegacyVineVideoPage />} />
         <Route path="/video/:id" element={<div data-testid="redirected" />} />
         <Route path="*" element={<div data-testid="not-routed" />} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter></PagePerformanceContext.Provider>,
   );
 }
 
@@ -80,4 +81,13 @@ describe('LegacyVineVideoPage', () => {
       enabled: true,
     });
   });
+});
+
+
+it('reports a completed missing legacy lookup as an error rather than a stalled load', () => {
+  setLookupResult({ video: null, isLoading: false });
+  const report = vi.fn();
+  renderWithRoute('/v/synthetic00', report);
+  expect(screen.getByText('404')).toBeInTheDocument();
+  expect(report).toHaveBeenCalledWith('error');
 });

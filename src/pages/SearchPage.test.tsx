@@ -5,6 +5,7 @@ import { BrowserRouter, MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type {
   ButtonHTMLAttributes,
+  ContextType,
   HTMLAttributes,
   ImgHTMLAttributes,
   InputHTMLAttributes,
@@ -15,6 +16,7 @@ import { initializeI18n } from '@/lib/i18n';
 import { trackSearch } from '@/lib/analytics';
 import { useSeoMeta } from '@unhead/react';
 import { SYNTHETIC_NSEC } from '@/test/secretKeyFixture';
+import { PagePerformanceContext } from '@/contexts/PagePerformanceContext';
 import SearchPage from './SearchPage';
 
 const {
@@ -214,12 +216,16 @@ function createTestQueryClient() {
   });
 }
 
-function renderPage(initialEntries: string[] = ['/search']) {
+function renderPage(initialEntries: string[] = ['/search'], reportReady: ContextType<typeof PagePerformanceContext> = null) {
   const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={initialEntries}>
-        <SearchPage />
+        {reportReady ? (
+          <PagePerformanceContext.Provider value={reportReady}>
+            <SearchPage />
+          </PagePerformanceContext.Provider>
+        ) : <SearchPage />}
         <LocationDisplay />
       </MemoryRouter>
     </QueryClientProvider>
@@ -301,6 +307,20 @@ describe('SearchPage', () => {
   afterEach(() => {
     vi.useRealTimers();
     window.history.pushState(null, '', '/');
+  });
+
+  it('reports an empty video search when only another filter has results', () => {
+    mockUseSearchHashtags.mockReturnValue({
+      data: [{ hashtag: 'synthetic', video_count: 1 }],
+      isLoading: false,
+      error: null,
+    });
+    const reportReady = vi.fn();
+
+    renderPage(['/search?q=synthetic&filter=videos'], reportReady);
+
+    expect(screen.getByText('Nada. Try something different?')).toBeInTheDocument();
+    expect(reportReady).toHaveBeenCalledExactlyOnceWith('empty');
   });
 
   describe('with input that looks like a secret key', () => {

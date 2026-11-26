@@ -1,3 +1,4 @@
+import { usePageContentReady } from '@/hooks/usePageContentReady';
 import { useHead, useSeoMeta } from '@unhead/react';
 import { useTranslation } from 'react-i18next';
 import { VideoFeed } from '@/components/VideoFeed';
@@ -14,6 +15,7 @@ const Index = () => {
   const { user } = useCurrentUser();
   const { data: followList, isLoading: isLoadingFollows } = useFollowList();
   const navigate = useNavigate();
+  usePageContentReady(user && !isLoadingFollows && followList?.length === 0 ? 'empty' : null);
 
   useSeoMeta({
     title: t('indexPage.seoTitle'),

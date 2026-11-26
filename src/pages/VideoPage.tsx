@@ -1,3 +1,4 @@
+import { usePageContentReady } from '@/hooks/usePageContentReady';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useSubdomainNavigate } from '@/hooks/useSubdomainNavigate';
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
@@ -171,6 +172,8 @@ export function VideoPage() {
     : undefined;
   const videos = funnelcakeVideos || wsVideos;
   const isLoading = funnelcakeLoading || (!funnelcakeVideo && wsLoading);
+
+  usePageContentReady(isLoading ? null : currentVideo ? 'ready' : 'error');
 
   // Calculate navigation state from available videos
   const currentIndex = useMemo(() => {

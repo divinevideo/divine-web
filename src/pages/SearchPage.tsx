@@ -1,6 +1,7 @@
 // ABOUTME: Comprehensive search page with debounced input, filter tabs, infinite scroll, and sort modes
 // ABOUTME: Supports searching videos, users, hashtags with NIP-50 full-text search
 
+import { usePageContentReady } from '@/hooks/usePageContentReady';
 import { useState, useEffect, useRef, useMemo, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
@@ -416,7 +417,8 @@ export function SearchPage() {
   })();
 
   // Results count based on active filter
-  const getResultsCount = () => {
+  const totalResultsCount = videoResults.length + userResults.length + hashtagResults.length;
+  const resultsCount = (() => {
     switch (activeFilter) {
       case 'videos':
         return videoResults.length;
@@ -425,12 +427,12 @@ export function SearchPage() {
       case 'hashtags':
         return hashtagResults.length;
       default:
-        return videoResults.length + userResults.length + hashtagResults.length;
+        return totalResultsCount;
     }
-  };
+  })();
 
-  // Check if we have any results
-  const hasResults = videoResults.length > 0 || userResults.length > 0 || hashtagResults.length > 0;
+  usePageContentReady(isLoading ? null : error || isSecretKeyQuery ? 'error' : resultsCount || !searchableQuery.trim() ? 'ready' : 'empty');
+
   const showCompilationButton =
     searchableQuery.trim().length > 0 &&
     videoResults.length > 0 &&
@@ -606,7 +608,7 @@ export function SearchPage() {
                 <p className="text-muted-foreground">Searching...</p>
               ) : error ? (
                 <p className="text-destructive">Search error occurred</p>
-              ) : getResultsCount() === 0 && !(allVideosHidden && (activeFilter === 'all' || activeFilter === 'videos')) ? (
+              ) : resultsCount === 0 && !(allVideosHidden && (activeFilter === 'all' || activeFilter === 'videos')) ? (
                 <p className="text-muted-foreground">Nada. Try something different?</p>
               ) : null}
               {compilationUrl && !isLoading && !error && (
@@ -632,7 +634,7 @@ export function SearchPage() {
               <LoadingState />
             ) : error ? (
               <ErrorState />
-            ) : !hasResults ? (
+            ) : totalResultsCount === 0 ? (
               allVideosHidden ? hiddenVideoResults : <NoResultsState />
             ) : (
               <div className="space-y-8">

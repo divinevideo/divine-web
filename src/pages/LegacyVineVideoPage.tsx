@@ -1,3 +1,4 @@
+import { usePageContentReady } from '@/hooks/usePageContentReady';
 import { useParams, Navigate } from 'react-router-dom';
 import { useVideoByIdFunnelcake } from '@/hooks/useVideoByIdFunnelcake';
 import { buildVideoPath } from '@/lib/eventRouting';
@@ -10,6 +11,8 @@ export function LegacyVineVideoPage() {
     videoId: legacyVineId || '',
     enabled: !!legacyVineId,
   });
+
+  usePageContentReady(!legacyVineId || (!isLoading && !video) ? 'error' : null);
 
   if (!legacyVineId) {
     return <NotFound />;

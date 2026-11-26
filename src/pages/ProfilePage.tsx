@@ -1,6 +1,7 @@
 // ABOUTME: Enhanced profile page with header, stats, video grid, and follow functionality
 // ABOUTME: Displays user profile with comprehensive social features and responsive video grid
 
+import { usePageContentReady } from '@/hooks/usePageContentReady';
 import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -286,6 +287,11 @@ export function ProfilePage({ pubkeyOverride, initialMetadata }: { pubkeyOverrid
     twitterDescription: metadata?.about || t('profilePage.seoDescription', { name: displayName }),
     twitterImage: metadata?.picture || '/app_icon.avif',
   });
+
+  usePageContentReady(
+    (isNip05 && nip05Query.isLoading) || resolved.isSearching || (!fcMeta && (authorLoading || funnelcakeLoading)) || videosLoading
+      ? null : error || videosError || !pubkey ? 'error' : 'ready'
+  );
 
   // Show spinner while resolving a NIP-05 identifier in the URL
   if (isNip05 && nip05Query.isLoading) {
