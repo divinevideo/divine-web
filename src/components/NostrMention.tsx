@@ -20,7 +20,7 @@ export function NostrMention({ pubkey, variant = 'inline' }: NostrMentionProps) 
   const profilePath = useValidatedProfileLinkPath({ pubkey, nip05 });
   const verifiedNip05 = state === 'valid' ? nip05 : undefined;
   const label = verifiedNip05
-    ? formatNip05Label(verifiedNip05)
+    ? formatNip05Label(verifiedNip05.trim())
     : `@${resolveDisplayName(metadata, pubkey)}`;
   const hasIdentity = !!(verifiedNip05 || metadata?.display_name?.trim() || metadata?.name?.trim());
 

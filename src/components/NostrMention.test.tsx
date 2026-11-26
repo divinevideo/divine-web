@@ -125,6 +125,17 @@ describe.each(['title', 'description'])('%s profile mentions', (renderer) => {
     expect(screen.getByRole('link', { name: '@Alice' })).toHaveAttribute('href', `/${NPUB}`);
   });
 
+  it.each([
+    [' _@alice.divine.video', '@alice.divine.video', '/u/alice'],
+    ['alice@example.com ', '@alice@example.com', '/u/alice.example.com'],
+  ])('labels verified %j without its padding', (nip05, label, path) => {
+    mocks.metadata.nip05 = nip05;
+    render(<Content renderer={renderer} text={NPUB} />);
+    const link = screen.getByRole('link', { name: label });
+    expect(link.textContent).toBe(label);
+    expect(link).toHaveAttribute('href', path);
+  });
+
   it('keeps a generated name when profile metadata is absent', () => {
     mocks.metadata = {};
     mocks.validationState = 'idle';
