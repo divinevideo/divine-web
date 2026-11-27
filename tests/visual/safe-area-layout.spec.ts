@@ -85,9 +85,12 @@ test('marketing content clears its inset header and retains the footer offset', 
   await page.setViewportSize({ width: 390, height: 844 });
   await preparePage(page, { top: 47, right: 0, bottom: 34, left: 0 });
   await page.goto('/privacy');
-  const header = page.locator('nav.fixed.top-0');
+  const header = page.locator('nav.sticky.top-0');
   await expect(header).toHaveCSS('padding-top', '47px');
-  await expect(header.locator('..').locator(':scope > .flex-1')).toHaveCSS('padding-top', '111px');
+  const content = header.locator('..').locator(':scope > .flex-1');
+  const headerBounds = await header.boundingBox();
+  const contentBounds = await content.boundingBox();
+  expect(contentBounds!.y).toBe(headerBounds!.y + headerBounds!.height);
   await expect(page.locator('footer')).toHaveCSS('padding-bottom', '122px');
 });
 
@@ -112,3 +115,104 @@ test('fullscreen controls clear all four emulated safe-area edges', async ({ pag
   await expect(overlay.locator('video')).toHaveJSProperty('readyState', 4);
   await page.screenshot({ path: testInfo.outputPath('fullscreen-insets.png') });
 });
+
+for (const width of [320, 360, 390, 768, 1505]) {
+  for (const longTranslation of [false, true]) {
+    test(`marketing links and logo fit ${width}px with ${longTranslation ? 'long translated' : 'English'} merch copy`, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width, height: 844 });
+      await preparePage(page, { top: 47, right: 12, bottom: 34, left: 8 });
+      await page.goto('/privacy');
+      if (longTranslation) {
+        await page.evaluate(async () => {
+          const modulePath = '/src/lib/i18n/index.ts';
+          const { initializeI18n } = await import(modulePath);
+          const i18n = await initializeI18n();
+          i18n.addResource('ro', 'common', 'menu.merch', 'Articole promoționale');
+          await i18n.changeLanguage('ro');
+        });
+      }
+      const header = page.locator('nav').first();
+      if (longTranslation) await expect(header.getByRole('link', { name: 'Articole promoționale', exact: true })).toBeVisible();
+      const logo = header.getByRole('img', { name: 'Divine', exact: true });
+      await expect(logo).toBeVisible();
+      await expect.poll(() => logo.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+      await page.evaluate(() => document.fonts.ready);
+      expect(await header.locator('a').evaluateAll((links) => links.map((link) => link.getAttribute('href')))).toEqual([
+        '/', 'https://about.divine.video/', 'https://about.divine.video/blog/',
+        'https://about.divine.video/faqs/', 'https://about.divine.video/news/', '/merch', '/discovery',
+      ]);
+      const geometry = await header.evaluate((element) => {
+        const links = [...element.querySelectorAll('a')].map((link) => ({
+          label: link.textContent || 'Divine logo', box: link.getBoundingClientRect().toJSON(),
+        }));
+        return {
+          links,
+          logo: element.querySelector('img')!.getBoundingClientRect().toJSON(),
+          header: element.getBoundingClientRect().toJSON(),
+          content: element.parentElement!.children[1].getBoundingClientRect().toJSON(),
+        };
+      });
+      expect(geometry.logo.width).toBeGreaterThan(0);
+      for (const [index, link] of geometry.links.entries()) {
+        expect(link.box.left, link.label).toBeGreaterThanOrEqual(8);
+        expect(link.box.right, link.label).toBeLessThanOrEqual(width - 12);
+        expect(link.box.width, link.label).toBeGreaterThan(0);
+        expect(link.box.top, link.label).toBeGreaterThanOrEqual(47);
+        for (const other of geometry.links.slice(index + 1)) {
+          const overlaps = link.box.left < other.box.right && link.box.right > other.box.left
+            && link.box.top < other.box.bottom && link.box.bottom > other.box.top;
+          expect(overlaps, `${link.label} overlaps ${other.label}`).toBe(false);
+        }
+      }
+      expect(geometry.content.top).toBeGreaterThanOrEqual(geometry.header.bottom);
+      expect(geometry.content.top - geometry.header.bottom).toBeLessThanOrEqual(1);
+      await page.screenshot({ path: testInfo.outputPath('marketing-header.png') });
+    });
+  }
+}
+
+for (const direct of [true, false]) {
+  test(`wrapped marketing header leaves a ${direct ? 'direct' : 'clicked'} policy anchor readable`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await preparePage(page, { top: 47, right: 12, bottom: 34, left: 8 });
+    await page.goto(direct ? '/kids#13-15' : '/kids');
+    const section = page.locator('[id="13-15"]');
+    const heading = section.getByRole('heading').first();
+    await expect(heading).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    if (!direct) await page.getByRole('navigation', { name: 'On this page' }).getByRole('link', { name: 'Divine Greenlight (13-15)', exact: true }).click();
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    if (!direct) {
+      await expect.poll(() => section.evaluate((element) => Math.abs(
+        element.getBoundingClientRect().top - Number.parseFloat(getComputedStyle(element).scrollMarginTop)
+      ))).toBeLessThanOrEqual(1);
+    }
+    await page.evaluate(() => new Promise<void>((resolve) => {
+      let previous = window.scrollY;
+      let settledFrames = 0;
+      const check = () => {
+        settledFrames = window.scrollY === previous ? settledFrames + 1 : 0;
+        previous = window.scrollY;
+        if (settledFrames === 3) resolve();
+        else requestAnimationFrame(check);
+      };
+      requestAnimationFrame(check);
+    }));
+    const headerBounds = await page.locator('nav').first().boundingBox();
+    const headingBounds = await heading.boundingBox();
+    expect(headingBounds!.y).toBeGreaterThanOrEqual(headerBounds!.y + headerBounds!.height);
+    expect(headingBounds!.y + headingBounds!.height).toBeLessThanOrEqual(844);
+    if (!direct) {
+      await page.setViewportSize({ width: 768, height: 844 });
+      await expect.poll(async () => {
+        const currentHeader = await page.locator('nav').first().boundingBox();
+        const margin = await section.evaluate((element) => Number.parseFloat(getComputedStyle(element).scrollMarginTop));
+        return Math.abs(margin - currentHeader!.height - 16);
+      }).toBeLessThanOrEqual(1);
+      await section.evaluate((element) => element.scrollIntoView({ behavior: 'instant' }));
+      const resizedHeader = await page.locator('nav').first().boundingBox();
+      const resizedHeading = await heading.boundingBox();
+      expect(resizedHeading!.y).toBeGreaterThanOrEqual(resizedHeader!.y + resizedHeader!.height);
+    }
+  });
+}
