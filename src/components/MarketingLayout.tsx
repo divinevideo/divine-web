@@ -28,7 +28,7 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
   }, []);
 
   return (
-    <div ref={layoutRef} className="min-h-screen flex flex-col bg-background [&_.scroll-mt-24]:scroll-mt-[calc(var(--marketing-header-height,5rem)+1rem)]">
+    <div ref={layoutRef} className="min-h-screen flex flex-col bg-background [--marketing-header-fallback:calc(12rem+env(safe-area-inset-top,0px))] md:[--marketing-header-fallback:calc(6rem+env(safe-area-inset-top,0px))] [&_.scroll-mt-24]:scroll-mt-[calc(var(--marketing-header-height,var(--marketing-header-fallback))+1rem)]">
       <MarketingHeader />
       <div className="flex-1">
         {children}
