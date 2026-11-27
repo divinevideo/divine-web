@@ -11,7 +11,6 @@ import {
   Prohibit,
   ShieldCheck,
 } from "@phosphor-icons/react";
-import { useHead } from "@unhead/react";
 import { Link } from "react-router-dom";
 
 import { SectionHeader } from "@/components/brand/SectionHeader";
@@ -60,18 +59,6 @@ const MOVE_STEPS = [
 ];
 
 export function PortabilityPage() {
-  useHead({
-    title: "Account Portability on Divine",
-    link: [{ rel: "canonical", href: "https://divine.video/exit" }],
-    meta: [
-      {
-        name: "description",
-        content:
-          "A plain-language guide to moving your Divine account and content to infrastructure you choose.",
-      },
-    ],
-  });
-
   return (
     <MarketingLayout>
       <BackToTopButton />

@@ -1,5 +1,5 @@
-// ABOUTME: Tests for public/robots.txt and public/sitemap.xml
-// ABOUTME: Guards crawler policy and sitemap entries for public pages
+// ABOUTME: Tests for public/robots.txt
+// ABOUTME: Guards that robots stays permissive and points at the generated sitemap (see src/seo/pageFiles.test.ts)
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -69,36 +69,5 @@ describe('public robots.txt', () => {
 
   it('points at the sitemap', () => {
     expect(robots).toContain('Sitemap: https://divine.video/sitemap.xml');
-  });
-});
-
-describe('public sitemap.xml', () => {
-  const sitemap = readFileSync(join(process.cwd(), 'public/sitemap.xml'), 'utf8');
-
-  it('lists all five family routes', () => {
-    for (const path of [
-      '/family',
-      '/family/talking-to-your-teen',
-      '/family/media-plan',
-      '/family/when-something-goes-wrong',
-      '/family/safety-tools',
-    ]) {
-      expect(sitemap).toContain(`<loc>https://divine.video${path}</loc>`);
-    }
-  });
-
-  it('gives family routes a lastmod date', () => {
-    const familyEntries = sitemap.split('<url>').filter((e) => e.includes('/family'));
-    expect(familyEntries.length).toBeGreaterThanOrEqual(5);
-    for (const entry of familyEntries) {
-      expect(entry).toMatch(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
-    }
-  });
-
-  it('links the kids policy, download, and account portability pages', () => {
-    expect(sitemap).toContain('<loc>https://divine.video/kids</loc>');
-    expect(sitemap).toContain('<loc>https://divine.video/download</loc>');
-    expect(sitemap).toContain('<loc>https://divine.video/exit</loc>');
-    expect(sitemap).toContain('<loc>https://divine.video/delete-account</loc>');
   });
 });

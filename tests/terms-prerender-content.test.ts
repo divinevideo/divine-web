@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -61,6 +62,16 @@ function prerenderLegalPages(options: PrerenderOptions = {}): (route: string) =>
       resolve(REPO_ROOT, 'scripts/prerender-legal.mjs'),
       join(tmp, 'scripts', 'prerender-legal.mjs'),
     );
+    cpSync(resolve(REPO_ROOT, 'scripts/lib'), join(tmp, 'scripts/lib'), { recursive: true });
+    cpSync(resolve(REPO_ROOT, 'src/seo'), join(tmp, 'src/seo'), { recursive: true });
+    mkdirSync(join(tmp, 'src/lib/i18n'), { recursive: true });
+    for (const file of ['index.ts', 'config.ts']) {
+      copyFileSync(resolve(REPO_ROOT, 'src/lib/i18n', file), join(tmp, 'src/lib/i18n', file));
+    }
+    symlinkSync(resolve(REPO_ROOT, 'node_modules'), join(tmp, 'node_modules'), 'dir');
+    writeFileSync(join(tmp, 'package.json'), '{"type":"module"}');
+    writeFileSync(join(tmp, 'vite.config.mjs'),
+      `export default { resolve: { alias: { '@': ${JSON.stringify(join(tmp, 'src'))} } } };`);
     for (const file of LEGAL_PAGES) {
       const source = readFileSync(resolve(REPO_ROOT, 'src', 'pages', file), 'utf8');
       writeFileSync(
@@ -117,7 +128,7 @@ describe('prerendered terms of service', () => {
     // to handle the default namespace and interpolation options they shipped as
     // literal "{t('termsPage.title')}" text to crawlers and App Review.
     expect(html).not.toContain("{t('");
-    expect(html).toContain('<title>Terms of Service - Divine Web</title>');
+    expect(html).toContain('<title>Terms of Service - Divine</title>');
     expect(html).toContain('Last Updated: September 25, 2026');
   });
 
