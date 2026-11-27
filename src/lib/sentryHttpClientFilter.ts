@@ -50,6 +50,7 @@ const HTTP_CLIENT_MESSAGE_RE = /^HTTP Client Error with status code:\s*(\d{3})$/
 const OPTIONAL_IMAGE_EXTENSION_RE = /\.(?:avif|gif|jpe?g|png|webp)$/i;
 const OPTIONAL_PREVIEW_PATH_SEGMENT_RE = /\/(?:poster|preview|thumbnail|thumb)(?:\/|$)/i;
 const SUBTITLE_PATH_RE = /(?:\/vtt(?:\/|$)|\.vtt$)/i;
+const HLS_MANIFEST_PATH_RE = /\/hls\/[^/]+\.m3u8$/i;
 
 function toSafeString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
@@ -292,6 +293,13 @@ export function shouldDropHandledMediaHttpClientEvent(event: SentryEventLike): b
   }
 
   if (isOptionalPreviewPath(parsedUrl.pathname)) {
+    return true;
+  }
+
+  // Blossom returns 422 (e.g. archive_remux_incompatible) for archive clips that
+  // cannot be stream-copied to HLS; VideoPlayer handles this by falling back to MP4.
+  // Keep 404 and 5xx on HLS manifests visible.
+  if (statusCode === 422 && HLS_MANIFEST_PATH_RE.test(parsedUrl.pathname)) {
     return true;
   }
 

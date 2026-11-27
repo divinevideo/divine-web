@@ -197,6 +197,15 @@ describe('shouldDropHandledMediaHttpClientEvent', () => {
     expect(shouldDropHandledMediaHttpClientEvent(event)).toBe(false);
   });
 
+  it('drops 422 failures for HLS manifests handled by MP4 fallback', () => {
+    const event = createHttpClientEvent({
+      url: 'https://media.divine.video/f423713/hls/master.m3u8',
+      statusCode: 422,
+    });
+
+    expect(shouldDropHandledMediaHttpClientEvent(event)).toBe(true);
+  });
+
   it('keeps media 5xx failures visible', () => {
     const event = createHttpClientEvent({
       url: 'https://media.divine.video/f423713/hls/master.m3u8',
