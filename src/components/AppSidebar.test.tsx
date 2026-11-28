@@ -60,10 +60,6 @@ vi.mock('@/components/auth/LoginArea', () => ({
   LoginArea: () => <div data-testid="login-area" />,
 }));
 
-vi.mock('@/hooks/useRssFeedAvailable', () => ({
-  useRssFeedAvailable: () => false,
-}));
-
 describe('AppSidebar', () => {
   beforeEach(async () => {
     mockStats.current = { total_events: 0, total_videos: 0, vine_videos: 2158963 };
@@ -183,6 +179,16 @@ describe('AppSidebar', () => {
     expect(screen.getByRole('link', { name: 'Get Divine on Google Play' })).toHaveAttribute(
       'href',
       PLAY_STORE_URL,
+    );
+  });
+
+  it('offers RSS feeds on the first render', () => {
+    render(<MemoryRouter><AppSidebar /></MemoryRouter>);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Feeds RSS' }));
+    expect(screen.getByRole('link', { name: 'Videos mas recientes' })).toHaveAttribute(
+      'href',
+      'https://api.divine.video/feed/latest',
     );
   });
 

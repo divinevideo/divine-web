@@ -1,5 +1,5 @@
 // ABOUTME: Hook reporting whether Funnelcake RSS feed endpoints are configured
-// ABOUTME: RSS endpoints are live whenever Funnelcake API is configured; avoids uncached HEAD /feed/latest probes on every page load
+// ABOUTME: Uses the configured origin without probing the feed over the network
 
 import { API_CONFIG } from '@/config/api';
 
