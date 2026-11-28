@@ -12,6 +12,7 @@ type SentryEventLike = {
   message?: unknown;
   request?: {
     url?: unknown;
+    method?: unknown;
   };
   contexts?: {
     response?: {
@@ -253,6 +254,7 @@ export function shouldDropKeyExportReplayEvent(event: ReplayRecordingEventLike):
  * Keep narrow allowlists to avoid hiding actionable production failures:
  * - 401/403 on gated media assets
  * - 404/422 on optional subtitles and preview/poster images
+ * - 422 on HLS manifest HEAD probes
  */
 export function shouldDropHandledMediaHttpClientEvent(event: SentryEventLike): boolean {
   if (!isHttpClientEvent(event)) {
@@ -296,12 +298,7 @@ export function shouldDropHandledMediaHttpClientEvent(event: SentryEventLike): b
     return true;
   }
 
-  // Blossom returns 422 (e.g. archive_remux_incompatible) for archive clips that
-  // cannot be stream-copied to HLS; VideoPlayer handles this by falling back to MP4.
-  // Keep 404 and 5xx on HLS manifests visible.
-  if (statusCode === 422 && HLS_MANIFEST_PATH_RE.test(parsedUrl.pathname)) {
-    return true;
-  }
-
-  return false;
+  return statusCode === 422
+    && event.request?.method === 'HEAD'
+    && HLS_MANIFEST_PATH_RE.test(parsedUrl.pathname);
 }
