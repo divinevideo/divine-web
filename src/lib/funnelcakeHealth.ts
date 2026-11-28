@@ -86,13 +86,15 @@ export function recordFunnelcakeFailure(apiUrl: string, error: string): void {
 
   healthStatusByUrl.set(apiUrl, newStatus);
 
-  if (newErrorCount >= CIRCUIT_BREAKER_THRESHOLD) {
+  if (!status.available) return;
+
+  if (newStatus.available) {
+    debugLog(`[FunnelcakeHealth] Funnelcake error ${newErrorCount}/${CIRCUIT_BREAKER_THRESHOLD} for ${apiUrl}: ${error}`);
+    addBreadcrumb('Funnelcake API error', 'api', { apiUrl, errorCount: newErrorCount, error });
+  } else {
     debugError(`[FunnelcakeHealth] Circuit opened for ${apiUrl} after ${newErrorCount} failures: ${error}`);
     addBreadcrumb('Funnelcake circuit breaker opened', 'api', { apiUrl, errorCount: newErrorCount, lastError: error });
     Sentry.captureMessage('Funnelcake circuit breaker opened', { level: 'warning', extra: { apiUrl, errorCount: newErrorCount, lastError: error } });
-  } else {
-    debugLog(`[FunnelcakeHealth] Funnelcake error ${newErrorCount}/${CIRCUIT_BREAKER_THRESHOLD} for ${apiUrl}: ${error}`);
-    addBreadcrumb('Funnelcake API error', 'api', { apiUrl, errorCount: newErrorCount, error });
   }
 }
 

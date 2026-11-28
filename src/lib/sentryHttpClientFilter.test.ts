@@ -112,6 +112,7 @@ describe('shouldDropKeyExportReplayEvent', () => {
 
 interface TestEventOptions {
   url?: string;
+  method?: string;
   statusCode?: number | string;
   mechanismType?: string;
   message?: string;
@@ -119,6 +120,7 @@ interface TestEventOptions {
 
 function createHttpClientEvent({
   url = 'https://media.divine.video/hash/hls/master.m3u8',
+  method,
   statusCode = 401,
   mechanismType = 'auto.http.client.fetch',
   message,
@@ -127,7 +129,7 @@ function createHttpClientEvent({
 
   return {
     message: resolvedMessage,
-    request: { url },
+    request: { url, method },
     contexts: { response: { status_code: statusCode } },
     exception: {
       values: [
@@ -191,7 +193,29 @@ describe('shouldDropHandledMediaHttpClientEvent', () => {
   it('keeps media 404 failures for non-optional playback assets', () => {
     const event = createHttpClientEvent({
       url: 'https://media.divine.video/f423713/hls/master.m3u8',
+      method: 'HEAD',
       statusCode: 404,
+    });
+
+    expect(shouldDropHandledMediaHttpClientEvent(event)).toBe(false);
+  });
+
+  it('drops 422 responses to HLS HEAD probes', () => {
+    const event = createHttpClientEvent({
+      url: 'https://media.divine.video/f423713/hls/master.m3u8',
+      method: 'HEAD',
+      statusCode: 422,
+    });
+
+    expect(shouldDropHandledMediaHttpClientEvent(event)).toBe(true);
+  });
+
+  it.each(['GET', undefined])('keeps HLS 422 events with request method %s', (method) => {
+    const event = createHttpClientEvent({
+      url: 'https://media.divine.video/f423713/hls/master.m3u8',
+      method,
+      statusCode: 422,
+      mechanismType: 'auto.http.client.xhr',
     });
 
     expect(shouldDropHandledMediaHttpClientEvent(event)).toBe(false);
@@ -200,6 +224,7 @@ describe('shouldDropHandledMediaHttpClientEvent', () => {
   it('keeps media 5xx failures visible', () => {
     const event = createHttpClientEvent({
       url: 'https://media.divine.video/f423713/hls/master.m3u8',
+      method: 'HEAD',
       statusCode: 500,
     });
 

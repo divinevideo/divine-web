@@ -12,6 +12,7 @@ type SentryEventLike = {
   message?: unknown;
   request?: {
     url?: unknown;
+    method?: unknown;
   };
   contexts?: {
     response?: {
@@ -50,6 +51,7 @@ const HTTP_CLIENT_MESSAGE_RE = /^HTTP Client Error with status code:\s*(\d{3})$/
 const OPTIONAL_IMAGE_EXTENSION_RE = /\.(?:avif|gif|jpe?g|png|webp)$/i;
 const OPTIONAL_PREVIEW_PATH_SEGMENT_RE = /\/(?:poster|preview|thumbnail|thumb)(?:\/|$)/i;
 const SUBTITLE_PATH_RE = /(?:\/vtt(?:\/|$)|\.vtt$)/i;
+const HLS_MANIFEST_PATH_RE = /\/hls\/[^/]+\.m3u8$/i;
 
 function toSafeString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
@@ -252,6 +254,7 @@ export function shouldDropKeyExportReplayEvent(event: ReplayRecordingEventLike):
  * Keep narrow allowlists to avoid hiding actionable production failures:
  * - 401/403 on gated media assets
  * - 404/422 on optional subtitles and preview/poster images
+ * - 422 on HLS manifest HEAD probes
  */
 export function shouldDropHandledMediaHttpClientEvent(event: SentryEventLike): boolean {
   if (!isHttpClientEvent(event)) {
@@ -295,5 +298,7 @@ export function shouldDropHandledMediaHttpClientEvent(event: SentryEventLike): b
     return true;
   }
 
-  return false;
+  return statusCode === 422
+    && event.request?.method === 'HEAD'
+    && HLS_MANIFEST_PATH_RE.test(parsedUrl.pathname);
 }
