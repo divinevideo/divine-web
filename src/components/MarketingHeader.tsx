@@ -8,11 +8,11 @@ export function MarketingHeader() {
   const { t } = useTranslation();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-brand-dark-green border-b border-brand-green">
+    <nav className="sticky top-0 z-50 shrink-0 bg-brand-dark-green border-b border-brand-green pt-safe px-safe">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex min-h-16 flex-col items-start gap-3 py-3 md:flex-row md:items-center md:justify-between md:gap-6">
           {/* Logo */}
-          <Link to="/">
+          <Link to="/" className="shrink-0">
             <img
               src="/divine-logo.svg"
               alt="Divine"
@@ -21,7 +21,7 @@ export function MarketingHeader() {
           </Link>
 
           {/* Navigation Links */}
-          <div className="flex items-center gap-8">
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-x-4 gap-y-3 [&>a]:shrink-0 md:w-auto md:justify-end md:gap-x-8">
             <a
               href="https://about.divine.video/"
               className="text-sm font-medium text-brand-off-white hover:text-brand-green transition-colors"
