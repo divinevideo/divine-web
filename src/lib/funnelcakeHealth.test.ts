@@ -2,6 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockAddBreadcrumb = vi.fn();
 const mockCaptureMessage = vi.fn();
+const mockDebugError = vi.fn();
+
+vi.mock('./debug', () => ({
+  debugLog: vi.fn(),
+  debugError: (...args: unknown[]) => mockDebugError(...args),
+}));
 
 vi.mock('./sentry', () => ({
   addBreadcrumb: (...args: unknown[]) => mockAddBreadcrumb(...args),
@@ -23,6 +29,7 @@ describe('funnelcakeHealth circuit breaker Sentry reporting', () => {
     resetAllFunnelcakeCircuits();
     mockAddBreadcrumb.mockReset();
     mockCaptureMessage.mockReset();
+    mockDebugError.mockReset();
   });
 
   it('reports circuit breaker open to Sentry only once per closed -> open transition', () => {
@@ -38,6 +45,7 @@ describe('funnelcakeHealth circuit breaker Sentry reporting', () => {
     recordFunnelcakeFailure(apiUrl, 'timeout 4');
     recordFunnelcakeFailure(apiUrl, 'timeout 5');
     expect(mockCaptureMessage).toHaveBeenCalledTimes(1);
+    expect(mockDebugError).toHaveBeenCalledTimes(1);
 
     // After recovery, a fresh outage reports once again
     recordFunnelcakeSuccess(apiUrl);
