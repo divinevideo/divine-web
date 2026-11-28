@@ -19,24 +19,10 @@ vi.mock('fastly:kv-store', () => {
   return { KVStore: MockKVStore };
 });
 
-import { handleAtUsernameOg, handleDownloadOgTags, handleHashtagOgTags, handleSearchOgTags, handleDiscoveryOgTags, handleApexOgTags } from './crawlerHandlers.js';
+import { handleAtUsernameOg, handleHashtagOgTags, handleSearchOgTags, handleDiscoveryOgTags, handleApexOgTags } from './crawlerHandlers.js';
 
 const HEX64 = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 const STATIC_CARD_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600, stale-while-revalidate=3600';
-
-describe('handleDownloadOgTags', () => {
-  it('builds canonical download-page metadata with static card caching', async () => {
-    const result = handleDownloadOgTags(new URL('https://divine.video/download'), 'divine.video');
-    const html = await result!.text();
-
-    expect(html).toContain('<title>Download Divine</title>');
-    expect(html).toContain('App Store, Google Play, or Zapstore');
-    expect(html).toContain('https://divine.video/download');
-    expect(html).toContain('https://divine.video/og.png');
-    expect(result.headers.get('Cache-Control')).toBe(STATIC_CARD_CACHE_CONTROL);
-    expect(result!.headers.get('Vary')).toBe('X-Original-Host, User-Agent');
-  });
-});
 
 describe('handleApexOgTags', () => {
   beforeEach(() => {

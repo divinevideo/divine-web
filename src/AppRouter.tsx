@@ -8,6 +8,7 @@ import { SentryRoutes } from '@/components/SentryRoutes';
 import { PagePerformanceProvider } from '@/components/PagePerformanceProvider';
 import { ScrollToTop } from "./components/ScrollToTop";
 import { SignInLoading } from "./components/auth/SignInLoading";
+import { PageSeoForRoute } from "@/components/PageSeoForRoute";
 import { AnalyticsPageTracker } from "./components/AnalyticsPageTracker";
 import { AnalyticsUserTracker } from "./components/AnalyticsUserTracker";
 import { getSubdomainUser } from "./hooks/useSubdomainUser";
@@ -201,6 +202,7 @@ export function AppRouter() {
   return (
     <ChatInviteProvider account={user?.pubkey}><BrowserRouter>
       <ScrollToTop />
+      <PageSeoForRoute />
       {/* AnalyticsUserTracker first: it configures the analytics identity that
           AnalyticsPageTracker's identity-linked events depend on. */}
       <AnalyticsUserTracker />
